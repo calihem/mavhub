@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include "protocol/protocollayer.h"
+#include "../module/PID.h"
 
 #include <inttypes.h> //uint8_t
 #include <bitset>
@@ -72,13 +73,18 @@ namespace mavhub {
     float Kc_x, Ti_x, Td_x;
     float Kc_y, Ti_y, Td_y;
     float squal;
-    float gx, gy;
+    float gx, gy, gz;
+
+    // rc control
+    int aux2, aux2tm1; /// controls extctrl
     // params
     /// request
     int param_request_list;
     /// param container
     std::map<std::string, double> params;
     
+    PID* pid_pitch;
+    PID* pid_roll;
     // 			using AppLayer::send;
     // 			void send_heartbeat();
     // 			void send_mavlink_param_value(const msp_param_type_t param_type);
@@ -92,8 +98,8 @@ namespace mavhub {
     /// Method to handle input from MSP
     // 			void handle_input(const msp_message_t& msg);
     virtual void read_conf(const std::map<std::string, std::string> args);
+    virtual void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value);
   };
-
   // ----------------------------------------------------------------------------
   // MSPApp
   // ----------------------------------------------------------------------------

@@ -133,7 +133,8 @@ namespace mavhub {
     u(0.0), v(0.0),
     gyw_x(0.005), gyw_y(-0.005),
     Kc_x(1.0), Ti_x(0.001), Td_x(4),
-    Kc_y(1.0), Ti_y(0.001), Td_y(4)
+    Kc_y(1.0), Ti_y(0.001), Td_y(4),
+    gx(0.0), gy(0.0), gz(0.0)
     // 	msp_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
     // 	message_time( get_time_us() ),
     // 	attitude_time( get_time_us() ),
@@ -156,12 +157,17 @@ namespace mavhub {
                                0,	//custom mode
                                MAV_STATE_ACTIVE);	//system status
     read_conf(args);
+    pid_pitch = new PID(0.0, params["pid_Kc_y"],
+                        params["pid_Ti_y"], params["pid_Td_y"]);
+    pid_roll = new PID(0.0, params["pid_Kc_x"],
+                       params["pid_Ti_x"], params["pid_Td_x"]);
   }
 
   MSPApp::~MSPApp() {}
 
   void MSPApp::handle_input(const mavlink_message_t &msg) {
-    log("MSPApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
+    static char param_id[16];
+    // log("MSPApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
     switch(msg.msgid) {
     case MAVLINK_MSG_ID_HUCH_VISUAL_FLOW:
       u = mavlink_msg_huch_visual_flow_get_u(&msg);
@@ -169,6 +175,14 @@ namespace mavhub {
       squal = mavlink_msg_huch_visual_flow_get_u_i(&msg);
       u_i += ((u * 0.01) - (gyw_y * gy));
       v_i += ((v * 0.01) - (gyw_x * gx));
+      break;
+
+    case MAVLINK_MSG_ID_HUCH_VISUAL_OFLOW_SEN:
+      u = mavlink_msg_huch_visual_oflow_sen_get_u(&msg);
+      v = mavlink_msg_huch_visual_oflow_sen_get_v(&msg);
+      squal = mavlink_msg_huch_visual_oflow_sen_get_squal(&msg);
+      u_i += ((u * 0.02) - (params["of_gyw_y"] * gy));
+      v_i += ((v * 0.02) - (params["of_gyw_x"] * gx));
       break;
     /*
       case MAVLINK_MSG_ID_PING: {
@@ -194,33 +208,43 @@ namespace mavhub {
       }
       break;
       }
-      case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-      if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner()->system_id())
-      && (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
-      //ask for first parameter value
-      msp_param_type_t param_type= REVISION;
-      send(MSP_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(msp_param_type_t));
-      parameter_request = REVISION;
-      parameter_time = get_time_us();
+    */
+    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+      Logger::log("MSPApp::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
+      if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
+        param_request_list = 1;
       }
       break;
-      case MAVLINK_MSG_ID_PARAM_SET:
-      if( (mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id())
-      && (mavlink_msg_param_set_get_target_component(&msg) == component_id) ) {
-      int8_t parameter_id[15];
-      mavlink_msg_param_set_get_param_id(&msg, parameter_id);
-      uint16_t index = parameter_id_to_index(parameter_id);
+    case MAVLINK_MSG_ID_PARAM_SET:
+      if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+        Logger::log("MSPApp::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
+        if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
+          Logger::log("MSPApp::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
+          mavlink_msg_param_set_get_param_id(&msg, param_id);
+          Logger::log("MSPApp::handle_input: PARAM_SET for param_id", param_id, Logger::LOGLEVEL_INFO);
+          
+          typedef map<string, double>::const_iterator ci;
+          for(ci p = params.begin(); p!=params.end(); ++p) {
+            // Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+            if(!strcmp(p->first.data(), (const char *)param_id)) {
+              params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
+              Logger::log("x MSPApp::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
+            }
+          }
 
-      if(index >= 0) {
-      //send parameter to MSP
-      msp_param_t parameter;
-      parameter.index = index;
-      float value = mavlink_msg_param_set_get_param_value(&msg);
-      parameter.value = static_cast<uint8_t>(value);
-      send(MSP_MSG_TYPE_PARAM_VALUE, &parameter, sizeof(msp_param_t));
-      }
+          // update PID controllers
+          pid_pitch->setKc(params["pid_Kc_y"]);
+          pid_roll->setKc(params["pid_Kc_x"]);
+          pid_pitch->setTi(params["pid_Ti_y"]);
+          pid_roll->setTi(params["pid_Ti_x"]);
+          pid_pitch->setTd(params["pid_Td_y"]);
+          pid_roll->setTd(params["pid_Td_x"]);
+
+        }
       }
       break;
+
+      /*
       case MAVLINK_MSG_ID_MANUAL_CONTROL:
       if( (mavlink_msg_param_request_read_get_target_system(&msg) == owner()->system_id()) ) {
       msp_extern_control_t extern_control;
@@ -260,7 +284,7 @@ namespace mavhub {
   }
 
   void MSPApp::handle_input(const msp_message_t& msg) {
-    log("MSPApp got msp_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
+    // log("MSPApp got msp_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
     // msp_raw_imu_t raw_imu;
     std::ostringstream logstream;
     const msp_ident_t *msp_ident;
@@ -272,23 +296,16 @@ namespace mavhub {
     switch(msg.type) {
     case MSP_IDENT: {
       msp_ident = reinterpret_cast<const msp_ident_t*>(msg.data);
-      // logstream << message_time << " " 
-      // 	<< msp_imu->x_adc_acc << " "
-      // 	<< msp_imu->y_adc_acc << " "
-      // 	<< msp_imu->z_adc_acc << " "
-      // 	<< msp_imu->x_adc_gyro << " "
-      // 	<< msp_imu->y_adc_gyro << " "
-      // 	<< msp_imu->z_adc_gyro;
-      logstream << "Got MSP_IDENT, MW Version: " << (int)msp_ident->version << ", Multitype:  " << (int)msp_ident->multitype;
-      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      // logstream << "Got MSP_IDENT, MW Version: " << (int)msp_ident->version << ", Multitype:  " << (int)msp_ident->multitype;
+      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       // mavlink send heartbeat
       AppLayer<mavlink_message_t>::send(heartbeat_msg);
       break;
     }
     case MSP_STATUS:
       msp_status = reinterpret_cast<const msp_status_t*>(msg.data);
-      logstream << "STATUS cycletime: " << msp_status->cycletime;
-      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      // logstream << "STATUS cycletime: " << msp_status->cycletime;
+      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       mavlink_msg_sys_status_pack(system_id(), 0, &mavmsg,
                                   0, 0, 0,
                                   msp_status->cycletime/1000, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -297,11 +314,14 @@ namespace mavhub {
     case MSP_RAW_IMU:
       msp_raw_imu = reinterpret_cast<const msp_raw_imu_t*>(msg.data);
       // std::ostringstream logstream;
-      logstream << "ACC x: " << msp_raw_imu->ax << ", y: " << msp_raw_imu->ay << ", z: " << msp_raw_imu->az;
-      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
-      logstream.str("");
-      logstream << "GYR x: " << msp_raw_imu->gx << ", y: " << msp_raw_imu->gy << ", z: " << msp_raw_imu->gz;
-      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      // logstream << "ACC x: " << msp_raw_imu->ax << ", y: " << msp_raw_imu->ay << ", z: " << msp_raw_imu->az;
+      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      // logstream.str("");
+      // logstream << "GYR x: " << msp_raw_imu->gx << ", y: " << msp_raw_imu->gy << ", z: " << msp_raw_imu->gz;
+      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      gx = msp_raw_imu->gx;
+      gy = msp_raw_imu->gy;
+      gz = msp_raw_imu->gz;
       // convert to mavlink
       mavlink_msg_raw_imu_pack(system_id(), 0, &mavmsg, 0,
                                msp_raw_imu->ax, msp_raw_imu->ay, msp_raw_imu->az,
@@ -312,9 +332,9 @@ namespace mavhub {
 
     case MSP_MOTOR:
       msp_motor = reinterpret_cast<const msp_motor_t*>(msg.data);
-      logstream << "MOTOR 1-4: [" << msp_motor->mot[0] << ", " << msp_motor->mot[1] << ", "
-                << msp_motor->mot[2] << ", " << msp_motor->mot[3] << "]";
-      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      // logstream << "MOTOR 1-4: [" << msp_motor->mot[0] << ", " << msp_motor->mot[1] << ", "
+      //           << msp_motor->mot[2] << ", " << msp_motor->mot[3] << "]";
+      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       mavlink_msg_servo_output_raw_pack(system_id(), 0, &mavmsg, (uint32_t)0,
                                         msp_motor->mot[0], msp_motor->mot[1],
                                         msp_motor->mot[2], msp_motor->mot[3],
@@ -326,9 +346,9 @@ namespace mavhub {
 
     case MSP_RC:
       msp_rc = reinterpret_cast<const msp_rc_t*>(msg.data);
-      logstream << "RC 1-4: [" << msp_rc->roll << ", " << msp_rc->pitch << ", "
-                << msp_rc->yaw << ", " << msp_rc->throttle << "]";
-      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      // logstream << "RC 1-4: [" << msp_rc->roll << ", " << msp_rc->pitch << ", "
+      //           << msp_rc->yaw << ", " << msp_rc->throttle << "]";
+      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       mavlink_msg_rc_channels_raw_pack(system_id(), 0, &mavmsg, (uint32_t)0,
                                        0, // port
                                         msp_rc->roll, msp_rc->pitch,
@@ -336,6 +356,8 @@ namespace mavhub {
                                         msp_rc->aux1, msp_rc->aux2,
                                         msp_rc->aux3, msp_rc->aux4,
                                         (uint8_t)0);
+      aux2tm1 = aux2;
+      aux2 = msp_rc->aux2;
       AppLayer<mavlink_message_t>::send(mavmsg);
       break;
       
@@ -495,14 +517,17 @@ namespace mavhub {
     // msp_message_t rx_msg;
     // msplink_status_t link_status;
     // uint64_t delta_time = 0, tmp64;
+    static mavlink_message_t mavlink_msg;
+    static mavlink_debug_t dbg;
     msp_message_t msp_msg;
     msp_ident_t ident;
-    msp_status_t status;
-    msp_raw_imu_t raw_imu;
-    msp_motor_t motor;
+    // msp_status_t status;
+    // msp_raw_imu_t raw_imu;
+    // msp_motor_t motor;
     msp_rc_t rc;
     // msp_rc_t rc;
     uint16_t roll = 1500, pitch = 1500, yaw = 1500, throttle = 1000;
+    double rollf = 0.0, pitchf = 0.0;
 
     msplink_msg_init_rq(&msp_msg);
 
@@ -510,8 +535,37 @@ namespace mavhub {
     log("MSPApp running", Logger::LOGLEVEL_DEBUG);
 
     // msplink_status_initialize(&link_status);
+    pid_pitch->setSp(0.0);
+    pid_roll->setSp(0.0);
 
     while( !interrupted() ) {
+
+
+      if(param_request_list) {
+        Logger::log("MSPApp::run: param request", Logger::LOGLEVEL_INFO);
+        param_request_list = 0;
+
+        typedef map<string, double>::const_iterator ci;
+        for(ci p = params.begin(); p!=params.end(); ++p) {
+          // Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+          mavlink_msg_param_value_pack(system_id(), component_id, &mavlink_msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
+          AppLayer<mavlink_message_t>::send(mavlink_msg);
+        }
+
+        // mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_pitch", prm_test_pitch, 1, 0);
+        // send(msg);
+        // mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_yaw_P", prm_yaw_P, 1, 0);
+        // send(msg);
+      }
+
+      if(params["reset_i"] > 0.0 || abs(aux2 - aux2tm1) > 100) {
+        params["reset_i"] = 0.0;
+        pid_pitch->setIntegral(0.0);
+        pid_roll->setIntegral(0.0);
+        u_i = 0.0;
+        v_i = 0.0;
+      }
+
       if(run_cnt % 50 == 0) {
         msp_msg.len = 0;
         msp_msg.type = MSP_IDENT;
@@ -525,20 +579,50 @@ namespace mavhub {
         // usleep(10000);
       }
 
+      // roll = (v_i * Kc_x) + 1500;
+      rollf = pid_roll->calc(0.02, v_i);
+      // pitch = u_i * Kc_x) + 1500;
+      pitchf = pid_pitch->calc(0.02, u_i);
+
+	if(pitchf > params["pitch_limit"]) {
+		pitchf = params["pitch_limit"];
+		pid_pitch->setIntegralM1();
+	}
+	if(pitchf < -params["pitch_limit"]) {
+		pitchf = -params["pitch_limit"];
+		pid_pitch->setIntegralM1();
+	}
+	if(rollf > params["roll_limit"]) {
+		rollf = params["roll_limit"];
+		pid_roll->setIntegralM1();
+	}
+	if(rollf < -params["roll_limit"]) {
+		rollf = -params["roll_limit"];
+		pid_roll->setIntegralM1();
+	}
+
+      // debug output
+      send_debug(&mavlink_msg, &dbg, 0, u_i);
+      send_debug(&mavlink_msg, &dbg, 1, v_i);
+      send_debug(&mavlink_msg, &dbg, 2, pitchf);
+      send_debug(&mavlink_msg, &dbg, 3, rollf);
+      
       // send some rc data
-      if((run_cnt % 1 == 0) && ((run_cnt/100) % 2 == 0)) {
+      // if((run_cnt % 1 == 0) && ((run_cnt/100) % 2 == 0)) {
+      if(1) {
         // roll  = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
         // pitch = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
         // yaw = (uint16_t)((rand()/RAND_MAX) * 1000) + 1000;
         // throttle = (uint16_t)((rand()/RAND_MAX) * 1000) + 1000;
         // throttle = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1200;
-        roll = (v_i * Kc_x) + 1500;
-        pitch = (v_i * Kc_x) + 1500;
+        
         // FIXME: limit output, use full PID, output mask, setpoints,
         //        proper struct for oflow sensor including squal, 
-        Logger::log(name(), "roll, pitch", roll, pitch, Logger::LOGLEVEL_DEBUG);
-        rc.roll = roll;
-        rc.pitch = pitch;
+        // Logger::log(name(), "roll, pitch", roll, pitch, Logger::LOGLEVEL_DEBUG);
+        rc.roll = (uint16_t)(rollf + 1500.);
+        rc.pitch = (uint16_t)(pitchf + 1500.);
+        send_debug(&mavlink_msg, &dbg, 4, (float)rc.pitch);
+        send_debug(&mavlink_msg, &dbg, 5, (float)rc.roll);
         rc.yaw = yaw;
         rc.throttle = throttle;
         rc.aux1 = 2000;
@@ -565,7 +649,7 @@ namespace mavhub {
       AppLayer<msp_message_t>::send(msp_msg);
       // usleep(10000);
 
-      Logger::log(name(), "run", Logger::LOGLEVEL_DEBUG);
+      // Logger::log(name(), "run", Logger::LOGLEVEL_DEBUG);
       run_cnt++;
       usleep(20000);
     }
@@ -688,7 +772,44 @@ namespace mavhub {
       istringstream s(iter->second);
       s >> params["of_gyw_x"];
     }
+
+    // PID limit
+    iter = args.find("pid_limit");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_limit"];
+    }
+    // PID limit
+    iter = args.find("pitch_limit");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pitch_limit"];
+    }
+    iter = args.find("roll_limit");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["roll_limit"];
+    }
+
+    // reset integral
+    iter = args.find("reset_i");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["reset_i"];
+    }
+    else {
+      params["reset_i"] = 0.0;
+    }
+
   }
+
+  void MSPApp::send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value) {
+    dbg->ind = index;
+    dbg->value = value;
+    mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), msg, dbg);
+    AppLayer<mavlink_message_t>::send(*msg);
+  }
+
 
 } // namespace mavhub
 
