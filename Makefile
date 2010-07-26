@@ -1,6 +1,9 @@
 TARGET_1 = mavhub
 SRCS_1   = main.cpp \
-	logger.cpp
+	logger.cpp \
+	protocolstack.cpp \
+	uart.cpp \
+	protocollayer.cpp 
 
 # define any directories containing header files other than /usr/include
 INCLUDES = -I. -I../mavlink/include

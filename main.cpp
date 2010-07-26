@@ -3,11 +3,14 @@
 #include <cstdlib> //exit
 
 #include "logger.h"
+#include "protocolstack.h"
+#include "protocollayer.h"
 
 using namespace std;
 using namespace mavhub;
 
 // int port = UDPSocket::DefaultPort;
+uint8_t system_id = 42;
 int udp_port = 30000;
 int tcp_port = 30001;
 
@@ -18,6 +21,14 @@ int main(int argc, char **argv) {
 	Logger::setLogLevel(Logger::LOGLEVEL_ALL);
 	parse_argv(argc, argv);
 
+	//configure stack
+	ProtocolStack stack(system_id);
+	stack.addInterface( new UARTLayer("/dev/ttyS0") );
+
+	//activate stack
+	pthread_t stack_thread = stack.start();
+
+	PThread::join(stack_thread);
 }
 
 void parse_argv(int argc, char **argv) {

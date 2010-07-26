@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <iomanip>
 #include <memory>
 #include <time.h>
 
@@ -32,14 +33,23 @@ namespace mavhub {
 			static bool enabled();
 			/// set logging level
 			static void setLogLevel(log_level_t loglevel);
-			static void log(const char *message, log_level_t loglevel = LOGLEVEL_ALL);
-			static void log(const char *message, int value, log_level_t loglevel = LOGLEVEL_ALL);
-			static void log(const char *message, int val1, int val2, log_level_t loglevel = LOGLEVEL_ALL);
-			static void debug(const char *message);
-			static void info(const char *message);
-			static void warn(const char *message);
-			static void error(const char *message);
-			static void fatal(const char *message);
+			template <class T>
+			static void log(const T& message, log_level_t loglevel = LOGLEVEL_ALL);
+			template <class T1, class T2>
+			static void log(const T1& msg1, const T2& msg2, log_level_t loglevel = LOGLEVEL_ALL);
+			template <class T1, class T2, class T3>
+			static void log(const T1& msg1, const T2& msg2, const T3& msg3, log_level_t loglevel = LOGLEVEL_ALL);
+
+			template <class T>
+			static void debug(const T& message);
+			template <class T>
+			static void info(const T& message);
+			template <class T>
+			static void warn(const T& message);
+			template <class T>
+			static void error(const T& message);
+			template <class T>
+			static void fatal(const T& message);
 			/// return reference of pointer to output stream
 			static std::ostream *& outputStream();
 
@@ -87,14 +97,15 @@ namespace mavhub {
 		time (&rawtime);
 		timeinfo = localtime(&rawtime);
 		*outStream << "["
-			<< LoglevelStrings[(int)loglevel]
-			<< " " << timeinfo->tm_hour
-			<< ":" << timeinfo->tm_min
-			<< ":" << timeinfo->tm_sec
+			<< std::setw(7) << std::setfill(' ') << std::left << LoglevelStrings[(int)loglevel]
+			<< " " << std::setw(2) << std::setfill('0') << std::right << timeinfo->tm_hour
+			<< ":" << std::setw(2) << timeinfo->tm_min
+			<< ":" << std::setw(2) << timeinfo->tm_sec
 			<< "] ";
 #endif
 	}
-	inline void Logger::log(const char *message, log_level_t loglevel) {
+	template <class T>
+	inline void Logger::log(const T& message, log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
 		if( loglevel >= logLevel  ) {
 			logPreamble(loglevel);
@@ -102,35 +113,43 @@ namespace mavhub {
 		}
 #endif
 	}
-	inline void Logger::log(const char *message, int value, log_level_t loglevel) {
+	template <class T1, class T2>
+	inline void Logger::log(const T1& msg1, const T2& msg2, log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
 		if( loglevel >= logLevel  ) {
 			logPreamble(loglevel);
-			*outStream << message << value << std::endl;
+			*outStream << msg1 << " " << msg2 << std::endl;
 		}
 #endif
 	}
-	inline void Logger::log(const char *message, int val1, int val2, log_level_t loglevel) {
+	template <class T1, class T2, class T3>
+	inline void Logger::log(const T1& msg1, const T2& msg2, const T3& msg3, log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
 		if( loglevel >= logLevel  ) {
 			logPreamble(loglevel);
-			*outStream << message << val1 << ", " << val2 << std::endl;
+			*outStream << msg1 << " "  << msg2 << " "  << msg3 << std::endl;
 		}
 #endif
 	}
-	inline void Logger::debug(const char *message) {
+
+	template <class T>
+	inline void Logger::debug(const T& message) {
 		log(message, LOGLEVEL_DEBUG);
 	}
-	inline void Logger::info(const char *message) {
+	template <class T>
+	inline void Logger::info(const T& message) {
 		log(message, LOGLEVEL_INFO);
 	}
-	inline void Logger::warn(const char *message) {
+	template <class T>
+	inline void Logger::warn(const T& message) {
 		log(message, LOGLEVEL_WARN);
 	}
-	inline void Logger::error(const char *message) {
+	template <class T>
+	inline void Logger::error(const T& message) {
 		log(message, LOGLEVEL_ERROR);
 	}
-	inline void Logger::fatal(const char *message) {
+	template <class T>
+	inline void Logger::fatal(const T& message) {
 		log(message, LOGLEVEL_FATAL);
 	}
 	inline std::ostream *& Logger::outputStream() { return outStream; }
