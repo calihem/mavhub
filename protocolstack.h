@@ -5,6 +5,7 @@
 #include <inttypes.h> //uint8_t
 #include "protocollayer.h"
 #include <list>
+#include <vector>
 
 namespace mavhub {
 
@@ -16,8 +17,8 @@ namespace mavhub {
 			};
 			typedef std::pair<MediaLayer*, packageformat_t> interface_packet_pair_t; 
 			typedef std::list<interface_packet_pair_t> interface_packet_list_t;
-			typedef std::list<MediaLayer*> interface_list_t;
-			
+			typedef std::list< std::vector<uint8_t> > buffer_list_t;
+
 			ProtocolStack(uint8_t system_id);
 			~ProtocolStack();
 
@@ -32,8 +33,10 @@ namespace mavhub {
 
 
 		private:
+			static const int BUFFERLENGTH = 512;
 			uint8_t system_id;
 			interface_packet_list_t interface_list;
+			buffer_list_t rx_buffer_list;
 
 	};
 	// ----------------------------------------------------------------------------
