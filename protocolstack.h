@@ -8,14 +8,20 @@
 
 namespace mavhub {
 
-	typedef std::list<MediaLayer*> interface_list_t;
-
 	class ProtocolStack : public PThread {
 		public:
+			enum packageformat_t {
+				MAVLINKPACKAGE,	//MAVLINK packet
+				MKPACKAGE	//MikroKopter packet
+			};
+			typedef std::pair<MediaLayer*, packageformat_t> interface_packet_pair_t; 
+			typedef std::list<interface_packet_pair_t> interface_packet_list_t;
+			typedef std::list<MediaLayer*> interface_list_t;
+			
 			ProtocolStack(uint8_t system_id);
 			~ProtocolStack();
 
-			void addInterface(MediaLayer *interface);
+			void addInterface(MediaLayer *interface, const packageformat_t format);
 // 			void addLayer(ProtocolEntity *layer);
 // // 			void addApplication(ApplicationLayer &app, int port);
 // 			void join();
@@ -27,7 +33,7 @@ namespace mavhub {
 
 		private:
 			uint8_t system_id;
-			interface_list_t interface_list;
+			interface_packet_list_t interface_list;
 
 	};
 	// ----------------------------------------------------------------------------

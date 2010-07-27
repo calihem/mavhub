@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 
 	//configure stack
 	ProtocolStack stack(system_id);
-	stack.addInterface( new UARTLayer("/dev/ttyS0") );
+	stack.addInterface( new UARTLayer("/dev/ttyS0"), ProtocolStack::MAVLINKPACKAGE );
 
 	//activate stack
 	pthread_t stack_thread = stack.start();

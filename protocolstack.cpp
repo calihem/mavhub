@@ -22,15 +22,14 @@ void ProtocolStack::run() {
 	int channel;
 	mavlink_message_t msg;
 	mavlink_status_t status;
-	interface_list_t::iterator iter;
+	interface_packet_list_t::iterator iter;
 
-	//TODO: number of channels must be < 16
 	
 	while(1) {
 		channel = 0;
 		//iterate through interfaces
 		for(iter = interface_list.begin(); iter != interface_list.end(); ++iter ) {
-			received = (*iter)->read(&c, 1);
+			received = (iter->first)->read(&c, 1);
 			if(received<0) {
 				if(errno != EAGAIN) {
 					Logger::log("reading of interface failed with", strerror(errno), Logger::LOGLEVEL_ERROR);
@@ -41,16 +40,31 @@ void ProtocolStack::run() {
 					break;
 				}
 			}
-			if( mavlink_parse_char(channel, c, &msg, &status) ) {
-				Logger::info("got mavlink");
+			//received data, try to parse it
+			switch(iter->second) {
+				case MAVLINKPACKAGE:
+					if( mavlink_parse_char(channel, c, &msg, &status) ) {
+						Logger::info("got mavlink");
+					}
+					break;
+				case MKPACKAGE:
+					break;
+				default:
+					Logger::log("unsupported package format on channel", channel, Logger::LOGLEVEL_DEBUG);
+					break;
 			}
 			channel++;
 		}
 	}
 }
 
-void ProtocolStack::addInterface(MediaLayer *interface) {
-	interface_list.push_back(interface);
+void ProtocolStack::addInterface(MediaLayer *interface, const packageformat_t format) {
+	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
+		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
+		return;
+	}
+
+	interface_list.push_back( make_pair(interface, format) );
 }
 
 } // namespace mavhub
