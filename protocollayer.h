@@ -4,7 +4,7 @@
 #include <inttypes.h> //uint8_t
 #include <errno.h>
 #include "uart.h"
-// #include <sys/uio.h>
+#include "network.h"
 
 namespace mavhub {
 
@@ -12,7 +12,7 @@ namespace mavhub {
 		public:
 			virtual bool data_available() const = 0;
 
-			virtual int read(const uint8_t *buffer, int length) const = 0;
+			virtual int read(uint8_t *buffer, int length) const = 0;
 			virtual int write(const uint8_t *buffer, int length) const = 0;
 	};
 
@@ -22,7 +22,19 @@ namespace mavhub {
 			virtual ~UARTLayer();
 
 			virtual bool data_available() const;
-			virtual int read(const uint8_t *buffer, int length) const;
+			virtual int read(uint8_t *buffer, int length) const;
+			virtual int write(const uint8_t *buffer, int length) const;
+	};
+
+	class UDPLayer : public UDPSocket, public MediaLayer {
+		public:
+			static const int DefaultPort = 32000;
+
+			UDPLayer(int port) throw(const char*);
+			virtual ~UDPLayer();
+
+			virtual bool data_available() const;
+			virtual int read(uint8_t *buffer, int length) const;
 			virtual int write(const uint8_t *buffer, int length) const;
 	};
 
@@ -34,12 +46,28 @@ namespace mavhub {
 		int rc = UART::read(&c, 1);
 		return ( (rc>=0) || (errno != EAGAIN) );
 	}
-	inline int UARTLayer::read(const uint8_t *buffer, int length) const {
+	inline int UARTLayer::read(uint8_t *buffer, int length) const {
 		return UART::read((void*)buffer, (size_t)length);
 	}
 	inline int UARTLayer::write(const uint8_t *buffer, int length) const {
+		//TODO
 		return 0;
 	}
+	// ----------------------------------------------------------------------------
+	// UDPLayer
+	// ----------------------------------------------------------------------------
+	inline  bool UDPLayer::data_available() const {
+		//TODO
+		return false;
+	}
+	inline int UDPLayer::read(uint8_t *buffer, int length) const {
+		return UDPSocket::receive( (char*)buffer, length);
+	}
+	inline int UDPLayer::write(const uint8_t *buffer, int length) const {
+		//TODO
+		return 0;
+	}
+
 
 } // namespace mavhub
 

@@ -39,9 +39,12 @@ void ProtocolStack::run() {
 					Logger::log("reading of interface failed with", strerror(errno), Logger::LOGLEVEL_ERROR);
 					//FIXME: sleep is not the solution
 					sleep(1);
-					break;
+					channel++;
+					continue;
 				} else {//no data available
-					break;
+					Logger::log("no data available on channel", channel, Logger::LOGLEVEL_DEBUG);
+					channel++;
+					continue;
 				}
 			}
 			//received data, try to parse it

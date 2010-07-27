@@ -9,9 +9,8 @@
 using namespace std;
 using namespace mavhub;
 
-// int port = UDPSocket::DefaultPort;
 uint8_t system_id = 42;
-int udp_port = 30000;
+int udp_port = UDPLayer::DefaultPort;
 int tcp_port = 30001;
 
 void parse_argv(int argc, char **argv);
@@ -21,9 +20,28 @@ int main(int argc, char **argv) {
 	Logger::setLogLevel(Logger::LOGLEVEL_ALL);
 	parse_argv(argc, argv);
 
+	//create media layers
+	UARTLayer *uart;
+	UDPLayer *udp;
+	try{
+		uart = new UARTLayer("/dev/ttyS0");
+	}
+	catch(const char *message) {
+		Logger::error(message);
+		exit(-1);
+	}
+	try{
+		udp = new UDPLayer(udp_port);
+	}
+	catch(const char *message) {
+		Logger::error(message);
+		exit(-1);
+	}
+
 	//configure stack
 	ProtocolStack stack(system_id);
-	stack.addInterface( new UARTLayer("/dev/ttyS0"), ProtocolStack::MAVLINKPACKAGE );
+	stack.addInterface(udp , ProtocolStack::MAVLINKPACKAGE );
+	stack.addInterface(uart , ProtocolStack::MKPACKAGE );
 
 	//activate stack
 	pthread_t stack_thread = stack.start();
