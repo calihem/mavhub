@@ -4,6 +4,7 @@
 #include "utility.h"
 #include <cstring> //memset
 
+using std::string;
 
 namespace mavhub {
 
@@ -71,6 +72,58 @@ void UDPSocket::bind(int port) throw(const char*) {
 		throw "Binding of socket failed";
 	}
 }
+
+int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const char*) {
+	sockaddr_in si_source;
+	socklen_t source_len = sizeof(si_source);
+	int rc;
+	
+	rc = recvfrom(sockfd,
+		      buffer,
+		      buf_len,
+		      0,
+		      (sockaddr*)&si_source,
+		      (socklen_t*)&source_len
+		      );
+
+	if(rc < 0) {
+		throw("UDPSocket::recv_from failed");
+	}
+	
+	source_addr = inet_ntoa(si_source.sin_addr);
+	source_port = ntohs(si_source.sin_port);
+
+	return rc;
+}
+
+
+void UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const char*) {
+
+	//convert string to numeric ip and assign it
+	if( inet_aton(foreign_addr.c_str(), &si_other.sin_addr) == 0) {
+		throw "Conversion/Assignment of IP Address failed";
+	}
+	//assign port
+	si_other.sin_port = htons(foreign_port);
+
+	//sendto(int socket,
+	//	const void *message,
+	//	size_t length,
+	//	int flags,
+	//	const struct sockaddr *dest_addr,
+	//	socklen_t dest_len);
+	if( sendto(sockfd,
+		buffer,
+		buf_len,
+		0,
+		(struct sockaddr*)&si_other,
+		sizeof(si_other)
+		) < 0 ) {
+
+		throw "Send failed";
+	}
+}
+
 
 void UDPSocket::sendTo(const void *buffer, int bufferLength, const char *foreignIP, int foreignPort) const throw(const char*) {
 

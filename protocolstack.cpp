@@ -82,6 +82,7 @@ void ProtocolStack::run() {
 						MKPackage *mk_package;
 						int data_length;
 						try{
+							//TODO: use static parse method instead of constructor
 							data_length = stop_iter-buf_iter->begin()+1;
 							mk_package = new MKPackage(&(*buf_iter)[0], data_length);
 						}
