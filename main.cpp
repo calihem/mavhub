@@ -40,7 +40,8 @@ int main(int argc, char **argv) {
 
 	//configure stack
 	ProtocolStack stack(system_id);
-	stack.addInterface(udp , ProtocolStack::MAVLINKPACKAGE );
+// 	stack.addInterface(udp , ProtocolStack::MAVLINKPACKAGE );
+	stack.addInterface(udp , ProtocolStack::MKPACKAGE );
 	stack.addInterface(uart , ProtocolStack::MKPACKAGE );
 
 	//activate stack
