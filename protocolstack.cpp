@@ -1,9 +1,11 @@
 #include "protocolstack.h"
 
 #include "logger.h"
+#include "utility.h"
 #include <mavlink.h>
 #include "mkpackage.h"
 #include <algorithm> //find
+#include <sys/time.h> //gettimeofday
 
 #include <iostream> //cout
 using namespace std;
@@ -19,42 +21,49 @@ ProtocolStack::~ProtocolStack() {
 void ProtocolStack::run() {
 	Logger::debug("entering ProtocolStack::run()");
 
-	uint8_t c;
+	uint8_t c; //DELETE
+	uint8_t rx_buffer[BUFFERLENGTH]; //FIXME: use vector
 	int received;
 	int channel;
 	mavlink_message_t msg;
 	mavlink_status_t status;
 	interface_packet_list_t::iterator iface_iter;
 	buffer_list_t::iterator buf_iter;
+	timeval t1, t2, diff;
 
 	while(1) {
+		gettimeofday(&t1, 0);
+		
 		channel = 0;
 		buf_iter = rx_buffer_list.begin();
 
 		//iface_iterate through interfaces
 		for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
-			received = (iface_iter->first)->read(&c, 1);
+			received = (iface_iter->first)->read(rx_buffer, BUFFERLENGTH);
 			if(received<0) {
 				if(errno != EAGAIN) {
 					Logger::log("reading of interface failed with", strerror(errno), Logger::LOGLEVEL_ERROR);
-					//FIXME: sleep is not the solution
-					sleep(1);
 					channel++;
 					continue;
 				} else {//no data available
-					Logger::log("no data available on channel", channel, Logger::LOGLEVEL_DEBUG);
+// 					Logger::log("no data available on channel", channel, Logger::LOGLEVEL_DEBUG);
 					channel++;
 					continue;
 				}
 			}
 			//received data, try to parse it
+			Logger::log("received", received, "bytes", Logger::LOGLEVEL_DEBUG);
+
 			switch(iface_iter->second) {
 				case MAVLINKPACKAGE:
-					if( mavlink_parse_char(channel, c, &msg, &status) ) {
-						Logger::info("got mavlink");
+					for(int i=0; i<received; i++) {
+						if( mavlink_parse_char(channel, rx_buffer[i], &msg, &status) ) {
+							Logger::info("got mavlink");
+						}
 					}
 					break;
 				case MKPACKAGE:
+					c = rx_buffer[0]; //FIXME
 					if( buf_iter->empty() ) {//synchronize to start sign
 						if(c != '#') {
 							buf_iter++;
@@ -92,6 +101,11 @@ void ProtocolStack::run() {
 					break;
 			}
 			channel++;
+		}
+		gettimeofday(&t2, 0);
+		timediff(diff, t1, t2);
+		if(diff.tv_usec < POLLINTERVAL) {
+			usleep(POLLINTERVAL-diff.tv_usec);
 		}
 	}
 }

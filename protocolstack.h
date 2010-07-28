@@ -33,7 +33,10 @@ namespace mavhub {
 
 
 		private:
+			/// size of rx buffer
 			static const int BUFFERLENGTH = 512;
+			/// polling interval through all interfaces in us
+			static const int POLLINTERVAL = 1000000;//FIXME
 			uint8_t system_id;
 			interface_packet_list_t interface_list;
 			buffer_list_t rx_buffer_list;

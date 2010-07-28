@@ -6,6 +6,7 @@ namespace mavhub {
 
 UARTLayer::UARTLayer(const char* devicename, tcflag_t control_modes) throw(const char*) :
 		UART(devicename, control_modes) {
+	enable_blocking_mode(false);
 }
 
 UARTLayer::~UARTLayer(){ }

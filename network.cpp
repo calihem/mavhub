@@ -1,8 +1,9 @@
 #include "network.h"
 
 #include "logger.h"
+#include "utility.h"
 #include <cstring> //memset
-#include <fcntl.h>
+
 
 namespace mavhub {
 
@@ -25,14 +26,7 @@ Socket::Socket(int type, int protocol) throw(const char*) {
 }
 
 void Socket::enable_blocking_mode(bool enabled) {
-	int mode = fcntl(sockfd, F_GETFL, 0);
-	
-	if(enabled) {
-		mode &= ~O_NONBLOCK;
-	} else {
-		mode |= O_NONBLOCK;
-	}
-	if( fcntl(sockfd, F_SETFL, mode) != 0 ) {
+	if( ::mavhub::enable_blocking_mode(sockfd,enabled) != 0 ) {
 		Logger::log("setting of blocking mode for socket failed", Logger::LOGLEVEL_ERROR);
 	}
 }

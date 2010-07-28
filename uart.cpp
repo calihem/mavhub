@@ -3,12 +3,11 @@
 #include <fcntl.h> //open
 #include <strings.h> //bzero
 #include <unistd.h> //sleep
-#include "logger.h"
 
 namespace mavhub {
 
 UART::UART(const char* devicename, tcflag_t control_modes) throw(const char*) {
-	if( (sifd = open(devicename, O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0 ) {
+	if( (sifd = open(devicename, O_RDWR | O_NOCTTY)) < 0 ) {
 		throw "Can't open serial interface device";
 		return;
 	}
