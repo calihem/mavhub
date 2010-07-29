@@ -98,12 +98,24 @@ int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, ui
 
 
 void UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const char*) {
-
+	in_addr num_foreign_addr;
+	
 	//convert string to numeric ip and assign it
-	if( inet_aton(foreign_addr.c_str(), &si_other.sin_addr) == 0) {
-		throw "Conversion/Assignment of IP Address failed";
+	if( inet_aton(foreign_addr.c_str(), &num_foreign_addr) == 0) {
+		throw "Assignment of IP Address failed";
 	}
-	//assign port
+	try{
+		send_to(buffer, buf_len, num_foreign_addr, foreign_port);
+	}
+	catch(const char *message) {
+		throw(message);
+	}
+}
+
+void UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*) {
+	//assign address
+	si_other.sin_addr = foreign_addr;
+	//assign port in network byte order
 	si_other.sin_port = htons(foreign_port);
 
 	//sendto(int socket,
@@ -123,7 +135,6 @@ void UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_a
 		throw "Send failed";
 	}
 }
-
 
 void UDPSocket::sendTo(const void *buffer, int bufferLength, const char *foreignIP, int foreignPort) const throw(const char*) {
 

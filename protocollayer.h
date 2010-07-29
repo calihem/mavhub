@@ -2,6 +2,7 @@
 #define _PROTOCOLLAYER_H_
 
 #include <inttypes.h> //uint8_t
+#include <list>
 #include <errno.h>
 #include "uart.h"
 #include "network.h"
@@ -36,6 +37,11 @@ namespace mavhub {
 			virtual bool data_available() const;
 			virtual int read(uint8_t *buffer, int length) const;
 			virtual int write(const uint8_t *buffer, int length) const;
+			void add_groupmember(const std::string& addr, uint16_t port) throw(const char*);
+
+		private:
+			/// list of groupmembers with numeric ip addr and port
+			std::list<num_addr_pair_t> groupmember_list;
 	};
 
 	// ----------------------------------------------------------------------------

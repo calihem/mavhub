@@ -17,4 +17,14 @@ UDPLayer::UDPLayer(int port) throw(const char*) : UDPSocket(port) {
 
 UDPLayer::~UDPLayer(){ }
 
+void UDPLayer::add_groupmember(const std::string& addr, uint16_t port) throw(const char*) {
+	in_addr num_addr;
+
+	if( inet_aton(addr.c_str(), &num_addr) == 0) {
+		throw "Assignment of IP Address failed";
+	}
+
+	groupmember_list.push_back( std::make_pair(num_addr, port) );
+}
+
 } // namespace mavhub
