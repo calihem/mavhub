@@ -97,22 +97,25 @@ int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, ui
 }
 
 
-void UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const char*) {
+int UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const char*) {
 	in_addr num_foreign_addr;
-	
+	int rc;
+
 	//convert string to numeric ip and assign it
 	if( inet_aton(foreign_addr.c_str(), &num_foreign_addr) == 0) {
 		throw "Assignment of IP Address failed";
 	}
 	try{
-		send_to(buffer, buf_len, num_foreign_addr, foreign_port);
+		rc = send_to(buffer, buf_len, num_foreign_addr, foreign_port);
 	}
 	catch(const char *message) {
 		throw(message);
 	}
+	
+	return rc;
 }
 
-void UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*) {
+int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*) {
 	//assign address
 	si_other.sin_addr = foreign_addr;
 	//assign port in network byte order
@@ -124,43 +127,18 @@ void UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, u
 	//	int flags,
 	//	const struct sockaddr *dest_addr,
 	//	socklen_t dest_len);
-	if( sendto(sockfd,
+	int rc =  sendto(sockfd,
 		buffer,
 		buf_len,
 		0,
 		(struct sockaddr*)&si_other,
 		sizeof(si_other)
-		) < 0 ) {
-
+		);
+	if(rc < 0 ) {
 		throw "Send failed";
 	}
-}
 
-void UDPSocket::sendTo(const void *buffer, int bufferLength, const char *foreignIP, int foreignPort) const throw(const char*) {
-
-	//assign IP
-	if( inet_aton(foreignIP, &si_other.sin_addr) == 0) {
-		throw "Assignment of IP Address failed";
-	}
-	//assign port
-	si_other.sin_port = htons(foreignPort);
-
-	//sendto(int socket,
-	//	const void *message,
-	//	size_t length,
-	//	int flags,
-	//	const struct sockaddr *dest_addr,
-	//	socklen_t dest_len);
-	if( sendto(sockfd,
-		buffer,
-		bufferLength,
-		0,
-		(struct sockaddr*)&si_other,
-		sizeof(si_other)
-		) < 0 ) {
-		
-		throw "Send failed";
-	}
+	return rc;
 }
 
 

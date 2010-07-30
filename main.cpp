@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 	}
 	try{
 		udp = new UDPLayer(udp_port);
+		udp->add_groupmember("127.0.0.1", 32001);
 	}
 	catch(const char *message) {
 		Logger::error(message);
@@ -53,13 +54,17 @@ int main(int argc, char **argv) {
 void parse_argv(int argc, char **argv) {
 	for(int i=1; i<argc; i++) {
 		if( !strcmp(argv[i], "-p") || !strcmp(argv[i], "--port") ) {
-			//FIXME: check i++ < argc
-			udp_port = atoi(argv[i++]);
+			if(++i < argc) {
+				udp_port = atoi(argv[i]);
+			} else {
+				cout << "ERROR: port argument missing" << endl;
+				exit(-1);
+			}
 		} else 	if( !strcmp(argv[i], "-h") || !strcmp(argv[i], "--help") ) {
 			print_help();
 			exit(0);
 		} else {
-			cout << argv[i] << " is no valid argument" << endl;
+			cout << "ERROR: " << argv[i] << " is no valid argument" << endl;
 		}
 	}
 }

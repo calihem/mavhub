@@ -57,21 +57,21 @@ namespace mavhub {
 			 * @param buf_len length of data to send
 			 * @param foreign_addr address of destination system as a dots-and-number string
 			 * @param foreign_port port number of destination system in host byte order
+			 * @return number of bytes actually sent
 			 */
-			void send_to(const void *buffer, int buf_len, const std::string &foreign_addr, uint16_t foreign_port) const throw(const char*);
+			int send_to(const void *buffer, int buf_len, const std::string &foreign_addr, uint16_t foreign_port) const throw(const char*);
 			/**
 			 * @brief send data to given system
 			 * @param buffer data to send
 			 * @param buf_len length of data to send
 			 * @param foreign_addr numeric address of destination system
 			 * @param foreign_port port number of destination system in host byte order
+			 * @return number of bytes actually sent
 			 */
-			void send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*);
+			int send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*);
 
 		private:
 			void bind(int port) throw(const char*);
-			//TODO: delete sendTo
-			void sendTo(const void *buffer, int bufferLength, const char *foreignIP, int foreignPort) const throw(const char*);
 	};
 
 	// ----------------------------------------------------------------------------

@@ -38,6 +38,7 @@ void ProtocolStack::run() {
 		buf_iter = rx_buffer_list.begin();
 
 		//iterate through interfaces
+		//TODO: use select on fd_set
 		for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 			received = (iface_iter->first)->read( &rx_buffer[0], rx_buffer.size() );
 			if(received<0) {
