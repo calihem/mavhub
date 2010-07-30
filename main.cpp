@@ -5,6 +5,7 @@
 #include "logger.h"
 #include "protocolstack.h"
 #include "protocollayer.h"
+#include "coreapp.h"
 
 using namespace std;
 using namespace mavhub;
@@ -39,11 +40,15 @@ int main(int argc, char **argv) {
 		exit(-1);
 	}
 
+	//create apps
+	CoreApp *core_app = new CoreApp();
+
 	//configure stack
 	ProtocolStack stack(system_id);
-// 	stack.addInterface(udp , ProtocolStack::MAVLINKPACKAGE );
-	stack.addInterface(udp , ProtocolStack::MKPACKAGE );
-	stack.addInterface(uart , ProtocolStack::MKPACKAGE );
+	stack.addInterface(udp , ProtocolStack::MAVLINKPACKAGE );
+// 	stack.addInterface(udp , ProtocolStack::MKPACKAGE );
+// 	stack.addInterface(uart , ProtocolStack::MKPACKAGE );
+	stack.addApplication(core_app);
 
 	//activate stack
 	pthread_t stack_thread = stack.start();

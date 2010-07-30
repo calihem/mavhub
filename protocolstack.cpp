@@ -31,6 +31,12 @@ void ProtocolStack::run() {
 	std::vector<uint8_t>::iterator stop_iter;
 	timeval t1, t2, diff;
 
+	//activate apps
+	std::list<AppLayer*>::iterator app_iter;
+	for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
+		(*app_iter)->start();
+	}
+
 	while(1) {
 		gettimeofday(&t1, 0);
 		
@@ -58,7 +64,8 @@ void ProtocolStack::run() {
 				case MAVLINKPACKAGE:
 					for(int i=0; i<received; i++) {
 						if( mavlink_parse_char(channel, rx_buffer[i], &msg, &status) ) {
-							Logger::info("got mavlink");
+							Logger::log("received mavlink packet on channel", channel, Logger::LOGLEVEL_DEBUG);
+							transmit_to_apps(msg);
 						}
 					}
 					break;
@@ -138,6 +145,15 @@ void ProtocolStack::run() {
 	}
 }
 
+void ProtocolStack::send(const mavlink_message_t &msg) const {
+	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
+	
+	interface_packet_list_t::const_iterator iface_iter;
+	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
+		iface_iter->first->write(tx_buffer, len);
+	}
+}
+
 void ProtocolStack::addInterface(MediaLayer *interface, const packageformat_t format) {
 	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
 		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
@@ -149,6 +165,11 @@ void ProtocolStack::addInterface(MediaLayer *interface, const packageformat_t fo
 	if(format == MKPACKAGE) {
 		rx_buffer_list.push_back( vector<uint8_t>() );
 	}
+}
+
+void ProtocolStack::addApplication(AppLayer *app) {
+	app->set_owner(this);
+	app_list.push_back(app);
 }
 
 } // namespace mavhub

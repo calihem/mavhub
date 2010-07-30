@@ -5,7 +5,8 @@ SRCS_1   = main.cpp \
 	uart.cpp \
 	protocollayer.cpp \
 	mkpackage.cpp \
-	network.cpp
+	network.cpp \
+	coreapp.cpp
 
 # define any directories containing header files other than /usr/include
 INCLUDES = -I. -I../mavlink/include

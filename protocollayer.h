@@ -4,11 +4,31 @@
 #include <inttypes.h> //uint8_t
 #include <list>
 #include <errno.h>
+#include "thread.h"
 #include "uart.h"
 #include "network.h"
 
 namespace mavhub {
+	class ProtocolStack;
 
+	// ----------------------------------------------------------------------------
+	// Application Layers
+	// ----------------------------------------------------------------------------
+	class AppLayer : public PThread {
+		public:
+			AppLayer();
+			virtual ~AppLayer() {};
+			void set_owner(const ProtocolStack *stack);
+			virtual void handle_input(const mavlink_message_t &msg) = 0;
+
+		protected:
+			const ProtocolStack *owner;
+			virtual void run() = 0;
+	};
+
+	// ----------------------------------------------------------------------------
+	// Media Layers
+	// ----------------------------------------------------------------------------
 	class MediaLayer {
 		public:
 			virtual int read(uint8_t *buffer, int length) const = 0;
@@ -45,6 +65,13 @@ namespace mavhub {
 			/// list of groupmembers with numeric ip addr and port
 			std::list<num_addr_pair_t> groupmember_list;
 	};
+
+	// ----------------------------------------------------------------------------
+	// AppLayer
+	// ----------------------------------------------------------------------------
+	inline void AppLayer::set_owner(const ProtocolStack *stack) {
+		owner = stack;
+	}
 
 	// ----------------------------------------------------------------------------
 	// UARTLayer
