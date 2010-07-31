@@ -38,20 +38,27 @@ namespace mavhub {
 			static const int BUFFERLENGTH = 512;
 			/// polling interval through all interfaces in us
 			static const int POLLINTERVAL = 1000000;//FIXME
+
 			uint8_t system_id;
 			interface_packet_list_t interface_list;
-			buffer_list_t rx_buffer_list;
 			std::list<AppLayer*> app_list;
+			/// receive buffers
+			buffer_list_t rx_buffer_list;
 			/// transmit buffer
 			mutable uint8_t tx_buffer[MAVLINK_MAX_PACKET_LEN];
+			/// mutex to protect tx_buffer
+			mutable pthread_mutex_t tx_mutex;
+
 			/// transmit msg to every app in app_list
-			void transmit_to_apps(const mavlink_message_t &msg);
+			void transmit_to_apps(const mavlink_message_t &msg) const;
+			/// transmit msg on every MediaLayer except src_iface
+			void retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const;
 	};
 	// ----------------------------------------------------------------------------
 	// ProtocolStack
 	// ----------------------------------------------------------------------------
-	inline void ProtocolStack::transmit_to_apps(const mavlink_message_t &msg) {
-		std::list<AppLayer*>::iterator app_iter;
+	inline void ProtocolStack::transmit_to_apps(const mavlink_message_t &msg) const {
+		std::list<AppLayer*>::const_iterator app_iter;
 		for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
 			(*app_iter)->handle_input(msg);
 		}

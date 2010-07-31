@@ -13,6 +13,7 @@ using namespace std;
 namespace mavhub {
 
 ProtocolStack::ProtocolStack(uint8_t system_id) : system_id(system_id) {
+	pthread_mutex_init(&tx_mutex, NULL);
 }
 
 ProtocolStack::~ProtocolStack() {
@@ -65,6 +66,9 @@ void ProtocolStack::run() {
 					for(int i=0; i<received; i++) {
 						if( mavlink_parse_char(channel, rx_buffer[i], &msg, &status) ) {
 							Logger::log("received mavlink packet on channel", channel, Logger::LOGLEVEL_DEBUG);
+							//broadcast msg on every channel
+							retransmit(msg, iface_iter->first);
+							//send msg to applications
 							transmit_to_apps(msg);
 						}
 					}
@@ -146,12 +150,31 @@ void ProtocolStack::run() {
 }
 
 void ProtocolStack::send(const mavlink_message_t &msg) const {
+	pthread_mutex_lock(&tx_mutex);
+
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
 	
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		iface_iter->first->write(tx_buffer, len);
 	}
+	
+	pthread_mutex_unlock(&tx_mutex);
+}
+
+void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const {
+	pthread_mutex_lock(&tx_mutex);
+
+	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
+	
+	interface_packet_list_t::const_iterator iface_iter;
+	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
+		if(iface_iter->first != src_iface) {
+			iface_iter->first->write(tx_buffer, len);
+		}
+	}
+
+	pthread_mutex_unlock(&tx_mutex);
 }
 
 void ProtocolStack::addInterface(MediaLayer *interface, const packageformat_t format) {
