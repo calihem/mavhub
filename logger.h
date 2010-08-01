@@ -6,6 +6,9 @@
 #include <iomanip>
 #include <memory>
 #include <time.h>
+#if defined(_REENTRANT)
+#include <pthread.h>
+#endif
 
 #if !defined(STDOUTLOG) && !defined(STDERRLOG) && !defined(FILELOG)
 #define DISABLELOGGER
@@ -25,9 +28,6 @@ namespace mavhub {
 				LOGLEVEL_FATAL,	//log critical errors
 				LOGLEVEL_OFF	//log nothing
 			};
-
-			Logger();
-			virtual ~Logger();
 
 			/// return true if logging level is lower than LOG_OFF
 			static bool enabled();
@@ -51,7 +51,7 @@ namespace mavhub {
 			template <class T>
 			static void fatal(const T& message);
 			/// return reference of pointer to output stream
-			static std::ostream *& outputStream();
+			static std::ostream *& output_stream();
 
 		private:
 			/// number of different loglevel strings
@@ -59,14 +59,19 @@ namespace mavhub {
 			/// human readable form of log level
 			static const char* LoglevelStrings[LoglevelStrNum];
 			/// current logging level
-			static log_level_t logLevel;
-			///
-			static std::auto_ptr< std::ostream > outStream_auto_ptr;
+			static log_level_t log_level;
+			/// auto_ptr to take strict ownership of out_stream
+			static std::auto_ptr< std::ostream > out_stream_auto_ptr;
 			/// pointer of output
-			static std::ostream *outStream;
-
+			static std::ostream *out_stream;
+#if defined(_REENTRANT)
+			/// mutex to protect output stream
+			static pthread_mutex_t stream_mutex;
+#endif
+			Logger();
+			~Logger();
 			/// write loglevel and current time to output stream
-			static void logPreamble(log_level_t loglevel);
+			static void log_preamble(log_level_t loglevel);
 			
 			Logger(const Logger &logger);
 			void operator=(const Logger &logger);
@@ -74,29 +79,27 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// Logger
 	// ----------------------------------------------------------------------------
-	inline Logger::Logger() {}
-	inline Logger::~Logger() {}
 	inline bool Logger::enabled() {
 #if !defined(DISABLELOGGER)
-		return logLevel < LOGLEVEL_OFF;
+		return log_level < LOGLEVEL_OFF;
 #else
 		return false;
 #endif
 	}
 	inline void Logger::setLogLevel(log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
-		if(outStream)
-			logLevel = loglevel;
+		if(out_stream)
+			log_level = loglevel;
 #endif
 	}
-	inline void Logger::logPreamble(log_level_t loglevel) {
+	inline void Logger::log_preamble(log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
 		time_t rawtime;
 		struct tm *timeinfo;
 
 		time (&rawtime);
 		timeinfo = localtime(&rawtime);
-		*outStream << "["
+		*out_stream << "["
 			<< std::setw(7) << std::setfill(' ') << std::left << LoglevelStrings[(int)loglevel]
 			<< " " << std::setw(2) << std::setfill('0') << std::right << timeinfo->tm_hour
 			<< ":" << std::setw(2) << timeinfo->tm_min
@@ -107,27 +110,45 @@ namespace mavhub {
 	template <class T>
 	inline void Logger::log(const T& message, log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
-		if( loglevel >= logLevel  ) {
-			logPreamble(loglevel);
-			*outStream << message << std::endl;
-		}
+		if( loglevel >= log_level  ) {
+#if defined(_REENTRANT)
+		pthread_mutex_lock(&stream_mutex);
 #endif
+			log_preamble(loglevel);
+			*out_stream << message << std::endl;
+#if defined(_REENTRANT)
+		pthread_mutex_unlock(&stream_mutex);
+#endif
+		}
+#endif //DISABLELOGGER
 	}
 	template <class T1, class T2>
 	inline void Logger::log(const T1& msg1, const T2& msg2, log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
-		if( loglevel >= logLevel  ) {
-			logPreamble(loglevel);
-			*outStream << msg1 << " " << msg2 << std::endl;
-		}
+		if( loglevel >= log_level  ) {
+#if defined(_REENTRANT)
+		pthread_mutex_lock(&stream_mutex);
 #endif
+			log_preamble(loglevel);
+			*out_stream << msg1 << " " << msg2 << std::endl;
+#if defined(_REENTRANT)
+		pthread_mutex_unlock(&stream_mutex);
+#endif
+		}
+#endif //DISABLELOGGER
 	}
 	template <class T1, class T2, class T3>
 	inline void Logger::log(const T1& msg1, const T2& msg2, const T3& msg3, log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
-		if( loglevel >= logLevel  ) {
-			logPreamble(loglevel);
-			*outStream << msg1 << " "  << msg2 << " "  << msg3 << std::endl;
+		if( loglevel >= log_level  ) {
+#if defined(_REENTRANT)
+		pthread_mutex_lock(&stream_mutex);
+#endif
+			log_preamble(loglevel);
+			*out_stream << msg1 << " "  << msg2 << " "  << msg3 << std::endl;
+#if defined(_REENTRANT)
+		pthread_mutex_unlock(&stream_mutex);
+#endif
 		}
 #endif
 	}
@@ -152,11 +173,11 @@ namespace mavhub {
 	inline void Logger::fatal(const T& message) {
 		log(message, LOGLEVEL_FATAL);
 	}
-	inline std::ostream *& Logger::outputStream() { return outStream; }
+	inline std::ostream *& Logger::output_stream() { return out_stream; }
 
 	#define LOG_PARAM(name) \
 	if( Logger::enabled() ) { \
-		*Logger::outputStream() << __FILE__ \
+		*Logger::output_stream() << __FILE__ \
 			<< ":" << __LINE__ << ": " << #name \
 			<< " = " << (name) << ::std::endl; }
 #if defined(DISABLELOGGER)
