@@ -6,6 +6,7 @@
 #include "protocolstack.h"
 #include "protocollayer.h"
 #include "coreapp.h"
+#include "datacenter.h"
 
 using namespace std;
 using namespace mavhub;
