@@ -29,6 +29,7 @@ namespace mavhub {
 	// DataCenter
 	// ----------------------------------------------------------------------------
 	inline const mavlink_raw_imu_t& DataCenter::get_raw_imu() {
+		//FIXME
 		return raw_imu;
 	}
 	inline void DataCenter::set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu) {

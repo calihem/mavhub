@@ -3,6 +3,7 @@
 #include "logger.h"
 #include "utility.h"
 #include <cstring> //memset
+#include <netdb.h> //hostent
 
 using std::string;
 
@@ -26,9 +27,35 @@ Socket::Socket(int type, int protocol) throw(const char*) {
 	si_other.sin_family = AF_INET;	//set address family
 }
 
+Socket::Socket(int socket_fd) throw(const char*) :
+		sockfd(socket_fd) {
+
+	//configure own socket address
+	bzero(&si_self, sizeof(si_self));	//clear struct
+	si_self.sin_family = AF_INET;		//set address family
+
+	//configure foreign socket address
+	bzero(&si_other, sizeof(si_other));	//clear struct
+	si_other.sin_family = AF_INET;	//set address family
+
+}
+
+Socket::~Socket() {
+	close(sockfd);
+}
+
 void Socket::enable_blocking_mode(bool enabled) {
 	if( ::mavhub::enable_blocking_mode(sockfd,enabled) != 0 ) {
 		Logger::log("setting of blocking mode for socket failed", Logger::LOGLEVEL_ERROR);
+	}
+}
+
+void Socket::bind(int port) throw(const char*) {
+	//assign server port
+	si_self.sin_port = htons(port);
+
+	if( ::bind(sockfd, (struct sockaddr*)&si_self, sizeof(si_self)) < 0) {
+		throw "Binding of socket failed";
 	}
 }
 
@@ -49,28 +76,18 @@ UDPSocket::UDPSocket(int port) throw(const char*) :
 }
 
 UDPSocket::~UDPSocket() {
-	close(sockfd);
 }
 
-int UDPSocket::receive(char *buffer, int buflen) const {
+int UDPSocket::recv_any(void *buffer, int buf_len) const {
 	int so_len = sizeof(si_other);
 
 	return recvfrom(sockfd,			//socket
 		buffer,				//buffer
-		buflen,				//length
+		buf_len,			//length
 		0,				//flags
 		(struct sockaddr*)&si_other,	//address
 		(socklen_t*)&so_len		//address_len
 		);
-}
-
-void UDPSocket::bind(int port) throw(const char*) {
-	//assign server port
-	si_self.sin_port = htons(port);
-
-	if( ::bind(sockfd, (struct sockaddr*)&si_self, sizeof(si_self)) < 0) {
-		throw "Binding of socket failed";
-	}
 }
 
 int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const char*) {
@@ -95,7 +112,6 @@ int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, ui
 
 	return rc;
 }
-
 
 int UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const char*) {
 	in_addr num_foreign_addr;
@@ -141,5 +157,102 @@ int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, ui
 	return rc;
 }
 
+// ----------------------------------------------------------------------------
+// TCPSocket
+// ----------------------------------------------------------------------------
+TCPSocket::TCPSocket() throw(const char*) :
+		Socket(SOCK_STREAM, IPPROTO_TCP) {
+}
+
+TCPSocket::TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) throw(const char*) :
+		Socket(SOCK_STREAM, IPPROTO_TCP) {
+			
+	try {
+		connect(foreign_addr, foreign_port);
+	}
+	catch(const char *message) {
+		throw message;
+	}
+}
+
+TCPSocket::TCPSocket(int socket_fd) throw(const char*) :
+		Socket(socket_fd) {
+}
+
+TCPSocket::~TCPSocket() {
+}
+
+void TCPSocket::connect(const string &foreign_addr, uint16_t foreign_port) {
+
+	// resolve name
+	hostent *foreign_host;
+	if( (foreign_host = gethostbyname(foreign_addr.c_str())) == NULL ) {
+		//TODO: throw exception
+	}
+	
+	si_other.sin_addr.s_addr = *((uint32_t*)foreign_host->h_addr_list[0]);
+	si_other.sin_port = htons(foreign_port);
+	
+	if(::connect(sockfd, (sockaddr*)&si_other, sizeof(si_other)) < 0) {
+		//TODO: throw exception
+	}
+}
+
+void TCPSocket::disconnect() {
+	sockaddr_in si_null;
+	bzero(&si_null, sizeof(si_null));	//clear struct
+	si_null.sin_family = AF_UNSPEC; 
+	
+	if(::connect(sockfd, (sockaddr*)&si_null, sizeof(si_null)) < 0) {
+		//TODO: throw exception
+	}
+}
+
+void TCPSocket::send(const void *buffer, int buf_len) {
+	if(::send(sockfd, buffer, buf_len, 0) < 0) {
+		//TODO: throw exception
+	}
+}
+
+int TCPSocket::receive(void *buffer, int buf_len) const {
+	return recv(sockfd,			//socket
+		buffer,				//buffer
+		buf_len,			//length
+		0
+		);
+}
+
+// ----------------------------------------------------------------------------
+// TCPServerSocket
+// ----------------------------------------------------------------------------
+TCPServerSocket::TCPServerSocket(uint16_t port, int connections) throw(const char*) :
+		Socket(SOCK_STREAM, IPPROTO_TCP) {
+
+	//configure own socket address
+	si_self.sin_addr.s_addr = htonl(INADDR_ANY);	//accept any IP address
+
+	try {
+		bind(port);
+	}
+	catch(const char *message) {
+		throw message;
+	}
+	
+	if(::listen(sockfd, connections) < 0) {
+		throw "Listen failed";
+	}
+}
+
+TCPServerSocket::~TCPServerSocket() {
+}
+
+TCPSocket* TCPServerSocket::accept() throw(const char*) {
+	int socket_fd;
+	if( (socket_fd = ::accept(sockfd, NULL, 0)) < 0 ) {
+		throw "Accept failed";
+	}
+
+	return new TCPSocket(socket_fd);
+}
 
 } //namespace mavhub

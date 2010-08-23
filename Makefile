@@ -7,7 +7,8 @@ SRCS_1   = main.cpp \
 	mkpackage.cpp \
 	network.cpp \
 	coreapp.cpp \
-	datacenter.cpp
+	datacenter.cpp \
+	mavshell.cpp
 
 # define any directories containing header files other than /usr/include
 INCLUDES = -I. -I../mavlink/include

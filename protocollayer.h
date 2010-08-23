@@ -86,7 +86,7 @@ namespace mavhub {
 	// UDPLayer
 	// ----------------------------------------------------------------------------
 	inline int UDPLayer::read(uint8_t *buffer, int length) const {
-		return UDPSocket::receive( (char*)buffer, length);
+		return UDPSocket::recv_any( (char*)buffer, length);
 	}
 
 

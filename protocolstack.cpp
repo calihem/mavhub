@@ -12,6 +12,13 @@ using namespace std;
 
 namespace mavhub {
 
+ProtocolStack& ProtocolStack::instance() {
+	// instantiated on first use and will be guaranteed destroyed
+	static ProtocolStack instance;
+
+	return instance;
+}
+
 ProtocolStack::ProtocolStack(uint8_t system_id) : system_id(system_id) {
 	pthread_mutex_init(&tx_mutex, NULL);
 }

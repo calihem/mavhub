@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <inttypes.h> //uint8_t
 #include <map>
 #include <string>
 
@@ -22,11 +23,15 @@ namespace mavhub {
 
 		protected:
 			Socket(int type, int protocol) throw(const char*);
+			Socket(int socket_fd) throw(const char*);
+			~Socket();
 
 			int sockfd;
 			struct sockaddr_in si_self;
 			mutable struct sockaddr_in si_other;
 			
+			void bind(int port) throw(const char*);
+
 		private:
 			Socket(const Socket &socket);
 			void operator=(const Socket &socket);
@@ -38,11 +43,12 @@ namespace mavhub {
 			virtual ~UDPSocket();
 
 			/**
-			 * @brief receive data from any system
+			 * @brief Receive data from any system
 			 * @param buffer data to receive
 			 * @param buf_len maximal length of data to receive
 			 */
-			int receive(char *buffer, int buflen) const;
+			int recv_any(void *buffer, int buf_len) const;
+
 			/**
 			 * @brief receive data from given system
 			 * @param buffer data to receive
@@ -51,6 +57,7 @@ namespace mavhub {
 			 * @param source_port port number of source system in host byte order
 			 */
 			int recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const char*);
+
 			/**
 			 * @brief send data to given system
 			 * @param buffer data to send
@@ -71,9 +78,39 @@ namespace mavhub {
 			int send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*);
 
 		private:
-			void bind(int port) throw(const char*);
 	};
 
+	class TCPSocket : public Socket {
+		public:
+			TCPSocket() throw(const char*);
+			TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) throw(const char*);
+			virtual ~TCPSocket();
+
+			void connect(const std::string &foreign_addr, uint16_t foreign_port);
+			void disconnect();
+			void send(const void *buffer, int buf_len);
+			/**
+			 * @brief Receive data from foreign system
+			 * @param buffer data to receive
+			 * @param buf_len maximal length of data to receive
+			 */
+			int receive(void *buffer, int buf_len) const;
+
+		private:
+			friend class TCPServerSocket;
+			TCPSocket(int socket_fd) throw(const char*);
+	};
+	
+	class TCPServerSocket : public Socket {
+		public:
+			TCPServerSocket(uint16_t port, int connections) throw(const char*);
+// 			TCPServerSocket(const std::string &address, uint16_t port) throw(const char*);
+			virtual ~TCPServerSocket();
+			
+			TCPSocket* accept() throw(const char*);
+
+		
+	};
 	// ----------------------------------------------------------------------------
 	// Socket
 	// ----------------------------------------------------------------------------
