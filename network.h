@@ -20,6 +20,8 @@ namespace mavhub {
 	class Socket {
 		public:
 			void enable_blocking_mode(bool enabled);
+			std::string foreign_addr() const throw(const char*);
+			uint16_t foreign_port() const throw(const char*);
 
 		protected:
 			Socket(int type, int protocol) throw(const char*);

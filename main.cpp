@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 	pthread_t shell_thread;
 	
 	try {
-		mav_shell = new MAVShell();
+		mav_shell = new MAVShell(32001);
 		shell_thread = mav_shell->start();
 	}
 	catch(const char* message) {

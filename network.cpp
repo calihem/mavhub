@@ -50,6 +50,43 @@ void Socket::enable_blocking_mode(bool enabled) {
 	}
 }
 
+std::string Socket::foreign_addr() const throw(const char*) {
+	struct sockaddr_storage addr;
+	socklen_t len = sizeof(addr);
+	char ip_str[INET6_ADDRSTRLEN];
+
+	if(getpeername(sockfd, (sockaddr*)&addr, &len) < 0) {
+		throw "Fetching of address info about the remote side of the connection failed";
+		return string();
+	} else if(addr.ss_family == AF_INET) { //IPv4
+		struct sockaddr_in *sa_in = (struct sockaddr_in *)&addr;
+		inet_ntop(AF_INET, &sa_in->sin_addr, ip_str, sizeof(ip_str));
+	} else { //IPv6
+		struct sockaddr_in6 *sa_in = (struct sockaddr_in6 *)&addr;
+		inet_ntop(AF_INET6, &sa_in->sin6_addr, ip_str, sizeof(ip_str));
+	}
+
+	return string(ip_str);
+}
+
+uint16_t Socket::foreign_port() const throw(const char*) {
+	struct sockaddr_storage addr;
+	socklen_t len = sizeof(addr);
+	uint16_t port = 0;
+	
+	if(getpeername(sockfd, (sockaddr*)&addr, &len) < 0) {
+		throw "Fetching of address info about the remote side of the connection failed";
+	} else if(addr.ss_family == AF_INET) { //IPv4
+		struct sockaddr_in *sa_in = (struct sockaddr_in *)&addr;
+		port = ntohs(sa_in->sin_port);
+	} else { //IPv6
+		struct sockaddr_in6 *sa_in = (struct sockaddr_in6 *)&addr;
+		port = ntohs(sa_in->sin6_port);
+	}
+
+	return port;
+}
+
 void Socket::bind(int port) throw(const char*) {
 	//assign server port
 	si_self.sin_port = htons(port);

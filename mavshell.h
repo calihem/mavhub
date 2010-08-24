@@ -4,6 +4,8 @@
 #include "thread.h"
 #include <inttypes.h> //uint8_t
 #include "network.h"
+#include <sstream> //stringstream
+#include <vector>
 
 namespace mavhub {
 
@@ -19,17 +21,18 @@ namespace mavhub {
 		private:
 			/// size of buffer
 			static const int BUFFERLENGTH = 512;
-			static const char *WELCOMEMESSAGE;
 			MAVShell(const MAVShell &); // intentionally undefined
 			MAVShell& operator=(const MAVShell &); // intentionally undefined
 			
 			TCPServerSocket server_socket;
 			TCPSocket *client_socket;
+			std::stringstream input_stream;
 
 			void handle_client();
 			void send_message(const std::string& msg);
-			void parse_stream(const char *stream, int stream_len);
-			void execute_cmd(const char **argv);
+			void tokenize_stream(std::stringstream& stream);
+			void execute_cmd(const std::vector<std::string>& argv);
+			void send_help();
 			void welcome();
 
 	
