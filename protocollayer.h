@@ -33,6 +33,16 @@ namespace mavhub {
 		public:
 			virtual int read(uint8_t *buffer, int length) const = 0;
 			virtual int write(const uint8_t *buffer, int length) const = 0;
+			/// Get the human readable name of this device
+			virtual const std::string& name() const;
+			/// Get the system name of this device
+			virtual const std::string& system_name() const;
+			
+		protected:
+			/// Human readable name of this device, e.g. "Serial Link"
+			std::string dev_name;
+			/// Name of the device in the system context, e.g. "/dev/ttyS0"
+			std::string sys_name;
 	};
 
 	class UARTLayer : public UART, public MediaLayer {
@@ -65,12 +75,21 @@ namespace mavhub {
 			/// list of groupmembers with numeric ip addr and port
 			std::list<num_addr_pair_t> groupmember_list;
 	};
-
 	// ----------------------------------------------------------------------------
 	// AppLayer
 	// ----------------------------------------------------------------------------
 	inline void AppLayer::set_owner(const ProtocolStack *stack) {
 		owner = stack;
+	}
+
+	// ----------------------------------------------------------------------------
+	// MediaLayer
+	// ----------------------------------------------------------------------------
+	inline const std::string& MediaLayer::name() const {
+		return dev_name;
+	}
+	inline const std::string& MediaLayer::system_name() const {
+		return sys_name;
 	}
 
 	// ----------------------------------------------------------------------------

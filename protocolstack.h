@@ -6,6 +6,7 @@
 #include "protocollayer.h"
 #include <list>
 #include <vector>
+#include <ostream> 
 
 namespace mavhub {
 
@@ -21,14 +22,15 @@ namespace mavhub {
 			typedef std::list< std::vector<uint8_t> > buffer_list_t;
 
 			static ProtocolStack& instance();
+			friend std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack);
 
 			/// Set system ID
-			void setSystemID(uint8_t system_id);
+			void system_id(uint8_t system_id);
 			/// Get system ID
-			uint8_t getSystemID() const;
+			uint8_t system_id() const;
 			
-			void addInterface(MediaLayer *interface, const packageformat_t format);
-			void addApplication(AppLayer *app);
+			void add_link(MediaLayer *interface, const packageformat_t format);
+			void add_application(AppLayer *app);
 
 			void send(const mavlink_message_t &msg) const;
 // 			void join();
@@ -44,14 +46,18 @@ namespace mavhub {
 			ProtocolStack(const ProtocolStack &); // intentionally undefined
 			ProtocolStack& operator=(const ProtocolStack &); // intentionally undefined
 	
-			/// size of rx buffer
+			/// Size of rx buffer
 			static const int BUFFERLENGTH = 512;
-			/// polling interval through all interfaces in us
+			/// Polling interval through all interfaces in us
 			static const int POLLINTERVAL = 1000000;//FIXME
 
-			uint8_t system_id;
-			
+			/// System ID
+			uint8_t sys_id;
+			/// List of all links/ interfaces
 			interface_packet_list_t interface_list;
+			/// Mutex to protect link/ interface management structures
+			mutable pthread_mutex_t link_mutex;
+			/// List of all registered applications
 			std::list<AppLayer*> app_list;
 			/// receive buffers
 			buffer_list_t rx_buffer_list;
@@ -68,11 +74,11 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// ProtocolStack
 	// ----------------------------------------------------------------------------
-	inline void ProtocolStack::setSystemID(uint8_t system_id) {
-		ProtocolStack::system_id = system_id;
+	inline void ProtocolStack::system_id(uint8_t system_id) {
+		sys_id = system_id;
 	}
-	inline uint8_t ProtocolStack::getSystemID() const {
-		return system_id;
+	inline uint8_t ProtocolStack::system_id() const {
+		return sys_id;
 	}
 	inline void ProtocolStack::transmit_to_apps(const mavlink_message_t &msg) const {
 		std::list<AppLayer*>::const_iterator app_iter;

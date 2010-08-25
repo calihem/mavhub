@@ -1,6 +1,7 @@
 #include "protocollayer.h"
 
 #include "logger.h"
+#include <sstream>
 
 namespace mavhub {
 
@@ -8,12 +9,20 @@ AppLayer::AppLayer() : owner(0) {}
 
 UARTLayer::UARTLayer(const char* devicename, tcflag_t control_modes) throw(const char*) :
 		UART(devicename, control_modes) {
+	dev_name = "Serial Link";
+	sys_name = devicename;
 	enable_blocking_mode(false);
 }
 
 UARTLayer::~UARTLayer(){ }
 
-UDPLayer::UDPLayer(int port) throw(const char*) : UDPSocket(port) {
+UDPLayer::UDPLayer(int port) throw(const char*) :
+		UDPSocket(port) {
+	dev_name = "UDP Port";
+	std::stringstream outstream;
+	outstream << port;
+	sys_name = outstream.str();
+
 	enable_blocking_mode(false);
 }
 

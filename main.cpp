@@ -48,16 +48,15 @@ int main(int argc, char **argv) {
 // 	CoreApp *core_app = new CoreApp();
 
 	//configure stack
-	ProtocolStack::instance().setSystemID(system_id);
-// 	ProtocolStack stack(system_id);
-// 	stack.addInterface(udp , ProtocolStack::MAVLINKPACKAGE );
-// 	stack.addInterface(udp , ProtocolStack::MKPACKAGE );
-// 	stack.addInterface(uart , ProtocolStack::MKPACKAGE );
-// 	ProtocolStack::instance().addInterface(uart , ProtocolStack::MAVLINKPACKAGE );
-// 	stack.addApplication(core_app);
+	ProtocolStack::instance().system_id(system_id);
+	ProtocolStack::instance().add_link(udp , ProtocolStack::MAVLINKPACKAGE );
+// 	stack.add_link(udp , ProtocolStack::MKPACKAGE );
+// 	stack.add_link(uart , ProtocolStack::MKPACKAGE );
+// 	ProtocolStack::instance().add_link(uart , ProtocolStack::MAVLINKPACKAGE );
+// 	stack.add_application(core_app);
 
 	//activate stack
-// 	pthread_t stack_thread = ProtocolStack::instance().start();
+	pthread_t stack_thread = ProtocolStack::instance().start();
 	
 	//start mav shell
 	MAVShell *mav_shell = NULL;
@@ -70,10 +69,10 @@ int main(int argc, char **argv) {
 	catch(const char* message) {
 		cout << message << endl;
 	}
-	PThread::join(shell_thread);
-	
 
-// 	PThread::join(stack_thread);
+	//join threads
+	PThread::join(shell_thread);
+	PThread::join(stack_thread);
 }
 
 void parse_argv(int argc, char **argv) {

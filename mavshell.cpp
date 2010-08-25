@@ -2,7 +2,10 @@
 
 #include "logger.h"
 #include "utility.h"
+#include "protocolstack.h"
 #include <iterator> //istream_iterator
+#include <cstdlib> //exit
+#include <stdexcept> // out_of_range exception
 
 #include <iostream> //cout
 using namespace std;
@@ -98,12 +101,38 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 	for(unsigned int i=0; i<argv.size(); i++) {
 		if( (argv.at(i).compare("close") == 0) 
 		|| (argv.at(i).compare("exit") == 0) ) {
-			//TODO: close connection
+			//close connection
+			if(!client_socket) return;
+			client_socket->disconnect();
+			return;
 		} else if(argv.at(i).compare("help") == 0) {
 			send_help();
-		} else if(argv.at(i).compare("shutdown") == 0) {
+		} else if(argv.at(i).compare("ifdown") == 0) {
 			//TODO
-// 			exit(0);
+		} else if(argv.at(i).compare("iflist") == 0) {
+			send_stream << ProtocolStack::instance();
+		} else if(argv.at(i).compare("ifup") == 0) {
+			//TODO
+		} else if(argv.at(i).compare("loglevel") == 0) {
+			try {
+				i++;
+				istringstream istream( argv.at(i) );
+				int loglevel;
+				istream >> loglevel;
+				if(loglevel < 0 || loglevel > 6) {
+					send_stream << "Loglevel is: " << Logger::loglevel() << endl;
+					i--;
+				} else {
+					Logger::setLogLevel( static_cast<Logger::log_level_t>(loglevel) );
+					send_stream << "Loglevel is now: " << Logger::loglevel() << endl;
+				}
+			}
+			catch(std::out_of_range& e) {
+				send_stream << "Loglevel is: " << Logger::loglevel() << endl;
+			}
+		} else if(argv.at(i).compare("shutdown") == 0) {
+			// exit whole process - the easy way
+			exit(0);
 		} else {
 			send_stream << "\"" << argv.at(i) << "\" is no valid argument" << endl;
 		}
@@ -122,10 +151,12 @@ void MAVShell::send_help() {
 	help_stream << "\t" << "print usage summary" << endl;
 	help_stream << "ifdown id" << endl;
 	help_stream << "\t" << "remove device with id" << endl;
-	help_stream << "ifup device protocol" << endl;
+	help_stream << "iflist" << endl;
+	help_stream << "\t" << "list all devices" << endl;
+	help_stream << "ifup type device protocol" << endl;
 	help_stream << "\t" << "add device with given protocol" << endl;
 	help_stream << "loglevel [0...6]" << endl;
-	help_stream << "\t" << "set loglevel" << endl;
+	help_stream << "\t" << "get/set loglevel" << endl;
 	help_stream << "shutdown" << endl;
 	help_stream << "\t" << "stop mavhub" << endl;
 

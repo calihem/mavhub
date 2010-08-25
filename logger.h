@@ -33,6 +33,9 @@ namespace mavhub {
 			static bool enabled();
 			/// set logging level
 			static void setLogLevel(log_level_t loglevel);
+			/// Get logging level
+			static log_level_t loglevel();
+
 			template <class T>
 			static void log(const T& message, log_level_t loglevel = LOGLEVEL_ALL);
 			template <class T1, class T2>
@@ -92,6 +95,12 @@ namespace mavhub {
 			log_level = loglevel;
 #endif
 	}
+	inline Logger::log_level_t Logger::loglevel() {
+#if !defined(DISABLELOGGER)
+		return log_level;
+#endif
+	}
+
 	inline void Logger::log_preamble(log_level_t loglevel) {
 #if !defined(DISABLELOGGER)
 		time_t rawtime;

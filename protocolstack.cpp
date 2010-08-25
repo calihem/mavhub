@@ -19,7 +19,9 @@ ProtocolStack& ProtocolStack::instance() {
 	return instance;
 }
 
-ProtocolStack::ProtocolStack(uint8_t system_id) : system_id(system_id) {
+ProtocolStack::ProtocolStack(uint8_t system_id) :
+		sys_id(system_id) {
+	pthread_mutex_init(&link_mutex, NULL);
 	pthread_mutex_init(&tx_mutex, NULL);
 }
 
@@ -50,6 +52,8 @@ void ProtocolStack::run() {
 		
 		channel = 0;
 		buf_iter = rx_buffer_list.begin();
+
+		pthread_mutex_lock(&link_mutex);
 
 		//iterate through interfaces
 		//TODO: use select on fd_set
@@ -148,6 +152,9 @@ void ProtocolStack::run() {
 			}
 			channel++;
 		}
+		
+		pthread_mutex_unlock(&link_mutex);
+
 		gettimeofday(&t2, 0);
 		timediff(diff, t1, t2);
 		if(diff.tv_usec < POLLINTERVAL) {
@@ -160,20 +167,26 @@ void ProtocolStack::send(const mavlink_message_t &msg) const {
 	pthread_mutex_lock(&tx_mutex);
 
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
-	
+
+	pthread_mutex_lock(&link_mutex);
+
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		iface_iter->first->write(tx_buffer, len);
 	}
-	
+
+	pthread_mutex_unlock(&link_mutex);
 	pthread_mutex_unlock(&tx_mutex);
+
 }
 
 void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const {
 	pthread_mutex_lock(&tx_mutex);
 
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
-	
+
+	// here locking of link_mutex is not neccesary
+
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		if(iface_iter->first != src_iface) {
@@ -184,7 +197,9 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *s
 	pthread_mutex_unlock(&tx_mutex);
 }
 
-void ProtocolStack::addInterface(MediaLayer *interface, const packageformat_t format) {
+void ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format) {
+	pthread_mutex_lock(&link_mutex);
+	
 	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
 		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
 		return;
@@ -195,11 +210,38 @@ void ProtocolStack::addInterface(MediaLayer *interface, const packageformat_t fo
 	if(format == MKPACKAGE) {
 		rx_buffer_list.push_back( vector<uint8_t>() );
 	}
+	
+	pthread_mutex_unlock(&link_mutex);
+
 }
 
-void ProtocolStack::addApplication(AppLayer *app) {
+void ProtocolStack::add_application(AppLayer *app) {
 	app->set_owner(this);
 	app_list.push_back(app);
+}
+
+std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
+	pthread_mutex_lock(&proto_stack.link_mutex);
+
+	// print headline
+	os << std::setw(3) << "ID" 
+		<< std::setw(15) << "Type"
+		<< std::setw(15) << "Device" 
+		<< endl;
+	
+	ProtocolStack::interface_packet_list_t::const_iterator iface_iter;
+	int id = 0;
+	for(iface_iter = proto_stack.interface_list.begin(); iface_iter != proto_stack.interface_list.end(); ++iface_iter ) {
+		os << std::setw(3) << id
+			<< std::setw(15) << iface_iter->first->name()
+			<< std::setw(15) << iface_iter->first->system_name()
+			<< endl;
+		id++;
+	}
+
+	pthread_mutex_unlock(&proto_stack.link_mutex);
+
+	return os;
 }
 
 } // namespace mavhub
