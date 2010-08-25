@@ -55,7 +55,7 @@ void MAVShell::handle_client() {
 	char rx_buffer[BUFFERLENGTH];
 
 	while( (received = client_socket->receive(rx_buffer, BUFFERLENGTH)) > 0 ) {
-		Logger::log("received", received, "bytes", Logger::LOGLEVEL_DEBUG);
+		Logger::log("MAVShell received", received, "bytes", Logger::LOGLEVEL_DEBUG);
 		// append rx_buffer to input_stream
 		input_stream.write(rx_buffer, received);
 		// append rx_buffer to input_stream but without '\r'
@@ -108,7 +108,20 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 		} else if(argv.at(i).compare("help") == 0) {
 			send_help();
 		} else if(argv.at(i).compare("ifdown") == 0) {
-			//TODO
+			try {
+				i++;
+				istringstream istream( argv.at(i) );
+				int id;
+				istream >> id;
+				if( ProtocolStack::instance().remove_link(id) != 0 ) {
+					send_stream << "Removing of link with ID " << id << " failed" << endl;
+				} else {
+					send_stream << "Removed link with ID " << id << endl;
+				}
+			}
+			catch(std::out_of_range& e) {
+				send_stream << "ID argument is missing" << endl;
+			}
 		} else if(argv.at(i).compare("iflist") == 0) {
 			send_stream << ProtocolStack::instance();
 		} else if(argv.at(i).compare("ifup") == 0) {

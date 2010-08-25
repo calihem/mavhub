@@ -215,6 +215,26 @@ void ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format
 
 }
 
+int ProtocolStack::remove_link(unsigned int link_id) {
+	int rc = -1;
+
+	pthread_mutex_lock(&link_mutex);
+	if(interface_list.size() >= link_id+1) { //ID is in range
+		interface_packet_list_t::iterator iface_iter = interface_list.begin();
+		// seek iterator to right position
+		for(unsigned int i=0; i<link_id; i++) iface_iter++;
+		if(iface_iter->second == MKPACKAGE) {
+			//TODO: remove rx_buffer
+		}
+		interface_list.erase(iface_iter);
+		rc = 0;
+	}
+
+	pthread_mutex_unlock(&link_mutex);
+
+	return rc;
+}
+
 void ProtocolStack::add_application(AppLayer *app) {
 	app->set_owner(this);
 	app_list.push_back(app);
@@ -227,6 +247,7 @@ std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
 	os << std::setw(3) << "ID" 
 		<< std::setw(15) << "Type"
 		<< std::setw(15) << "Device" 
+		<< std::setw(10) << "Protocol" 
 		<< endl;
 	
 	ProtocolStack::interface_packet_list_t::const_iterator iface_iter;
@@ -235,6 +256,7 @@ std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
 		os << std::setw(3) << id
 			<< std::setw(15) << iface_iter->first->name()
 			<< std::setw(15) << iface_iter->first->system_name()
+			<< std::setw(10) << iface_iter->second
 			<< endl;
 		id++;
 	}

@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 	ProtocolStack::instance().add_link(udp , ProtocolStack::MAVLINKPACKAGE );
 // 	stack.add_link(udp , ProtocolStack::MKPACKAGE );
 // 	stack.add_link(uart , ProtocolStack::MKPACKAGE );
-// 	ProtocolStack::instance().add_link(uart , ProtocolStack::MAVLINKPACKAGE );
+	ProtocolStack::instance().add_link(uart , ProtocolStack::MAVLINKPACKAGE );
 // 	stack.add_application(core_app);
 
 	//activate stack
