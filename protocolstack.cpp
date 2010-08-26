@@ -218,6 +218,16 @@ int ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format)
 	return 0;
 }
 
+MediaLayer* ProtocolStack::link(unsigned int link_id) {
+	if(interface_list.size() >= link_id+1) { //ID is in range
+		interface_packet_list_t::iterator iface_iter = interface_list.begin();
+		// seek iterator to right position
+		for(unsigned int i=0; i<link_id; i++) iface_iter++;
+		return iface_iter->first;
+	}
+	return NULL;
+}
+
 int ProtocolStack::remove_link(unsigned int link_id) {
 	int rc = -1;
 
@@ -237,6 +247,7 @@ int ProtocolStack::remove_link(unsigned int link_id) {
 
 	return rc;
 }
+
 
 void ProtocolStack::add_application(AppLayer *app) {
 	app->set_owner(this);

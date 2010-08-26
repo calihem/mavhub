@@ -31,18 +31,22 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	class MediaLayer {
 		public:
+			virtual ~MediaLayer() {};
 			virtual int read(uint8_t *buffer, int length) const = 0;
 			virtual int write(const uint8_t *buffer, int length) const = 0;
 			/// Get the human readable name of this device
 			virtual const std::string& name() const;
 			/// Get the system name of this device
 			virtual const std::string& system_name() const;
-			
+			friend std::ostream& operator <<(std::ostream &os, const MediaLayer &link);
+	
 		protected:
 			/// Human readable name of this device, e.g. "Serial Link"
-			std::string dev_name;
+			std::string _name;
 			/// Name of the device in the system context, e.g. "/dev/ttyS0"
-			std::string sys_name;
+			std::string dev_name;
+			
+			virtual void print(std::ostream &os) const;
 	};
 
 	class UARTLayer : public UART, public MediaLayer {
@@ -71,6 +75,9 @@ namespace mavhub {
 			virtual int write(const uint8_t *buffer, int length) const;
 			void add_groupmember(const std::string& addr, uint16_t port) throw(const char*);
 
+		protected:
+			virtual void print(std::ostream &os) const;
+
 		private:
 			/// list of groupmembers with numeric ip addr and port
 			std::list<num_addr_pair_t> groupmember_list;
@@ -86,10 +93,17 @@ namespace mavhub {
 	// MediaLayer
 	// ----------------------------------------------------------------------------
 	inline const std::string& MediaLayer::name() const {
-		return dev_name;
+		return _name;
 	}
 	inline const std::string& MediaLayer::system_name() const {
-		return sys_name;
+		return dev_name;
+	}
+	inline std::ostream& operator <<(std::ostream &os, const MediaLayer &link) {
+		link.print(os);
+		return os;
+	}
+	inline void MediaLayer::print(std::ostream &os) const {
+		os << _name << ": " << dev_name << std::endl;
 	}
 
 	// ----------------------------------------------------------------------------

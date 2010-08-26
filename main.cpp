@@ -31,11 +31,11 @@ int main(int argc, char **argv) {
 	if(udp) {
 		UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(udp);
 		if(udp_layer) {
-// 			udp_layer->add_groupmember("127.0.0.1", 32001);
+			udp_layer->add_groupmember("127.0.0.1", 32001);
 			udp_layer->add_groupmember("127.0.0.1", 14550);
 		}
 	}
-
+ 
 	//create apps
 // 	CoreApp *core_app = new CoreApp();
 

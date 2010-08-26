@@ -30,8 +30,9 @@ namespace mavhub {
 			uint8_t system_id() const;
 			
 			int add_link(MediaLayer *interface, const packageformat_t format);
+			MediaLayer *link(unsigned int link_id);
 			int remove_link(unsigned int link_id);
-			
+
 			void add_application(AppLayer *app);
 
 			void send(const mavlink_message_t &msg) const;

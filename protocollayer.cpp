@@ -9,8 +9,8 @@ AppLayer::AppLayer() : owner(0) {}
 
 UARTLayer::UARTLayer(const std::string& devicename, tcflag_t control_modes) throw(const char*) :
 		UART(devicename, control_modes) {
-	dev_name = "Serial Link";
-	sys_name = devicename;
+	_name = "Serial Link";
+	dev_name = devicename;
 	enable_blocking_mode(false);
 }
 
@@ -18,10 +18,10 @@ UARTLayer::~UARTLayer(){ }
 
 UDPLayer::UDPLayer(int port) throw(const char*) :
 		UDPSocket(port) {
-	dev_name = "UDP Port";
+	_name = "UDP Port";
 	std::stringstream outstream;
 	outstream << port;
-	sys_name = outstream.str();
+	dev_name = outstream.str();
 
 	enable_blocking_mode(false);
 }
@@ -52,6 +52,16 @@ int UDPLayer::write(const uint8_t *buffer, int buf_len) const {
 	}
 	
 	return rc;
+}
+
+void UDPLayer::print(std::ostream &os) const {
+	MediaLayer::print(os);
+
+	std::list<num_addr_pair_t>::const_iterator gmember_iter;
+	os << "Group members:" << std::endl;
+	for(gmember_iter = groupmember_list.begin(); gmember_iter != groupmember_list.end(); ++gmember_iter) {
+		os << "\t" << inet_ntoa(gmember_iter->first) << " " << gmember_iter->second << std::endl;
+	}
 }
 
 } // namespace mavhub

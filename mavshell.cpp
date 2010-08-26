@@ -100,7 +100,34 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 	ostringstream send_stream;
 
 	for(unsigned int i=0; i<argv.size(); i++) {
-		if( (argv.at(i).compare("close") == 0) 
+		if(argv.at(i).compare("addmember") == 0) {
+			try{
+				//get link belonging to ID
+				istringstream idstream( argv.at(i+1) );
+				int id;
+				idstream >> id;
+				MediaLayer *link = ProtocolStack::instance().link(id);
+				if(!link) {
+					send_stream << "No link with ID " << id << " available" << endl;
+					continue;
+				}
+				UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(link);
+				if(!udp_layer) {
+					send_stream << "Link with ID " << id << " is no UDP Port" << endl;
+					continue;
+				}
+				// get port number
+				istringstream portstream( argv.at(i+3) );
+				uint16_t port;
+				portstream >> port;
+				// add member to group
+				udp_layer->add_groupmember(argv.at(i+2), port);
+				i += 3;
+			}
+			catch(std::out_of_range& e) {
+				send_stream << "Not enough arguments given for addmember" << endl;
+			}
+		} else if( (argv.at(i).compare("close") == 0) 
 		|| (argv.at(i).compare("exit") == 0) ) {
 			//close connection
 			if(!client_socket) return;
@@ -124,7 +151,22 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				send_stream << "ID argument is missing" << endl;
 			}
 		} else if(argv.at(i).compare("iflist") == 0) {
-			send_stream << ProtocolStack::instance();
+			try {
+				istringstream istream( argv.at(i+1) );
+				int id;
+				istream >> id;
+				MediaLayer *link = ProtocolStack::instance().link(id);
+				if(!link) {
+					send_stream << "No link with ID " << id << " available" << endl;
+					send_stream << ProtocolStack::instance();
+				} else {
+					send_stream << *link;
+					i++;
+				}
+			}
+			catch(std::out_of_range& e) {
+					send_stream << ProtocolStack::instance();
+			}
 		} else if(argv.at(i).compare("ifup") == 0) {
 			try {
 				MediaLayer *link = LinkFactory::build(argv.at(i+1), argv.at(i+2));
@@ -176,20 +218,23 @@ void MAVShell::send_help() {
 	if(!client_socket) return;
 
 	ostringstream help_stream;
-	help_stream << "close | exit" << endl;
-	help_stream << "\t" << "close connection to mavhub" << endl;
-	help_stream << "help" << endl;
-	help_stream << "\t" << "print usage summary" << endl;
-	help_stream << "ifdown id" << endl;
-	help_stream << "\t" << "remove device with id" << endl;
-	help_stream << "iflist" << endl;
-	help_stream << "\t" << "list all devices" << endl;
-	help_stream << "ifup type device protocol" << endl;
-	help_stream << "\t" << "add device with given protocol" << endl;
-	help_stream << "loglevel [0...6]" << endl;
-	help_stream << "\t" << "get/set loglevel" << endl;
-	help_stream << "shutdown" << endl;
-	help_stream << "\t" << "stop mavhub" << endl;
+	help_stream << "addmember linkID IP port" << endl
+		<< "\t" << "add group member to broadcast group of UDPLayer" << endl
+		<< "close | exit" << endl
+		<< "\t" << "close connection to mavhub" << endl
+		<< "help" << endl
+		<< "\t" << "print usage summary" << endl
+		<< "ifdown linkID" << endl
+		<< "\t" << "remove device with id" << endl
+		<< "iflist [linkID]" << endl
+		<< "\t" << "list all devices or device with linkID" << endl
+		<< "ifup type device protocol" << endl
+		<< "\t" << "add device with given protocol" << endl
+		<< "loglevel [0...6]" << endl
+		<< "\t" << "get/set loglevel" << endl
+		<< "shutdown" << endl
+		<< "\t" << "stop mavhub" << endl
+		;
 
 	client_socket->send(help_stream.str().c_str(), help_stream.str().size() );
 }
