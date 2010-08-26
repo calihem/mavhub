@@ -6,8 +6,8 @@
 
 namespace mavhub {
 
-UART::UART(const char* devicename, tcflag_t control_modes) throw(const char*) {
-	if( (sifd = open(devicename, O_RDWR | O_NOCTTY)) < 0 ) {
+UART::UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*) {
+	if( (sifd = open(devicename.c_str(), O_RDWR | O_NOCTTY)) < 0 ) {
 		throw "Can't open serial interface device";
 		return;
 	}

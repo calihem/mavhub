@@ -6,13 +6,14 @@
 #include "protocol.h"
 #include <termios.h>
 #include <unistd.h> //read, write
+#include <string>
 
 
 namespace mavhub {
 
 	class UART {
 		public:
-			UART(const char* devicename, tcflag_t control_modes) throw(const char*);
+			UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*);
 			~UART();
 
 			void enable_blocking_mode(bool enabled);

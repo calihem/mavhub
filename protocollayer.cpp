@@ -7,7 +7,7 @@ namespace mavhub {
 
 AppLayer::AppLayer() : owner(0) {}
 
-UARTLayer::UARTLayer(const char* devicename, tcflag_t control_modes) throw(const char*) :
+UARTLayer::UARTLayer(const std::string& devicename, tcflag_t control_modes) throw(const char*) :
 		UART(devicename, control_modes) {
 	dev_name = "Serial Link";
 	sys_name = devicename;

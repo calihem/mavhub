@@ -197,12 +197,14 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *s
 	pthread_mutex_unlock(&tx_mutex);
 }
 
-void ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format) {
+int ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format) {
+	if(!interface) return -1;
+
 	pthread_mutex_lock(&link_mutex);
 	
 	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
 		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
-		return;
+		return -2;
 	}
 
 	interface_list.push_back( make_pair(interface, format) );
@@ -213,6 +215,7 @@ void ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format
 	
 	pthread_mutex_unlock(&link_mutex);
 
+	return 0;
 }
 
 int ProtocolStack::remove_link(unsigned int link_id) {

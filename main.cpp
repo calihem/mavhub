@@ -8,6 +8,7 @@
 #include "coreapp.h"
 #include "datacenter.h"
 #include "mavshell.h"
+#include "factory.h"
 
 using namespace std;
 using namespace mavhub;
@@ -24,24 +25,15 @@ int main(int argc, char **argv) {
 	parse_argv(argc, argv);
 
 	//create media layers
-	UARTLayer *uart;
-	UDPLayer *udp;
-	try{
-		uart = new UARTLayer("/dev/ttyS0");
-// 		uart = new UARTLayer("/dev/ttyUSB0");
-	}
-	catch(const char *message) {
-		Logger::error(message);
-		exit(-1);
-	}
-	try{
-		udp = new UDPLayer(udp_port);
-// 		udp->add_groupmember("127.0.0.1", 32001);
-		udp->add_groupmember("127.0.0.1", 14550);
-	}
-	catch(const char *message) {
-		Logger::error(message);
-		exit(-1);
+	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyS0");
+// 	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyUSB0");
+	MediaLayer *udp = LinkFactory::build(LinkFactory::UDPLink, udp_port);
+	if(udp) {
+		UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(udp);
+		if(udp_layer) {
+// 			udp_layer->add_groupmember("127.0.0.1", 32001);
+			udp_layer->add_groupmember("127.0.0.1", 14550);
+		}
 	}
 
 	//create apps

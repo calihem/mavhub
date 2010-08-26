@@ -3,6 +3,7 @@
 #include "logger.h"
 #include "utility.h"
 #include "protocolstack.h"
+#include "factory.h"
 #include <iterator> //istream_iterator
 #include <cstdlib> //exit
 #include <stdexcept> // out_of_range exception
@@ -125,7 +126,24 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 		} else if(argv.at(i).compare("iflist") == 0) {
 			send_stream << ProtocolStack::instance();
 		} else if(argv.at(i).compare("ifup") == 0) {
-			//TODO
+			try {
+				MediaLayer *link = LinkFactory::build(argv.at(i+1), argv.at(i+2));
+				istringstream istream( argv.at(i+3) );
+				int format;
+				istream >> format;
+				if(format < 0 || format > 1) {
+					send_stream << "Packet format out of range" << endl;
+				} else {
+					int add_failed = ProtocolStack::instance().add_link( link, static_cast<ProtocolStack::packageformat_t>(format) );
+					if(add_failed) {
+						send_stream << "Bringing interface up failed" << endl;
+					}
+				}
+				i += 3;
+			}
+			catch(std::out_of_range& e) {
+				send_stream << "Not enough arguments given for ifup" << endl;
+			}
 		} else if(argv.at(i).compare("loglevel") == 0) {
 			try {
 				i++;

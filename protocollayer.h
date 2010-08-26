@@ -47,7 +47,7 @@ namespace mavhub {
 
 	class UARTLayer : public UART, public MediaLayer {
 		public:
-			UARTLayer(const char* devicename, tcflag_t control_modes = B57600 | CS8 | CLOCAL | CREAD) throw(const char*);
+			UARTLayer(const std::string& devicename, tcflag_t control_modes = B57600 | CS8 | CLOCAL | CREAD) throw(const char*);
 			virtual ~UARTLayer();
 
 			virtual int read(uint8_t *buffer, int length) const;
