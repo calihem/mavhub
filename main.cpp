@@ -1,3 +1,5 @@
+#include "main.h"
+
 #include <iostream> //cout
 #include <cstring> //strcmp
 #include <cstdlib> //exit
@@ -5,7 +7,7 @@
 #include "logger.h"
 #include "protocolstack.h"
 #include "protocollayer.h"
-#include "coreapp.h"
+#include "coremod.h"
 #include "datacenter.h"
 #include "mavshell.h"
 #include "factory.h"
@@ -13,7 +15,7 @@
 using namespace std;
 using namespace mavhub;
 
-uint8_t system_id = 42;
+uint8_t mavhub::system_id = 42;
 int udp_port = UDPLayer::DefaultPort;
 int tcp_port = 30001;
 
@@ -36,8 +38,8 @@ int main(int argc, char **argv) {
 		}
 	}
  
-	//create apps
-// 	CoreApp *core_app = new CoreApp();
+	//create modules
+// 	CoreModule *core_app = new CoreModule();
 
 	//configure stack
 	ProtocolStack::instance().system_id(system_id);

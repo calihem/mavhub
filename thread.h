@@ -11,6 +11,7 @@ namespace mavhub {
 	class PThread {
 		public:
 			PThread() {};
+			~PThread() {};
 			pthread_t start();
 			static void *join(pthread_t &pthread);
 

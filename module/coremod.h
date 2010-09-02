@@ -1,15 +1,15 @@
-#ifndef _COREAPP_H_
-#define _COREAPP_H_
+#ifndef _COREMOD_H_
+#define _COREMOD_H_
 
 #include <inttypes.h> //uint8_t
 #include "protocollayer.h"
 
 namespace mavhub {
 
-	class CoreApp : public AppLayer {
+	class CoreModule : public AppLayer {
 		public:
-			CoreApp();
-			virtual ~CoreApp();
+			CoreModule();
+			virtual ~CoreModule();
 			virtual void handle_input(const mavlink_message_t &msg);
 
 		protected:
@@ -18,7 +18,7 @@ namespace mavhub {
 	};
 	
 	// ----------------------------------------------------------------------------
-	// CoreApp
+	// CoreModule
 	// ----------------------------------------------------------------------------
 
 

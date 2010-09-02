@@ -1,4 +1,4 @@
-#include "coreapp.h"
+#include "coremod.h"
 
 #include "logger.h"
 #include "utility.h"
@@ -9,18 +9,18 @@
 using namespace std;
 
 namespace mavhub {
-CoreApp::CoreApp() {
+CoreModule::CoreModule() {
 }
 
-CoreApp::~CoreApp() {}
+CoreModule::~CoreModule() {}
 
-void CoreApp::handle_input(const mavlink_message_t &msg) {
-	Logger::log("CoreApp got mavlink_message", Logger::LOGLEVEL_INFO);
+void CoreModule::handle_input(const mavlink_message_t &msg) {
+	Logger::log("CoreModule got mavlink_message", Logger::LOGLEVEL_INFO);
 }
 
-void CoreApp::run() {
+void CoreModule::run() {
 	if(!owner) {
-		Logger::log("Owner of CoreApp not set", Logger::LOGLEVEL_WARN);
+		Logger::log("Owner of CoreModule not set", Logger::LOGLEVEL_WARN);
 		return;
 	}
 

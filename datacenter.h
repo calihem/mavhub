@@ -15,7 +15,7 @@ namespace mavhub {
 			//data structs
 			static mavlink_raw_imu_t raw_imu;
 			static mavlink_raw_pressure_t raw_pressure;
-			static mavlink_rc_channels_raw_t rc_channels_raw;
+// 			static mavlink_rc_channels_raw_t rc_channels_raw;
 
 			//sync data
 			static pthread_mutex_t raw_imu_mutex;

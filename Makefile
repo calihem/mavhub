@@ -6,12 +6,13 @@ SRCS_1   = main.cpp \
 	protocollayer.cpp \
 	mkpackage.cpp \
 	network.cpp \
-	coreapp.cpp \
+	module/coremod.cpp \
+	module/mkrcmod.cpp \
 	datacenter.cpp \
 	mavshell.cpp
 
 # define any directories containing header files other than /usr/include
-INCLUDES = -I. -I../mavlink/include
+INCLUDES = -I. -Imodule -I../mavlink/include
 
 # compiler flags to generate dependency files.
 GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
