@@ -3,3 +3,4 @@
 Makefile~
 .dep/
 *.o
+tags

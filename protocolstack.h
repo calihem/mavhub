@@ -10,7 +10,7 @@
 
 namespace mavhub {
 
-	class ProtocolStack : public PThread {
+	class ProtocolStack : public cpp_pthread::PThread {
 		public:
 			/// Enumeration of supported packet formats
 			enum packageformat_t {

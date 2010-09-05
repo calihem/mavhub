@@ -14,7 +14,7 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// Application Layers
 	// ----------------------------------------------------------------------------
-	class AppLayer : public PThread {
+	class AppLayer : public cpp_pthread::PThread {
 		public:
 			AppLayer();
 			virtual ~AppLayer() {};

@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace mavhub;
+using namespace cpp_pthread;
 
 uint8_t mavhub::system_id = 42;
 int udp_port = UDPLayer::DefaultPort;

@@ -1,14 +1,14 @@
 #ifndef _DATACENTER_H_
 #define _DATACENTER_H_
 
-#include <pthread.h>
+#include "thread.h"
 #include <mavlink.h>
 
 namespace mavhub {
 
 	class DataCenter {
 		public:
-			static const mavlink_raw_imu_t& get_raw_imu();
+			static const mavlink_raw_imu_t get_raw_imu();
 			static void set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu);
 
 		private:
@@ -28,14 +28,19 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// DataCenter
 	// ----------------------------------------------------------------------------
-	inline const mavlink_raw_imu_t& DataCenter::get_raw_imu() {
-		//FIXME
-		return raw_imu;
+	inline const mavlink_raw_imu_t DataCenter::get_raw_imu() {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(raw_imu_mutex);
+		mavlink_raw_imu_t raw_imu_copy(raw_imu);
+
+		return raw_imu_copy;
 	}
 	inline void DataCenter::set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu) {
-		pthread_mutex_lock(&raw_imu_mutex);
+		using namespace cpp_pthread;
+
+		Lock ri_lock(raw_imu_mutex);
 		raw_imu = mavlink_raw_imu;
-		pthread_mutex_unlock(&raw_imu_mutex);
 	}
 
 } // namespace mavhub
