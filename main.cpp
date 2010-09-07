@@ -5,6 +5,7 @@
 #include <cstdlib> //exit
 
 #include "logger.h"
+#include "lib/setting.h"
 #include "protocolstack.h"
 #include "protocollayer.h"
 #include "coremod.h"
@@ -15,16 +16,28 @@
 using namespace std;
 using namespace mavhub;
 using namespace cpp_pthread;
+using namespace cpp_io;
 
 uint8_t mavhub::system_id = 42;
 int udp_port = UDPLayer::DefaultPort;
 int tcp_port = 30001;
+std::string config_file("mavhub.conf");
 
 void parse_argv(int argc, char **argv);
 void print_help();
 
 int main(int argc, char **argv) {
-	Logger::setLogLevel(Logger::LOGLEVEL_ALL);
+	//open config file
+	Setting settings(config_file);
+	//read and set loglevel
+	Logger::log_level_t loglevel = Logger::LOGLEVEL_ALL;
+//	settings.value("loglevel", loglevel);
+	Logger::setLogLevel(loglevel);
+
+	settings.value("system_id", system_id);
+	settings.value("udp_port", udp_port);
+	settings.value("tcp_port", tcp_port);
+
 	parse_argv(argc, argv);
 
 	//create media layers
