@@ -54,6 +54,7 @@ void ProtocolStack::run() {
 		channel = 0;
 		buf_iter = rx_buffer_list.begin();
 
+		{ //begin of link mutex scope
 		Lock lm_lock(link_mutex);
 
 		//iterate through interfaces
@@ -153,7 +154,9 @@ void ProtocolStack::run() {
 			}
 			channel++;
 		}
-		
+
+		}// end of link mutex scope
+
 		gettimeofday(&t2, 0);
 		timediff(diff, t1, t2);
 		if(diff.tv_usec < POLLINTERVAL) {
