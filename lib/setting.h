@@ -24,7 +24,7 @@ class Setting {
 		template <class T>
 		void set_value(const std::string &key, const T& value);
 		template <class T>
-		void value(const std::string &key, T& value);
+		int value(const std::string &key, T& value);
 
 	private:
 		/// config file
@@ -33,6 +33,8 @@ class Setting {
 		std::string pre_string;
 		/// current group
 		std::string cur_group;
+		/// position of current group
+		std::streampos group_pos;
 	
 		Setting(const Setting &);
 		void operator=(const Setting &);
@@ -47,23 +49,26 @@ class Setting {
 // ----------------------------------------------------------------------------
 template <class T>
 inline void Setting::set_value(const std::string &key, const T& value) {
+	//Because there is no way to insert (not overwritting) data
+	//into a file, we append it
+
+	//FIXME: rewind to group and insert it
+	//fast-forward to end
+	conf_file.clear();
+	conf_file.seekp(std::ios_base::end);
+
 	//FIXME: look for existing key first
 	conf_file << pre_string << key << " = " << value << std::endl;
 	conf_file.flush();
 }
 
 template <class T>
-inline void Setting::value(const std::string &key, T& value) {
+inline int Setting::value(const std::string &key, T& value) {
 	using namespace std;
 
-	streampos spos = find_group(cur_group);
-	if(spos == -1
-	|| spos == ios::end) {//found no group
-		//assume not explicit given core group
-		//at beginning of conf_file
-		conf_file.clear();
-		conf_file.seekg(ios_base::beg);
-	}
+	//wind to current group
+	conf_file.clear();
+	conf_file.seekg(group_pos);
 
 	string line;
 	while(getline(conf_file, line)) { //read line by line
@@ -85,9 +90,11 @@ inline void Setting::value(const std::string &key, T& value) {
 			if(start == string::npos) continue;
 			istringstream val_stream(line.substr(start, string::npos));
 			val_stream >> value;
-			break;	
+			return 0;
 		}
 	}
+
+	return -1;
 }
 
 

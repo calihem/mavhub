@@ -5,12 +5,14 @@ namespace cpp_io {
 using namespace std;
 
 Setting::Setting(const std::string& file_name, std::ios_base::openmode mode) : 
-	conf_file(file_name.c_str(), mode),
-	cur_group("core") {
+	conf_file(file_name.c_str(), mode) {
 
 	if (!conf_file) {
 		//FIXME: throw exception
 	}
+
+	//"no-group" is alway at beginning of file
+	group_pos = ios_base::beg;
 }
 
 Setting::~Setting() {
@@ -30,22 +32,35 @@ Setting::Setting& operator <<(Setting &setting, const std::map<std::string, T> &
 void Setting::begin_group(const std::string& groupname) {
 	cur_group = groupname;
 
-	streampos spos = find_group(cur_group);
-	if(spos == -1
-	|| spos == ios::end) { //found no group
+	group_pos = find_group(cur_group);
+	if(group_pos == -1) { //found no group
+		//fast-forward to end
+		conf_file.clear();
+		conf_file.seekp(ios_base::end);
+		//insert group
 		conf_file << "[" << cur_group << "]" << endl;
+		group_pos = conf_file.tellp();
 	}
 	pre_string = "\t"; 
 }
 
 void Setting::end_group() {
-	pre_string = "";
+	cur_group.clear();
+	pre_string.clear();
+
+	//rewind to "no-group"
+	conf_file.clear();
+	conf_file.seekg(ios_base::beg);
+	group_pos = conf_file.tellg();
 }
 
 std::streampos Setting::find_group(const std::string &group) {
 	//rewind to beginning
 	conf_file.clear();
 	conf_file.seekg(ios_base::beg);
+
+	//"no-group" is always at beginning of file
+	if(group.empty()) return conf_file.tellg();
 
 	string line;
 	while(getline(conf_file, line)) { //read line by line
