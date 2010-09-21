@@ -1,7 +1,5 @@
 #include "logger.h"
 
-#if !defined(DISABLELOGGER)
-
 #if defined(FILELOG)
 #include <fstream>
 #else
@@ -44,5 +42,3 @@ std::ostream* Logger::out_stream = NULL;
 #endif
 
 } // namespace mavhub
-
-#endif //DISABLELOGGER

@@ -96,9 +96,7 @@ namespace mavhub {
 #endif
 	}
 	inline Logger::log_level_t Logger::loglevel() {
-#if !defined(DISABLELOGGER)
 		return log_level;
-#endif
 	}
 
 	inline void Logger::log_preamble(log_level_t loglevel) {

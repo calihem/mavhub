@@ -40,7 +40,7 @@ void UDPLayer::add_groupmember(const std::string& addr, uint16_t port) throw(con
 
 int UDPLayer::write(const uint8_t *buffer, int buf_len) const {
 	std::list<num_addr_pair_t>::const_iterator gmember_iter;
-	int rc;
+	int rc = 0;
 
 	for(gmember_iter = groupmember_list.begin(); gmember_iter != groupmember_list.end(); ++gmember_iter ) {
 		try{

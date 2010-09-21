@@ -13,9 +13,19 @@
 namespace mavhub {
 	typedef std::pair<std::string, uint16_t> string_addr_pair_t;
 	typedef std::pair<in_addr, uint16_t> num_addr_pair_t;
-	
-// 	typedef std::pair<const char*,int> address_pair;
-// 	typedef std::map<int, address_pair> address_map;
+
+	/**
+	 * \brief Union of sockaddr structs.
+	 *
+	 * To get rid of "dereferencing pointer ‘sa_in’ does break strict-aliasing rules"
+	 * warnings use the members of the union instead of casting pointers.
+	 */
+	union sockaddr_u {
+		struct sockaddr_storage storage;
+		struct sockaddr_in in;
+		struct sockaddr_in6 in6;
+		struct sockaddr sockaddr;
+	};
 
 	class Socket {
 		public:

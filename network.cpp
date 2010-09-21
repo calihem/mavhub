@@ -70,18 +70,16 @@ std::string Socket::foreign_addr() const throw(const char*) {
 }
 
 uint16_t Socket::foreign_port() const throw(const char*) {
-	struct sockaddr_storage addr;
-	socklen_t len = sizeof(addr);
+	union sockaddr_u addr;
+	socklen_t len = sizeof(addr.sockaddr);
 	uint16_t port = 0;
 	
-	if(getpeername(sockfd, (sockaddr*)&addr, &len) < 0) {
+	if(getpeername(sockfd, &addr.sockaddr, &len) < 0) {
 		throw "Fetching of address info about the remote side of the connection failed";
-	} else if(addr.ss_family == AF_INET) { //IPv4
-		struct sockaddr_in *sa_in = (struct sockaddr_in *)&addr;
-		port = ntohs(sa_in->sin_port);
+	} else if(addr.storage.ss_family == AF_INET) { //IPv4
+		port = ntohs(addr.in.sin_port);
 	} else { //IPv6
-		struct sockaddr_in6 *sa_in = (struct sockaddr_in6 *)&addr;
-		port = ntohs(sa_in->sin6_port);
+		port = ntohs(addr.in6.sin6_port);
 	}
 
 	return port;

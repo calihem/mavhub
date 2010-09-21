@@ -53,19 +53,16 @@ int main(int argc, char **argv) {
 	pthread_t stack_thread = ProtocolStack::instance().start();
 	
 	//start mav shell
-	MAVShell *mav_shell = NULL;
-	pthread_t shell_thread;
-	
 	try {
-		mav_shell = new MAVShell(32001);
-		shell_thread = mav_shell->start();
+		MAVShell *mav_shell = new MAVShell(32001);
+		pthread_t shell_thread = mav_shell->start();
+		PThread::join(shell_thread);
 	}
 	catch(const char* message) {
 		cout << message << endl;
 	}
 
 	//join threads
-	PThread::join(shell_thread);
 	PThread::join(stack_thread);
 }
 
