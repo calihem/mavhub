@@ -7,7 +7,8 @@
 #endif
 
 namespace mavhub {
-const char* Logger::LoglevelStrings[LoglevelStrNum] = {
+
+const char* Logger::LoglevelStrings[LoglevelNum] = {
 	"generic",
 	"debug",
 	"info",
@@ -16,6 +17,21 @@ const char* Logger::LoglevelStrings[LoglevelStrNum] = {
 	"fatal",
 	"off"
 };
+
+std::ostream& operator <<(std::ostream &os, const Logger::log_level_t &level) {
+	os << static_cast<int>(level);
+
+	return os;
+}
+
+std::istream& operator >>(std::istream &is, Logger::log_level_t &level) {
+	int num_loglevel;
+	is >> num_loglevel;
+	level = static_cast<Logger::log_level_t>(num_loglevel % Logger::LoglevelNum);
+	return is;
+}
+
+
 #if defined(_REENTRANT)
 pthread_mutex_t Logger::stream_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif

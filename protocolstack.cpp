@@ -9,6 +9,7 @@
 
 #include <iostream> //cout
 using namespace std;
+using namespace cpp_pthread;
 
 namespace mavhub {
 
@@ -53,7 +54,8 @@ void ProtocolStack::run() {
 		channel = 0;
 		buf_iter = rx_buffer_list.begin();
 
-		pthread_mutex_lock(&link_mutex);
+		{ //begin of link mutex scope
+		Lock lm_lock(link_mutex);
 
 		//iterate through interfaces
 		//TODO: use select on fd_set
@@ -152,8 +154,8 @@ void ProtocolStack::run() {
 			}
 			channel++;
 		}
-		
-		pthread_mutex_unlock(&link_mutex);
+
+		}// end of link mutex scope
 
 		gettimeofday(&t2, 0);
 		timediff(diff, t1, t2);
@@ -164,24 +166,19 @@ void ProtocolStack::run() {
 }
 
 void ProtocolStack::send(const mavlink_message_t &msg) const {
-	pthread_mutex_lock(&tx_mutex);
-
+	Lock tx_lock(tx_mutex);
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
 
-	pthread_mutex_lock(&link_mutex);
+	Lock lm_lock(link_mutex);
 
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		iface_iter->first->write(tx_buffer, len);
 	}
-
-	pthread_mutex_unlock(&link_mutex);
-	pthread_mutex_unlock(&tx_mutex);
-
 }
 
 void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const {
-	pthread_mutex_lock(&tx_mutex);
+	Lock tx_lock(tx_mutex);
 
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
 
@@ -193,14 +190,12 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *s
 			iface_iter->first->write(tx_buffer, len);
 		}
 	}
-
-	pthread_mutex_unlock(&tx_mutex);
 }
 
 int ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format) {
 	if(!interface) return -1;
 
-	pthread_mutex_lock(&link_mutex);
+	Lock lm_lock(link_mutex);
 	
 	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
 		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
@@ -212,8 +207,6 @@ int ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format)
 	if(format == MKPACKAGE) {
 		rx_buffer_list.push_back( vector<uint8_t>() );
 	}
-	
-	pthread_mutex_unlock(&link_mutex);
 
 	return 0;
 }
@@ -229,9 +222,8 @@ MediaLayer* ProtocolStack::link(unsigned int link_id) {
 }
 
 int ProtocolStack::remove_link(unsigned int link_id) {
-	int rc = -1;
+	Lock lm_lock(link_mutex);
 
-	pthread_mutex_lock(&link_mutex);
 	if(interface_list.size() >= link_id+1) { //ID is in range
 		interface_packet_list_t::iterator iface_iter = interface_list.begin();
 		// seek iterator to right position
@@ -240,12 +232,10 @@ int ProtocolStack::remove_link(unsigned int link_id) {
 			//TODO: remove rx_buffer
 		}
 		interface_list.erase(iface_iter);
-		rc = 0;
+		return 0;
 	}
 
-	pthread_mutex_unlock(&link_mutex);
-
-	return rc;
+	return -1;
 }
 
 
@@ -255,7 +245,7 @@ void ProtocolStack::add_application(AppLayer *app) {
 }
 
 std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
-	pthread_mutex_lock(&proto_stack.link_mutex);
+	Lock lm_lock(proto_stack.link_mutex);
 
 	// print headline
 	os << std::setw(3) << "ID" 
@@ -274,8 +264,6 @@ std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
 			<< endl;
 		id++;
 	}
-
-	pthread_mutex_unlock(&proto_stack.link_mutex);
 
 	return os;
 }

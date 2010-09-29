@@ -9,7 +9,7 @@
 
 namespace mavhub {
 
-	class MAVShell : public PThread {
+	class MAVShell : public cpp_pthread::PThread {
 		public:
 			MAVShell(uint16_t port = 32001) throw(const char*);
 			~MAVShell();

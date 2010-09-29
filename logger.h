@@ -28,6 +28,8 @@ namespace mavhub {
 				LOGLEVEL_FATAL,	//log critical errors
 				LOGLEVEL_OFF	//log nothing
 			};
+			friend std::ostream& operator <<(std::ostream &os, const log_level_t &level);
+			friend std::istream& operator >>(std::istream &is, log_level_t &level);
 
 			/// return true if logging level is lower than LOG_OFF
 			static bool enabled();
@@ -57,10 +59,10 @@ namespace mavhub {
 			static std::ostream *& output_stream();
 
 		private:
-			/// number of different loglevel strings
-			static const int LoglevelStrNum = 7;
+			/// number of different loglevels 
+			static const int LoglevelNum = 7;
 			/// human readable form of log level
-			static const char* LoglevelStrings[LoglevelStrNum];
+			static const char* LoglevelStrings[LoglevelNum];
 			/// current logging level
 			static log_level_t log_level;
 			/// auto_ptr to take strict ownership of out_stream
@@ -107,7 +109,7 @@ namespace mavhub {
 		time (&rawtime);
 		timeinfo = localtime(&rawtime);
 		*out_stream << "["
-			<< std::setw(7) << std::setfill(' ') << std::left << LoglevelStrings[(int)loglevel]
+			<< std::setw(7) << std::setfill(' ') << std::left << LoglevelStrings[static_cast<int>(loglevel)]
 			<< " " << std::setw(2) << std::setfill('0') << std::right << timeinfo->tm_hour
 			<< ":" << std::setw(2) << timeinfo->tm_min
 			<< ":" << std::setw(2) << timeinfo->tm_sec
