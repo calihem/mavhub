@@ -12,6 +12,9 @@
 
 namespace mavhub {
 	typedef std::pair<std::string, uint16_t> string_addr_pair_t;
+	std::ostream& operator <<(std::ostream &os, const string_addr_pair_t &string_addr_pair);
+	std::istream& operator >>(std::istream &is, string_addr_pair_t &string_addr_pair);
+
 	typedef std::pair<in_addr, uint16_t> num_addr_pair_t;
 
 	/**

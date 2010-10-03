@@ -1,5 +1,7 @@
 #include "mkpackage.h"
 
+#include "logger.h"
+
 #include <cstdarg> //va_list
 #include <algorithm> //find
 
@@ -138,10 +140,10 @@ void MKPackage::decode() throw(const char*) {
 		return;
 	}
 	int tmp1, tmp2, tmp3, tmp4;
-	int ptrIn = 3,
-		ptrOut = 0;
+	int ptrIn = 3;
 
 	int len = encoded.size() - 3;
+
 	int maxPtr = len - 4;
 	while(ptrIn <= maxPtr) {
 		tmp1 = encoded.at(ptrIn++) - '=';
@@ -150,17 +152,20 @@ void MKPackage::decode() throw(const char*) {
 		tmp4 = encoded.at(ptrIn++) - '=';
 
 		if(len--) {
-			payload[ptrOut++] = ( (tmp1 << 2) | (tmp2 >> 4) );
+// 			payload[ptrOut++] = ( (tmp1 << 2) | (tmp2 >> 4) );
+			payload.push_back( (tmp1 << 2) | (tmp2 >> 4) );
 		} else {
 			break;
 		}
 		if(len--) {
-			payload[ptrOut++] = ( ((tmp2 & 0x0f) << 4) | (tmp3 >> 2) );
+// 			payload[ptrOut++] = ( ((tmp2 & 0x0f) << 4) | (tmp3 >> 2) );
+			payload.push_back( ((tmp2 & 0x0f) << 4) | (tmp3 >> 2) );
 		} else {
 			break;
 		}
 		if(len--) {
-			payload[ptrOut++] = ( ((tmp3 & 0x03) << 6) | tmp4 );
+// 			payload[ptrOut++] = ( ((tmp3 & 0x03) << 6) | tmp4 );
+			payload.push_back( ((tmp3 & 0x03) << 6) | tmp4 );
 		} else {
 			break;
 		}

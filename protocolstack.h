@@ -9,6 +9,7 @@
 #include <ostream> 
 
 namespace mavhub {
+	class MKPackage;
 
 	class ProtocolStack : public cpp_pthread::PThread {
 		public:
@@ -52,7 +53,7 @@ namespace mavhub {
 			/// Size of rx buffer
 			static const int BUFFERLENGTH = 512;
 			/// Polling interval through all interfaces in us
-			static const int POLLINTERVAL = 1000000;//FIXME
+			static const int POLLINTERVAL = 20000;
 
 			/// System ID
 			uint8_t sys_id;
@@ -73,6 +74,7 @@ namespace mavhub {
 			void transmit_to_apps(const mavlink_message_t &msg) const;
 			/// transmit msg on every MediaLayer except src_iface
 			void retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const;
+			void retransmit(const MKPackage &msg, const MediaLayer *src_iface) const;
 	};
 	// ----------------------------------------------------------------------------
 	// ProtocolStack

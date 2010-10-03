@@ -36,9 +36,9 @@ INCLUDES = -I. -Imodule -I../mavlink/include
 # compiler flags to generate dependency files.
 GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 
-# CXX_CFLAGS 	= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT $(GENDEPFLAGS)
-# CXX_CFLAGS 	= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT
-CXX_CFLAGS 	= -Wall -pedantic -O2 -D_REENTRANT
+# CXX_CFLAGS 	+= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT $(GENDEPFLAGS)
+# CXX_CFLAGS 	+= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT
+CXX_CFLAGS 	+= -Wall -pedantic -O2 -D_REENTRANT
 CXX_LDFLAGS 	= -lpthread
 
 # Make variables (AS, LD, CXX, ...)

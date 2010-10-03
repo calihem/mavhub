@@ -13,8 +13,8 @@ namespace mavhub {
 			MKPackage(const uint8_t *data, int length) throw(const char*);
 			virtual ~MKPackage();
 			
-			uint8_t *rawData();
-			int rawSize();
+			const uint8_t *rawData() const;
+			const int rawSize() const;
 			bool checkCRC() const;
 
 		private:
@@ -30,8 +30,8 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// MKPackage
 	// ----------------------------------------------------------------------------
-	inline uint8_t* MKPackage::rawData() { return &encoded[0]; }
-	inline int MKPackage::rawSize() { return encoded.size(); }
+	inline const uint8_t* MKPackage::rawData() const { return &encoded[0]; }
+	inline const int MKPackage::rawSize() const { return encoded.size(); }
 } // namespace mavhub
 
 #endif

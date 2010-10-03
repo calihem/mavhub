@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 		if(udp_layer) {
 			udp_layer->add_groupmember("127.0.0.1", 32001);
 			udp_layer->add_groupmember("127.0.0.1", 14550);
+			udp_layer->add_groupmember("127.0.0.1", 5000);
 		}
 	}
  
@@ -62,10 +63,12 @@ int main(int argc, char **argv) {
 
 	//configure stack
 	ProtocolStack::instance().system_id(system_id);
-	ProtocolStack::instance().add_link(udp , ProtocolStack::MAVLINKPACKAGE );
+// 	ProtocolStack::instance().add_link(udp , ProtocolStack::MAVLINKPACKAGE );
+	ProtocolStack::instance().add_link(udp , ProtocolStack::MKPACKAGE );
 // 	stack.add_link(udp , ProtocolStack::MKPACKAGE );
 // 	stack.add_link(uart , ProtocolStack::MKPACKAGE );
-	ProtocolStack::instance().add_link(uart , ProtocolStack::MAVLINKPACKAGE );
+// 	ProtocolStack::instance().add_link(uart , ProtocolStack::MAVLINKPACKAGE );
+	ProtocolStack::instance().add_link(uart , ProtocolStack::MKPACKAGE );
 // 	stack.add_application(core_app);
 
 	//activate stack

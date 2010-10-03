@@ -4,10 +4,29 @@
 #include "utility.h"
 #include <cstring> //memset
 #include <netdb.h> //hostent
+#include <iostream>
 
 using std::string;
 
 namespace mavhub {
+
+std::ostream& operator <<(std::ostream &os, const string_addr_pair_t &string_addr_pair) {
+	os << string_addr_pair.first << ":" << string_addr_pair.second;
+
+	return os;
+}
+
+std::istream& operator >>(std::istream &is, string_addr_pair_t &string_addr_pair) {
+	char ip_string[16];
+	char delim;
+
+	is >> ip_string;
+	is >> delim;
+	is >> string_addr_pair.second;
+	string_addr_pair.first.assign(ip_string);
+
+	return is;
+}
 
 // ----------------------------------------------------------------------------
 // Socket

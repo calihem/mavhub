@@ -39,7 +39,7 @@ void MAVShell::handle_client() {
 	if(!client_socket) return;
 
 	string remote_addr;
-	uint16_t remote_port;
+	uint16_t remote_port = 0;
 	try {
 		remote_addr = client_socket->foreign_addr();
 		remote_port = client_socket->foreign_port();

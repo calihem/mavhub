@@ -79,7 +79,7 @@ void ProtocolStack::run() {
 					for(int i=0; i<received; i++) {
 						if( mavlink_parse_char(channel, rx_buffer[i], &msg, &status) ) {
 							Logger::log("received mavlink packet on channel", channel, Logger::LOGLEVEL_DEBUG);
-							//broadcast msg on every channel
+							//broadcast msg on every mavlink channel
 							retransmit(msg, iface_iter->first);
 							//send msg to applications
 							transmit_to_apps(msg);
@@ -91,12 +91,15 @@ void ProtocolStack::run() {
 						std::vector<uint8_t>::iterator start_iter;
 						start_iter = std::find(rx_buffer.begin(), rx_buffer.end(), '#');
 						if( start_iter != rx_buffer.end() ) {//found #
+							Logger::log("found MK start sign", Logger::LOGLEVEL_DEBUG);
 							buf_iter->insert( buf_iter->end(), start_iter, rx_buffer.end() );
 						} else {//throw data away
+							Logger::log("throw data away", Logger::LOGLEVEL_DEBUG);
 							buf_iter++;
 							break;
 						}
 					} else {//append data
+						Logger::log("append MK data", Logger::LOGLEVEL_DEBUG);
 						buf_iter->insert( buf_iter->end(), rx_buffer.begin(), rx_buffer.end() );
 					}
 
@@ -104,6 +107,7 @@ void ProtocolStack::run() {
 					stop_iter = std::find(buf_iter->begin()+3, buf_iter->end(), '\r');
 
 					while( stop_iter != buf_iter->end() ) {//found \r
+						Logger::log("found MK stop sign", Logger::LOGLEVEL_DEBUG);
 						MKPackage *mk_package;
 						int data_length;
 						try{
@@ -128,7 +132,11 @@ void ProtocolStack::run() {
 							stop_iter = std::find(buf_iter->begin()+3, buf_iter->end(), '\r');
 							continue;
 						}
-						Logger::debug("got mkpackage");
+						Logger::log("received MK packet on channel", channel, Logger::LOGLEVEL_DEBUG);
+						//broadcast msg on every mkpackage channel
+						retransmit(*mk_package, iface_iter->first);
+						//there is NO transmission to the apps because this is MAVHUB and not MKHUB ;)
+						
 						delete mk_package;
 
 						//remove data of mk_package from buffer
@@ -186,8 +194,21 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *s
 
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
-		if(iface_iter->first != src_iface) {
+		if(iface_iter->second == MAVLINKPACKAGE
+		&& iface_iter->first != src_iface) {
 			iface_iter->first->write(tx_buffer, len);
+		}
+	}
+}
+
+void ProtocolStack::retransmit(const MKPackage &msg, const MediaLayer *src_iface) const {
+	// locking of link_mutex is done by run()
+	
+	interface_packet_list_t::const_iterator iface_iter;
+	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
+		if(iface_iter->second == MKPACKAGE
+		&& iface_iter->first != src_iface) {
+			iface_iter->first->write(msg.rawData(), msg.rawSize());
 		}
 	}
 }
