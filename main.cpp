@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 	}
 
 	//create media layers
-	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyS0");
+	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyS1");
 // 	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyUSB0");
 	MediaLayer *udp = LinkFactory::build(LinkFactory::UDPLink, UDPLayer::DefaultPort);
 	if(udp) {
@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 			udp_layer->add_groupmember("127.0.0.1", 32001);
 			udp_layer->add_groupmember("127.0.0.1", 14550);
 			udp_layer->add_groupmember("127.0.0.1", 5000);
+			udp_layer->add_groupmember("192.168.1.10", 5000);
 		}
 	}
  

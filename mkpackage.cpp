@@ -136,6 +136,11 @@ void MKPackage::decode() throw(const char*) {
 	|| encoded.at(0) != '#'			//package has to start with #
 	|| encoded.at(encoded.size()-1) != '\r'	//package has to stop with \r
 	|| !checkCRC() ){			//checksum must be ok
+Logger::log("size: ", encoded.size(), Logger::LOGLEVEL_DEBUG);
+Logger::log("[0]: ", encoded.at(0), Logger::LOGLEVEL_DEBUG);
+Logger::log("[size-1]: ", encoded.at(encoded.size()-1), Logger::LOGLEVEL_DEBUG);
+Logger::log("checkCRC: ", checkCRC(), Logger::LOGLEVEL_DEBUG);
+
 		throw "ERROR: MKPackage::decode";
 		return;
 	}

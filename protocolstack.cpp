@@ -71,6 +71,12 @@ void ProtocolStack::run() {
 					continue;
 				}
 			}
+			//catch strange 0 byte
+			if(received == 0) {
+				channel++;
+				continue;
+			}
+
 			//received data, try to parse it
 			Logger::log(received, "bytes received on channel", channel, Logger::LOGLEVEL_DEBUG);
 
@@ -89,10 +95,10 @@ void ProtocolStack::run() {
 				case MKPACKAGE:
 					if( buf_iter->empty() ) { //synchronize to start sign
 						std::vector<uint8_t>::iterator start_iter;
-						start_iter = std::find(rx_buffer.begin(), rx_buffer.end(), '#');
+						start_iter = std::find(rx_buffer.begin(), rx_buffer.begin()+received, '#');
 						if( start_iter != rx_buffer.end() ) {//found #
 							Logger::log("found MK start sign", Logger::LOGLEVEL_DEBUG);
-							buf_iter->insert( buf_iter->end(), start_iter, rx_buffer.end() );
+							buf_iter->insert( buf_iter->end(), start_iter, rx_buffer.begin()+received );
 						} else {//throw data away
 							Logger::log("throw data away", Logger::LOGLEVEL_DEBUG);
 							buf_iter++;
@@ -100,7 +106,7 @@ void ProtocolStack::run() {
 						}
 					} else {//append data
 						Logger::log("append MK data", Logger::LOGLEVEL_DEBUG);
-						buf_iter->insert( buf_iter->end(), rx_buffer.begin(), rx_buffer.end() );
+						buf_iter->insert( buf_iter->end(), rx_buffer.begin(), rx_buffer.begin()+received );
 					}
 
 					//look for stop sign
@@ -140,9 +146,11 @@ void ProtocolStack::run() {
 						delete mk_package;
 
 						//remove data of mk_package from buffer
+						Logger::log("try to clear buffer", Logger::LOGLEVEL_DEBUG);
 						buf_iter->erase(buf_iter->begin(), buf_iter->begin()+data_length);
+						Logger::log("cleared buffer", Logger::LOGLEVEL_DEBUG);
 						//ensure that buffer starts with start sign
-						if( buf_iter->at(0) != '#' ) {
+						if( buf_iter->size() > 0 && buf_iter->at(0) != '#' ) {
 							//remove data from buffer up to next start sign
 							std::vector<uint8_t>::iterator start_iter;
 							start_iter = std::find(buf_iter->begin()+1, buf_iter->end(), '#');
