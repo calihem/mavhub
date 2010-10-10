@@ -38,6 +38,21 @@ void UDPLayer::add_groupmember(const std::string& addr, uint16_t port) throw(con
 	groupmember_list.push_back( std::make_pair(num_addr, port) );
 }
 
+void UDPLayer::add_groupmembers(const std::list<string_addr_pair_t>& member_list) throw(const char*) {
+	if(member_list.empty()) return;
+
+	std::list<string_addr_pair_t>::const_iterator it;
+	for(it=member_list.begin(); it!=member_list.end(); ++it) {
+		try {
+			add_groupmember(it->first, it->second);
+		}
+		catch(const char *message) {
+			throw message;
+		}
+	}
+
+}
+
 int UDPLayer::write(const uint8_t *buffer, int buf_len) const {
 	std::list<num_addr_pair_t>::const_iterator gmember_iter;
 	int rc = 0;

@@ -74,6 +74,7 @@ namespace mavhub {
 			 */
 			virtual int write(const uint8_t *buffer, int length) const;
 			void add_groupmember(const std::string& addr, uint16_t port) throw(const char*);
+			void add_groupmembers(const std::list<string_addr_pair_t>& member_list) throw(const char*);
 
 		protected:
 			virtual void print(std::ostream &os) const;

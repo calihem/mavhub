@@ -146,11 +146,11 @@ void ProtocolStack::run() {
 						delete mk_package;
 
 						//remove data of mk_package from buffer
-						Logger::log("try to clear buffer", Logger::LOGLEVEL_DEBUG);
 						buf_iter->erase(buf_iter->begin(), buf_iter->begin()+data_length);
-						Logger::log("cleared buffer", Logger::LOGLEVEL_DEBUG);
+						Logger::log(data_length, "bytes cleared out of mk buffer on channel ", channel, Logger::LOGLEVEL_DEBUG);
 						//ensure that buffer starts with start sign
 						if( buf_iter->size() > 0 && buf_iter->at(0) != '#' ) {
+							Logger::log("synchronize mk stream", Logger::LOGLEVEL_WARN);
 							//remove data from buffer up to next start sign
 							std::vector<uint8_t>::iterator start_iter;
 							start_iter = std::find(buf_iter->begin()+1, buf_iter->end(), '#');
@@ -160,6 +160,7 @@ void ProtocolStack::run() {
 								buf_iter->clear();
 							}
 						}
+						//look for next stop sign
 						stop_iter = std::find(buf_iter->begin()+3, buf_iter->end(), '\r');
 					}
 					buf_iter++;
@@ -216,6 +217,7 @@ void ProtocolStack::retransmit(const MKPackage &msg, const MediaLayer *src_iface
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		if(iface_iter->second == MKPACKAGE
 		&& iface_iter->first != src_iface) {
+			Logger::log("send mk package on ", iface_iter->first->system_name(), Logger::LOGLEVEL_DEBUG);
 			iface_iter->first->write(msg.rawData(), msg.rawSize());
 		}
 	}

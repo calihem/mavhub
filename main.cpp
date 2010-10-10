@@ -30,32 +30,44 @@ int main(int argc, char **argv) {
 
 	parse_argv(argc, argv);
 
-	if( !cfg_filename.empty() ) {
-		//open config file
-		Setting settings(cfg_filename);
-		//read and set loglevel
-		Logger::log_level_t loglevel;
-		if( settings.value("loglevel", loglevel) )
-			Logger::log("Loglevel is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-		else
-			Logger::setLogLevel(loglevel);
-		if( settings.value("system_id", system_id) )
-			Logger::log("System ID is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-		if( settings.value("tcp_port", tcp_port) )
-			Logger::log("TCP port is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-	}
+	//open config file
+	Setting settings(cfg_filename);
+	//read loglevel
+	Logger::log_level_t loglevel;
+	if( settings.value("loglevel", loglevel) )
+		Logger::log("Loglevel is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	else
+		Logger::setLogLevel(loglevel);
+	//read system ID
+	if( settings.value("system_id", system_id) )
+		Logger::log("System ID is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	//read TCP port of MAVShell
+	if( settings.value("tcp_port", tcp_port) )
+		Logger::log("TCP port is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
 
 	//create media layers
 	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyS1");
 // 	MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, "/dev/ttyUSB0");
+
 	MediaLayer *udp = LinkFactory::build(LinkFactory::UDPLink, UDPLayer::DefaultPort);
 	if(udp) {
 		UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(udp);
 		if(udp_layer) {
-			udp_layer->add_groupmember("127.0.0.1", 32001);
-			udp_layer->add_groupmember("127.0.0.1", 14550);
-			udp_layer->add_groupmember("127.0.0.1", 5000);
-			udp_layer->add_groupmember("192.168.1.10", 5000);
+			// read udp settings
+			settings.begin_group("UDP_link");
+			
+			// read udp group members
+			std::list<string_addr_pair_t> groupmember_list;
+			settings.value("members", groupmember_list);
+			try{
+				udp_layer->add_groupmembers(groupmember_list);
+			}
+			catch(const char *message) {
+				
+			}
+
+			settings.end_group();
+
 		}
 	}
  

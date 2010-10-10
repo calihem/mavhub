@@ -17,13 +17,23 @@ std::ostream& operator <<(std::ostream &os, const string_addr_pair_t &string_add
 }
 
 std::istream& operator >>(std::istream &is, string_addr_pair_t &string_addr_pair) {
-	char ip_string[16];
-	char delim;
+	char tmp;
 
-	is >> ip_string;
-	is >> delim;
+	//eat whitespaces
+	is >> tmp;
+	while(tmp == ' ' || tmp == '\t')
+		is >> tmp;
+
+	//read address
+	uint8_t counter = 1;
+	string_addr_pair.first.clear();
+	while(tmp != ':' && tmp != ' ' && counter < 16) {
+		string_addr_pair.first.push_back(tmp);
+		is >> tmp;
+		counter++;
+	}
+	//read port
 	is >> string_addr_pair.second;
-	string_addr_pair.first.assign(ip_string);
 
 	return is;
 }
