@@ -171,15 +171,11 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 			try {
 				MediaLayer *link = LinkFactory::build(argv.at(i+1), argv.at(i+2));
 				istringstream istream( argv.at(i+3) );
-				int format;
+				ProtocolStack::packageformat_t format;
 				istream >> format;
-				if(format < 0 || format > 1) {
-					send_stream << "Packet format out of range" << endl;
-				} else {
-					int add_failed = ProtocolStack::instance().add_link( link, static_cast<ProtocolStack::packageformat_t>(format) );
-					if(add_failed) {
-						send_stream << "Bringing interface up failed" << endl;
-					}
+				int add_failed = ProtocolStack::instance().add_link(link, format);
+				if(add_failed) {
+					send_stream << "Bringing interface up failed" << endl;
 				}
 				i += 3;
 			}

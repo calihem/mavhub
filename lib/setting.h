@@ -16,8 +16,11 @@ class Setting {
 
 		template <class T>
 		friend Setting& operator <<(Setting &setting, const std::map<std::string, T> &val_map);
-		/// Start new group/ hierarchy
-		void begin_group(const std::string& groupname);
+		/**
+		 * @brief Start new group/ hierarchy
+		 * returns 1 if group was added otherwise 0
+		 */
+		int begin_group(const std::string& groupname);
 		// End current group/ hierarchy
 		void end_group();
 		/// Set key-value-pair for current group
@@ -29,6 +32,8 @@ class Setting {
 	private:
 		/// config file
 		std::fstream conf_file;
+		/// open mode of config file
+		std::ios_base::openmode open_mode;
 		/// prepend string
 		std::string pre_string;
 		/// current group

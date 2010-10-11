@@ -5,7 +5,7 @@ namespace cpp_io {
 using namespace std;
 
 Setting::Setting(const std::string& file_name, std::ios_base::openmode mode) : 
-	conf_file(file_name.c_str(), mode) {
+	conf_file(file_name.c_str(), mode), open_mode(mode) {
 
 	if (!conf_file) {
 		//FIXME: throw exception
@@ -29,19 +29,30 @@ Setting::Setting& operator <<(Setting &setting, const std::map<std::string, T> &
 	return setting;
 }
 
-void Setting::begin_group(const std::string& groupname) {
-	cur_group = groupname;
+int Setting::begin_group(const std::string& groupname) {
+	int rc = 0;
 
-	group_pos = find_group(cur_group);
-	if(group_pos == -1) { //found no group
-		//fast-forward to end
-		conf_file.clear();
-		conf_file.seekp(ios_base::end);
-		//insert group
-		conf_file << "[" << cur_group << "]" << endl;
-		group_pos = conf_file.tellp();
+	std::streampos g_pos = find_group(groupname);
+	if(g_pos == -1) { //found no group
+		if(open_mode & std::ios_base::out) {	//add new group
+			cur_group = groupname;
+			//fast-forward to end
+			conf_file.clear();
+			conf_file.seekp(ios_base::end);
+			//insert group
+			conf_file << "[" << cur_group << "]" << endl;
+			group_pos = conf_file.tellp();
+			rc = 1;
+		} else {
+			rc = -1;
+		}
+	} else { //found group
+		cur_group = groupname;
+		group_pos =g_pos;
 	}
-	pre_string = "\t"; 
+	pre_string = "\t";
+
+	return rc;
 }
 
 void Setting::end_group() {

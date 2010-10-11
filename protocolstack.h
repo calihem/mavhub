@@ -18,6 +18,9 @@ namespace mavhub {
 				MAVLINKPACKAGE,	//MAVLINK packet
 				MKPACKAGE	//MikroKopter packet
 			};
+			friend std::ostream& operator <<(std::ostream &os, const packageformat_t &format);
+			friend std::istream& operator >>(std::istream &is, packageformat_t &format);
+
 			typedef std::pair<MediaLayer*, packageformat_t> interface_packet_pair_t; 
 			typedef std::list<interface_packet_pair_t> interface_packet_list_t;
 			typedef std::list< std::vector<uint8_t> > buffer_list_t;
@@ -79,6 +82,26 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// ProtocolStack
 	// ----------------------------------------------------------------------------
+	inline std::ostream& operator <<(std::ostream &os, const ProtocolStack::packageformat_t &format) {
+		os << static_cast<int>(format);
+
+		return os;
+	}
+	inline std::istream& operator >>(std::istream &is, ProtocolStack::packageformat_t &format) {
+		int num_format;
+		is >> num_format;
+		switch(num_format) {
+			case 1:
+				format = ProtocolStack::MKPACKAGE;
+				break;
+			default:
+				format = ProtocolStack::MAVLINKPACKAGE;
+				break;
+		}
+
+		return is;
+	}
+
 	inline void ProtocolStack::system_id(uint8_t system_id) {
 		sys_id = system_id;
 	}
