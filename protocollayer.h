@@ -4,6 +4,7 @@
 #include <inttypes.h> //uint8_t
 #include <list>
 #include <errno.h>
+#include <mavlink.h>
 #include "thread.h"
 #include "uart.h"
 #include "network.h"

@@ -3,7 +3,6 @@
 
 #include "logger.h"
 #include "utility.h"
-#include "protocol.h"
 #include <termios.h>
 #include <unistd.h> //read, write
 #include <string>
