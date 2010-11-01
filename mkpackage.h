@@ -17,6 +17,10 @@ namespace mavhub {
 			const int rawSize() const;
 			bool checkCRC() const;
 
+			uint8_t address() const;
+			uint8_t command() const;
+			const std::vector<uint8_t>& data() const;
+
 		private:
 			uint8_t addr;
 			uint8_t cmd;
@@ -32,6 +36,11 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	inline const uint8_t* MKPackage::rawData() const { return &encoded[0]; }
 	inline const int MKPackage::rawSize() const { return encoded.size(); }
+	
+	inline uint8_t MKPackage::address() const { return addr; }
+	inline uint8_t MKPackage::command() const { return cmd; }
+	inline const std::vector<uint8_t>& MKPackage::data() const { return payload; }
+
 } // namespace mavhub
 
 #endif

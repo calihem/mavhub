@@ -141,8 +141,12 @@ void ProtocolStack::run() {
 						Logger::log("received MK packet on channel", channel, Logger::LOGLEVEL_DEBUG);
 						//broadcast msg on every mkpackage channel
 						retransmit(*mk_package, iface_iter->first);
-						//there is NO transmission to the apps because this is MAVHUB and not MKHUB ;)
-						
+
+						//convert package to mavling before sending to apps
+						if( !mk2mavlink(*mk_package, msg) ) {
+							transmit_to_apps(msg);
+						}
+
 						delete mk_package;
 
 						//remove data of mk_package from buffer
@@ -190,7 +194,18 @@ void ProtocolStack::send(const mavlink_message_t &msg) const {
 
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
-		iface_iter->first->write(tx_buffer, len);
+		if(iface_iter->second == MAVLINKPACKAGE)
+			iface_iter->first->write(tx_buffer, len);
+	}
+}
+
+void ProtocolStack::send(const MKPackage &msg) const {
+	Lock lm_lock(link_mutex);
+
+	interface_packet_list_t::const_iterator iface_iter;
+	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
+		if(iface_iter->second == MKPACKAGE)
+			iface_iter->first->write(msg.rawData(), msg.rawSize());
 	}
 }
 
@@ -221,6 +236,18 @@ void ProtocolStack::retransmit(const MKPackage &msg, const MediaLayer *src_iface
 			iface_iter->first->write(msg.rawData(), msg.rawSize());
 		}
 	}
+}
+
+int ProtocolStack::mk2mavlink(const MKPackage &mk_msg, mavlink_message_t &mav_msg) {
+
+	switch(mk_msg.command()) {
+		case 'D': // normal debug
+			mavlink_msg_mk_debugout_pack(mk_msg.address(), 42, &mav_msg, (const int8_t*)(&mk_msg.data()[0]));
+			return 0;
+		default: break;
+	}
+
+	return -1;
 }
 
 int ProtocolStack::add_link(MediaLayer *interface, const packageformat_t format) {

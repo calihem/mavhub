@@ -40,6 +40,7 @@ namespace mavhub {
 			void add_application(AppLayer *app);
 
 			void send(const mavlink_message_t &msg) const;
+			void send(const MKPackage &msg) const;
 // 			void join();
 
 		protected:
@@ -78,6 +79,8 @@ namespace mavhub {
 			/// transmit msg on every MediaLayer except src_iface
 			void retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const;
 			void retransmit(const MKPackage &msg, const MediaLayer *src_iface) const;
+			/// convert MikroKopter packet to MAVLINK packet
+			int mk2mavlink(const MKPackage &mk_msg, mavlink_message_t &mav_msg);
 	};
 	// ----------------------------------------------------------------------------
 	// ProtocolStack
