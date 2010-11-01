@@ -17,18 +17,18 @@ class LinkFactory {
 			UDPLink
 		};
 	
-		static MediaLayer* build(link_type_t type, const std::string& devicename);
-		static MediaLayer* build(link_type_t type, uint16_t port);
+		static MediaLayer* build(const link_type_t type, const std::string& devicename, const baudrate_t baudrate);
+		static MediaLayer* build(const link_type_t type, uint16_t port);
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 
 };
 
-inline MediaLayer* LinkFactory::build(LinkFactory::link_type_t type, const std::string& devicename) {
+inline MediaLayer* LinkFactory::build(const LinkFactory::link_type_t type, const std::string& devicename, const baudrate_t baudrate) {
 
 	try{
 		switch(type) {
 			case SerialLink:
-				return new UARTLayer(devicename);
+				return new UARTLayer(devicename, baudrate() | CS8 | CLOCAL | CREAD);
 				break;
 			default:
 				break;
@@ -41,7 +41,7 @@ inline MediaLayer* LinkFactory::build(LinkFactory::link_type_t type, const std::
 	return NULL;
 }
 
-inline MediaLayer* LinkFactory::build(LinkFactory::link_type_t type, uint16_t port) {
+inline MediaLayer* LinkFactory::build(const LinkFactory::link_type_t type, uint16_t port) {
 	
 	try{
 		switch(type) {
@@ -68,7 +68,7 @@ inline MediaLayer* LinkFactory::build(const std::string& type, const std::string
 	|| lowercase_type == "0"
 	|| lowercase_type == "serial"
 	|| lowercase_type == "uart") {
-		return build(SerialLink, devicename);
+		return build(SerialLink, devicename, baudrate_t(B57600)); //FIXME
 	} else if(lowercase_type == "udp"
 	|| lowercase_type == "1"
 	|| lowercase_type == "udpport"

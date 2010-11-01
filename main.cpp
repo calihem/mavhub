@@ -56,7 +56,12 @@ int main(int argc, char **argv) {
 		if( settings.value("name", dev_name) ) {
 			Logger::log("Device name is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
 		} else {
-			MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name);
+			baudrate_t baudrate(B57600);
+			if( settings.value("baudrate", baudrate) ) {
+				Logger::log("Baudrate is missing for device:", dev_name, Logger::LOGLEVEL_WARN);
+			}
+
+			MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name, baudrate);
 
 			ProtocolStack::packageformat_t package_format;
 			if( settings.value("protocol", package_format) ) {

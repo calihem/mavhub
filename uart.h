@@ -9,6 +9,19 @@
 
 
 namespace mavhub {
+	class baudrate_t {
+		public:
+			baudrate_t(unsigned int rate = B0) : baudrate(rate) {}
+
+			const unsigned int operator()() const;
+			const unsigned int numeric() const;
+
+			friend std::ostream& operator <<(std::ostream &os, const baudrate_t &baudrate);
+			friend std::istream& operator >>(std::istream &is, baudrate_t &baudrate);
+
+		private:
+			unsigned int baudrate;
+	};
 
 	class UART {
 		public:
@@ -28,6 +41,11 @@ namespace mavhub {
 			struct termios old_io_cfg, new_io_cfg;
 
 	};
+	// ----------------------------------------------------------------------------
+	// baudrate_t
+	// ----------------------------------------------------------------------------
+	inline const unsigned int baudrate_t::operator()() const { return baudrate; }
+
 	// ----------------------------------------------------------------------------
 	// UART
 	// ----------------------------------------------------------------------------
