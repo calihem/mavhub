@@ -12,6 +12,7 @@
 #include "datacenter.h"
 #include "mavshell.h"
 #include "factory.h"
+#include "module/fc_mpkg.h"
 
 using namespace std;
 using namespace mavhub;
@@ -53,10 +54,17 @@ int main(int argc, char **argv) {
 	*/
 	if( settings.begin_group("serial_link") == 0) { //serial link group available
 		string dev_name;
+		dev_rate_t dev_rate;
 		if( settings.value("name", dev_name) ) {
 			Logger::log("Device name is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
 		} else {
-			MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name);
+		  // get device rate config
+		  if(settings.value("rate", dev_rate)) {
+			 Logger::log("UART: no baudrate given (rate = 12345)", Logger::LOGLEVEL_WARN);
+		  }
+		  // Logger::log("UART: baudrate: ", dev_rate, Logger::LOGLEVEL_WARN);
+		  dev_rate = UART::rate_rewrite(dev_rate);
+		  MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name, dev_rate);
 
 			ProtocolStack::packageformat_t package_format;
 			if( settings.value("protocol", package_format) ) {
@@ -103,9 +111,14 @@ int main(int argc, char **argv) {
 	}
  
 	//create modules
-// 	CoreModule *core_app = new CoreModule();
+ 	// CoreModule *core_app = new CoreModule();
 
-// 	ProtocolStack::instance().add_application(core_app);
+	//configure stack
+	ProtocolStack::instance().system_id(system_id);
+
+	FC_Mpkg *fc_mpkg_app = new FC_Mpkg();
+	// fc_mpkg_mod->start();
+	ProtocolStack::instance().add_application(fc_mpkg_app);
 
 	//activate stack
 	pthread_t stack_thread = ProtocolStack::instance().start();

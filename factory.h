@@ -17,18 +17,23 @@ class LinkFactory {
 			UDPLink
 		};
 	
-		static MediaLayer* build(link_type_t type, const std::string& devicename);
+		static MediaLayer* build(link_type_t type,
+										 const std::string& devicename,
+										 dev_rate_t devicerate);
 		static MediaLayer* build(link_type_t type, uint16_t port);
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 
 };
 
-inline MediaLayer* LinkFactory::build(LinkFactory::link_type_t type, const std::string& devicename) {
-
+inline MediaLayer* LinkFactory::build(LinkFactory::link_type_t type,
+												  const std::string& devicename,
+												  dev_rate_t devicerate) {
+  
 	try{
 		switch(type) {
 			case SerialLink:
-				return new UARTLayer(devicename);
+			  // Logger::log("rate: ", devicerate, Logger::LOGLEVEL_DEBUG);
+			  return new UARTLayer(devicename, (devicerate | CS8 | CLOCAL | CREAD));
 				break;
 			default:
 				break;
@@ -68,7 +73,7 @@ inline MediaLayer* LinkFactory::build(const std::string& type, const std::string
 	|| lowercase_type == "0"
 	|| lowercase_type == "serial"
 	|| lowercase_type == "uart") {
-		return build(SerialLink, devicename);
+	  return build(SerialLink, devicename, 57600);
 	} else if(lowercase_type == "udp"
 	|| lowercase_type == "1"
 	|| lowercase_type == "udpport"

@@ -9,6 +9,7 @@ SRCS_1   = main.cpp \
 	network.cpp \
 	module/coremod.cpp \
 	module/mkrcmod.cpp \
+	module/fc_mpkg.cpp \
 	datacenter.cpp \
 	mavshell.cpp
 

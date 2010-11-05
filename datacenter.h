@@ -8,6 +8,7 @@ namespace mavhub {
 
 	class DataCenter {
 		public:
+			// raw imu 
 			static const mavlink_raw_imu_t get_raw_imu();
 			static void set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu);
 
