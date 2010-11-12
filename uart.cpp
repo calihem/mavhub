@@ -7,9 +7,83 @@
 
 namespace mavhub {
 
-const unsigned int baudrate_t::numeric() const {
+UART::UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*) {
+	if( (sifd = open(devicename.c_str(), O_RDWR | O_NOCTTY)) < 0 ) {
+		throw "Can't open serial interface device";
+		return;
+	}
+
+	//save old settings
+	tcgetattr(sifd, &old_io_cfg);
+
+	//reset new config struct
+	bzero(&new_io_cfg, sizeof(new_io_cfg));
+	// set control modes
+	new_io_cfg.c_cflag = control_modes;
+
+	//apply settings to serial interface
+	tcflush(sifd, TCIFLUSH);
+	tcsetattr(sifd, TCSANOW, &new_io_cfg);
+}
+
+UART::~UART() {
+	 //restore settings of serial interface
+	 tcsetattr(sifd, TCSANOW, &old_io_cfg);
+	 //close file
+	 close(sifd);
+}
+
+const speed_t UART::baudrate_to_speed(const unsigned int baudrate) {
 
 	switch(baudrate) {
+		case 0:
+			return B0;
+		case 50:
+			return B50;
+		case 75:
+			return B75;
+		case 110:
+			return B110;
+		case 134:
+			return B134;
+		case 150:
+			return B150;
+		case 200:
+			return B200;
+		case 300:
+			return B300;
+		case 600:
+			return B600;
+		case 1200:
+			return B1200;
+		case 1800:
+			return B1800;
+		case 2400:
+			return B2400;
+		case 4800:
+			return B4800;
+		case 9600:
+			return B9600;
+		case 19200:
+			return B19200;
+		case 38400:
+			return B38400;
+		case 57600:
+			return B57600;
+		case 115200:
+			return B115200;
+		case 230400:
+			return B230400;
+		default:
+			break;
+	}
+
+	return B0;
+}
+
+const unsigned int UART::speed_to_baudrate(const speed_t speed) {
+
+	switch(speed) {
 		case B0:
 			return 0;
 		case B50:
@@ -53,106 +127,6 @@ const unsigned int baudrate_t::numeric() const {
 	}
 
 	return 0;
-}
-
-std::ostream& operator <<(std::ostream &os, const baudrate_t &baudrate) {
-	os << baudrate.numeric();
-	return os;
-}
-
-std::istream& operator >>(std::istream &is, baudrate_t &baudrate) {
-	int tmp;
-	is >> tmp;
-
-	switch(tmp) {
-		case 0:
-			baudrate.baudrate = B0;
-			break;
-		case 50:
-			baudrate.baudrate = B50;
-			break;
-		case 75:
-			baudrate.baudrate = B75;
-			break;
-		case 110:
-			baudrate.baudrate = B110;
-			break;
-		case 134:
-			baudrate.baudrate = B134;
-			break;
-		case 150:
-			baudrate.baudrate = B150;
-			break;
-		case 200:
-			baudrate.baudrate = B200;
-			break;
-		case 300:
-			baudrate.baudrate = B300;
-			break;
-		case 600:
-			baudrate.baudrate = B600;
-			break;
-		case 1200:
-			baudrate.baudrate = B1200;
-			break;
-		case 1800:
-			baudrate.baudrate = B1800;
-			break;
-		case 2400:
-			baudrate.baudrate = B2400;
-			break;
-		case 4800:
-			baudrate.baudrate = B4800;
-			break;
-		case 9600:
-			baudrate.baudrate = B9600;
-			break;
-		case 19200:
-			baudrate.baudrate = B19200;
-			break;
-		case 38400:
-			baudrate.baudrate = B38400;
-			break;
-		case 57600:
-			baudrate.baudrate = B57600;
-			break;
-		case 115200:
-			baudrate.baudrate = B115200;
-			break;
-		case 230400:
-			baudrate.baudrate = B230400;
-			break;
-		default:
-			break;
-	}
-
-	 return is;
-}
-
-UART::UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*) {
-	if( (sifd = open(devicename.c_str(), O_RDWR | O_NOCTTY)) < 0 ) {
-		throw "Can't open serial interface device";
-		return;
-	}
-
-	//save old settings
-	tcgetattr(sifd, &old_io_cfg);
-
-	//reset new config struct
-	bzero(&new_io_cfg, sizeof(new_io_cfg));
-	// set control modes
-	new_io_cfg.c_cflag = control_modes;
-
-	//apply settings to serial interface
-	tcflush(sifd, TCIFLUSH);
-	tcsetattr(sifd, TCSANOW, &new_io_cfg);
-}
-
-UART::~UART() {
-	//restore settings of serial interface
- 	tcsetattr(sifd, TCSANOW, &old_io_cfg);
-	//close file
-	close(sifd);
 }
 
 } // namespace mavhub

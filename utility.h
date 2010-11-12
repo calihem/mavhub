@@ -2,6 +2,7 @@
 #define _UTILITY_H_
 
 #include <fcntl.h>
+#include <vector>
 
 namespace mavhub {
 	// ----------------------------------------------------------------------------
@@ -36,6 +37,17 @@ namespace mavhub {
 		return diff;
 	}
 
+	template <class T>
+	std::ostream& operator <<(std::ostream &os, const std::vector<T> &value_vector) {
+		typename std::vector<T>::const_iterator it;
+
+		for(it=value_vector.begin(); it != value_vector.end(); ++it) {
+			if(it != value_vector.begin())
+				os << " ";
+			os << std::setw(6) << std::setfill(' ') << *it;
+		}
+		return os;
+	}
 
 } // namespace mavhub
 

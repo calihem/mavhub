@@ -57,7 +57,7 @@ namespace mavhub {
 			/// Size of rx buffer
 			static const int BUFFERLENGTH = 512;
 			/// Polling interval through all interfaces in us
-			static const int POLLINTERVAL = 20000;
+			static const int POLLINTERVAL = 500;
 
 			/// System ID
 			uint8_t sys_id;

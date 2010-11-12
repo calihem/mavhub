@@ -12,6 +12,7 @@
 #include "datacenter.h"
 #include "mavshell.h"
 #include "factory.h"
+#include "module/fc_mpkg.h"
 
 using namespace std;
 using namespace mavhub;
@@ -56,11 +57,10 @@ int main(int argc, char **argv) {
 		if( settings.value("name", dev_name) ) {
 			Logger::log("Device name is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
 		} else {
-			baudrate_t baudrate(B57600);
+			unsigned int baudrate(57600);
 			if( settings.value("baudrate", baudrate) ) {
 				Logger::log("Baudrate is missing for device:", dev_name, Logger::LOGLEVEL_WARN);
 			}
-
 			MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name, baudrate);
 
 			ProtocolStack::packageformat_t package_format;
@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
 				Logger::log("Protocol is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
 				package_format = ProtocolStack::MAVLINKPACKAGE;
 			}
-
 			ProtocolStack::instance().add_link(uart, package_format);
 		}
 		settings.end_group();
@@ -108,9 +107,14 @@ int main(int argc, char **argv) {
 	}
  
 	//create modules
-// 	CoreModule *core_app = new CoreModule();
+ 	// CoreModule *core_app = new CoreModule();
 
-// 	ProtocolStack::instance().add_application(core_app);
+	//configure stack
+	ProtocolStack::instance().system_id(system_id);
+
+	FC_Mpkg *fc_mpkg_app = new FC_Mpkg();
+	// fc_mpkg_mod->start();
+	ProtocolStack::instance().add_application(fc_mpkg_app);
 
 	//activate stack
 	pthread_t stack_thread = ProtocolStack::instance().start();
