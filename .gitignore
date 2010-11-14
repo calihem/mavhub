@@ -1,6 +1,7 @@
 *.cpp~
 *.h~
 Makefile~
+*.conf~
 .dep/
 *.o
 tags

@@ -19,10 +19,12 @@ using namespace mavhub;
 using namespace cpp_pthread;
 using namespace cpp_io;
 
-uint8_t mavhub::system_id = 42;
-int tcp_port = 30001;
+uint8_t mavhub::system_id(42);
+int tcp_port(32000);
 string cfg_filename("mavhub.conf");
 
+void read_settings(Setting &settings);
+void add_links(const list<string> link_list, Setting &settings);
 void parse_argv(int argc, char **argv);
 void print_help();
 
@@ -31,86 +33,15 @@ int main(int argc, char **argv) {
 
 	parse_argv(argc, argv);
 
-	//open config file
+	//open config file and read settings
 	Setting settings(cfg_filename, std::ios_base::in);
-	//read loglevel
-	Logger::log_level_t loglevel;
-	if( settings.value("loglevel", loglevel) )
-		Logger::log("Loglevel is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-	else
-		Logger::setLogLevel(loglevel);
-	//read system ID
-	if( settings.value("system_id", system_id) )
-		Logger::log("System ID is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-	//read TCP port of MAVShell
-	if( settings.value("tcp_port", tcp_port) )
-		Logger::log("TCP port is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-
-	//basic stack configuration
-	ProtocolStack::instance().system_id(system_id);
+	read_settings(settings);
 
 	/*
-	* create media layers
+	* create apps
 	*/
-	if( settings.begin_group("serial_link") == 0) { //serial link group available
-		string dev_name;
-		if( settings.value("name", dev_name) ) {
-			Logger::log("Device name is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
-		} else {
-			unsigned int baudrate(57600);
-			if( settings.value("baudrate", baudrate) ) {
-				Logger::log("Baudrate is missing for device:", dev_name, Logger::LOGLEVEL_WARN);
-			}
-			MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name, baudrate);
-
-			ProtocolStack::packageformat_t package_format;
-			if( settings.value("protocol", package_format) ) {
-				Logger::log("Protocol is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
-				package_format = ProtocolStack::MAVLINKPACKAGE;
-			}
-			ProtocolStack::instance().add_link(uart, package_format);
-		}
-		settings.end_group();
-	}
-
-	if( settings.begin_group("UDP_link") == 0) { //UDP link group available
-		//read udp port
-		uint16_t udp_port;
-		if( settings.value("port", udp_port) ) {
-			Logger::log("Port is missing in config file:", cfg_filename, "for UDP link", Logger::LOGLEVEL_WARN);
-			udp_port = UDPLayer::DefaultPort;
-		}
-		MediaLayer *udp = LinkFactory::build(LinkFactory::UDPLink, udp_port);
-		if(udp) {
-			UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(udp);
-			if(udp_layer) {
-				// read udp group members
-				std::list<string_addr_pair_t> groupmember_list;
-				settings.value("members", groupmember_list);
-				try{
-					udp_layer->add_groupmembers(groupmember_list);
-				}
-				catch(const char *message) {
-					Logger::log(message, Logger::LOGLEVEL_DEBUG);
-				}
-			}
-		}
-		//read package format
-		ProtocolStack::packageformat_t package_format;
-		if( settings.value("protocol", package_format) ) {
-			Logger::log("Protocol is missing in config file:", cfg_filename, "for UDP link", Logger::LOGLEVEL_WARN);
-			package_format = ProtocolStack::MAVLINKPACKAGE;
-		}
-		ProtocolStack::instance().add_link(udp, package_format);
-
-		settings.end_group();
-	}
- 
-	//create modules
- 	// CoreModule *core_app = new CoreModule();
-
-	//configure stack
-	ProtocolStack::instance().system_id(system_id);
+// 	CoreModule *core_app = new CoreModule();
+// 	ProtocolStack::instance().add_application(core_app);
 
 	FC_Mpkg *fc_mpkg_app = new FC_Mpkg();
 	// fc_mpkg_mod->start();
@@ -121,7 +52,7 @@ int main(int argc, char **argv) {
 	
 	//start mav shell
 	try {
-		MAVShell *mav_shell = new MAVShell(32001);
+		MAVShell *mav_shell = new MAVShell(tcp_port);
 		pthread_t shell_thread = mav_shell->start();
 		PThread::join(shell_thread);
 	}
@@ -131,6 +62,102 @@ int main(int argc, char **argv) {
 
 	//join threads
 	PThread::join(stack_thread);
+}
+
+void read_settings(Setting &settings) {
+	//read loglevel
+	Logger::log_level_t loglevel;
+	if( settings.value("loglevel", loglevel) )
+		Logger::log("Loglevel is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	else
+		Logger::setLogLevel(loglevel);
+
+	//read system ID
+	if( settings.value("system_id", system_id) )
+		Logger::log("System ID is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	ProtocolStack::instance().system_id(system_id);
+
+	//read TCP port of MAVShell
+	if( settings.value("tcp_port", tcp_port) )
+		Logger::log("TCP port is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+
+	//read interfaces (links)
+	list<string> link_list;
+	if( settings.value("interfaces", link_list) ) {
+		Logger::log("List of links is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	} else {
+		add_links(link_list, settings);
+	}
+}
+
+void add_links(const list<string> link_list, Setting &settings) {
+	for(list<string>::const_iterator link_iter = link_list.begin(); link_iter != link_list.end(); ++link_iter) {
+		if( settings.begin_group(*link_iter) == 0) { //link group available
+			LinkFactory::link_type_t link_type(LinkFactory::UnsupportedLink);
+			if( settings.value("type", link_type) ) {
+				Logger::log("Link type is missing for", *link_iter, Logger::LOGLEVEL_WARN);
+			} else {
+				switch(link_type) {
+					case LinkFactory::SerialLink: {
+						string dev_name;
+						if( settings.value("name", dev_name) ) {
+							Logger::log("Device name is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
+						} else {
+							unsigned int baudrate(57600);
+							if( settings.value("baudrate", baudrate) ) {
+								Logger::log("Baudrate is missing for device:", dev_name, Logger::LOGLEVEL_WARN);
+							}
+							MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name, baudrate);
+
+							ProtocolStack::packageformat_t package_format;
+							if( settings.value("protocol", package_format) ) {
+								Logger::log("Protocol is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
+								package_format = ProtocolStack::MAVLINKPACKAGE;
+							}
+							ProtocolStack::instance().add_link(uart, package_format);
+						}
+						break;
+					}
+					case LinkFactory::UDPLink: {
+						//read udp port
+						uint16_t udp_port;
+						if( settings.value("port", udp_port) ) {
+							Logger::log("Port is missing in config file:", cfg_filename, "for UDP link", Logger::LOGLEVEL_WARN);
+							udp_port = UDPLayer::DefaultPort;
+						}
+						MediaLayer *udp = LinkFactory::build(LinkFactory::UDPLink, udp_port);
+						if(udp) {
+							UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(udp);
+							if(udp_layer) {
+								// read udp group members
+								std::list<string_addr_pair_t> groupmember_list;
+								settings.value("members", groupmember_list);
+								try{
+									udp_layer->add_groupmembers(groupmember_list);
+								}
+								catch(const char *message) {
+									Logger::log(message, Logger::LOGLEVEL_DEBUG);
+								}
+							}
+						}
+						//read package format
+						ProtocolStack::packageformat_t package_format;
+						if( settings.value("protocol", package_format) ) {
+							Logger::log("Protocol is missing in config file:", cfg_filename, "for UDP link", Logger::LOGLEVEL_WARN);
+							package_format = ProtocolStack::MAVLINKPACKAGE;
+						}
+						ProtocolStack::instance().add_link(udp, package_format);
+						break;
+					}
+					default:
+						break;
+				}
+			}
+			settings.end_group();
+		} else {
+			Logger::log(*link_iter, "link group entry is missing in config file", cfg_filename, Logger::LOGLEVEL_WARN);
+		}
+	}
 }
 
 void parse_argv(int argc, char **argv) {

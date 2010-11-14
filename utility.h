@@ -2,7 +2,11 @@
 #define _UTILITY_H_
 
 #include <fcntl.h>
+#include <list>
 #include <vector>
+#include <iomanip> //setw
+#include <sstream> //stringstream
+#include <iterator> //istream_iterator
 
 namespace mavhub {
 	// ----------------------------------------------------------------------------
@@ -10,6 +14,7 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	static int enable_blocking_mode(int fd, bool enabled);
 	static timeval& timediff(timeval &diff, const timeval &t1, const timeval &t2);
+	std::istream& operator >>(std::istream &is, std::list<std::string> &string_list);
 
 	// ----------------------------------------------------------------------------
 	// Implementation
@@ -35,6 +40,47 @@ namespace mavhub {
 		}
 
 		return diff;
+	}
+
+	template <typename T>
+	std::ostream& operator <<(std::ostream &os, const std::list<T> &value_list) {
+		typename std::list<T>::const_iterator it;
+
+		for(it=value_list.begin(); it != value_list.end(); ++it) {
+			if(it != value_list.begin())
+				os << " ";
+			os << *it;
+		}
+		return os;
+	}
+
+	template <typename T>
+	std::istream& operator >>(std::istream &is, std::list<T> &value_list) {
+		T value;
+		char delim;
+
+		std::string line;
+		if( std::getline(is, line) ) { //read line
+			if(line.empty())
+				return is;
+
+			std::istringstream line_stream(line);
+			while(line_stream.good()) {
+				line_stream >> value;
+				value_list.push_back(value);
+				is >> delim;
+			}
+		}
+
+		return is;
+	}
+
+	inline std::istream& operator >>(std::istream &is, std::list<std::string> &string_list) {
+		std::istream_iterator<std::string> begin(is);
+		std::istream_iterator<std::string> end;
+		string_list.assign(begin, end);
+
+		return is;
 	}
 
 	template <class T>

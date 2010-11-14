@@ -131,39 +131,6 @@ namespace mavhub {
 		
 	};
 
-	template <class T>
-	std::ostream& operator <<(std::ostream &os, const std::list<T> &value_list) {
-		typename std::list<T>::const_iterator it;
-
-		for(it=value_list.begin(); it != value_list.end(); ++it) {
-			if(it != value_list.begin())
-				os << " ";
-			os << *it;
-		}
-		return os;
-	}
-
-	template <typename T>
-	std::istream& operator >>(std::istream &is, std::list<T> &value_list) {
-		T value;
-		char delim;
-
-		std::string line;
-		if( std::getline(is, line) ) { //read line
-			if(line.empty())
-				return is;
-
-			std::istringstream line_stream(line);
-			while(line_stream.good()) {
-				line_stream >> value;
-				value_list.push_back(value);
-				is >> delim;
-			}
-		}
-
-		return is;
-	}
-
 	// ----------------------------------------------------------------------------
 	// Socket
 	// ----------------------------------------------------------------------------

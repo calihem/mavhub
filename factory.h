@@ -11,16 +11,36 @@ namespace mavhub {
 
 class LinkFactory {
 	public:
-		/// Enumeration of supported link types
+		/// Enumeration of link types
 		enum link_type_t {
-			SerialLink,
-			UDPLink
+			SerialLink = 0,
+			UDPLink = 1,
+			UnsupportedLink = 255
 		};
-	
+		friend std::ostream& operator <<(std::ostream &os, const link_type_t &link_type);
+		friend std::istream& operator >>(std::istream &is, link_type_t &link_type);
+
 		static MediaLayer* build(const link_type_t type, const std::string& devicename, const unsigned int baudrate);
 		static MediaLayer* build(const link_type_t type, const uint16_t port);
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 };
+
+inline std::ostream& operator <<(std::ostream &os, const LinkFactory::link_type_t &link_type) {
+	os << static_cast<int>(link_type);
+
+	return os;
+}
+
+inline std::istream& operator >>(std::istream &is, LinkFactory::link_type_t &link_type) {
+	int num_link_type;
+	is >> num_link_type;
+	if(num_link_type >= 0 && num_link_type <= 1)
+		link_type = static_cast<LinkFactory::link_type_t>(num_link_type);
+	else
+		link_type = LinkFactory::UnsupportedLink;
+
+	return is;
+}
 
 inline MediaLayer* LinkFactory::build(const LinkFactory::link_type_t type, const std::string& devicename, const unsigned int baudrate) {
 
