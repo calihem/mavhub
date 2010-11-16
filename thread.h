@@ -12,12 +12,13 @@ class PThread {
 	public:
 		PThread() {};
 		~PThread() {};
-		pthread_t start();
+		const pthread_t& start();
 		static void *join(pthread_t &pthread);
 
 	protected:
 		virtual void run() = 0;
 		 static void *start_routine_wrapper(void *);
+		pthread_t thread;
 };
 
 /**
@@ -37,8 +38,7 @@ class Lock {
 // ----------------------------------------------------------------------------
 // PThread
 // ----------------------------------------------------------------------------
-inline pthread_t PThread::start() {
-	pthread_t thread;
+inline const pthread_t& PThread::start() {
 	pthread_create(&thread, NULL, start_routine_wrapper, (void *)(this));
 	return thread;
 }

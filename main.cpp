@@ -14,6 +14,10 @@
 #include "factory.h"
 #include "module/fc_mpkg.h"
 
+// sensors
+#include "module/senbmp085.h"
+#include "module/testcore.h"
+
 using namespace std;
 using namespace mavhub;
 using namespace cpp_pthread;
@@ -22,6 +26,7 @@ using namespace cpp_io;
 uint8_t mavhub::system_id(42);
 int tcp_port(32000);
 string cfg_filename("mavhub.d/mavhub.conf");
+list<I2cSensor*> i2c_sensors;
 
 void read_settings(Setting &settings);
 void add_links(const list<string> link_list, Setting &settings);
@@ -48,10 +53,19 @@ int main(int argc, char **argv) {
 	*/
 // 	CoreModule *core_app = new CoreModule();
 // 	ProtocolStack::instance().add_application(core_app);
+ 
+	//create test application
+	TestCore *test_app = new TestCore();
+	ProtocolStack::instance().add_application(test_app);
 
 	FC_Mpkg *fc_mpkg_app = new FC_Mpkg();
 	// fc_mpkg_mod->start();
 	ProtocolStack::instance().add_application(fc_mpkg_app);
+
+	// start modules
+	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
+		(*iter)->start();
+	}
 
 	//activate stack
 	pthread_t stack_thread = ProtocolStack::instance().start();
@@ -93,6 +107,16 @@ void read_settings(Setting &settings) {
 		Logger::log("List of links is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
 	} else {
 		add_links(link_list, settings);
+	}
+ 
+	if( settings.begin_group("sensors") == 0) { //sensor group available
+		string i2c_config_file;
+		if ( settings.value("i2c_config_file", i2c_config_file) ) { 
+			Logger::log("i2c config file is missing in config file:", cfg_filename, Logger::LOGLEVEL_WARN);
+		} else {
+			SensorFactory::build(i2c_sensors, i2c_config_file);
+		}
+		settings.end_group();
 	}
 }
 

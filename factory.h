@@ -4,10 +4,22 @@
 #include <inttypes.h> //uint8_t
 #include <string>
 #include <algorithm>
-#include "protocollayer.h"
 #include <sstream> //stringstream
+#include <iterator> //istream_iterator
+#include <vector>
+
+#include "protocollayer.h"
+#include "lib/setting.h"
+#include "utility.h"
+#include "module/i2csensor.h"
+#include "module/senbmp085.h"
 
 namespace mavhub {
+
+class SensorFactory {
+	public:
+		static void build( std::list<I2cSensor*>& i2cSensors, const std::string& filename);
+};
 
 class LinkFactory {
 	public:
@@ -38,6 +50,56 @@ class LinkFactory {
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 };
 
+// ----------------------------------------------------------------------------
+// SensorFactory
+// ----------------------------------------------------------------------------
+inline void SensorFactory::build(std::list<I2cSensor*>& i2cSensors, const std::string& filename) {
+	//open config file
+	cpp_io::Setting settings(filename, std::ios_base::in);
+
+	/* i2c port config */
+	std::string i2c_port;
+	if( settings.value("port", i2c_port) ) {
+		Logger::log("Port is missing in config file:", filename, "for i2c", Logger::LOGLEVEL_WARN);
+		return;
+	}
+	int file;
+	if ((file = open(i2c_port.c_str(), O_RDWR)) < 0) {
+		Logger::warn("Failed to open the i2c bus");	
+		return;
+	}
+
+	/* bmp085 sensor config */
+	if( settings.begin_group("bmp085") == 0) {
+		int oversampling = 0;
+		int temp_update_rate = 0;
+//		std::list<std::string> output_list;
+		std::string output_string;
+		int output = 0;
+		if( settings.value("oversampling", oversampling) ) {
+			Logger::log("bmp085 oversampling is missing in config file: ", filename, Logger::LOGLEVEL_WARN);
+		}
+		if( settings.value("temp_update_rate", temp_update_rate) ) {
+			Logger::log("bmp085 temp_update_rate is missing in config file: ", filename, Logger::LOGLEVEL_WARN);
+		}
+
+		bool value;
+		if( settings.value("debug_data", value) ) {
+		} else if (value) output |= DEBUG;
+
+		if( settings.value("show_timings", value) ) {
+		} else if (value) output |= TIMINGS;
+
+		/* create instance */
+		i2cSensors.push_back(new SenBmp085(file, temp_update_rate, oversampling, output));
+
+		settings.end_group();
+	}
+}
+
+// ----------------------------------------------------------------------------
+// LinkFactory
+// ----------------------------------------------------------------------------
 inline LinkFactory::link_construction_plan_t::link_construction_plan_t() :
 		link_type(UnsupportedLink),
 		package_format(ProtocolStack::MAVLINKPACKAGE),
