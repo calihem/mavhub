@@ -20,10 +20,32 @@ class LinkFactory {
 		friend std::ostream& operator <<(std::ostream &os, const link_type_t &link_type);
 		friend std::istream& operator >>(std::istream &is, link_type_t &link_type);
 
-		static MediaLayer* build(const link_type_t type, const std::string& devicename, const unsigned int baudrate);
-		static MediaLayer* build(const link_type_t type, const uint16_t port);
+		struct link_construction_plan_t {
+			link_construction_plan_t();
+
+			/* generic */
+			link_type_t link_type;
+			ProtocolStack::packageformat_t package_format;
+			/* serial link */
+			std::string dev_name;
+			unsigned int baudrate;
+			/* UDP */
+			uint16_t port;
+			std::list<string_addr_pair_t> groupmember_list;
+		};
+
+		static MediaLayer* build(const link_construction_plan_t &plan);
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 };
+
+inline LinkFactory::link_construction_plan_t::link_construction_plan_t() :
+		link_type(UnsupportedLink),
+		package_format(ProtocolStack::MAVLINKPACKAGE),
+		dev_name(),
+		baudrate(57600),
+		port(0),
+		groupmember_list()
+{}
 
 inline std::ostream& operator <<(std::ostream &os, const LinkFactory::link_type_t &link_type) {
 	os << static_cast<int>(link_type);
@@ -42,43 +64,47 @@ inline std::istream& operator >>(std::istream &is, LinkFactory::link_type_t &lin
 	return is;
 }
 
-inline MediaLayer* LinkFactory::build(const LinkFactory::link_type_t type, const std::string& devicename, const unsigned int baudrate) {
+inline MediaLayer* LinkFactory::build(const link_construction_plan_t &plan) {
+	MediaLayer *layer(NULL);
 
-	try{
-		switch(type) {
-			case SerialLink:
-				return new UARTLayer(devicename, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD);
-				break;
-			default:
-				break;
-		}
-	}
-	catch(const char *message) {
-		Logger::error(message);
+	switch(plan.link_type) {
+		case SerialLink:
+			try{
+				layer = new UARTLayer(plan.dev_name, UART::baudrate_to_speed(plan.baudrate) | CS8 | CLOCAL | CREAD);
+			}
+			catch(const char *message) {
+				Logger::error(message);
+			}
+			break;
+		case UDPLink:
+			try{
+				if( (layer = new UDPLayer(plan.port)) ) {
+					UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(layer);
+					if(udp_layer) {
+						// add udp group members
+						try{
+							udp_layer->add_groupmembers(plan.groupmember_list);
+						}
+						catch(const char *message) {
+							Logger::log(message, Logger::LOGLEVEL_DEBUG);
+						}
+					}
+				}
+			}
+			catch(const char *message) {
+				Logger::error(message);
+			}
+			break;
+		default:
+			break;
 	}
 
-	return NULL;
-}
-
-inline MediaLayer* LinkFactory::build(const LinkFactory::link_type_t type, uint16_t port) {
-	
-	try{
-		switch(type) {
-			case UDPLink:
-				return new UDPLayer(port);
-				break;
-			default:
-				break;
-		}
-	}
-	catch(const char *message) {
-		Logger::error(message);
-	}
-
-	return NULL;
+	return layer;
 }
 
 inline MediaLayer* LinkFactory::build(const std::string& type, const std::string& devicename) {
+	link_construction_plan_t construction_plan;
+	
 	//transform type to lower case
 	std::string lowercase_type(type);
 	transform(lowercase_type.begin(), lowercase_type.end(), lowercase_type.begin(), ::tolower);
@@ -87,18 +113,18 @@ inline MediaLayer* LinkFactory::build(const std::string& type, const std::string
 	|| lowercase_type == "0"
 	|| lowercase_type == "serial"
 	|| lowercase_type == "uart") {
-		return build(SerialLink, devicename, 57600); //FIXME
+		construction_plan.link_type = SerialLink;
+		construction_plan.dev_name = devicename;
 	} else if(lowercase_type == "udp"
 	|| lowercase_type == "1"
 	|| lowercase_type == "udpport"
 	|| lowercase_type == "udplayer") {
+		construction_plan.link_type = UDPLink;
 		std::istringstream istream(devicename);
-		uint16_t port;
-		istream >> port;
-		return build(UDPLink, port);
+		istream >> construction_plan.port;
 	}
-	
-	return NULL;
+
+	return build(construction_plan);
 }
 
 } // namespace mavhub

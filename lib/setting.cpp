@@ -4,12 +4,8 @@ namespace cpp_io {
 
 using namespace std;
 
-Setting::Setting(const std::string& file_name, std::ios_base::openmode mode) : 
-	conf_file(file_name.c_str(), mode), open_mode(mode) {
-
-	if (!conf_file) {
-		//FIXME: throw exception
-	}
+Setting::Setting(const std::string& filename, std::ios_base::openmode mode) throw(const std::invalid_argument&) : 
+		FStream(filename, mode) {
 
 	//"no-group" is alway at beginning of file
 	group_pos = ios_base::beg;
@@ -34,14 +30,14 @@ int Setting::begin_group(const std::string& groupname) {
 
 	std::streampos g_pos = find_group(groupname);
 	if(g_pos == -1) { //found no group
-		if(open_mode & std::ios_base::out) {	//add new group
+		if(omode() & std::ios_base::out) {	//add new group
 			cur_group = groupname;
 			//fast-forward to end
-			conf_file.clear();
-			conf_file.seekp(ios_base::end);
+			clear();
+			seekp(ios_base::end);
 			//insert group
-			conf_file << "[" << cur_group << "]" << endl;
-			group_pos = conf_file.tellp();
+			(*this) << "[" << cur_group << "]" << endl;
+			group_pos = tellp();
 			rc = 1;
 		} else {
 			rc = -1;
@@ -60,21 +56,21 @@ void Setting::end_group() {
 	pre_string.clear();
 
 	//rewind to "no-group"
-	conf_file.clear();
-	conf_file.seekg(ios_base::beg);
-	group_pos = conf_file.tellg();
+	clear();
+	seekg(ios_base::beg);
+	group_pos = tellg();
 }
 
 std::streampos Setting::find_group(const std::string &group) {
 	//rewind to beginning
-	conf_file.clear();
-	conf_file.seekg(ios_base::beg);
+	clear();
+	seekg(ios_base::beg);
 
 	//"no-group" is always at beginning of file
-	if(group.empty()) return conf_file.tellg();
+	if(group.empty()) return tellg();
 
 	string line;
-	while(getline(conf_file, line)) { //read line by line
+	while(std::getline(*this, line)) { //read line by line
 		if(line.empty()) continue;
 		string::size_type start = line.find_first_not_of(" \t\n");
 		//skip every line not starting with [
@@ -90,7 +86,7 @@ std::streampos Setting::find_group(const std::string &group) {
 			break; //found group
 	}
 
-	return conf_file.tellg();
+	return tellg();
 }
 
 } //namespace cpp_io

@@ -1,0 +1,7 @@
+# This is a basic serial config file 
+#
+
+# Set link type (0 = serial link, 1 = UDP link)
+type = 0
+# Set baudrate
+baudrate = 57600

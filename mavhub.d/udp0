@@ -1,0 +1,7 @@
+# This is a basic UDP link config file 
+#
+
+# Set link type (0 = serial link, 1 = UDP link)
+type = 1
+# Set UDP port for incomming messages
+port = 32001

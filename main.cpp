@@ -21,10 +21,11 @@ using namespace cpp_io;
 
 uint8_t mavhub::system_id(42);
 int tcp_port(32000);
-string cfg_filename("mavhub.conf");
+string cfg_filename("mavhub.d/mavhub.conf");
 
 void read_settings(Setting &settings);
 void add_links(const list<string> link_list, Setting &settings);
+void read_link_configuration(LinkFactory::link_construction_plan_t &link_plan, Setting &settings);
 void parse_argv(int argc, char **argv);
 void print_help();
 
@@ -34,8 +35,13 @@ int main(int argc, char **argv) {
 	parse_argv(argc, argv);
 
 	//open config file and read settings
-	Setting settings(cfg_filename, std::ios_base::in);
-	read_settings(settings);
+	try {
+		Setting settings(cfg_filename, std::ios_base::in);
+		read_settings(settings);
+	}
+	catch(const invalid_argument &ia) {
+		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
+	}
 
 	/*
 	* create apps
@@ -91,73 +97,38 @@ void read_settings(Setting &settings) {
 }
 
 void add_links(const list<string> link_list, Setting &settings) {
-	for(list<string>::const_iterator link_iter = link_list.begin(); link_iter != link_list.end(); ++link_iter) {
-		if( settings.begin_group(*link_iter) == 0) { //link group available
-			LinkFactory::link_type_t link_type(LinkFactory::UnsupportedLink);
-			if( settings.value("type", link_type) ) {
-				Logger::log("Link type is missing for", *link_iter, Logger::LOGLEVEL_WARN);
-			} else {
-				switch(link_type) {
-					case LinkFactory::SerialLink: {
-						string dev_name;
-						if( settings.value("name", dev_name) ) {
-							Logger::log("Device name is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
-						} else {
-							unsigned int baudrate(57600);
-							if( settings.value("baudrate", baudrate) ) {
-								Logger::log("Baudrate is missing for device:", dev_name, Logger::LOGLEVEL_WARN);
-							}
-							MediaLayer *uart = LinkFactory::build(LinkFactory::SerialLink, dev_name, baudrate);
+	LinkFactory::link_construction_plan_t link_construction_plan;
 
-							ProtocolStack::packageformat_t package_format;
-							if( settings.value("protocol", package_format) ) {
-								Logger::log("Protocol is missing in config file:", cfg_filename, "for serial link", Logger::LOGLEVEL_WARN);
-								package_format = ProtocolStack::MAVLINKPACKAGE;
-							}
-							ProtocolStack::instance().add_link(uart, package_format);
-						}
-						break;
-					}
-					case LinkFactory::UDPLink: {
-						//read udp port
-						uint16_t udp_port;
-						if( settings.value("port", udp_port) ) {
-							Logger::log("Port is missing in config file:", cfg_filename, "for UDP link", Logger::LOGLEVEL_WARN);
-							udp_port = UDPLayer::DefaultPort;
-						}
-						MediaLayer *udp = LinkFactory::build(LinkFactory::UDPLink, udp_port);
-						if(udp) {
-							UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(udp);
-							if(udp_layer) {
-								// read udp group members
-								std::list<string_addr_pair_t> groupmember_list;
-								settings.value("members", groupmember_list);
-								try{
-									udp_layer->add_groupmembers(groupmember_list);
-								}
-								catch(const char *message) {
-									Logger::log(message, Logger::LOGLEVEL_DEBUG);
-								}
-							}
-						}
-						//read package format
-						ProtocolStack::packageformat_t package_format;
-						if( settings.value("protocol", package_format) ) {
-							Logger::log("Protocol is missing in config file:", cfg_filename, "for UDP link", Logger::LOGLEVEL_WARN);
-							package_format = ProtocolStack::MAVLINKPACKAGE;
-						}
-						ProtocolStack::instance().add_link(udp, package_format);
-						break;
-					}
-					default:
-						break;
-				}
-			}
+	for(list<string>::const_iterator link_iter = link_list.begin(); link_iter != link_list.end(); ++link_iter) {
+		try { //first read from sub config file
+			Setting link_settings(settings.path() + string("/") + *link_iter);
+			read_link_configuration(link_construction_plan, link_settings);
+		}
+		catch(const invalid_argument &ia) {
+			Logger::log(ia.what(), Logger::LOGLEVEL_DEBUG);
+		}
+		
+		if( settings.begin_group(*link_iter) == 0) { //link group available
+			//read from global config file
+			read_link_configuration(link_construction_plan, settings);
+			
 			settings.end_group();
 		} else {
-			Logger::log(*link_iter, "link group entry is missing in config file", cfg_filename, Logger::LOGLEVEL_WARN);
+			Logger::log(*link_iter, " group missing in config file", Logger::LOGLEVEL_DEBUG);
 		}
+
+		MediaLayer *layer = LinkFactory::build(link_construction_plan);
+		ProtocolStack::instance().add_link(layer, link_construction_plan.package_format);
 	}
+}
+
+void read_link_configuration(LinkFactory::link_construction_plan_t &link_plan, Setting &settings) {
+	settings.value("type", link_plan.link_type);
+	settings.value("name", link_plan.dev_name);
+	settings.value("port", link_plan.port);
+	settings.value("baudrate", link_plan.baudrate);
+	settings.value("protocol", link_plan.package_format);
+	settings.value("members", link_plan.groupmember_list);
 }
 
 void parse_argv(int argc, char **argv) {
