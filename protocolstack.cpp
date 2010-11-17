@@ -298,6 +298,8 @@ int ProtocolStack::remove_link(unsigned int link_id) {
 
 
 void ProtocolStack::add_application(AppLayer *app) {
+	if(!app) return;
+
 	app->set_owner(this);
 	app_list.push_back(app);
 }

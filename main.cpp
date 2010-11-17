@@ -5,34 +5,20 @@
 #include <cstdlib> //exit
 
 #include "logger.h"
-#include "lib/setting.h"
 #include "protocolstack.h"
 #include "protocollayer.h"
-#include "coremod.h"
 #include "datacenter.h"
 #include "mavshell.h"
-#include "factory.h"
-#include "module/fc_mpkg.h"
-
-// sensors
-#include "module/senbmp085.h"
-#include "module/testcore.h"
 
 using namespace std;
 using namespace mavhub;
 using namespace cpp_pthread;
 using namespace cpp_io;
 
-uint8_t mavhub::system_id(42);
+uint8_t system_id(42);
 int tcp_port(32000);
 string cfg_filename("mavhub.d/mavhub.conf");
 list<I2cSensor*> i2c_sensors;
-
-void read_settings(Setting &settings);
-void add_links(const list<string> link_list, Setting &settings);
-void read_link_configuration(LinkFactory::link_construction_plan_t &link_plan, Setting &settings);
-void parse_argv(int argc, char **argv);
-void print_help();
 
 int main(int argc, char **argv) {
 	Logger::setLogLevel(Logger::LOGLEVEL_WARN);
@@ -48,19 +34,6 @@ int main(int argc, char **argv) {
 		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
 	}
 
-	/*
-	* create apps
-	*/
-// 	CoreModule *core_app = new CoreModule();
-// 	ProtocolStack::instance().add_application(core_app);
- 
-	//create test application
-	TestCore *test_app = new TestCore();
-	ProtocolStack::instance().add_application(test_app);
-
-	FC_Mpkg *fc_mpkg_app = new FC_Mpkg();
-	// fc_mpkg_mod->start();
-	ProtocolStack::instance().add_application(fc_mpkg_app);
 
 	// start modules
 	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
@@ -108,7 +81,15 @@ void read_settings(Setting &settings) {
 	} else {
 		add_links(link_list, settings);
 	}
- 
+
+	//read apps
+	list<string> app_list;
+	if( settings.value("applications", app_list) ) {
+		Logger::log("List of apps is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	} else {
+		add_apps(app_list, settings);
+	}
+
 	if( settings.begin_group("sensors") == 0) { //sensor group available
 		string i2c_config_file;
 		if ( settings.value("i2c_config_file", i2c_config_file) ) { 
@@ -153,6 +134,30 @@ void read_link_configuration(LinkFactory::link_construction_plan_t &link_plan, S
 	settings.value("baudrate", link_plan.baudrate);
 	settings.value("protocol", link_plan.package_format);
 	settings.value("members", link_plan.groupmember_list);
+}
+
+void add_apps(const std::list<std::string> &app_list, Setting &settings) {
+
+	AppLayer *app;
+	map<string, string> arg_map;
+	for(list<string>::const_iterator app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
+		//read from global config file first (because map wouldn't overwrite existing entries)
+		if( settings.begin_group(*app_iter) == 0) { //app group available
+			settings.values(arg_map);
+			settings.end_group();
+		}
+		try { //next read from sub config file
+			Setting app_settings(settings.path() + string("/") + *app_iter);
+			app_settings.values(arg_map);
+		}
+		catch(const invalid_argument &ia) {
+			Logger::log(ia.what(), Logger::LOGLEVEL_DEBUG);
+		}
+
+		app = AppFactory::build(*app_iter, arg_map);
+		ProtocolStack::instance().add_application(app);
+		arg_map.clear();
+	}
 }
 
 void parse_argv(int argc, char **argv) {

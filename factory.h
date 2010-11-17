@@ -9,10 +9,15 @@
 #include <vector>
 
 #include "protocollayer.h"
+#include "protocolstack.h"
 #include "lib/setting.h"
 #include "utility.h"
 #include "module/i2csensor.h"
 #include "module/senbmp085.h"
+
+#include "module/coremod.h"
+#include "module/testcore.h"
+#include "module/fc_mpkg.h"
 
 namespace mavhub {
 
@@ -50,6 +55,11 @@ class LinkFactory {
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 };
 
+class AppFactory {
+	public:
+		static AppLayer* build(const std::string& app_name, const std::map<std::string, std::string> args);
+};
+	
 // ----------------------------------------------------------------------------
 // SensorFactory
 // ----------------------------------------------------------------------------
@@ -187,6 +197,23 @@ inline MediaLayer* LinkFactory::build(const std::string& type, const std::string
 	}
 
 	return build(construction_plan);
+}
+
+// ----------------------------------------------------------------------------
+// AppFactory
+// ----------------------------------------------------------------------------
+inline AppLayer* AppFactory::build(const std::string& app_name, const std::map<std::string, std::string> args) {
+	//transform application name to lower case
+	std::string lowercase_name(app_name);
+	transform(lowercase_name.begin(), lowercase_name.end(), lowercase_name.begin(), ::tolower);
+
+	if(lowercase_name == "test_app") {
+		return new TestCore();
+	} else if(lowercase_name == "fc_mpkg_app") {
+		return new FC_Mpkg();
+	}
+	
+	return NULL;
 }
 
 } // namespace mavhub

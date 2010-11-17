@@ -43,7 +43,7 @@ namespace mavhub {
 	 // v[8] = (int16_t)mk_debugout_o->Analog[ADval_gyrroll];
 	 // v[9] = (int16_t)mk_debugout_o->Analog[ADval_gyryaw];
 	 // Logger::log("FC_Mpkg decoded:  ", v, Logger::LOGLEVEL_INFO);
-	 if(msg.sysid == system_id && msg.msgid == 0) {//FIXME: set right msgid
+	 if(msg.sysid == owner->system_id() && msg.msgid == 0) {//FIXME: set right msgid
 		//TODO
 	 }
   }

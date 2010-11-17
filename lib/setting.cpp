@@ -89,4 +89,30 @@ std::streampos Setting::find_group(const std::string &group) {
 	return tellg();
 }
 
+void Setting::values(std::map<std::string, std::string> &value_map) {
+	//wind to current group
+	clear();
+	seekg(group_pos);
+
+	string line;
+	while(std::getline(*this, line)) { //read line by line
+		if(line.empty()) continue;
+		string::size_type key_start = line.find_first_not_of(" \t\n");
+		//skip comment lines
+		if(key_start != string::npos && line[key_start] == '#') 
+			continue;
+
+		//stop at next group
+		if(line[key_start] == '[') break;
+
+		//tokenize line
+		string::size_type end = line.find_first_of(" \t=:", key_start);
+		if(end != string::npos) {
+			string::size_type value_start = line.find_first_not_of(" \t=:", end);
+			if(value_start == string::npos) continue;
+			value_map.insert( make_pair(line.substr(key_start, end-key_start), line.substr(value_start, string::npos)) );
+		}
+	}
+}
+
 } //namespace cpp_io

@@ -30,6 +30,7 @@ class Setting : protected FStream {
 		void set_value(const std::string &key, const T& value);
 		template <class T>
 		int value(const std::string &key, T& value);
+		void values(std::map<std::string, std::string> &value_map);
 
 	private:
 		/// prepend string
