@@ -14,6 +14,9 @@ namespace mavhub {
 			// bmp085 pressure sensor
 			static const mavlink_huch_bmp085_t get_bmp085();
 			static void set_bmp085(const mavlink_huch_bmp085_t &bmp085);
+			// hmc5843 kompass sensor
+			static const mavlink_huch_hmc5843_t get_hmc5843();
+			static void set_hmc5843(const mavlink_huch_hmc5843_t &hmc5843);
 
 		private:
 			//data structs
@@ -27,6 +30,9 @@ namespace mavhub {
 			// bmp085 pressure sensor
 			static pthread_mutex_t bmp085_mutex;
 			static mavlink_huch_bmp085_t bmp085_data;
+			// hmc5843 pressure sensor
+			static pthread_mutex_t hmc5843_mutex;
+			static mavlink_huch_hmc5843_t hmc5843_data;
 			
 			DataCenter();
 			DataCenter(const DataCenter &data);
@@ -65,6 +71,22 @@ namespace mavhub {
 
 		Lock ri_lock(bmp085_mutex);
 		DataCenter::bmp085_data = bmp085_data;
+	}
+
+	// HMC5843 functions
+	inline const mavlink_huch_hmc5843_t DataCenter::get_hmc5843() {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(hmc5843_mutex);
+		mavlink_huch_hmc5843_t hmc5843_data_copy(hmc5843_data);
+
+		return hmc5843_data_copy;
+	}
+	inline void DataCenter::set_hmc5843(const mavlink_huch_hmc5843_t &hmc5843) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(hmc5843_mutex);
+		DataCenter::hmc5843_data = hmc5843_data;
 	}
 
 } // namespace mavhub

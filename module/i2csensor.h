@@ -1,6 +1,9 @@
 #ifndef _I2CSENSOR_H_
 #define _I2CSENSOR_H_
 
+#include <exception>
+#include <inttypes.h>
+
 #include "thread.h"
 
 /* output defines */
@@ -16,9 +19,11 @@ namespace mavhub {
 			I2cSensor();
 			virtual ~I2cSensor();
 //			virtual void print_CSV();
-
 		protected:
 			virtual void run() = 0;
+			virtual void publish_data(uint64_t time) = 0;
+
+			static void i2c_set_adr(const int fd, const int adr) throw(std::exception);
 			// syncs 
 			static pthread_mutex_t i2c_mutex;
 

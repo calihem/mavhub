@@ -2,9 +2,8 @@
 #define _SENBMP085_H_
 
 #include <inttypes.h>
-#include <linux/i2c.h>
-#include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
+#include <exception>
 
 #include <mavlink.h>
 
@@ -33,17 +32,16 @@ namespace mavhub {
 
 	class SenBmp085 : public I2cSensor {
 		public:
-			SenBmp085(int _fd, int _update_temp, int _oversampling, int _output);
+			SenBmp085(int _fd, int _update_temp, int _oversampling, int _output) throw(std::exception);
 			virtual ~SenBmp085();
 			void print_debug();
 
 		protected:
 			virtual void run();
+			virtual void publish_data(uint64_t time);
 
 		private:
-			void publish_data();
-			void i2c_set_adr(const int fd, const int adr); // throw error
-			static void read_calibration_data(const int fd, calibration_data_t &cal_data); // throw error
+			static void read_calibration_data(const int fd, calibration_data_t &cal_data) throw(std::exception);
 			static void request_temp_data(const int fd); // throw error
 			static uint64_t request_pres_data(const int fd, const int oversampling); // throw error
 			static int get_temp_data(const int fd); // throw error
@@ -69,11 +67,6 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// I2cSensors
 	// ----------------------------------------------------------------------------	
-	inline void SenBmp085::i2c_set_adr(const int fd, const int adr) {
-		if (ioctl(fd, I2C_SLAVE, adr) < 0) {
-			Logger::warn("SenBmp085: Failed to acquire bus access and/or talk to slave.");
-		}
-	}
 
 
 } // namespace mavhub

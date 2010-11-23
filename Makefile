@@ -14,6 +14,7 @@ SRCS_1   = main.cpp \
 	module/fc_mpkg.cpp \
 	module/i2csensor.cpp \
 	module/senbmp085.cpp \
+	module/senhmc5843.cpp \
 	datacenter.cpp \
 	mavshell.cpp
 

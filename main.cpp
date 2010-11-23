@@ -33,7 +33,10 @@ int main(int argc, char **argv) {
 	catch(const invalid_argument &ia) {
 		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
 	}
-
+ 
+	//create test application
+	//TestCore *test_app = new TestCore();
+ 	//ProtocolStack::instance().add_application(test_app);
 
 	// start modules
 	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
@@ -41,7 +44,7 @@ int main(int argc, char **argv) {
 	}
 
 	//activate stack
-	pthread_t stack_thread = ProtocolStack::instance().start();
+	//pthread_t stack_thread = ProtocolStack::instance().start();
 	
 	//start mav shell
 	try {
@@ -54,7 +57,7 @@ int main(int argc, char **argv) {
 	}
 
 	//join threads
-	PThread::join(stack_thread);
+	//PThread::join(stack_thread);
 }
 
 void read_settings(Setting &settings) {

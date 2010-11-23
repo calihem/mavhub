@@ -12,8 +12,11 @@
 #include "protocolstack.h"
 #include "lib/setting.h"
 #include "utility.h"
+// Sensors
 #include "module/i2csensor.h"
 #include "module/senbmp085.h"
+#include "module/senhmc5843.h"
+
 
 #include "module/coremod.h"
 #include "module/testcore.h"
@@ -83,8 +86,6 @@ inline void SensorFactory::build(std::list<I2cSensor*>& i2cSensors, const std::s
 	if( settings.begin_group("bmp085") == 0) {
 		int oversampling = 0;
 		int temp_update_rate = 0;
-//		std::list<std::string> output_list;
-		std::string output_string;
 		int output = 0;
 		if( settings.value("oversampling", oversampling) ) {
 			Logger::log("bmp085 oversampling is missing in config file: ", filename, Logger::LOGLEVEL_WARN);
@@ -102,6 +103,34 @@ inline void SensorFactory::build(std::list<I2cSensor*>& i2cSensors, const std::s
 
 		/* create instance */
 		i2cSensors.push_back(new SenBmp085(file, temp_update_rate, oversampling, output));
+
+		settings.end_group();
+	}
+	/* hmc5843 sensor config */
+	if( settings.begin_group("hmc5843") == 0) {
+		int update_rate = 0;
+		int gain = 0;
+		int mode = 0;
+		int output = 0;
+		if( settings.value("update_rate", update_rate) ) {
+			Logger::log("hmc5843 update rate is missing in config file: ", filename, Logger::LOGLEVEL_WARN);
+		}
+		if( settings.value("gain", gain) ) {
+			Logger::log("hmc5843 gain is missing in config file: ", filename, Logger::LOGLEVEL_WARN);
+		}
+		if( settings.value("mode", mode) ) {
+			Logger::log("hmc5843 mode is missing in config file: ", filename, Logger::LOGLEVEL_WARN);
+		}
+
+		bool value;
+		if( settings.value("debug_data", value) ) {
+		} else if (value) output |= DEBUG;
+
+		if( settings.value("show_timings", value) ) {
+		} else if (value) output |= TIMINGS;
+
+		/* create instance */
+		i2cSensors.push_back(new SenHmc5843(file, update_rate, gain, mode, output));
 
 		settings.end_group();
 	}

@@ -22,6 +22,7 @@ void TestCore::handle_input(const mavlink_message_t &msg) {
 
 void TestCore::run() {
 	mavlink_huch_bmp085_t bmp085_data_core;
+	mavlink_huch_hmc5843_t hmc5843_data_core;
 	if(!owner) {
 		Logger::log("Owner of TestCore not set", Logger::LOGLEVEL_WARN);
 		return;
@@ -36,9 +37,16 @@ void TestCore::run() {
 		owner->send(msg);
 		sleep(1);
 		bmp085_data_core = DataCenter::get_bmp085();
+		hmc5843_data_core = DataCenter::get_hmc5843();
 		ostringstream send_stream;
-		send_stream << "bmp085;" << bmp085_data_core.temperature << ";" << bmp085_data_core.pressure << ";" << bmp085_data_core.height;
-		Logger::debug(send_stream.str());
+		if (bmp085_data_core.timestamp) {
+			send_stream << "bmp085;" << bmp085_data_core.temperature << ";" << bmp085_data_core.pressure << ";" << bmp085_data_core.height;
+			Logger::debug(send_stream.str());
+		}
+		if (hmc5843_data_core.timestamp) {
+			send_stream << "hmc5843;" << hmc5843_data_core.data_x << ";" << hmc5843_data_core.data_y << ";" << hmc5843_data_core.data_z;
+			Logger::debug(send_stream.str());
+		}
 	}
 }
 

@@ -2,7 +2,6 @@
 
 #include <math.h> //pow
 #include <iostream> //cout
-#include <sys/time.h> //gettime
 #include <sstream> //stringstream
 
 #include "main.h" //system_id
@@ -10,20 +9,14 @@
 #include "utility.h"
 #include "datacenter.h" //i2c-mutex, data
 
-static uint64_t getTimeUs() {
-	struct timeval tp;
-	gettimeofday( &tp, NULL );
-	return tp.tv_sec * 1E6 + tp.tv_usec;
-}
-
 using namespace std;
 
 namespace mavhub {
 
 const int SenBmp085::wait_oversampling[4] = {4500, 7500, 13500, 25500};
 
-SenBmp085::SenBmp085(int _fd, int _update_temp, int _oversampling, int _output) :
-	fd(_fd), update_temp(_update_temp), output(_output)  {
+SenBmp085::SenBmp085(int _fd, int _update_temp, int _oversampling, int _output) throw(exception):
+	fd(_fd), update_temp(_update_temp), output(_output) {
 
 	Logger::debug("bmp085: init...");
 	running = true;
@@ -74,7 +67,7 @@ void SenBmp085::run() {
 	Logger::debug("bmp085: running");
 	int count = 0;
 	int countTemp = 0;
-	uint64_t end = getTimeUs() + 1000000;
+	uint64_t end = get_time_us() + 1000000;
 	int uncomp_temp = 0;
 
 	running = true;
@@ -105,7 +98,7 @@ void SenBmp085::run() {
 		/* request pressure data */
 		request_pres_data(fd, oversampling);
 		pthread_mutex_unlock( &i2c_mutex );
-		bmp085_data.timestamp = getTimeUs();
+		bmp085_data.timestamp = get_time_us();
 
 		/* wait */
 		usleep(wait_oversampling[oversampling]);	
@@ -123,13 +116,13 @@ void SenBmp085::run() {
 		bmp085_data.height = calc_altitude(bmp085_data.pressure, pressure_0);	
 
 		/* pass data */
-		publish_data();
+		publish_data(get_time_us());
 
 		if (output & DEBUG) print_debug();
 		
 		/* timings/benchmark output */
 		if (output & TIMINGS) {
-			if (end <= getTimeUs()) {
+			if (end <= get_time_us()) {
 				Logger::log("bmp frequency: ", count, Logger::LOGLEVEL_DEBUG);
 				end += 1000000;
 				count = 0;
@@ -139,7 +132,7 @@ void SenBmp085::run() {
 	Logger::debug("bmp085: stopped");
 }
 
-void SenBmp085::read_calibration_data(const int fd, calibration_data_t &cal_data) {
+void SenBmp085::read_calibration_data(const int fd, calibration_data_t &cal_data) throw(exception) {
 	#define CALIBRATION_DATA_SIZE sizeof(calibration_data_t)
 	uint8_t buffer[CALIBRATION_DATA_SIZE];
 	#define EEPROM_ADR	0xAA
@@ -147,9 +140,11 @@ void SenBmp085::read_calibration_data(const int fd, calibration_data_t &cal_data
 	
 	if (write(fd, buffer, 1) != 1) {
 		Logger::warn("read_calibration_data(): Failed to write to slave!");
+		throw exception();
 	}
 	if (read(fd, buffer, CALIBRATION_DATA_SIZE) != CALIBRATION_DATA_SIZE) {
 		Logger::warn("read_calibration_data(): Failed to read from slave!");
+		throw exception();
 	} else {
 		/* assign buffer to calibration data */
 		cal_data.ac1 = ((buffer[0] << 8) + buffer[1]);
@@ -200,7 +195,7 @@ uint64_t SenBmp085::request_pres_data(const int fd, const int oversampling) {
 	if (write(fd, buffer, 2) != 2) {
 		Logger::warn("request_pres_data(): Failed to write to slave!");
 	}
-	return getTimeUs();
+	return get_time_us();
 }
 
 int SenBmp085::get_pres_data(const int fd, const int oversampling) {
@@ -257,7 +252,8 @@ void SenBmp085::print_debug() {
 	Logger::debug(send_stream.str());
 }
 
-void SenBmp085::publish_data() {
+void SenBmp085::publish_data(uint64_t time) {
+	bmp085_data.timestamp = time;
 	DataCenter::set_bmp085(bmp085_data);
 }
 

@@ -7,6 +7,8 @@
 #include <iomanip> //setw
 #include <sstream> //stringstream
 #include <iterator> //istream_iterator
+#include <sys/time.h> //gettime
+#include <inttypes.h> //uint64
 
 namespace mavhub {
 	// ----------------------------------------------------------------------------
@@ -15,6 +17,7 @@ namespace mavhub {
 	static int enable_blocking_mode(int fd, bool enabled);
 	static timeval& timediff(timeval &diff, const timeval &t1, const timeval &t2);
 	std::istream& operator >>(std::istream &is, std::list<std::string> &string_list);
+	static uint64_t get_time_us();
 
 	// ----------------------------------------------------------------------------
 	// Implementation
@@ -94,6 +97,13 @@ namespace mavhub {
 		}
 		return os;
 	}
+
+	inline uint64_t get_time_us() {
+		struct timeval tp;
+		gettimeofday( &tp, NULL );
+		return tp.tv_sec * 1E6 + tp.tv_usec;
+	}
+
 
 } // namespace mavhub
 
