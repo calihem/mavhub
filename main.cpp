@@ -128,7 +128,7 @@ void add_links(const list<string> link_list, Setting &settings) {
 			Logger::log(*link_iter, " group missing in config file", Logger::LOGLEVEL_DEBUG);
 		}
 
-		MediaLayer *layer = LinkFactory::build(link_construction_plan);
+		cpp_io::IOInterface *layer = LinkFactory::build(link_construction_plan);
 		ProtocolStack::instance().add_link(layer, link_construction_plan.package_format);
 	}
 }

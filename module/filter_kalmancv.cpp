@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 
-#include "main.h" //system_id
 #include "logger.h"
 #include "utility.h"
 #include "protocolstack.h"

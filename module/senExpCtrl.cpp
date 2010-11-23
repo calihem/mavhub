@@ -5,7 +5,6 @@
 #include <sys/time.h> //gettime
 #include <sstream> //stringstream
 
-#include "main.h" //system_id
 #include "logger.h" //"printf"
 #include "utility.h"
 #include "datacenter.h" //i2c-mutex, data

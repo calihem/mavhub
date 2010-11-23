@@ -7,14 +7,15 @@
 
 namespace mavhub {
 
-UART::UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*) {
-	if( (sifd = open(devicename.c_str(), O_RDWR | O_NOCTTY)) < 0 ) {
+UART::UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*) :
+		IOInterface(devicename, "Serial Port") {
+	if( (fd = open(_name.c_str(), O_RDWR | O_NOCTTY)) < 0 ) {
 		throw "Can't open serial interface device";
 		return;
 	}
 
 	//save old settings
-	tcgetattr(sifd, &old_io_cfg);
+	tcgetattr(fd, &old_io_cfg);
 
 	//reset new config struct
 	bzero(&new_io_cfg, sizeof(new_io_cfg));
@@ -22,15 +23,15 @@ UART::UART(const std::string&  devicename, tcflag_t control_modes) throw(const c
 	new_io_cfg.c_cflag = control_modes;
 
 	//apply settings to serial interface
-	tcflush(sifd, TCIFLUSH);
-	tcsetattr(sifd, TCSANOW, &new_io_cfg);
+	tcflush(fd, TCIFLUSH);
+	tcsetattr(fd, TCSANOW, &new_io_cfg);
 }
 
 UART::~UART() {
 	 //restore settings of serial interface
-	 tcsetattr(sifd, TCSANOW, &old_io_cfg);
+	 tcsetattr(fd, TCSANOW, &old_io_cfg);
 	 //close file
-	 close(sifd);
+	 close(fd);
 }
 
 const speed_t UART::baudrate_to_speed(const unsigned int baudrate) {

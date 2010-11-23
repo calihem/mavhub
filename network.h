@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream> //stringstream
 
+#include "lib/io.h"
 #include "logger.h"
 
 namespace mavhub {
@@ -34,18 +35,17 @@ namespace mavhub {
 		struct sockaddr sockaddr;
 	};
 
-	class Socket {
+	class Socket : public cpp_io::IOInterface {
 		public:
-			void enable_blocking_mode(bool enabled);
 			std::string foreign_addr() const throw(const char*);
 			uint16_t foreign_port() const throw(const char*);
+			static const std::string& proto_to_name(const int type);
 
 		protected:
 			Socket(int type, int protocol) throw(const char*);
 			Socket(int socket_fd) throw(const char*);
 			~Socket();
 
-			int sockfd;
 			struct sockaddr_in si_self;
 			mutable struct sockaddr_in si_other;
 			

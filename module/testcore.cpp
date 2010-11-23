@@ -34,7 +34,7 @@ void TestCore::run() {
 	mavlink_msg_heartbeat_pack(100, 200, &msg, system_type, MAV_AUTOPILOT_GENERIC);
 
 	while(1) {
-		owner->send(msg);
+		send(msg);
 		sleep(1);
 		bmp085_data_core = DataCenter::get_bmp085();
 		hmc5843_data_core = DataCenter::get_hmc5843();

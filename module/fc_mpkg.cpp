@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 
-#include "main.h" //system_id
 #include "logger.h"
 #include "utility.h"
 #include "protocolstack.h"
@@ -46,7 +45,7 @@ namespace mavhub {
 			publish_data(get_time_us());
 			// deadlock problem
 			// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
-			// owner->send(msg_j);
+			// send(msg_j);
 		}
 
 		// // compare with qk_datatypes
@@ -74,24 +73,24 @@ namespace mavhub {
 		buf[0] = 10;
 		MKPackage msg_debug_on(1, 'd', 1, buf);
 		// MKPackage msg_debug_on(1, 'd', (uint8_t*)buf, 1);
-		owner->send(msg_debug_on);
+		send(msg_debug_on);
 		Logger::log("FC_Mpkg started, debug request sent to FC", Logger::LOGLEVEL_INFO);
 		// MKPackage msg_setneutral(1, 'c');
 		while(true) {
-			// owner->send(msg_setneutral);
+			// send(msg_setneutral);
 			// Logger::log("FC_Mpkg running", Logger::LOGLEVEL_INFO);
 			// XXX: pass on data
 			// 1. put into datacenter?
 			// 2. retransmit onto protocolstack?
 
 			mavlink_msg_huch_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_attitude);
-			owner->send(msg_i);
+			send(msg_i);
 			mavlink_msg_huch_altitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
-			owner->send(msg_i);
+			send(msg_i);
 			mavlink_msg_huch_ranger_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
-			owner->send(msg_i);
+			send(msg_i);
 			mavlink_msg_mk_fc_status_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &mk_fc_status);
-			owner->send(msg_i);
+			send(msg_i);
 
 			// Logger::log("msg len", msg_i.len, Logger::LOGLEVEL_INFO);
 			usleep(10000);

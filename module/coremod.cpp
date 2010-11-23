@@ -1,6 +1,5 @@
 #include "coremod.h"
 
-#include "main.h" // system_id
 #include "logger.h"
 #include "utility.h"
 #include "protocolstack.h"
@@ -33,7 +32,7 @@ void CoreModule::run() {
 
 	while(1) {
 		//Logger::log("coremod: system_id", static_cast<int>(owner->system_id()), Logger::LOGLEVEL_INFO);
-		owner->send(msg);
+		send(msg);
 		sleep(1);
 	}
 }

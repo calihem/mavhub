@@ -1,7 +1,7 @@
 TARGET_1 = mavhub
 SRCS_1   = main.cpp \
 	logger.cpp \
-	lib/file.cpp \
+	lib/io.cpp \
 	lib/setting.cpp \
 	protocolstack.cpp \
 	uart.cpp \

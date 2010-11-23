@@ -54,8 +54,8 @@ class LinkFactory {
 			std::list<string_addr_pair_t> groupmember_list;
 		};
 
-		static MediaLayer* build(const link_construction_plan_t &plan);
-		static MediaLayer* build(const std::string& type, const std::string& devicename);
+		static cpp_io::IOInterface* build(const link_construction_plan_t &plan);
+		static cpp_io::IOInterface* build(const std::string& type, const std::string& devicename);
 };
 
 // ----------------------------------------------------------------------------
@@ -177,13 +177,13 @@ inline std::istream& operator >>(std::istream &is, LinkFactory::link_type_t &lin
 	return is;
 }
 
-inline MediaLayer* LinkFactory::build(const link_construction_plan_t &plan) {
-	MediaLayer *layer(NULL);
+inline cpp_io::IOInterface* LinkFactory::build(const link_construction_plan_t &plan) {
+	cpp_io::IOInterface *layer(NULL);
 
 	switch(plan.link_type) {
 		case SerialLink:
 			try{
-				layer = new UARTLayer(plan.dev_name, UART::baudrate_to_speed(plan.baudrate) | CS8 | CLOCAL | CREAD);
+				layer = new UART(plan.dev_name, UART::baudrate_to_speed(plan.baudrate) | CS8 | CLOCAL | CREAD);
 			}
 			catch(const char *message) {
 				Logger::error(message);
@@ -215,7 +215,7 @@ inline MediaLayer* LinkFactory::build(const link_construction_plan_t &plan) {
 	return layer;
 }
 
-inline MediaLayer* LinkFactory::build(const std::string& type, const std::string& devicename) {
+inline cpp_io::IOInterface* LinkFactory::build(const std::string& type, const std::string& devicename) {
 	link_construction_plan_t construction_plan;
 	
 	//transform type to lower case

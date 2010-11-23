@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 
-#include "main.h" //system_id
 #include "logger.h"
 #include "utility.h"
 #include "protocolstack.h"
@@ -90,7 +89,7 @@ namespace mavhub {
 			ranger = DataCenter::get_huch_ranger();
 			Logger::log(ranger.ranger1, ranger.ranger2, ranger.ranger3, Logger::LOGLEVEL_INFO);
 			
-			// owner->send(msg_setneutral);
+			// send(msg_setneutral);
 			kal->update_F_dt(dt * 1e-6);
 			kal->setMeasAt(0, 0, (double)altitude.baro);
 			kal->setMeasAt(1, 0, (double)ranger.ranger1);
@@ -102,7 +101,7 @@ namespace mavhub {
 			// Logger::log("Ctrl_Hover run", extctrl.gas, Logger::LOGLEVEL_INFO);
 			Logger::log("Ctrl_Hover dt", dt, altitude.baro, Logger::LOGLEVEL_INFO);
 			MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-			owner->send(msg_extctrl);
+			send(msg_extctrl);
 			// XXX: usleep call takes ~5000 us?
 			usleep(1);
 		}
