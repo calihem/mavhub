@@ -21,6 +21,7 @@
 #include "module/coremod.h"
 #include "module/testcore.h"
 #include "module/fc_mpkg.h"
+#include "module/ctrl_hover.h"
 
 namespace mavhub {
 
@@ -255,8 +256,12 @@ inline AppLayer* AppFactory::build(const std::string& app_name, const std::map<s
 
 	if(lowercase_name == "test_app") {
 		return new TestCore();
+	} else if(lowercase_name == "core_app") {
+		return new CoreModule();
 	} else if(lowercase_name == "fc_mpkg_app") {
 		return new FC_Mpkg();
+	} else if(lowercase_name == "ctrl_hover_app") {
+		return new Ctrl_Hover();
 	}
 	
 	return NULL;

@@ -73,6 +73,11 @@ namespace mavhub {
 			exp_ctrl_rx_data.value2 = exprx_value[2];
 			exp_ctrl_rx_data.value3 = exprx_value[3];
 
+			// XXX: kopter specific mapping
+			// XXX: 0 is USS
+			huch_ranger.ranger2 = exprx_value[2];
+			huch_ranger.ranger3 = exprx_value[0];
+			
 			// Logger::log("ExpCtrl:", (int)exp_ctrl_rx_data.version, exprx_value, Logger::LOGLEVEL_INFO);
 			// Logger::log("ExpCtrl rx_t:", (int)exp_ctrl_rx_data.version, exp_ctrl_rx_data.value0, Logger::LOGLEVEL_INFO);
 
@@ -97,6 +102,9 @@ namespace mavhub {
 
 	void SenExpCtrl::publish_data(uint64_t time) {
 		DataCenter::set_exp_ctrl(exp_ctrl_rx_data);
+		// XXX: hardware specific mapping
+		DataCenter::set_huch_ranger_at(huch_ranger, 1);
+		DataCenter::set_huch_ranger_at(huch_ranger, 2);
 	}
 
 } // namespace mavhub

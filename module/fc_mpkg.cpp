@@ -28,10 +28,10 @@ namespace mavhub {
   void FC_Mpkg::handle_input(const mavlink_message_t &msg) {
 		// vector<int> v(16);
 		//mavlink_message_t msg_j;
-		// Logger::log("FC_Mpkg got mavlink_message [len, id]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
+		Logger::log("FC_Mpkg got mavlink_message [len, id]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		if(msg.msgid == MAVLINK_MSG_ID_MK_DEBUGOUT) {
-			Logger::log("FC_Mpkg got MK_DEBUGOUT", Logger::LOGLEVEL_DEBUG);
+			Logger::log("FC_Mpkg got MK_DEBUGOUT", Logger::LOGLEVEL_INFO);
 			mavlink_msg_mk_debugout_decode(&msg, (mavlink_mk_debugout_t *)&mk_debugout);
 			// MK FlightCtrl IMU data
 			debugout2attitude(&mk_debugout, &huch_attitude);
@@ -43,7 +43,7 @@ namespace mavhub {
 			// real debugout data
 			debugout2status(&mk_debugout, &mk_fc_status);
 
-			publish_data(get_time_us());
+			//publish_data(get_time_us());
 			// deadlock problem
 			// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
 			// owner->send(msg_j);
@@ -75,9 +75,9 @@ namespace mavhub {
 		MKPackage msg_debug_on(1, 'd', 1, buf);
 		// MKPackage msg_debug_on(1, 'd', (uint8_t*)buf, 1);
 		owner->send(msg_debug_on);
-		Logger::log("FC mk-pkg started, debug request sent to FC", Logger::LOGLEVEL_DEBUG);
+		Logger::log("FC mk-pkg started, debug request sent to FC", Logger::LOGLEVEL_INFO);
 		// MKPackage msg_setneutral(1, 'c');
-		while(true) {
+		while(false) {
 			// owner->send(msg_setneutral);
 			// Logger::log("FC_Mpkg running", Logger::LOGLEVEL_INFO);
 			// XXX: pass on data
@@ -140,7 +140,7 @@ namespace mavhub {
 		vector<int16_t> v(2);
 		// XXX: use ADval_press
 		altitude->baro = v[0] = debugout_getval_s(dbgout, ATTabsh);
-		// Logger::log("debugout2altitude:", v, altitude->baro, Logger::LOGLEVEL_INFO);
+		Logger::log("debugout2altitude:", v, altitude->baro, Logger::LOGLEVEL_INFO);
   }
 
   void FC_Mpkg::debugout2ranger(mavlink_mk_debugout_t* dbgout, mavlink_huch_ranger_t* ranger) {
@@ -190,7 +190,8 @@ namespace mavhub {
 	void FC_Mpkg::publish_data(uint64_t time) {
 		DataCenter::set_huch_attitude(huch_attitude);
 		DataCenter::set_huch_altitude(huch_altitude);
-		DataCenter::set_huch_ranger(huch_ranger);
+		// XXX: hardware specific mapping
+		DataCenter::set_huch_ranger_at(huch_ranger, 0);
 		DataCenter::set_mk_fc_status(mk_fc_status);
 	}
 

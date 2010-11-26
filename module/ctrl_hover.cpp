@@ -33,18 +33,20 @@ namespace mavhub {
 		// huch_altitude
 		// huch_ranger
 		// Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
- 		if(msg.msgid == MAVLINK_MSG_ID_HUCH_ATTITUDE) {
+
+		if(msg.msgid == MAVLINK_MSG_ID_HUCH_ATTITUDE) {
 			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
 			//Logger::log("Ctrl_Hover got huch_attitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_attitude_decode(&msg, &attitude);
 			//Logger::log("Ctrl_Hover", attitude.xacc, Logger::LOGLEVEL_INFO);
 		}
- 		else if(msg.msgid == MAVLINK_MSG_ID_HUCH_ALTITUDE) {
+		else if(msg.msgid == MAVLINK_MSG_ID_HUCH_ALTITUDE) {
 			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
 			//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_altitude_decode(&msg, &altitude);
 			//Logger::log("Ctrl_Hover", altitude.baro, altitude.baroref, Logger::LOGLEVEL_INFO);
 		}
+
 		if(msg.sysid == owner->system_id() && msg.msgid == 0) {//FIXME: set right msgid
 			//TODO
 		}
@@ -91,7 +93,7 @@ namespace mavhub {
 			kal->eval();
 			extctrl.gas = 255 * (double)rand()/RAND_MAX;
 			// Logger::log("Ctrl_Hover run", extctrl.gas, Logger::LOGLEVEL_INFO);
-			Logger::log("Ctrl_Hover dt", dt, Logger::LOGLEVEL_INFO);
+			Logger::log("Ctrl_Hover dt", dt, altitude.baro, Logger::LOGLEVEL_INFO);
 			MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
 			owner->send(msg_extctrl);
 			// XXX: usleep call takes ~5000 us?

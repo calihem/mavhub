@@ -31,7 +31,7 @@ namespace mavhub {
 			/// set FC legacy data
 			static void set_huch_attitude(const mavlink_huch_attitude_t &huch_attitude);
 			static void set_huch_altitude(const mavlink_huch_altitude_t &huch_altitude);
-			static void set_huch_ranger(const mavlink_huch_ranger_t &huch_ranger);
+			static void set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger, int index);
 			static void set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status);
 
 		private:
@@ -57,6 +57,7 @@ namespace mavhub {
 
 			// FlightCtrl legacy
 			static pthread_mutex_t mk_fc_mutex;
+			static pthread_mutex_t huch_ranger_mutex;
 			static mavlink_huch_attitude_t huch_attitude;
 			static mavlink_huch_altitude_t huch_altitude;
 			static mavlink_huch_ranger_t huch_ranger;
@@ -169,18 +170,30 @@ namespace mavhub {
 	inline const mavlink_huch_ranger_t DataCenter::get_huch_ranger() {
 		using namespace cpp_pthread;
 
-		Lock ri_lock(mk_fc_mutex);
+		Lock ri_lock(huch_ranger_mutex);
 		mavlink_huch_ranger_t huch_ranger_copy(huch_ranger);
 
 		return huch_ranger_copy;
 	}
-	inline void DataCenter::set_huch_ranger(const mavlink_huch_ranger_t &huch_ranger_a) {
+	inline void DataCenter::set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger_a, int index) {
 		using namespace cpp_pthread;
 
-		Lock ri_lock(mk_fc_mutex);
-		DataCenter::huch_ranger = huch_ranger_a;
+		Lock ri_lock(huch_ranger_mutex);
+		switch(index) {
+		case 0:
+			DataCenter::huch_ranger.ranger1 = huch_ranger_a.ranger1;
+			break;
+		case 1:
+			DataCenter::huch_ranger.ranger2 = huch_ranger_a.ranger2;
+			break;
+		case 2:
+			DataCenter::huch_ranger.ranger3 = huch_ranger_a.ranger3;
+			break;
+		default:
+			break;
+		}
 	}
-	// ranger
+	// status
 	inline const mavlink_mk_fc_status_t DataCenter::get_mk_fc_status() {
 		using namespace cpp_pthread;
 

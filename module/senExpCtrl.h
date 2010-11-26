@@ -31,6 +31,7 @@ namespace mavhub {
 
 		mavlink_huch_exp_ctrl_t exp_ctrl_data;
 		mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
+		mavlink_huch_ranger_t huch_ranger;
 
 		int fd;
 		int output;
