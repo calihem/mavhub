@@ -16,7 +16,7 @@
 #include "module/i2csensor.h"
 #include "module/senbmp085.h"
 #include "module/senhmc5843.h"
-
+#include "module/senExpCtrl.h"
 
 #include "module/coremod.h"
 #include "module/testcore.h"
@@ -133,6 +133,23 @@ inline void SensorFactory::build(std::list<I2cSensor*>& i2cSensors, const std::s
 		i2cSensors.push_back(new SenHmc5843(file, update_rate, gain, mode, output));
 
 		settings.end_group();
+	}
+	/* exp ctrl config */
+	if( settings.begin_group("exp_ctrl") == 0) {
+	  int output = 0;
+	  // Logger::log("exp_ctrl factory init", Logger::LOGLEVEL_INFO);
+		
+		// ExpCtrl sensor config
+		bool value;
+		if( settings.value("debug_data", value) ) {
+		} else if (value) output |= DEBUG;
+
+	  //Logger::log("exp_ctrl factory init", output, Logger::LOGLEVEL_INFO);
+
+	  /* create instance */
+	  i2cSensors.push_back(new SenExpCtrl(file, output));
+
+	  settings.end_group();
 	}
 }
 

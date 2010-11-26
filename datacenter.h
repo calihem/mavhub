@@ -17,6 +17,11 @@ namespace mavhub {
 			// hmc5843 kompass sensor
 			static const mavlink_huch_hmc5843_t get_hmc5843();
 			static void set_hmc5843(const mavlink_huch_hmc5843_t &hmc5843);
+			// ExpCtrl sensor board
+			/// Get ExpCtrl data
+			static const mavlink_huch_exp_ctrl_rx_t get_exp_ctrl();
+			/// Set ExpCtrl data
+			static void set_exp_ctrl(const mavlink_huch_exp_ctrl_rx_t &exp_ctrl_rx_data);
 
 		private:
 			//data structs
@@ -33,6 +38,11 @@ namespace mavhub {
 			// hmc5843 pressure sensor
 			static pthread_mutex_t hmc5843_mutex;
 			static mavlink_huch_hmc5843_t hmc5843_data;
+			// ExpCtrl sensor board
+			/// ExpCtrl data access lock
+			static pthread_mutex_t exp_ctrl_mutex;
+			/// ExpCtrl data structure
+			static mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
 			
 			DataCenter();
 			DataCenter(const DataCenter &data);
@@ -87,6 +97,22 @@ namespace mavhub {
 
 		Lock ri_lock(hmc5843_mutex);
 		DataCenter::hmc5843_data = hmc5843_data;
+	}
+
+	// ExpCtrl functions
+	inline const mavlink_huch_exp_ctrl_rx_t DataCenter::get_exp_ctrl() {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(exp_ctrl_mutex);
+		mavlink_huch_exp_ctrl_rx_t exp_ctrl_data_copy(exp_ctrl_rx_data);
+
+		return exp_ctrl_data_copy;
+	}
+	inline void DataCenter::set_exp_ctrl(const mavlink_huch_exp_ctrl_rx_t &exp_ctrl_rx_data) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(exp_ctrl_mutex);
+		DataCenter::exp_ctrl_rx_data = exp_ctrl_rx_data;
 	}
 
 } // namespace mavhub

@@ -142,7 +142,7 @@ void ProtocolStack::run() {
 						//broadcast msg on every mkpackage channel
 						retransmit(*mk_package, iface_iter->first);
 
-						//convert package to mavling before sending to apps
+						//convert package to mavlink before sending to apps
 						if( !mk2mavlink(*mk_package, msg) ) {
 							transmit_to_apps(msg);
 						}
@@ -187,6 +187,8 @@ void ProtocolStack::run() {
 }
 
 void ProtocolStack::send(const mavlink_message_t &msg) const {
+	transmit_to_apps(msg);
+	
 	Lock tx_lock(tx_mutex);
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
 
@@ -200,6 +202,8 @@ void ProtocolStack::send(const mavlink_message_t &msg) const {
 }
 
 void ProtocolStack::send(const MKPackage &msg) const {
+	//FIXME: send to apps
+	
 	Lock lm_lock(link_mutex);
 
 	interface_packet_list_t::const_iterator iface_iter;
@@ -234,6 +238,7 @@ void ProtocolStack::retransmit(const MKPackage &msg, const MediaLayer *src_iface
 		&& iface_iter->first != src_iface) {
 			Logger::log("send mk package on ", iface_iter->first->system_name(), Logger::LOGLEVEL_DEBUG);
 			iface_iter->first->write(msg.rawData(), msg.rawSize());
+			Logger::log("sent mk package on ", iface_iter->first->system_name(), Logger::LOGLEVEL_DEBUG);
 		}
 	}
 }
@@ -299,8 +304,8 @@ int ProtocolStack::remove_link(unsigned int link_id) {
 
 void ProtocolStack::add_application(AppLayer *app) {
 	if(!app) return;
-
 	app->set_owner(this);
+	app->set_id(next_app_id());
 	app_list.push_back(app);
 }
 

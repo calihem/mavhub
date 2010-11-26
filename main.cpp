@@ -10,17 +10,22 @@
 #include "datacenter.h"
 #include "mavshell.h"
 
+// apps
+#include "module/fc_mpkg.h"
+#include "module/ctrl_hover.h"
+
 using namespace std;
 using namespace mavhub;
 using namespace cpp_pthread;
 using namespace cpp_io;
 
-uint8_t system_id(42);
+uint16_t system_id(42);
 int tcp_port(32000);
 string cfg_filename("mavhub.d/mavhub.conf");
 list<I2cSensor*> i2c_sensors;
 
 int main(int argc, char **argv) {
+	list<I2cSensor*> i2c_sensors;
 	Logger::setLogLevel(Logger::LOGLEVEL_WARN);
 
 	parse_argv(argc, argv);
@@ -34,9 +39,6 @@ int main(int argc, char **argv) {
 		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
 	}
  
-	//create test application
-	//TestCore *test_app = new TestCore();
- 	//ProtocolStack::instance().add_application(test_app);
 
 	// start modules
 	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
@@ -44,7 +46,7 @@ int main(int argc, char **argv) {
 	}
 
 	//activate stack
-	//pthread_t stack_thread = ProtocolStack::instance().start();
+	pthread_t stack_thread = ProtocolStack::instance().start();
 	
 	//start mav shell
 	try {
@@ -57,7 +59,7 @@ int main(int argc, char **argv) {
 	}
 
 	//join threads
-	//PThread::join(stack_thread);
+	PThread::join(stack_thread);
 }
 
 void read_settings(Setting &settings) {

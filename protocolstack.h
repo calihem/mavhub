@@ -24,6 +24,7 @@ namespace mavhub {
 			typedef std::pair<MediaLayer*, packageformat_t> interface_packet_pair_t; 
 			typedef std::list<interface_packet_pair_t> interface_packet_list_t;
 			typedef std::list< std::vector<uint8_t> > buffer_list_t;
+			typedef std::pair<uint16_t, AppLayer*> id_app_pair_t;
 
 			static ProtocolStack& instance();
 			friend std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack);
@@ -74,6 +75,8 @@ namespace mavhub {
 			/// mutex to protect tx_buffer
 			mutable pthread_mutex_t tx_mutex;
 
+			/// determine next application ID
+			const uint16_t next_app_id() const;
 			/// transmit msg to every app in app_list
 			void transmit_to_apps(const mavlink_message_t &msg) const;
 			/// transmit msg on every MediaLayer except src_iface
@@ -111,10 +114,16 @@ namespace mavhub {
 	inline uint8_t ProtocolStack::system_id() const {
 		return sys_id;
 	}
+	inline const uint16_t ProtocolStack::next_app_id() const {
+		//FIXME: do it right
+		static uint16_t app_cnt = 0;
+		return app_cnt++;
+	}
 	inline void ProtocolStack::transmit_to_apps(const mavlink_message_t &msg) const {
 		std::list<AppLayer*>::const_iterator app_iter;
 		for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
-			(*app_iter)->handle_input(msg);
+			if( (*app_iter)->id != msg.compid ) 
+				(*app_iter)->handle_input(msg);
 		}
 	}
 

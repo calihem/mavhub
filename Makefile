@@ -12,9 +12,12 @@ SRCS_1   = main.cpp \
 	module/testcore.cpp \
 	module/mkrcmod.cpp \
 	module/fc_mpkg.cpp \
+	module/ctrl_hover.cpp \
+	module/filter_kalmancv.cpp \
 	module/i2csensor.cpp \
 	module/senbmp085.cpp \
 	module/senhmc5843.cpp \
+	module/senExpCtrl.cpp \
 	datacenter.cpp \
 	mavshell.cpp
 
@@ -44,8 +47,8 @@ GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 
 # CXX_CFLAGS 	+= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT $(GENDEPFLAGS)
 # CXX_CFLAGS 	+= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT
-CXX_CFLAGS 	+= -Wall -pedantic -O2 -D_REENTRANT
-CXX_LDFLAGS 	= -lpthread
+CXX_CFLAGS 	+= -Wall -pedantic -O2 -D_REENTRANT -Wno-long-long
+CXX_LDFLAGS 	= -lpthread -lcv
 
 # Make variables (AS, LD, CXX, ...)
 AS		= $(CROSS_COMPILE)as

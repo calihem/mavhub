@@ -5,7 +5,7 @@
 
 namespace mavhub {
 
-AppLayer::AppLayer() : owner(0) {}
+AppLayer::AppLayer() : owner(0), id(0) {}
 
 UARTLayer::UARTLayer(const std::string& devicename, tcflag_t control_modes) throw(const char*) :
 		UART(devicename, control_modes) {

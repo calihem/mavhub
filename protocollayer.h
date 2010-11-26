@@ -19,12 +19,17 @@ namespace mavhub {
 		public:
 			AppLayer();
 			virtual ~AppLayer() {};
-			void set_owner(const ProtocolStack *stack);
 			virtual void handle_input(const mavlink_message_t &msg) = 0;
 
 		protected:
+			friend class ProtocolStack;
 			const ProtocolStack *owner;
+			uint16_t id;
+
 			virtual void run() = 0;
+			void set_owner(const ProtocolStack *stack);
+			void set_id(uint16_t id);
+
 	};
 
 	// ----------------------------------------------------------------------------
@@ -89,6 +94,9 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	inline void AppLayer::set_owner(const ProtocolStack *stack) {
 		owner = stack;
+	}
+	inline void AppLayer::set_id(uint16_t id) {
+		AppLayer::id = id;
 	}
 
 	// ----------------------------------------------------------------------------
