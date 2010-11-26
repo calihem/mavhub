@@ -13,6 +13,7 @@
 #include "utility.h"
 #include "protocolstack.h"
 #include "mkpackage.h"
+#include "datacenter.h"
 
 using namespace std;
 
@@ -42,6 +43,7 @@ namespace mavhub {
 			// real debugout data
 			debugout2status(&mk_debugout, &mk_fc_status);
 
+			publish_data(get_time_us());
 			// deadlock problem
 			// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
 			// owner->send(msg_j);
@@ -184,4 +186,12 @@ namespace mavhub {
 
 		return (int32_t) uh << 16 | ul;
 	}
+
+	void FC_Mpkg::publish_data(uint64_t time) {
+		DataCenter::set_huch_attitude(huch_attitude);
+		DataCenter::set_huch_altitude(huch_altitude);
+		DataCenter::set_huch_ranger(huch_ranger);
+		DataCenter::set_mk_fc_status(mk_fc_status);
+	}
+
 }

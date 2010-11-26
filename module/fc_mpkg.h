@@ -59,6 +59,8 @@ namespace mavhub {
 
   protected:
 		virtual void run();
+		virtual void publish_data(uint64_t time);
+
   private:
 		// DebugOut_t *mk_debugout_o;
 		// mavlink_message_t msg_j;
