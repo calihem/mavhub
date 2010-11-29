@@ -37,12 +37,20 @@ namespace mavhub {
 			}
 			printf("]\n");
 		}
-		/// kalman Transition matrix getter
-		virtual CvMat* getTransMat();
 
 		/// kalman measurement getter
 		inline CvMat* getMeas() {
 			return meas;
+		}
+
+		/// kalman transition matrix getter
+		inline CvMat* getTransMat() {
+			return cvkal->transition_matrix;
+		}
+
+		/// kalman state post getter
+		inline CvMat* getStatePost() {
+			return cvkal->state_post;
 		}
 
 		/// kalman measurement setter

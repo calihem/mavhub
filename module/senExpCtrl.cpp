@@ -19,7 +19,7 @@ namespace mavhub {
   SenExpCtrl::SenExpCtrl(int _fd, int _output) :
 		fd(_fd), output(_output)  {
 
-		Logger::debug("ExpCtrl: init...");
+		Logger::log("ExpCtrl: init...", Logger::LOGLEVEL_INFO);
 		/* 
 			 running = true;
 			 pthread_mutex_lock( &i2c_mutex );
@@ -39,7 +39,7 @@ namespace mavhub {
 		char buf[256];
 		vector<uint16_t> exprx_value(4);
 		//mavlink_message_t msg;
-		Logger::debug("ExpCtrl: running");
+		Logger::log("ExpCtrl: running", Logger::LOGLEVEL_INFO);
 		// uint64_t end = getTimeUs() + 1000000;
 
 		running = true;
@@ -79,7 +79,7 @@ namespace mavhub {
 			huch_ranger.ranger3 = exprx_value[0];
 			
 			// Logger::log("ExpCtrl:", (int)exp_ctrl_rx_data.version, exprx_value, Logger::LOGLEVEL_INFO);
-			// Logger::log("ExpCtrl rx_t:", (int)exp_ctrl_rx_data.version, exp_ctrl_rx_data.value0, Logger::LOGLEVEL_INFO);
+			//Logger::log("ExpCtrl rx_t:", (int)exp_ctrl_rx_data.version, exp_ctrl_rx_data.value0, Logger::LOGLEVEL_INFO);
 
 			/* pass data */
 			publish_data(get_time_us());

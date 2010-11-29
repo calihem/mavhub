@@ -14,7 +14,7 @@ namespace mavhub {
   class FC_Mpkg : public AppLayer {
   public:
 		/// Constructor
-		FC_Mpkg();
+		FC_Mpkg(int component_id);
 		virtual ~FC_Mpkg();
 		/// mavhub protocolstack input handler
 		virtual void handle_input(const mavlink_message_t &msg);

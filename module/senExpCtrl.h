@@ -2,8 +2,8 @@
 #define _SENEXPCTRL_H_
 
 #include <inttypes.h>
-#include <linux/i2c.h>
-#include <linux/i2c-dev.h>
+/* #include <linux/i2c.h> */
+/* #include <linux/i2c-dev.h> */
 #include <sys/ioctl.h>
 
 #include <mavlink.h>

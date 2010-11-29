@@ -67,8 +67,4 @@ namespace mavhub {
 		cvmSet(cvkal->transition_matrix, 1, 2, dt*dt);
 	}
 
-	/// kalman transition matrix getter
-	CvMat* Kalman_CV::getTransMat() {
-		return cvkal->transition_matrix;
-	}
 }

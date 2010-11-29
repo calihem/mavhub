@@ -8,6 +8,7 @@ SRCS_1   = main.cpp \
 	protocollayer.cpp \
 	mkpackage.cpp \
 	network.cpp \
+	factory/factory_app.cpp \
 	module/coremod.cpp \
 	module/testcore.cpp \
 	module/mkrcmod.cpp \

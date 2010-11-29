@@ -12,16 +12,15 @@
 #include "protocolstack.h"
 #include "lib/setting.h"
 #include "utility.h"
+
+// sub-factories
+#include "factory/factory_app.h"
+
 // Sensors
 #include "module/i2csensor.h"
 #include "module/senbmp085.h"
 #include "module/senhmc5843.h"
 #include "module/senExpCtrl.h"
-
-#include "module/coremod.h"
-#include "module/testcore.h"
-#include "module/fc_mpkg.h"
-#include "module/ctrl_hover.h"
 
 namespace mavhub {
 
@@ -59,11 +58,6 @@ class LinkFactory {
 		static MediaLayer* build(const std::string& type, const std::string& devicename);
 };
 
-class AppFactory {
-	public:
-		static AppLayer* build(const std::string& app_name, const std::map<std::string, std::string> args);
-};
-	
 // ----------------------------------------------------------------------------
 // SensorFactory
 // ----------------------------------------------------------------------------
@@ -138,14 +132,14 @@ inline void SensorFactory::build(std::list<I2cSensor*>& i2cSensors, const std::s
 	/* exp ctrl config */
 	if( settings.begin_group("exp_ctrl") == 0) {
 	  int output = 0;
-	  // Logger::log("exp_ctrl factory init", Logger::LOGLEVEL_INFO);
+		Logger::log("exp_ctrl factory init", Logger::LOGLEVEL_INFO);
 		
 		// ExpCtrl sensor config
 		bool value;
 		if( settings.value("debug_data", value) ) {
 		} else if (value) output |= DEBUG;
 
-	  //Logger::log("exp_ctrl factory init", output, Logger::LOGLEVEL_INFO);
+	  Logger::log("exp_ctrl factory init", output, Logger::LOGLEVEL_INFO);
 
 	  /* create instance */
 	  i2cSensors.push_back(new SenExpCtrl(file, output));
@@ -246,26 +240,6 @@ inline MediaLayer* LinkFactory::build(const std::string& type, const std::string
 	return build(construction_plan);
 }
 
-// ----------------------------------------------------------------------------
-// AppFactory
-// ----------------------------------------------------------------------------
-inline AppLayer* AppFactory::build(const std::string& app_name, const std::map<std::string, std::string> args) {
-	//transform application name to lower case
-	std::string lowercase_name(app_name);
-	transform(lowercase_name.begin(), lowercase_name.end(), lowercase_name.begin(), ::tolower);
-
-	if(lowercase_name == "test_app") {
-		return new TestCore();
-	} else if(lowercase_name == "core_app") {
-		return new CoreModule();
-	} else if(lowercase_name == "fc_mpkg_app") {
-		return new FC_Mpkg();
-	} else if(lowercase_name == "ctrl_hover_app") {
-		return new Ctrl_Hover();
-	}
-	
-	return NULL;
-}
 
 } // namespace mavhub
 

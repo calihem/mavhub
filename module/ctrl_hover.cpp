@@ -13,6 +13,7 @@
 #include "utility.h"
 #include "protocolstack.h"
 #include "mkpackage.h"
+#include "datacenter.h"
 
 using namespace std;
 
@@ -84,12 +85,18 @@ namespace mavhub {
 			//timediff(tdiff, tkm1, tk);
 			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			tkm1 = tk; // save current time
+
+			// get ranger data
+			ranger = DataCenter::get_huch_ranger();
+			Logger::log(ranger.ranger1, ranger.ranger2, ranger.ranger3, Logger::LOGLEVEL_INFO);
 			
 			// owner->send(msg_setneutral);
 			kal->update_F_dt(dt * 1e-6);
-			kal->setMeasAt(0, 0, 0.1);
+			kal->setMeasAt(0, 0, (double)altitude.baro);
+			kal->setMeasAt(1, 0, (double)ranger.ranger1);
 			// Kalman_CV::cvPrintMat(kal->getTransMat(), 3, 3, "F");
-			Kalman_CV::cvPrintMat(kal->getMeas(), 5, 1, (char *)"meas");
+			// Kalman_CV::cvPrintMat(kal->getMeas(), 5, 1, (char *)"meas");
+			Kalman_CV::cvPrintMat(kal->getStatePost(), 3, 1, (char *)"meas");
 			kal->eval();
 			extctrl.gas = 255 * (double)rand()/RAND_MAX;
 			// Logger::log("Ctrl_Hover run", extctrl.gas, Logger::LOGLEVEL_INFO);

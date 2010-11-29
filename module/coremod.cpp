@@ -29,6 +29,8 @@ void CoreModule::run() {
 	mavlink_message_t msg;
 	mavlink_msg_heartbeat_pack(owner->system_id(), 23, &msg, system_type, MAV_AUTOPILOT_GENERIC);
 
+	Logger::log("CoreModule started", Logger::LOGLEVEL_INFO);
+
 	while(1) {
 		//Logger::log("coremod: system_id", static_cast<int>(owner->system_id()), Logger::LOGLEVEL_INFO);
 		owner->send(msg);

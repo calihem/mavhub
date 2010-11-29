@@ -25,7 +25,7 @@ string cfg_filename("mavhub.d/mavhub.conf");
 list<I2cSensor*> i2c_sensors;
 
 int main(int argc, char **argv) {
-	list<I2cSensor*> i2c_sensors;
+	//list<I2cSensor*> i2c_sensors;
 	Logger::setLogLevel(Logger::LOGLEVEL_WARN);
 
 	parse_argv(argc, argv);
@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
 
 	// start modules
 	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
+		Logger::log("sensor iter", Logger::LOGLEVEL_INFO);
 		(*iter)->start();
 	}
 
