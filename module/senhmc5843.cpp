@@ -63,7 +63,7 @@ SenHmc5843::SenHmc5843(int _fd, int _update_rate, int _gain, int _mode, int _out
 
 SenHmc5843::~SenHmc5843() {
 	running = false;
-	join( thread );
+	join();
 }
 
 void SenHmc5843::run() {

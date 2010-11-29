@@ -31,7 +31,7 @@ namespace mavhub {
 
   SenExpCtrl::~SenExpCtrl() {
 		running = false;
-		join( thread );
+		join();
   }
 
   void SenExpCtrl::run() {

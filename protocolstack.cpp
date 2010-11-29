@@ -21,6 +21,7 @@ ProtocolStack& ProtocolStack::instance() {
 }
 
 ProtocolStack::ProtocolStack(uint8_t system_id) :
+		loop_forever(false),
 		sys_id(system_id),
 		highest_fd(-1) {
 	pthread_mutex_init(&link_mutex, NULL);
@@ -43,7 +44,8 @@ void ProtocolStack::run() {
 		(*app_iter)->start();
 	}
 
-	while(1) {
+	loop_forever = true;
+	while(loop_forever) {
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 
@@ -58,6 +60,8 @@ void ProtocolStack::run() {
 
 		read(read_fds);
 	}
+
+	Logger::debug("leaving ProtocolStack::run()");
 }
 
 void ProtocolStack::read(const fd_set& fds) {
@@ -69,8 +73,6 @@ void ProtocolStack::read(const fd_set& fds) {
 	static mavlink_status_t status;
 	buffer_list_t::iterator buf_iter = rx_buffer_list.begin();
 
-	{ //begin of link mutex scope
-	Lock lm_lock(link_mutex);
 	//iterate through interfaces
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		if( !FD_ISSET( (iface_iter->first)->handle(), &fds) ) {
@@ -190,28 +192,26 @@ void ProtocolStack::read(const fd_set& fds) {
 		}
 		channel++;
 	}
-
-	}// end of link mutex scope
-
 }
 
 void ProtocolStack::links_to_file_set(fd_set& fds) const {
 	FD_ZERO(&fds);
 	// add file descriptors to set
 	interface_packet_list_t::const_iterator iface_iter;
-	Lock lm_lock(link_mutex);
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		FD_SET( (iface_iter->first)->handle() , &fds);
 	}
 }
 
 void ProtocolStack::send(const mavlink_message_t &msg, const AppLayer *app) const {
+	if(!loop_forever) {
+		Logger::warn("sending of mavlink message denied (ProtocolStack is not running)");
+		return;
+	}
 	retransmit_to_apps(msg, app);
 	
 	Lock tx_lock(tx_mutex);
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
-
-	Lock lm_lock(link_mutex);
 
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
@@ -221,9 +221,11 @@ void ProtocolStack::send(const mavlink_message_t &msg, const AppLayer *app) cons
 }
 
 void ProtocolStack::send(const MKPackage &msg, const AppLayer *app) const {
+	if(!loop_forever) {
+		Logger::warn("sending of MK message denied (ProtocolStack is not running)");
+		return;
+	}
 	//FIXME: send to apps
-	
-	Lock lm_lock(link_mutex);
 
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
@@ -237,8 +239,6 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const cpp_io::IOInt
 
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
 
-	// here locking of link_mutex is not neccesary
-
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		if(iface_iter->second == MAVLINKPACKAGE
@@ -249,8 +249,7 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const cpp_io::IOInt
 }
 
 void ProtocolStack::retransmit(const MKPackage &msg, const cpp_io::IOInterface *src_iface) const {
-	// locking of link_mutex is done by run()
-	
+
 	interface_packet_list_t::const_iterator iface_iter;
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		if(iface_iter->second == MKPACKAGE
@@ -277,22 +276,33 @@ int ProtocolStack::mk2mavlink(const MKPackage &mk_msg, mavlink_message_t &mav_ms
 int ProtocolStack::add_link(cpp_io::IOInterface *interface, const packageformat_t format) {
 	if(!interface) return -1;
 
-	Lock lm_lock(link_mutex);
-	
 	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
 		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
 		return -2;
 	}
 
+	bool was_running(loop_forever);
+	if(loop_forever) {
+		loop_forever = false;
+		join();
+	}
+
 	interface->enable_blocking_mode(false);
+
+	{//begin of link mutex scope
+	Lock lm_lock(link_mutex);
+
 	interface_list.push_back( make_pair(interface, format) );
 
 	if(format == MKPACKAGE) {
 		rx_buffer_list.push_back( vector<uint8_t>() );
 	}
+	}//end of link mutex scope
 
 	if(interface->handle() > highest_fd)
 		highest_fd = interface->handle();
+
+	if(was_running) start();
 
 	return 0;
 }
@@ -308,6 +318,15 @@ cpp_io::IOInterface* ProtocolStack::link(unsigned int link_id) {
 }
 
 int ProtocolStack::remove_link(unsigned int link_id) {
+	int rc = -1;
+
+	bool was_running(loop_forever);
+	if(loop_forever) {
+		loop_forever = false;
+		join();
+	}
+
+	{//begin of link mutex scope
 	Lock lm_lock(link_mutex);
 
 	if(interface_list.size() >= link_id+1) { //ID is in range
@@ -319,10 +338,14 @@ int ProtocolStack::remove_link(unsigned int link_id) {
 		}
 		interface_list.erase(iface_iter);
 		//TODO: get new highest_fd
-		return 0;
+		rc = 0;
 	}
 
-	return -1;
+	}//end of link mutex scope
+
+	if(was_running) start();
+
+	return rc;
 }
 
 
@@ -334,7 +357,10 @@ void ProtocolStack::add_application(AppLayer *app) {
 }
 
 std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
-	Lock lm_lock(proto_stack.link_mutex);
+	if(!proto_stack.loop_forever) {
+		os << "Protocolstack down" << endl;
+		return os;
+	}
 
 	// print headline
 	os << std::setw(3) << "ID" 

@@ -59,7 +59,7 @@ SenBmp085::SenBmp085(int _fd, int _update_temp, int _oversampling, int _output) 
 
 SenBmp085::~SenBmp085() {
 	running = false;
-	join( thread );
+	join();
 }
 
 void SenBmp085::run() {

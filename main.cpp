@@ -47,20 +47,20 @@ int main(int argc, char **argv) {
 	}
 
 	//activate stack
-	pthread_t stack_thread = ProtocolStack::instance().start();
+	ProtocolStack::instance().start();
 	
 	//start mav shell
 	try {
 		MAVShell *mav_shell = new MAVShell(tcp_port);
-		pthread_t shell_thread = mav_shell->start();
-		PThread::join(shell_thread);
+		mav_shell->start();
+		mav_shell->join();
 	}
 	catch(const char* message) {
 		cout << message << endl;
 	}
 
-	//join threads
-	PThread::join(stack_thread);
+	//join stack thread
+	ProtocolStack::instance().join();
 }
 
 void read_settings(Setting &settings) {

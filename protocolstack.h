@@ -58,6 +58,8 @@ namespace mavhub {
 			/// Size of rx buffer
 			static const int BUFFERLENGTH = 512;
 
+			///
+			bool loop_forever;
 			/// System ID
 			uint8_t sys_id;
 			/// List of all links/ interfaces
