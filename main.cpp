@@ -10,10 +10,6 @@
 #include "datacenter.h"
 #include "mavshell.h"
 
-// apps
-#include "module/fc_mpkg.h"
-#include "module/ctrl_hover.h"
-
 using namespace std;
 using namespace mavhub;
 using namespace cpp_pthread;

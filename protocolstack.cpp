@@ -11,6 +11,9 @@
 using namespace std;
 using namespace cpp_pthread;
 
+#define STACK_LOGLEVEL Logger::LOGLEVEL_WARN
+//#define STACK_LOGLEVEL Logger::LOGLEVEL_DEBUG
+
 namespace mavhub {
 
 ProtocolStack& ProtocolStack::instance() {
@@ -36,7 +39,7 @@ void ProtocolStack::run() {
 	int fds_ready;
 	timeval timeout;
 
-	Logger::debug("entering ProtocolStack::run()");
+	Logger::log("entering ProtocolStack::run()", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 
 	//activate apps
 	std::list<AppLayer*>::iterator app_iter;
@@ -51,9 +54,9 @@ void ProtocolStack::run() {
 
 		links_to_file_set(read_fds);
 		fds_ready = select(highest_fd+1, &read_fds, NULL, NULL, &timeout);
-		Logger::log(fds_ready, "link(s) ready to read", Logger::LOGLEVEL_DEBUG);
+		Logger::log(fds_ready, "link(s) ready to read", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 		if(fds_ready < 0) {
-			Logger::log("select failed with", strerror(errno), Logger::LOGLEVEL_ERROR);
+			Logger::log("select failed with", strerror(errno), Logger::LOGLEVEL_ERROR, STACK_LOGLEVEL);
 			continue;
 		}
 		if(fds_ready == 0) continue;
@@ -61,7 +64,7 @@ void ProtocolStack::run() {
 		read(read_fds);
 	}
 
-	Logger::debug("leaving ProtocolStack::run()");
+	Logger::log("leaving ProtocolStack::run()", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 }
 
 void ProtocolStack::read(const fd_set& fds) {
@@ -83,7 +86,7 @@ void ProtocolStack::read(const fd_set& fds) {
 		received = (iface_iter->first)->read( &rx_buffer[0], rx_buffer.size() );
 		if(received < 0) {
 			if(errno != EAGAIN) {
-				Logger::log("reading of interface failed with", strerror(errno), Logger::LOGLEVEL_ERROR);
+				Logger::log("reading of interface failed with", strerror(errno), Logger::LOGLEVEL_ERROR, STACK_LOGLEVEL);
 			}
 			channel++;
 			continue;
@@ -95,13 +98,13 @@ void ProtocolStack::read(const fd_set& fds) {
 		}
 
 		//received data, try to parse it
-		Logger::log(received, "bytes received on channel", channel, Logger::LOGLEVEL_DEBUG);
+		Logger::log(received, "bytes received on channel", channel, Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 
 		switch(iface_iter->second) {
 			case MAVLINKPACKAGE:
 				for(int i=0; i<received; i++) {
 					if( mavlink_parse_char(channel, rx_buffer[i], &msg, &status) ) {
-						Logger::log("received mavlink packet on channel", channel, Logger::LOGLEVEL_DEBUG);
+						Logger::log("received mavlink packet on channel", channel, Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 						//broadcast msg on every mavlink channel
 						retransmit(msg, iface_iter->first);
 						//send msg to applications
@@ -114,15 +117,15 @@ void ProtocolStack::read(const fd_set& fds) {
 					std::vector<uint8_t>::iterator start_iter;
 					start_iter = std::find(rx_buffer.begin(), rx_buffer.begin()+received, '#');
 					if( start_iter != rx_buffer.end() ) {//found #
-						Logger::log("found MK start sign", Logger::LOGLEVEL_DEBUG);
+						Logger::log("found MK start sign", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 						buf_iter->insert( buf_iter->end(), start_iter, rx_buffer.begin()+received );
 					} else {//throw data away
-						Logger::log("throw data away", Logger::LOGLEVEL_DEBUG);
+						Logger::log("throw data away", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 						buf_iter++;
 						break;
 					}
 				} else {//append data
-					Logger::log("append MK data", Logger::LOGLEVEL_DEBUG);
+					Logger::log("append MK data", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 					buf_iter->insert( buf_iter->end(), rx_buffer.begin(), rx_buffer.begin()+received );
 				}
 
@@ -130,7 +133,7 @@ void ProtocolStack::read(const fd_set& fds) {
 				std::vector<uint8_t>::iterator stop_iter = std::find(buf_iter->begin()+3, buf_iter->end(), '\r');
 
 				while( stop_iter != buf_iter->end() ) {//found \r
-					Logger::log("found MK stop sign", Logger::LOGLEVEL_DEBUG);
+					Logger::log("found MK stop sign", Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 					MKPackage *mk_package;
 					int data_length;
 					try{
@@ -139,7 +142,7 @@ void ProtocolStack::read(const fd_set& fds) {
 						mk_package = new MKPackage(&(*buf_iter)[0], data_length);
 					}
 					catch(const char *message) {
-						Logger::log(message, Logger::LOGLEVEL_ERROR);
+						Logger::log(message, Logger::LOGLEVEL_ERROR, STACK_LOGLEVEL);
 						//no valid MKPackage, remove data up to next start sign
 						std::vector<uint8_t>::iterator start_iter;
 						start_iter = std::find(stop_iter+1, buf_iter->end(), '#');
@@ -155,7 +158,7 @@ void ProtocolStack::read(const fd_set& fds) {
 						stop_iter = std::find(buf_iter->begin()+3, buf_iter->end(), '\r');
 						continue;
 					}
-					Logger::log("received MK packet on channel", channel, Logger::LOGLEVEL_DEBUG);
+					Logger::log("received MK packet on channel", channel, Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 					//broadcast msg on every mkpackage channel
 					retransmit(*mk_package, iface_iter->first);
 
@@ -167,10 +170,10 @@ void ProtocolStack::read(const fd_set& fds) {
 
 					//remove data of mk_package from buffer
 					buf_iter->erase(buf_iter->begin(), buf_iter->begin()+data_length);
-					Logger::log(data_length, "bytes cleared out of mk buffer on channel ", channel, Logger::LOGLEVEL_DEBUG);
+					Logger::log(data_length, "bytes cleared out of mk buffer on channel ", channel, Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 					//ensure that buffer starts with start sign
 					if( buf_iter->size() > 0 && buf_iter->at(0) != '#' ) {
-						Logger::log("synchronize mk stream", Logger::LOGLEVEL_WARN);
+						Logger::log("synchronize mk stream", Logger::LOGLEVEL_WARN, STACK_LOGLEVEL);
 						//remove data from buffer up to next start sign
 						std::vector<uint8_t>::iterator start_iter;
 						start_iter = std::find(buf_iter->begin()+1, buf_iter->end(), '#');
@@ -187,7 +190,7 @@ void ProtocolStack::read(const fd_set& fds) {
 				break;
 			}
 			default:
-				Logger::log("unsupported package format on channel", channel, Logger::LOGLEVEL_DEBUG);
+				Logger::log("unsupported package format on channel", channel, Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 				break;
 		}
 		channel++;
@@ -205,7 +208,7 @@ void ProtocolStack::links_to_file_set(fd_set& fds) const {
 
 void ProtocolStack::send(const mavlink_message_t &msg, const AppLayer *app) const {
 	if(!loop_forever) {
-		Logger::warn("sending of mavlink message denied (ProtocolStack is not running)");
+		Logger::log("sending of mavlink message denied (ProtocolStack is not running)", Logger::LOGLEVEL_WARN, STACK_LOGLEVEL);
 		return;
 	}
 	retransmit_to_apps(msg, app);
@@ -222,7 +225,7 @@ void ProtocolStack::send(const mavlink_message_t &msg, const AppLayer *app) cons
 
 void ProtocolStack::send(const MKPackage &msg, const AppLayer *app) const {
 	if(!loop_forever) {
-		Logger::warn("sending of MK message denied (ProtocolStack is not running)");
+		Logger::log("sending of MK message denied (ProtocolStack is not running)", Logger::LOGLEVEL_WARN, STACK_LOGLEVEL);
 		return;
 	}
 	//FIXME: send to apps
@@ -254,9 +257,9 @@ void ProtocolStack::retransmit(const MKPackage &msg, const cpp_io::IOInterface *
 	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
 		if(iface_iter->second == MKPACKAGE
 		&& iface_iter->first != src_iface) {
-			Logger::log("send mk package on ", iface_iter->first->name(), Logger::LOGLEVEL_DEBUG);
+			Logger::log("send mk package on ", iface_iter->first->name(), Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 			iface_iter->first->write(msg.rawData(), msg.rawSize());
-			Logger::log("sent mk package on ", iface_iter->first->name(), Logger::LOGLEVEL_DEBUG);
+			Logger::log("sent mk package on ", iface_iter->first->name(), Logger::LOGLEVEL_DEBUG, STACK_LOGLEVEL);
 		}
 	}
 }
@@ -277,7 +280,7 @@ int ProtocolStack::add_link(cpp_io::IOInterface *interface, const packageformat_
 	if(!interface) return -1;
 
 	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
-		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN);
+		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN, STACK_LOGLEVEL);
 		return -2;
 	}
 

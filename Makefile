@@ -11,7 +11,7 @@ SRCS_1   = main.cpp \
 	factory/factory_app.cpp \
 	module/coremod.cpp \
 	module/testcore.cpp \
-	module/mkrcmod.cpp \
+	app/mk_app.cpp \
 	module/fc_mpkg.cpp \
 	module/ctrl_hover.cpp \
 	module/filter_kalmancv.cpp \

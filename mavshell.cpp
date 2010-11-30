@@ -186,15 +186,10 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 			try {
 				i++;
 				istringstream istream( argv.at(i) );
-				int loglevel;
+				Logger::log_level_t loglevel;
 				istream >> loglevel;
-				if(loglevel < 0 || loglevel > 6) {
-					send_stream << "Loglevel is: " << Logger::loglevel() << endl;
-					i--;
-				} else {
-					Logger::setLogLevel( static_cast<Logger::log_level_t>(loglevel) );
-					send_stream << "Loglevel is now: " << Logger::loglevel() << endl;
-				}
+				Logger::setLogLevel(loglevel);
+				send_stream << "Loglevel is now: " << Logger::loglevel() << endl;
 			}
 			catch(std::out_of_range& e) {
 				send_stream << "Loglevel is: " << Logger::loglevel() << endl;

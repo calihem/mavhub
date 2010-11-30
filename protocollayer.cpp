@@ -1,12 +1,11 @@
 #include "protocollayer.h"
 #include "protocolstack.h"
-#include "logger.h"
 
 #include <sstream>
 
 namespace mavhub {
 
-AppLayer::AppLayer() : owner(0) {}
+AppLayer::AppLayer(const Logger::log_level_t loglevel) : owner(0), loglevel(loglevel) {}
 
 void AppLayer::send(const mavlink_message_t &msg) const {
 	if(owner) owner->send(msg, this);
