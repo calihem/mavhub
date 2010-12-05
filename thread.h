@@ -50,9 +50,9 @@ inline const pthread_t& PThread::start() {
 inline void *PThread::join() {
 	if(!_running) return NULL;
 
+	_running = false;
 	void *rc;
 	pthread_join(thread, &rc);
-	_running = false;
 	return rc;
 }
 inline void *PThread::start_routine_wrapper(void *arg) {

@@ -41,7 +41,7 @@ ARCH ?= $(SUBARCH)
 CROSS_COMPILE ?= 
 
 # define any directories containing header files other than /usr/include
-INCLUDES = -I. -Imodule -I../mavlink/include/huch
+INCLUDES = -I. -Imodule -I../mavlink/include/huch -I../mkhuchlink
 
 # compiler flags to generate dependency files.
 GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d

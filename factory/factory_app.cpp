@@ -47,7 +47,20 @@ namespace mavhub {
 		} else if(lowercase_name == "ctrl_hover_app") {
 			return new Ctrl_Hover();
 		} else if(lowercase_name == "mk_app") {
-			return new MKApp(loglevel);
+			std::string dev_name;
+			find_iter = args.find("device");
+			if(find_iter != args.end()) {
+				dev_name = find_iter->second;
+			} else {
+				dev_name = "/dev/ttyS0";
+			}
+			unsigned int baudrate(57600);
+			find_iter = args.find("baudrate");
+			if(find_iter != args.end()) {
+				istringstream istream(find_iter->second);
+				istream >> baudrate;
+			}
+			return new MKApp(loglevel, dev_name, baudrate);
 		}
 	
 		return NULL;

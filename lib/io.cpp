@@ -19,6 +19,17 @@ const std::string IOInterface::path(const std::string& fullname) {
 	return fullname.substr(0, found);
 }
 
+void IOInterface::name(const std::string& name) {
+	bool was_open = is_open();
+	if(is_open()) {
+		close();
+	}
+	_name = name;
+
+	if(was_open)
+		open();
+}
+
 // ----------------------------------------------------------------------------
 // FStream
 // ----------------------------------------------------------------------------

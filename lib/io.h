@@ -21,8 +21,13 @@ class IOInterface {
 		const int handle() const;
 		/// Get the system name of file (with path), e.g. /dev/ttyS0
 		const std::string& name() const;
+		/// Set (full) name of file
+		void name(const std::string& name);
 		/// Extracts the path from filename
 		static const std::string path(const std::string& fullname);
+		virtual const bool is_open() const;
+		virtual int open() = 0;
+		virtual void close();
 		/// Reads maximum nbyte from file to buf
 		virtual ssize_t read(void *buf, size_t nbyte) const;
 		/// Writes nbyte from file to buf
@@ -78,6 +83,7 @@ inline IOInterface::IOInterface(const std::string& name, const std::string& desc
 }
 
 inline IOInterface::~IOInterface() {
+	close();
 }
 
 inline const std::string& IOInterface::description() const {
@@ -105,6 +111,17 @@ inline const std::string& IOInterface::name() const {
 
 inline void IOInterface::print(std::ostream &os) const {
 	os << _description << ": " << _name << std::endl;
+}
+
+inline const bool IOInterface::is_open() const {
+	return (fd >= 0);
+}
+
+inline void IOInterface::close() {
+	if( is_open() ) {
+		::close(fd);
+		fd = -1;
+	}
 }
 
 inline ssize_t IOInterface::read(void *buf, size_t nbyte) const {

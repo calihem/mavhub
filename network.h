@@ -37,20 +37,21 @@ namespace mavhub {
 
 	class Socket : public cpp_io::IOInterface {
 		public:
+			virtual int open() = 0;
 			std::string foreign_addr() const throw(const char*);
 			uint16_t foreign_port() const throw(const char*);
 			static const std::string& proto_to_name(const int type);
 
 		protected:
-			Socket(int type, int protocol) throw(const char*);
-			Socket(int socket_fd) throw(const char*);
+			Socket(const int type,const  int protocol);
+			Socket(const int socket_fd);
 			~Socket();
 
 			struct sockaddr_in si_self;
 			mutable struct sockaddr_in si_other;
 			
-			void bind(int port) throw(const char*);
-
+			void bind(const int port) throw(const char*);
+			int open(const int type, const int protocol);
 		private:
 			Socket(const Socket &socket);
 			void operator=(const Socket &socket);
@@ -60,6 +61,8 @@ namespace mavhub {
 		public:
 			UDPSocket(int port) throw(const char*);
 			virtual ~UDPSocket();
+
+			virtual int open();
 
 			/**
 			 * @brief Receive data from any system
@@ -101,9 +104,11 @@ namespace mavhub {
 
 	class TCPSocket : public Socket {
 		public:
-			TCPSocket() throw(const char*);
-			TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) throw(const char*);
+			TCPSocket();
+			TCPSocket(const std::string &foreign_addr, uint16_t foreign_port);
 			virtual ~TCPSocket();
+
+			virtual int open();
 
 			void connect(const std::string &foreign_addr, uint16_t foreign_port);
 			void disconnect();
@@ -117,7 +122,7 @@ namespace mavhub {
 
 		private:
 			friend class TCPServerSocket;
-			TCPSocket(int socket_fd) throw(const char*);
+			TCPSocket(int socket_fd);
 	};
 	
 	class TCPServerSocket : public Socket {
@@ -125,7 +130,9 @@ namespace mavhub {
 			TCPServerSocket(uint16_t port, int connections) throw(const char*);
 // 			TCPServerSocket(const std::string &address, uint16_t port) throw(const char*);
 			virtual ~TCPServerSocket();
-			
+
+			virtual int open();
+
 			TCPSocket* accept() throw(const char*);
 
 		
@@ -134,6 +141,19 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// Socket
 	// ----------------------------------------------------------------------------
+
+	// ----------------------------------------------------------------------------
+	// TCPSocket
+	// ----------------------------------------------------------------------------
+	inline int TCPSocket::open() {
+		return -1;
+	}
+	// ----------------------------------------------------------------------------
+	// TCPServerSocket
+	// ----------------------------------------------------------------------------
+	inline int TCPServerSocket::open() {
+		return -1;
+	}
 } // namespace mavhub
 
 #endif

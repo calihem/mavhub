@@ -14,9 +14,12 @@ namespace mavhub {
 
 class UART : public cpp_io::IOInterface {
 	public:
-		UART(const std::string&  devicename, tcflag_t control_modes) throw(const char*);
+		UART();
+		UART(const std::string&  devicename, const tcflag_t control_modes);
 		~UART();
 
+		virtual int open();
+		virtual void close();
 		/**
 		 * \brief converts numeric baudrate to speed type needed for termios structure 
 		 */
@@ -29,6 +32,8 @@ class UART : public cpp_io::IOInterface {
 	protected:
 
 	private:
+		/// control modes
+		tcflag_t control_modes;
 		/// config struct of serial interface
 		struct termios old_io_cfg, new_io_cfg;
 };

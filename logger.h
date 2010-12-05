@@ -119,8 +119,23 @@ namespace mavhub {
 		return log_level;
 	}
 
+#if defined(DISABLELOGGER)
+	inline void Logger::log_preamble(log_level_t loglevel) {}
+	template <typename T>
+	inline void Logger::log(const T& message, const log_level_t msg_loglevel, const log_level_t local_loglevel) {}
+	template <typename T1, typename T2>
+	inline void Logger::log(const T1& msg1,
+			const T2& msg2,
+			const log_level_t msg_loglevel,
+			const log_level_t local_loglevel) {}
+	template <typename T1, typename T2, typename T3>
+	inline void Logger::log(const T1& msg1,
+		const T2& msg2,
+		const T3& msg3,
+		const log_level_t msg_loglevel,
+		const log_level_t local_loglevel) {}
+#else
 	inline void Logger::log_preamble(log_level_t loglevel) {
-#if !defined(DISABLELOGGER)
 		time_t rawtime;
 		struct tm *timeinfo;
 
@@ -132,11 +147,9 @@ namespace mavhub {
 			<< ":" << std::setw(2) << timeinfo->tm_min
 			<< ":" << std::setw(2) << timeinfo->tm_sec
 			<< "] ";
-#endif
 	}
 	template <typename T>
-	inline void Logger::log(const T& message, const log_level_t msg_loglevel, const log_level_t local_loglevel) {
-#if !defined(DISABLELOGGER)
+	void Logger::log(const T& message, const log_level_t msg_loglevel, const log_level_t local_loglevel) {
 		if( msg_loglevel >= local_loglevel && msg_loglevel >= log_level  ) {
 #if defined(_REENTRANT)
 		pthread_mutex_lock(&stream_mutex);
@@ -147,14 +160,12 @@ namespace mavhub {
 		pthread_mutex_unlock(&stream_mutex);
 #endif
 		}
-#endif //DISABLELOGGER
 	}
 	template <typename T1, typename T2>
-	inline void Logger::log(const T1& msg1,
+	void Logger::log(const T1& msg1,
 			const T2& msg2,
 			const log_level_t msg_loglevel,
 			const log_level_t local_loglevel) {
-#if !defined(DISABLELOGGER)
 		if( msg_loglevel >= local_loglevel && msg_loglevel >= log_level  ) {
 #if defined(_REENTRANT)
 		pthread_mutex_lock(&stream_mutex);
@@ -165,15 +176,13 @@ namespace mavhub {
 		pthread_mutex_unlock(&stream_mutex);
 #endif
 		}
-#endif //DISABLELOGGER
 	}
 	template <typename T1, typename T2, typename T3>
-	inline void Logger::log(const T1& msg1,
+	void Logger::log(const T1& msg1,
 		const T2& msg2,
 		const T3& msg3,
 		const log_level_t msg_loglevel,
 		const log_level_t local_loglevel) {
-#if !defined(DISABLELOGGER)
 		if( msg_loglevel >= local_loglevel && msg_loglevel >= log_level  ) {
 #if defined(_REENTRANT)
 		pthread_mutex_lock(&stream_mutex);
@@ -184,9 +193,8 @@ namespace mavhub {
 		pthread_mutex_unlock(&stream_mutex);
 #endif
 		}
-#endif
 	}
-
+#endif //DISABLELOGGER
 	template <class T>
 	inline void Logger::debug(const T& message) {
 		log(message, LOGLEVEL_DEBUG);

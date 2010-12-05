@@ -41,12 +41,10 @@ std::istream& operator >>(std::istream &is, string_addr_pair_t &string_addr_pair
 // ----------------------------------------------------------------------------
 // Socket
 // ----------------------------------------------------------------------------
-Socket::Socket(int type, int protocol) throw(const char*) :
+Socket::Socket(int type, int protocol) :
 		IOInterface("", proto_to_name(protocol)) {
-	//socket(int domain, int type, int protocol)
-	if( (fd = socket(PF_INET, type, protocol)) < 0 ) {
-		throw "Creation of socket failed";
-	}
+
+	open(type, protocol);
 
 	//configure own socket address
 	bzero(&si_self, sizeof(si_self));	//clear struct
@@ -57,8 +55,8 @@ Socket::Socket(int type, int protocol) throw(const char*) :
 	si_other.sin_family = AF_INET;	//set address family
 }
 
-Socket::Socket(int socket_fd) throw(const char*) :
-		IOInterface("", "") {//FIXME
+Socket::Socket(int socket_fd) :
+		IOInterface("", "") { //FIXME
 
 	fd = socket_fd;
 
@@ -69,11 +67,17 @@ Socket::Socket(int socket_fd) throw(const char*) :
 	//configure foreign socket address
 	bzero(&si_other, sizeof(si_other));	//clear struct
 	si_other.sin_family = AF_INET;	//set address family
-
 }
 
 Socket::~Socket() {
-	close(fd);
+}
+
+int Socket::open(const int type, const int protocol) {
+	if(is_open()) return fd;
+
+	//socket(int domain, int type, int protocol)
+	fd = socket(PF_INET, type, protocol);
+	return fd;
 }
 
 std::string Socket::foreign_addr() const throw(const char*) {
@@ -159,6 +163,10 @@ UDPSocket::UDPSocket(int port) throw(const char*) :
 UDPSocket::~UDPSocket() {
 }
 
+int UDPSocket::open() {
+	return Socket::open(SOCK_DGRAM, IPPROTO_UDP);
+}
+
 int UDPSocket::recv_any(void *buffer, int buf_len) const {
 	int so_len = sizeof(si_other);
 
@@ -241,13 +249,11 @@ int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, ui
 // ----------------------------------------------------------------------------
 // TCPSocket
 // ----------------------------------------------------------------------------
-TCPSocket::TCPSocket() throw(const char*) :
-		Socket(SOCK_STREAM, IPPROTO_TCP) {
-}
+TCPSocket::TCPSocket() : Socket(SOCK_STREAM, IPPROTO_TCP) {}
 
-TCPSocket::TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) throw(const char*) :
+TCPSocket::TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) :
 		Socket(SOCK_STREAM, IPPROTO_TCP) {
-			
+
 	try {
 		connect(foreign_addr, foreign_port);
 	}
@@ -256,7 +262,7 @@ TCPSocket::TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) thr
 	}
 }
 
-TCPSocket::TCPSocket(int socket_fd) throw(const char*) :
+TCPSocket::TCPSocket(int socket_fd) :
 		Socket(socket_fd) {
 }
 
