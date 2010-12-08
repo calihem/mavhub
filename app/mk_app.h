@@ -25,7 +25,6 @@ namespace mavhub {
 			static const int parameter_count = 104;
 			static const int8_t parameter_ids[parameter_count][15];
 
-			std::bitset<8> state_vector;
 			/// tx buffer for mavlink messages
 			mavlink_message_t tx_mav_msg;
 			/// Mutex to protect tx_mav_msg
@@ -37,8 +36,11 @@ namespace mavhub {
 			mkhuch_message_t tx_mk_msg;
 			/// Mutex to protect tx_mk_msg
 			pthread_mutex_t tx_mk_mutex;
+			/// Last received attitude
+			mkhuch_attitude_t attitude;
+			/// Time of last received attitude
+			uint64_t attitude_time;
 
-			void handle_statuses();
 			using AppLayer::send;
 			void send_heartbeat();
 			void send_mavlink_param_value(const mk_param_type_t param_type);

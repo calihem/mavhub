@@ -121,8 +121,8 @@ const int8_t MKApp::parameter_ids[parameter_count][15] = {
 
 MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port, const unsigned int baudrate) :
 		AppLayer(loglevel),
-		state_vector(),
-		mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD) {
+		mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
+		attitude_time( get_time_us() ) {
 	pthread_mutex_init(&tx_mav_mutex, NULL);
 	pthread_mutex_init(&tx_mk_mutex, NULL);
 	huchlink_msg_init(&tx_mk_msg);
@@ -153,7 +153,9 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner->system_id())
 			&& (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
-				state_vector.set(STATE_PARAM_REQUEST_LIST);
+				//ask for first parameter value
+				mk_param_type_t param_type= USERPARAM_1;
+				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
@@ -254,6 +256,11 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			else
 				index = param->index;
 			parameters[index] = param->value;
+			//ask for next parameter
+			if(index < parameter_count - 1) {
+				mk_param_type_t param_type= static_cast<mk_param_type_t>(index + 1);
+				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
+			}
 			//inform others
 			send_mavlink_param_value( static_cast<mk_param_type_t>(index) );
 			break;
@@ -283,6 +290,34 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 		case MKHUCH_MSG_TYPE_BOOT:
 			//TODO
 			break;
+		case MKHUCH_MSG_TYPE_ATTITUDE: {
+			const mkhuch_attitude_t *mkhuch_attitude = reinterpret_cast<const mkhuch_attitude_t*>(msg.data);
+			mavlink_attitude_t mavlink_attitude;
+			mavlink_attitude.usec = get_time_us();
+			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angel);
+			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angel);
+			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angel);
+			uint64_t delta_time = mavlink_attitude.usec - attitude_time;
+			if(delta_time > 150) {
+				uint64_t delta_time = mavlink_attitude.usec - attitude_time;
+				mavlink_attitude.rollspeed = (1745.329251994329577*(attitude.roll_angel - mkhuch_attitude->roll_angel)) / delta_time;
+				mavlink_attitude.pitchspeed = (1745.329251994329577*(attitude.pitch_angel - mkhuch_attitude->pitch_angel)) / delta_time;
+				mavlink_attitude.yawspeed = (1745.329251994329577*(attitude.yaw_angel - mkhuch_attitude->yaw_angel)) / delta_time;
+			} else {
+				mavlink_attitude.rollspeed = 0;
+				mavlink_attitude.pitchspeed = 0;
+				mavlink_attitude.yawspeed = 0;
+			}
+			memcpy(&attitude, mkhuch_attitude, sizeof(mkhuch_attitude_t));
+			attitude_time = mavlink_attitude.usec;
+			Lock tx_lock(tx_mav_mutex);
+			mavlink_msg_attitude_encode(owner->system_id(),
+				component_id,
+				&tx_mav_msg,
+				&mavlink_attitude);
+			send(tx_mav_msg);
+			break;
+		}
 		default:
 			break;
 	}
@@ -301,8 +336,6 @@ void MKApp::run() {
 	huchlink_status_initialize(&link_status);
 
 	while(_running) {
-		handle_statuses();
-
 		timeout.tv_sec = 1; timeout.tv_usec = 0;
 		FD_ZERO(&read_fds); FD_SET( mk_dev.handle(), &read_fds);
 
@@ -325,23 +358,6 @@ void MKApp::run() {
 		}
 	}
 	log("MKApp stopped", Logger::LOGLEVEL_DEBUG);
-}
-
-void MKApp::handle_statuses() {
-	if( state_vector.test(STATE_PARAM_REQUEST_LIST) ) {
-		//atm only ask for user parameters
-		mk_param_type_t param_type;
-		param_type = USERPARAM_1; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_2; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_3; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_4; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_5; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_6; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_7; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-		param_type = USERPARAM_8; send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-
-		state_vector.reset(STATE_PARAM_REQUEST_LIST);
-	}
 }
 
 size_t MKApp::send(const mkhuch_message_t& msg) {
@@ -393,7 +409,7 @@ void MKApp::send_mavlink_param_value(const mk_param_type_t param_type) {
 		&tx_mav_msg,
 		get_parameter_id(param_type),
 		static_cast<float>( get_parameter(param_type) ),
-		8, //FIXME: use parameter_count instead
+		parameter_count,
 		param_type);
 	send(tx_mav_msg);
 }
