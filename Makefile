@@ -8,6 +8,7 @@ SRCS_1   = main.cpp \
 	protocollayer.cpp \
 	mkpackage.cpp \
 	network.cpp \
+	factory/sensor_factory.cpp \
 	factory/factory_app.cpp \
 	module/coremod.cpp \
 	module/testcore.cpp \
@@ -15,12 +16,14 @@ SRCS_1   = main.cpp \
 	module/fc_mpkg.cpp \
 	module/ctrl_hover.cpp \
 	module/filter_kalmancv.cpp \
+	module/sensor.cpp \
 	module/i2csensor.cpp \
 	module/senbmp085.cpp \
 	module/senhmc5843.cpp \
 	module/senExpCtrl.cpp \
-	datacenter.cpp \
-	mavshell.cpp
+	mavshell.cpp \
+	sensormanager.cpp \
+	datacenter.cpp
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET_1}.log" )
 CXX_CFLAGS += -DSTDOUTLOG

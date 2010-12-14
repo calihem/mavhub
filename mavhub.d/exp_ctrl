@@ -1,0 +1,25 @@
+# This is a config file for the huch expCtrl sensor
+#
+
+# identification
+dev_id = 0x0815
+# first sensor
+func_id = 0x0132
+# second sensor
+func_id1 = 0x1132
+
+# hardware connection
+port = /dev/i2c-3
+
+# hardware description
+# mounting etc.
+
+# update rate
+#update_rate = 0
+
+channel0 = sharp2y0a02
+channel2 = sharpgp2d120
+
+# show debug information
+debug = 0
+timings = 0

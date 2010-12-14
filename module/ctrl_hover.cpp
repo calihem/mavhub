@@ -40,10 +40,10 @@ namespace mavhub {
 			mavlink_msg_huch_attitude_decode(&msg, &attitude);
 			//Logger::log("Ctrl_Hover", attitude.xacc, Logger::LOGLEVEL_INFO);
 		}
-		else if(msg.msgid == MAVLINK_MSG_ID_HUCH_ALTITUDE) {
+		else if(msg.msgid == MAVLINK_MSG_ID_HUCH_FC_ALTITUDE) {
 			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
 			//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
-			mavlink_msg_huch_altitude_decode(&msg, &altitude);
+			mavlink_msg_huch_fc_altitude_decode(&msg, &altitude);
 			//Logger::log("Ctrl_Hover", altitude.baro, altitude.baroref, Logger::LOGLEVEL_INFO);
 		}
 

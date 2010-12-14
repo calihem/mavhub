@@ -85,7 +85,7 @@ namespace mavhub {
 
 			mavlink_msg_huch_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_attitude);
 			send(msg_i);
-			mavlink_msg_huch_altitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
+			mavlink_msg_huch_fc_altitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
 			send(msg_i);
 			mavlink_msg_huch_ranger_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
 			send(msg_i);
@@ -135,7 +135,7 @@ namespace mavhub {
 
   }
 
-  void FC_Mpkg::debugout2altitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_altitude_t* altitude) {
+  void FC_Mpkg::debugout2altitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_fc_altitude_t* altitude) {
 		vector<int16_t> v(2);
 		// XXX: use ADval_press
 		altitude->baro = v[0] = debugout_getval_s(dbgout, ATTabsh);
@@ -188,7 +188,7 @@ namespace mavhub {
 
 	void FC_Mpkg::publish_data(uint64_t time) {
 		DataCenter::set_huch_attitude(huch_attitude);
-		DataCenter::set_huch_altitude(huch_altitude);
+		DataCenter::set_huch_fc_altitude(huch_altitude);
 		// XXX: hardware specific mapping
 		DataCenter::set_huch_ranger_at(huch_ranger, 0);
 		DataCenter::set_mk_fc_status(mk_fc_status);

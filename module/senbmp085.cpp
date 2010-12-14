@@ -6,7 +6,7 @@
 
 #include "logger.h" //"printf"
 #include "utility.h"
-#include "datacenter.h" //i2c-mutex, data
+// #include "datacenter.h"
 
 using namespace std;
 
@@ -14,53 +14,76 @@ namespace mavhub {
 
 const int SenBmp085::wait_oversampling[4] = {4500, 7500, 13500, 25500};
 
-SenBmp085::SenBmp085(int _fd, int _update_temp, int _oversampling, int _output) throw(exception):
-	fd(_fd), update_temp(_update_temp), output(_output) {
+SenBmp085::SenBmp085(unsigned short _dev_id, unsigned short _func_id, unsigned short _func_id1, unsigned short _func_id2, std::string _port, int _update_rate, int _debug, int _timings, int _update_rate_temp) throw(const char *):
+	update_rate_temp(_update_rate_temp) {
+	//FIXME Initialisierung
+	dev_id = _dev_id;
+	func_id = _func_id;
+	func_id1 = _func_id2;
+	func_id2 = _func_id2;
+	update_rate = _update_rate;
+	debug = _debug;
+	timings= _timings;
 
 	Logger::debug("bmp085: init...");
-	running = true;
-	pthread_mutex_lock( &i2c_mutex );
-	i2c_set_adr(fd, BMP085_ADR);
 
-	/* read calibration data once */
-	read_calibration_data(fd, calibration_data);
+	status = RUNNING;	
+	try {
+		/* check config */
+		if ((get_data_pointer(func_id << 16) == NULL) || (get_data_pointer(func_id1 << 16) == NULL) || (get_data_pointer(func_id2 << 16) == NULL)) {
+			throw "sensor(software code) doesn't support configured function";
+		}
 
-	/* compute pressure at current altitude */
-	/* request temperature data */
-	request_temp_data(fd);
+		fd = i2c_init(_port);
+		
+		i2c_start_conversion(fd, BMP085_ADR);
 
-	/* wait */
-	usleep(WAITTEMP);		
+		/* read calibration data once */
+		read_calibration_data(fd, calibration_data);
 
-	/* get temperature data */
-	int uncomp_temp = get_temp_data(fd);		
-	/* compute temperature data */
-	int b5;
-	bmp085_data.temperature = calc_temp(uncomp_temp, b5, calibration_data);
-	/* request pressure data  with maximum oversampling */
-	oversampling = 3;
-	request_pres_data(fd, oversampling);
+		/* request temperature data */
+		request_temp_data(fd);
 
-	/* wait */
-	usleep(wait_oversampling[oversampling]);
+		/* wait */
+		usleep(WAITTEMP);		
 
-	/* get pressure data */
-	int uncomp_pres = get_pres_data(fd, oversampling);
+		/* get temperature data */
+		int uncomp_temp = get_temp_data(fd);		
+		/* compute temperature data */
+		int b5;
+		temperature.temperature = calc_temp(uncomp_temp, b5, calibration_data);
+		/* request pressure data with maximum oversampling */
+		oversampling = 3;
+		request_pres_data(fd, oversampling);
 
-	/* compute pressure data */
-	bmp085_data.pressure = calc_pres(b5, oversampling, uncomp_pres, calibration_data);
-	pressure_0 = bmp085_data.pressure;
-	oversampling = _oversampling < 4? _oversampling: 1;
+		/* wait */
+		usleep(wait_oversampling[oversampling]);
 
-	pthread_mutex_unlock( &i2c_mutex );
-	running = false;
-	Logger::debug("done");
+		/* get pressure data */
+		int uncomp_pres = get_pres_data(fd, oversampling);
+
+		/* compute pressure at current altitude */
+		raw_pressure.pressure = calc_pres(b5, oversampling, uncomp_pres, calibration_data);
+		pressure_0 = raw_pressure.pressure;
+
+		/* calculate oversampling from update rate */
+		//TODO 
+		oversampling = update_rate < 4? update_rate: 1;
+
+		i2c_end_conversion(fd);
+		Logger::debug("done");
+		status = STOPPED;
+	}
+	catch(const char *message) {
+		status = UNINITIALIZED;
+		i2c_end_conversion(fd);
+
+		string s(message);
+		throw ("SenBmp085(): " + s).c_str();
+	}
 }
 
-SenBmp085::~SenBmp085() {
-	running = false;
-	join();
-}
+SenBmp085::~SenBmp085() {}
 
 void SenBmp085::run() {
 	Logger::debug("bmp085: running");
@@ -68,83 +91,91 @@ void SenBmp085::run() {
 	int countTemp = 0;
 	uint64_t end = get_time_us() + 1000000;
 	int uncomp_temp = 0;
+	uint64_t usec;
 
-	running = true;
+	status = RUNNING;
 	
-	while(running) {
-		int b5;
+	try {
+		while(status == RUNNING) {
+			int b5;
 
-		pthread_mutex_lock( &i2c_mutex );
-		i2c_set_adr(fd, BMP085_ADR);
-		if (!countTemp--) {
-			/* request temperature data */
-			request_temp_data(fd);
-			pthread_mutex_unlock( &i2c_mutex );
+			i2c_start_conversion(fd, BMP085_ADR);
+			if (!countTemp--) {
+				/* request temperature data */
+				request_temp_data(fd);
+				i2c_end_conversion(fd);
+				/* wait */
+				usleep(WAITTEMP);		
+
+				/* get temperature data */
+				i2c_start_conversion(fd, BMP085_ADR);
+				uncomp_temp = get_temp_data(fd);					
+				countTemp = update_rate_temp;
+
+				/* compute temperature data */
+				{ // begin of data mutex scope
+					cpp_pthread::Lock ri_lock(data_mutex);
+					temperature.temperature = calc_temp(uncomp_temp, b5, calibration_data);
+					temperature.usec = get_time_us();
+				} // end of data mutex scope
+			}
+
+			/* request pressure data */
+			request_pres_data(fd, oversampling);
+			i2c_end_conversion(fd);
+			usec = get_time_us();
 
 			/* wait */
-			usleep(WAITTEMP);		
+			usleep(wait_oversampling[oversampling]);	
 
-			/* get temperature data */
-			pthread_mutex_lock( &i2c_mutex );
-			i2c_set_adr(fd, BMP085_ADR);
-			uncomp_temp = get_temp_data(fd);					
-			countTemp = update_temp;
+			/* get pressure data */
+			i2c_start_conversion(fd, BMP085_ADR);
+			int uncomp_pres = get_pres_data(fd, oversampling);
+			i2c_end_conversion(fd);
 
-			/* compute temperature data */
-			bmp085_data.temperature = calc_temp(uncomp_temp, b5, calibration_data);
-		}
+			/* compute pressure data */
+			int _pres = calc_pres(b5, oversampling, uncomp_pres, calibration_data);
+			/* compute altitude */
+			float _alt = calc_altitude(_pres, pressure_0);	
 
-		/* request pressure data */
-		request_pres_data(fd, oversampling);
-		pthread_mutex_unlock( &i2c_mutex );
-		bmp085_data.timestamp = get_time_us();
+			{ // begin of data mutex scope
+				cpp_pthread::Lock ri_lock(data_mutex);
+				raw_pressure.pressure = _pres;
+				raw_pressure.usec = usec;
+				altitude.altitude = _alt;
+				altitude.usec = usec;
+			} // end of data mutex scope
 
-		/* wait */
-		usleep(wait_oversampling[oversampling]);	
-
-		/* get pressure data */
-		pthread_mutex_lock( &i2c_mutex );
-		i2c_set_adr(fd, BMP085_ADR);
-		int uncomp_pres = get_pres_data(fd, oversampling);
-		pthread_mutex_unlock( &i2c_mutex );
-
-		/* compute pressure data */
-		bmp085_data.pressure = calc_pres(b5, oversampling, uncomp_pres, calibration_data);
-
-		/* compute altitude */
-		bmp085_data.height = calc_altitude(bmp085_data.pressure, pressure_0);	
-
-		/* pass data */
-		publish_data(get_time_us());
-
-		if (output & DEBUG) print_debug();
+			if (debug) print_debug();
 		
-		/* timings/benchmark output */
-		if (output & TIMINGS) {
-			if (end <= get_time_us()) {
-				Logger::log("bmp frequency: ", count, Logger::LOGLEVEL_DEBUG);
-				end += 1000000;
-				count = 0;
-			} else count++;
+			/* timings/benchmark output */
+			if (timings) {
+				if (end <= get_time_us()) {
+					Logger::log("bmp frequency: ", count, Logger::LOGLEVEL_DEBUG);
+					end += 1000000;
+					count = 0;
+				} else count++;
+			}
 		}
+	}
+	catch(const char *message) {
+		i2c_end_conversion(fd);
+
+		string s(message);
+		throw ("SenBmp085::run(): " + s).c_str();
 	}
 	Logger::debug("bmp085: stopped");
 }
 
-void SenBmp085::read_calibration_data(const int fd, calibration_data_t &cal_data) throw(exception) {
+void SenBmp085::read_calibration_data(const int fd, calibration_data_t &cal_data) throw(const char *) {
 	#define CALIBRATION_DATA_SIZE sizeof(calibration_data_t)
 	uint8_t buffer[CALIBRATION_DATA_SIZE];
 	#define EEPROM_ADR	0xAA
 	buffer[0] = EEPROM_ADR;
 	
-	if (write(fd, buffer, 1) != 1) {
-		Logger::warn("read_calibration_data(): Failed to write to slave!");
-		throw exception();
-	}
-	if (read(fd, buffer, CALIBRATION_DATA_SIZE) != CALIBRATION_DATA_SIZE) {
-		Logger::warn("read_calibration_data(): Failed to read from slave!");
-		throw exception();
-	} else {
+	try {
+		i2c_write_bytes(fd, buffer, 1);
+		i2c_read_bytes(fd, buffer, CALIBRATION_DATA_SIZE);
 		/* assign buffer to calibration data */
 		cal_data.ac1 = ((buffer[0] << 8) + buffer[1]);
 		cal_data.ac2 = ((buffer[2] << 8) + buffer[3]);
@@ -158,30 +189,30 @@ void SenBmp085::read_calibration_data(const int fd, calibration_data_t &cal_data
 		cal_data.mc = ((buffer[18] << 8) + buffer[19]);
 		cal_data.md = ((buffer[20] << 8) + buffer[21]);
 	}
+	catch(const char *message) {
+		string s(message);
+		throw ("read_calibration_data(): " + s).c_str();
+	}
 }
 
 void SenBmp085::request_temp_data(const int fd) {
 	uint8_t buffer[2];
 	buffer[0] = 0xF4;	/* cmd reg adr */
 	buffer[1] = 0x2E; 	/* cmd for uncompensated temperature */
-	if (write(fd, buffer, 2) != 2) {
-		Logger::warn("request_temp_data(): Failed to write to slave!");
-	}
+
+	i2c_write_bytes(fd, buffer, 2);
 }
 
 int SenBmp085::get_temp_data(const int fd) {
 	int result = 0;
 	uint8_t buffer[2];
-	buffer[0] = 0xF6; /* reg adr for result */
-	if (write(fd, buffer, 1) != 1) {
-		Logger::warn("get_temp_data(): Failed to write to slave!");
-	}
-	if (read(fd, buffer, 2) != 2) {
-		Logger::warn("get_temp_data(): Failed to read from slave!");
-	} else {
-		/* return uncompensated temperature value */
-		result = ((buffer[0] & 0x00FF) << 8) + buffer[1];
-	}
+	buffer[0] = 0xF6;	/* reg adr for result */
+
+	i2c_write_bytes(fd, buffer, 1);
+
+	i2c_read_bytes(fd, buffer, 2);
+
+	result = ((buffer[0] & 0x00FF) << 8) + buffer[1];
 
 	return result;
 }
@@ -191,9 +222,8 @@ uint64_t SenBmp085::request_pres_data(const int fd, const int oversampling) {
 
 	buffer[0] = 0xF4;	/* cmd reg adr */
 	buffer[1] = 0x34 + (oversampling << 6); /* cmd for uncompensated pressure */
-	if (write(fd, buffer, 2) != 2) {
-		Logger::warn("request_pres_data(): Failed to write to slave!");
-	}
+	i2c_write_bytes(fd, buffer, 2);
+
 	return get_time_us();
 }
 
@@ -202,15 +232,12 @@ int SenBmp085::get_pres_data(const int fd, const int oversampling) {
 	uint8_t buffer[3];
 
 	buffer[0] = 0xF6; /* reg adr for result */
-	if (write(fd, buffer, 1) != 1) {
-		Logger::warn("get_pres_data(): Failed to write to slave!");
-	}
-	if (read(fd, buffer, 3) != 3) {
-		Logger::warn("get_pres_data(): Failed to read from slave!");
-	} else {
-		/* return uncompensated pressure value */
-		result = ((buffer[0] << 16) + (buffer[1] << 8) + buffer[2]) >> (8 - oversampling);
-	}
+	i2c_write_bytes(fd, buffer, 1);
+
+	i2c_read_bytes(fd, buffer, 3);
+
+	/* return uncompensated pressure value */
+	result = ((buffer[0] << 16) + (buffer[1] << 8) + buffer[2]) >> (8 - oversampling);
 
 	return result;
 }
@@ -247,13 +274,22 @@ float SenBmp085::calc_altitude(const int p, const int p0) {
 
 void SenBmp085::print_debug() {
 	ostringstream send_stream;
-	send_stream << "bmp085;" << bmp085_data.temperature << ";" << bmp085_data.pressure << ";" << bmp085_data.height;
+	send_stream << "bmp085;" << temperature.temperature << ";" << raw_pressure.pressure << ";" << altitude.altitude;
 	Logger::debug(send_stream.str());
 }
 
-void SenBmp085::publish_data(uint64_t time) {
-	bmp085_data.timestamp = time;
-	DataCenter::set_bmp085(bmp085_data);
+void* SenBmp085::get_data_pointer(unsigned int id) throw(const char *) {
+	if (status == RUNNING) {
+		switch ((0xFFFF0000 & id) >> 16) {
+			case ALTITUDE_SENSOR: // altitude 
+				return &altitude;
+			case TEMPERATURE_SENSOR: // temperature
+				return &temperature;
+			case PRESSURE_SENSOR: // raw pressure
+				return &raw_pressure;
+			default: throw "sensor bmp085 doesn't support this sensor type";
+		}
+	} throw "sensor bmp085 isn't running";
 }
 
 } // namespace mavhub
