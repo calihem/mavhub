@@ -294,15 +294,15 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			const mkhuch_attitude_t *mkhuch_attitude = reinterpret_cast<const mkhuch_attitude_t*>(msg.data);
 			mavlink_attitude_t mavlink_attitude;
 			mavlink_attitude.usec = get_time_us();
-			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angel);
-			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angel);
-			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angel);
+			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angle);
+			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angle);
+			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angle);
 			uint64_t delta_time = mavlink_attitude.usec - attitude_time;
 			if(delta_time > 150) {
 				uint64_t delta_time = mavlink_attitude.usec - attitude_time;
-				mavlink_attitude.rollspeed = (1745.329251994329577*(attitude.roll_angel - mkhuch_attitude->roll_angel)) / delta_time;
-				mavlink_attitude.pitchspeed = (1745.329251994329577*(attitude.pitch_angel - mkhuch_attitude->pitch_angel)) / delta_time;
-				mavlink_attitude.yawspeed = (1745.329251994329577*(attitude.yaw_angel - mkhuch_attitude->yaw_angel)) / delta_time;
+				mavlink_attitude.rollspeed = (1745.329251994329577*(attitude.roll_angle - mkhuch_attitude->roll_angle)) / delta_time;
+				mavlink_attitude.pitchspeed = (1745.329251994329577*(attitude.pitch_angle - mkhuch_attitude->pitch_angle)) / delta_time;
+				mavlink_attitude.yawspeed = (1745.329251994329577*(attitude.yaw_angle - mkhuch_attitude->yaw_angle)) / delta_time;
 			} else {
 				mavlink_attitude.rollspeed = 0;
 				mavlink_attitude.pitchspeed = 0;
