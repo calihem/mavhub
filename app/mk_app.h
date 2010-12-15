@@ -36,10 +36,16 @@ namespace mavhub {
 			mkhuch_message_t tx_mk_msg;
 			/// Mutex to protect tx_mk_msg
 			pthread_mutex_t tx_mk_mutex;
+			/// Time of last received mkhuch message
+			uint64_t message_time;
 			/// Last received attitude
 			mkhuch_attitude_t attitude;
 			/// Time of last received attitude
 			uint64_t attitude_time;
+			/// Last requested parameter from MK
+			uint8_t parameter_request;
+			/// Time of last parameter answer from MK
+			uint64_t parameter_time;
 
 			using AppLayer::send;
 			void send_heartbeat();

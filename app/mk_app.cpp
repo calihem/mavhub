@@ -120,9 +120,13 @@ const int8_t MKApp::parameter_ids[parameter_count][15] = {
 
 
 MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port, const unsigned int baudrate) :
-		AppLayer(loglevel),
-		mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
-		attitude_time( get_time_us() ) {
+	AppLayer(loglevel),
+	mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
+	message_time( get_time_us() ),
+	attitude_time( get_time_us() ),
+	parameter_request(255),
+	parameter_time(0) {
+
 	pthread_mutex_init(&tx_mav_mutex, NULL);
 	pthread_mutex_init(&tx_mk_mutex, NULL);
 	huchlink_msg_init(&tx_mk_msg);
@@ -154,8 +158,10 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner->system_id())
 			&& (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
 				//ask for first parameter value
-				mk_param_type_t param_type= USERPARAM_1;
+				mk_param_type_t param_type= REVISION;
 				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
+				parameter_request = REVISION;
+				parameter_time = get_time_us();
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
@@ -202,7 +208,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			break;
 		case MAVLINK_MSG_ID_ACTION:
 			if( (mavlink_msg_action_get_target(&msg) == owner->system_id())
-			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
+			&& (mavlink_msg_action_get_target_component(&msg) == MAV_COMP_ID_IMU) ) {
 				mkhuch_action_t action;
 				action.id = mavlink_msg_action_get_action(&msg);
 				send(MKHUCH_MSG_TYPE_ACTION, &action, sizeof(mkhuch_action_t));
@@ -220,26 +226,35 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 		case MKHUCH_MSG_TYPE_MK_IMU: {
 			const mkhuch_mk_imu_t *mk_imu = reinterpret_cast<const mkhuch_mk_imu_t*>(msg.data);
 			Lock tx_lock(tx_mav_mutex);
-			//forward IMU
-			mavlink_msg_raw_imu_pack(owner->system_id(),
+			//forward raw ADC
+			mavlink_msg_huch_imu_raw_adc_pack(owner->system_id(),
 				component_id,
 				&tx_mav_msg,
-				get_time_us(),
-				mk_imu->x_acc,
-				mk_imu->y_acc,
-				mk_imu->z_acc,
+				mk_imu->x_adc_acc,
+				mk_imu->y_adc_acc,
+				mk_imu->z_adc_acc,
 				mk_imu->x_gyro,
 				mk_imu->y_gyro,
-				mk_imu->z_gyro,
-				0,
-				0,
-				0);
+				mk_imu->z_gyro);
+			send(tx_mav_msg);
+			//forward MK IMU
+			//TODO: add compass value and baro
+			mavlink_msg_huch_mk_imu_pack( owner->system_id(),
+				component_id,
+				&tx_mav_msg,
+				message_time,
+				(2500*mk_imu->x_acc)/1024, //convert normalized analog to mg
+				(2500*mk_imu->y_acc)/1024,
+				(2500*mk_imu->z_acc)/1024,
+				(6700*mk_imu->x_gyro)/(3*1024), //convert analog to 0.1 deg./sec.
+				(6700*mk_imu->y_gyro)/(3*1024),
+				(6700*mk_imu->z_gyro)/(3*1024) );
 			send(tx_mav_msg);
 			//forward pressure
 			mavlink_msg_raw_pressure_pack(owner->system_id(),
 				component_id,
 				&tx_mav_msg,
-				get_time_us(),
+				message_time,
 				mk_imu->press_abs,
 				0,
 				0);
@@ -258,14 +273,19 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			parameters[index] = param->value;
 			//ask for next parameter
 			if(index < parameter_count - 1) {
-				mk_param_type_t param_type= static_cast<mk_param_type_t>(index + 1);
+				parameter_request = index + 1;
+				mk_param_type_t param_type= static_cast<mk_param_type_t>(parameter_request);
 				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
+				parameter_time = message_time;
+			} else { //got all parameters
+				parameter_request = 255;
 			}
 			//inform others
 			send_mavlink_param_value( static_cast<mk_param_type_t>(index) );
 			break;
 		}
 		case MKHUCH_MSG_TYPE_ACTION_ACK: {
+
 			Lock tx_lock(tx_mav_mutex);
 			mavlink_msg_action_ack_pack(owner->system_id(), component_id, &tx_mav_msg, msg.data[0], msg.data[1]);
 			send(tx_mav_msg);
@@ -293,7 +313,7 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 		case MKHUCH_MSG_TYPE_ATTITUDE: {
 			const mkhuch_attitude_t *mkhuch_attitude = reinterpret_cast<const mkhuch_attitude_t*>(msg.data);
 			mavlink_attitude_t mavlink_attitude;
-			mavlink_attitude.usec = get_time_us();
+			mavlink_attitude.usec = message_time;
 			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angle);
 			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angle);
 			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angle);
@@ -330,6 +350,7 @@ void MKApp::run() {
 	uint8_t input;
 	mkhuch_message_t rx_msg;
 	huchlink_status_t link_status;
+	uint64_t delta_time = 0, tmp64;
 
 	log("MKApp running", Logger::LOGLEVEL_DEBUG);
 
@@ -349,11 +370,26 @@ void MKApp::run() {
 		//read from device
 		while( mk_dev.read(&input, 1) > 0 ) {
 			if( huchlink_parse_char(input, &rx_msg, &link_status) == 0) {
+				tmp64 = message_time;
+				message_time = get_time_us();
+
 				handle_input(rx_msg);
-				//send heartbeat after 100 valid messages
-				if( !(link_status.nvalid % 100) ) {
+
+				//send heartbeat approx. after 1s
+				delta_time += message_time - tmp64;
+				if( delta_time > 1000000 ) {
 					send_heartbeat();
+					delta_time = 0;
 				}
+			}
+		}
+		
+		if(parameter_request != 255) {
+			uint64_t time = get_time_us();
+			if( (time - parameter_time) > 500000 ) { //message lost
+				log("MKApp: request timeout for parameter index", static_cast<int>(parameter_request), Logger::LOGLEVEL_WARN);
+				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &parameter_request, sizeof(mk_param_type_t));
+				parameter_time = get_time_us();
 			}
 		}
 	}
@@ -397,7 +433,7 @@ size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t
 
 void MKApp::send_heartbeat() {
 	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_heartbeat_pack(owner->system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_GENERIC);
+	mavlink_msg_heartbeat_pack(owner->system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
 	send(tx_mav_msg);
 }
 
