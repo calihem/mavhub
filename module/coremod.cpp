@@ -1,6 +1,5 @@
 #include "coremod.h"
 
-#include "main.h" // system_id
 #include "logger.h"
 #include "utility.h"
 #include "protocolstack.h"
@@ -16,7 +15,7 @@ CoreModule::CoreModule() {
 CoreModule::~CoreModule() {}
 
 void CoreModule::handle_input(const mavlink_message_t &msg) {
-	// Logger::log("CoreModule got mavlink_message", Logger::LOGLEVEL_INFO);
+	//Logger::log("CoreModule got mavlink_message, msgid:", (int)msg.msgid, (int)msg.len, Logger::LOGLEVEL_INFO);
 }
 
 void CoreModule::run() {

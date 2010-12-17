@@ -11,8 +11,8 @@
 #include "mavshell.h"
 
 // apps
-#include "module/fc_mpkg.h"
-#include "module/ctrl_hover.h"
+// #include "module/fc_mpkg.h"
+// #include "module/ctrl_hover.h"
 
 using namespace std;
 using namespace mavhub;
@@ -25,6 +25,7 @@ string cfg_filename("mavhub.d/mavhub.conf");
 list<I2cSensor*> i2c_sensors;
 
 int main(int argc, char **argv) {
+
 	//list<I2cSensor*> i2c_sensors;
 	Logger::setLogLevel(Logger::LOGLEVEL_WARN);
 
@@ -38,11 +39,9 @@ int main(int argc, char **argv) {
 	catch(const invalid_argument &ia) {
 		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
 	}
- 
 
 	// start modules
 	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
-		Logger::log("sensor iter", Logger::LOGLEVEL_INFO);
 		(*iter)->start();
 	}
 

@@ -8,6 +8,8 @@
 #include "protocollayer.h"
 //#include "qk_datatypes.h"
 
+#define MKGYRO2RAD 1.52634e-05
+
 namespace mavhub {
   // class FC_Mpkg : public cpp_pthread::PThread {
 	/// FlightCtrl MKPackage Receiver
@@ -25,7 +27,7 @@ namespace mavhub {
 		enum mk_debugout_map_t {
 			USSvalue = 0,
 			USSlastvalid = 1,
-			USScred = 2,
+			USScred = 2, // XXX: changed in FC to sticknick, roll, yaw
 			ADval_press = 3,
 			ATTabsh = 4,
 			ATTrelh = 5,
@@ -72,6 +74,10 @@ namespace mavhub {
 		mavlink_huch_altitude_t huch_altitude;
 		mavlink_huch_exp_ctrl_t huch_exp_ctrl;
 		mavlink_huch_ranger_t huch_ranger;
+		// pixhawk structs
+		mavlink_raw_imu_t raw_imu;
+		mavlink_attitude_t attitude;
+		mavlink_manual_control_t manual_control;
 		// void test();
 		int mk_debugout_digital_offset;
 
@@ -88,6 +94,10 @@ namespace mavhub {
 		void debugout2exp_ctrl(mavlink_mk_debugout_t* dbgout, mavlink_huch_exp_ctrl_t* exp_ctrl);
 		void debugout2ranger(mavlink_mk_debugout_t* dbgout, mavlink_huch_ranger_t* ranger);
 		void debugout2status(mavlink_mk_debugout_t* dbgout, mavlink_mk_fc_status_t* status);
+
+		void set_pxh_raw_imu();
+		void set_pxh_attitude();
+		void set_pxh_manual_control();
   };
 }
 

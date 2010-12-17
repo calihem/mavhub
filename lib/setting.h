@@ -2,6 +2,7 @@
 #define _SETTING_H_
 
 #include "file.h"
+#include "logger.h"
 
 #include <map>
 

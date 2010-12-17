@@ -9,12 +9,18 @@ SRCS_1   = main.cpp \
 	mkpackage.cpp \
 	network.cpp \
 	factory/factory_app.cpp \
+	module/pp.cpp \
+	module/pp_uss.cpp \
+	module/pp_acc.cpp \
+	module/pp_baro.cpp \
+	module/pp_ir.cpp \
 	module/coremod.cpp \
 	module/testcore.cpp \
 	module/mkrcmod.cpp \
 	module/fc_mpkg.cpp \
 	module/ctrl_hover.cpp \
 	module/filter_kalmancv.cpp \
+	module/PID.cpp \
 	module/i2csensor.cpp \
 	module/senbmp085.cpp \
 	module/senhmc5843.cpp \

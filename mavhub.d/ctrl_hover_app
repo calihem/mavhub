@@ -1,0 +1,13 @@
+component_id = 26
+numsens = 5
+# first: channel, second: type
+# types: see ctrl_hover.h (USS, BARO, ACC, IR1, IR2, ...)
+inmap = 0:0 1:1 2:2 3:3 4:4
+# inmap = a:0 b:1 c:2 d:3 e:3
+ctl_bias = 370
+ctl_Kc = 0.12207
+ctl_Ti = 4.3538
+ctl_Td = 0.28882
+ctl_sp = 850
+ctl_bref = 1
+ctl_sticksp = 0

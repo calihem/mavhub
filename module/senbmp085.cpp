@@ -4,7 +4,6 @@
 #include <iostream> //cout
 #include <sstream> //stringstream
 
-#include "main.h" //system_id
 #include "logger.h" //"printf"
 #include "utility.h"
 #include "datacenter.h" //i2c-mutex, data

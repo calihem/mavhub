@@ -5,6 +5,7 @@
 using namespace std;
 
 namespace mavhub {
+
 	// ----------------------------------------------------------------------------
 	// AppFactory
 	// ----------------------------------------------------------------------------
@@ -26,7 +27,45 @@ namespace mavhub {
 			}
 			return new FC_Mpkg(component_id);
 		} else if(lowercase_name == "ctrl_hover_app") {
-			return new Ctrl_Hover();
+			// as defined in config
+			// int component_id = 0;
+			// int numchan = 0;
+			// list <pair <int, int> > chanmap;
+			// int ctl_bias = 0;
+			// int ctl_Kc = 0;
+			// int ctl_Ti = 0;
+			// int ctl_Td = 0;
+			// int ctl_sp = 0;
+			// int ctl_bref = 0;
+			// int ctl_sticksp = 0;
+
+			//std::map<std::string,std::string>::const_iterator iter;
+
+			// iter = args.find("component_id");
+			// if( iter != args.end() ) {
+			// 	istringstream s(iter->second);
+			// 	s >> component_id;
+			// }
+
+			// iter = args.find("numsens");
+			// if( iter != args.end() ) {
+			// 	istringstream s(iter->second);
+			// 	s >> numchan;
+			// }
+
+			// iter = args.find("inmap");
+			// if( iter != args.end() ) {
+			// 	istringstream s(iter->second);
+			// 	s >> chanmap;
+			// }
+
+			// Logger::log(numchan, iter->second, Logger::LOGLEVEL_INFO);
+			// Logger::log(chanmap, Logger::LOGLEVEL_INFO);
+
+			// // separate contructor arguments
+			// return new Ctrl_Hover(component_id, numchan, chanmap, args);
+			// pass only configuration map into constructor
+			return new Ctrl_Hover(args);
 		}
 	
 		return NULL;

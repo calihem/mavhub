@@ -217,6 +217,8 @@ void ProtocolStack::retransmit(const mavlink_message_t &msg, const MediaLayer *s
 	Lock tx_lock(tx_mutex);
 
 	uint16_t len = mavlink_msg_to_send_buffer(tx_buffer, &msg);
+	
+	Logger::log("mavlink retransmit", Logger::LOGLEVEL_DEBUG);
 
 	// here locking of link_mutex is not neccesary
 

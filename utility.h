@@ -78,6 +78,25 @@ namespace mavhub {
 		return is;
 	}
 
+	// pairs (mis)
+	template <typename T1, typename T2>
+		std::ostream& operator <<(std::ostream &os, const std::pair<T1,T2> &value_pair) {
+
+		os << value_pair.first << ":" << value_pair.second;
+		return os;
+	}
+
+	template <typename T1, typename T2>
+		std::istream& operator >>(std::istream &is, std::pair<T1,T2> &value_pair) {
+		char delim;
+
+		is >> value_pair.first;
+		is >> delim;
+		is >> value_pair.second;
+
+		return is;
+	}
+
 	inline std::istream& operator >>(std::istream &is, std::list<std::string> &string_list) {
 		std::istream_iterator<std::string> begin(is);
 		std::istream_iterator<std::string> end;

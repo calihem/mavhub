@@ -7,6 +7,7 @@
 #include "module/ctrl_hover.h"
 
 namespace mavhub {
+
 	class AppFactory {
 	public:
 		static AppLayer* build(const std::string& app_name, const std::map<std::string, std::string> args);
