@@ -21,7 +21,7 @@ namespace mavhub {
 			friend std::ostream& operator <<(std::ostream &os, const packageformat_t &format);
 			friend std::istream& operator >>(std::istream &is, packageformat_t &format);
 
-			typedef std::pair<MediaLayer*, packageformat_t> interface_packet_pair_t; 
+			typedef std::pair<cpp_io::IOInterface*, packageformat_t> interface_packet_pair_t; 
 			typedef std::list<interface_packet_pair_t> interface_packet_list_t;
 			typedef std::list< std::vector<uint8_t> > buffer_list_t;
 			typedef std::pair<uint16_t, AppLayer*> id_app_pair_t;
@@ -30,18 +30,18 @@ namespace mavhub {
 			friend std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack);
 
 			/// Set system ID
-			void system_id(uint8_t system_id);
+			void system_id(const uint8_t system_id);
 			/// Get system ID
-			uint8_t system_id() const;
+			const uint8_t system_id() const;
 			
-			int add_link(MediaLayer *interface, const packageformat_t format);
-			MediaLayer *link(unsigned int link_id);
+			int add_link(cpp_io::IOInterface *interface, const packageformat_t format);
+			cpp_io::IOInterface *link(unsigned int link_id);
 			int remove_link(unsigned int link_id);
 
 			void add_application(AppLayer *app);
+			void send(const mavlink_message_t &msg, const AppLayer *app) const;
+			void send(const MKPackage &msg, const AppLayer *app) const;
 
-			void send(const mavlink_message_t &msg) const;
-			void send(const MKPackage &msg) const;
 // 			void join();
 
 		protected:
@@ -57,13 +57,15 @@ namespace mavhub {
 	
 			/// Size of rx buffer
 			static const int BUFFERLENGTH = 512;
-			/// Polling interval through all interfaces in us
-			static const int POLLINTERVAL = 500;
 
+			///
+			bool loop_forever;
 			/// System ID
 			uint8_t sys_id;
 			/// List of all links/ interfaces
 			interface_packet_list_t interface_list;
+			/// Highest file descriptor
+			int highest_fd;
 			/// Mutex to protect link/ interface management structures
 			mutable pthread_mutex_t link_mutex;
 			/// List of all registered applications
@@ -75,13 +77,15 @@ namespace mavhub {
 			/// mutex to protect tx_buffer
 			mutable pthread_mutex_t tx_mutex;
 
-			/// determine next application ID
-			const uint16_t next_app_id() const;
+			///
+			void links_to_file_set(fd_set& fds) const;
+			void read(const fd_set& fds);
 			/// transmit msg to every app in app_list
 			void transmit_to_apps(const mavlink_message_t &msg) const;
-			/// transmit msg on every MediaLayer except src_iface
-			void retransmit(const mavlink_message_t &msg, const MediaLayer *src_iface) const;
-			void retransmit(const MKPackage &msg, const MediaLayer *src_iface) const;
+			/// transmit msg on every cpp_io::IOInterface except src_iface
+			void retransmit(const mavlink_message_t &msg, const cpp_io::IOInterface *src_iface) const;
+			void retransmit(const MKPackage &msg, const cpp_io::IOInterface *src_iface) const;
+			void retransmit_to_apps(const mavlink_message_t &msg, const AppLayer *app) const;
 			/// convert MikroKopter packet to MAVLINK packet
 			int mk2mavlink(const MKPackage &mk_msg, mavlink_message_t &mav_msg);
 	};
@@ -108,25 +112,25 @@ namespace mavhub {
 		return is;
 	}
 
-	inline void ProtocolStack::system_id(uint8_t system_id) {
+	inline void ProtocolStack::system_id(const uint8_t system_id) {
 		sys_id = system_id;
 	}
-	inline uint8_t ProtocolStack::system_id() const {
+	inline const uint8_t ProtocolStack::system_id() const {
 		return sys_id;
-	}
-	inline const uint16_t ProtocolStack::next_app_id() const {
-		//FIXME: do it right
-		static uint16_t app_cnt = 0;
-		return app_cnt++;
 	}
 	inline void ProtocolStack::transmit_to_apps(const mavlink_message_t &msg) const {
 		std::list<AppLayer*>::const_iterator app_iter;
 		for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
-			if( (*app_iter)->id != msg.compid ) 
+			(*app_iter)->handle_input(msg);
+		}
+	}
+	inline void ProtocolStack::retransmit_to_apps(const mavlink_message_t &msg, const AppLayer *app) const {
+		std::list<AppLayer*>::const_iterator app_iter;
+		for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
+			if(*app_iter != app)
 				(*app_iter)->handle_input(msg);
 		}
 	}
-
 
 } // namespace mavhub
 

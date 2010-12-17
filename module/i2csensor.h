@@ -1,11 +1,13 @@
 #ifndef _I2CSENSOR_H_
 #define _I2CSENSOR_H_
 
-#include <exception>
+#include <string>
+#include <map>
 #include <inttypes.h>
 
-#include "thread.h"
+#include "sensor.h"
 
+//FIXME die müssen hier noch weg
 /* output defines */
 #define NONE	0x00
 #define MAVHUB	0x01
@@ -14,21 +16,26 @@
 
 namespace mavhub {
 
-	class I2cSensor : public cpp_pthread::PThread {
+	class I2cSensor : public Sensor {
 		public:
 			I2cSensor();
 			virtual ~I2cSensor();
-//			virtual void print_CSV();
 		protected:
-			virtual void run() = 0;
-			virtual void publish_data(uint64_t time) = 0;
-
-			static void i2c_set_adr(const int fd, const int adr) throw(std::exception);
-			// syncs 
-			static pthread_mutex_t i2c_mutex;
-
+			static const int i2c_init(const std::string port) throw(const char *);
+			static void i2c_start_conversion(const int fd, const int adr) throw(const char *);
+			static void i2c_end_conversion(const int fd);
+			static void i2c_write_bytes(const int fd, uint8_t *buffer, int size) throw(const char *);
+			static void i2c_read_bytes(const int fd, uint8_t *buffer, int size) throw(const char *);
+			
+			int fd;
+			int adr;
+			pthread_mutex_t *mutex_ptr;
 		private:
-			static int i2c_mutex_count;
+			// port name fd mapping			
+			static std::map<const std::string , const int> port_map;
+			// syncs 
+			static std::map<const int, pthread_mutex_t> mutex_map;
+
 	};
 	// ----------------------------------------------------------------------------
 	// I2cSensors

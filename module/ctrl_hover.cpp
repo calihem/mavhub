@@ -83,10 +83,10 @@ namespace mavhub {
 			mavlink_msg_huch_attitude_decode(&msg, &attitude);
 			//Logger::log("Ctrl_Hover", attitude.xacc, Logger::LOGLEVEL_INFO);
 			break;
-		case MAVLINK_MSG_ID_HUCH_ALTITUDE:
+		case MAVLINK_MSG_ID_HUCH_FC_ALTITUDE:
 			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
 			//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
-			mavlink_msg_huch_altitude_decode(&msg, &altitude);
+			mavlink_msg_huch_fc_altitude_decode(&msg, &altitude);
 			//Logger::log("Ctrl_Hover", altitude.baro, altitude.baroref, Logger::LOGLEVEL_INFO);
 			break;
 		case MAVLINK_MSG_ID_MANUAL_CONTROL:
@@ -187,9 +187,9 @@ namespace mavhub {
 				Logger::log("Ctrl_Hover::run: param request", Logger::LOGLEVEL_INFO);
 				param_request_list = 0;
 				mavlink_msg_param_value_pack(owner->system_id(), component_id, &msg, (int8_t *)"setpoint_value", ctl_sp, 1, 0);
-				owner->send(msg);
+				send(msg);
 				mavlink_msg_param_value_pack(owner->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", ctl_sticksp, 1, 0);
-				owner->send(msg);
+				send(msg);
 			}
 
 			// 1. collect data
@@ -220,13 +220,13 @@ namespace mavhub {
 				pre[0].second = 0;
 			// BARO
 			pre[1].first -= (0.05 * pre[2].first);
-			// IR1
-			if(pre[0].first <= 350.0 && pre[4].first <= 350.0)
+			// IR1: 0 = uss, 4 = ir2
+			if(pre[0].first <= 320.0 && pre[4].first <= 320.0)
 				pre[3].second = 1;
 			else	
 				pre[3].second = 0;
 			// IR2
-			if(in_range(pre[0].first, 300.0, 1200.0))
+			if(in_range(pre[0].first, 300.0, 1000.0))
 				pre[4].second = 1;
 			else
 				pre[4].second = 0;
@@ -279,7 +279,7 @@ namespace mavhub {
 			// pos.y += pos.vy * dt * 1e-6;
 			// pos.z += pos.vz * dt * 1e-6;
 			// mavlink_msg_local_position_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &pos);
-			// owner->send(msg);
+			// send(msg);
 
 			// set attitude
 			ml_attitude.usec = get_time_us();
@@ -290,7 +290,7 @@ namespace mavhub {
 			ml_attitude.pitchspeed = attitude.ygyro * MKGYRO2RAD;
 			ml_attitude.yawspeed   = attitude.zgyro * MKGYRO2RAD;
 			mavlink_msg_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
-			owner->send(msg);
+			send(msg);
 
 			// 3. kalman filter
 			// update timestep
@@ -316,7 +316,7 @@ namespace mavhub {
 			ctrl_hover_state.kal_s1 = cvmGet(kal->getStatePost(), 1, 0);
 			ctrl_hover_state.kal_s2 = cvmGet(kal->getStatePost(), 2, 0);
 			mavlink_msg_huch_ctrl_hover_state_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
-			owner->send(msg);
+			send(msg);
 
 			// 4. run controller
 			// setpoint on stick
@@ -340,40 +340,45 @@ namespace mavhub {
 
 			extctrl.gas = (int16_t)gas;
 
+			// gas out
 			dbg.ind = 0;
 			dbg.value = gas;
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			owner->send(msg);
+			send(msg);
 
+			// PID error
 			dbg.ind = 1;
 			dbg.value = pid_alt->getErr();
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			owner->send(msg);
+			send(msg);
 
+			// PID integral
 			dbg.ind = 2;
 			dbg.value = pid_alt->getPv_int();
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			owner->send(msg);
+			send(msg);
 
+			// PID derivative
 			dbg.ind = 3;
 			dbg.value = pid_alt->getDpv();
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			owner->send(msg);
+			send(msg);
 
+			// PId setpoint
 			dbg.ind = 4;
 			dbg.value = pid_alt->getSp();
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			owner->send(msg);
+			send(msg);
 
 			// attitude_controller_output.thrust = extctrl.gas / 4 - 128;
 			// mavlink_msg_attitude_controller_output_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
-			// owner->send(msg);
+			// send(msg);
 
 			//extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
 			//Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
 			MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-			owner->send(msg_extctrl);
+			send(msg_extctrl);
 			
 			// stats
 			run_cnt += 1;

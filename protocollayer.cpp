@@ -1,27 +1,25 @@
 #include "protocollayer.h"
+#include "protocolstack.h"
 
-#include "logger.h"
 #include <sstream>
 
 namespace mavhub {
 
-AppLayer::AppLayer() : owner(0), id(0) {}
+AppLayer::AppLayer(const Logger::log_level_t loglevel) : owner(0), loglevel(loglevel) {}
 
-UARTLayer::UARTLayer(const std::string& devicename, tcflag_t control_modes) throw(const char*) :
-		UART(devicename, control_modes) {
-	_name = "Serial Link";
-	dev_name = devicename;
-	enable_blocking_mode(false);
+void AppLayer::send(const mavlink_message_t &msg) const {
+	if(owner) owner->send(msg, this);
 }
 
-UARTLayer::~UARTLayer(){ }
+void AppLayer::send(const MKPackage &msg) const {
+	if(owner) owner->send(msg, this);
+}
 
+// ----------------------------------------------------------------------------
+// UDPLayer
+// ----------------------------------------------------------------------------
 UDPLayer::UDPLayer(int port) throw(const char*) :
 		UDPSocket(port) {
-	_name = "UDP Port";
-	std::stringstream outstream;
-	outstream << port;
-	dev_name = outstream.str();
 
 	enable_blocking_mode(false);
 }
@@ -53,13 +51,13 @@ void UDPLayer::add_groupmembers(const std::list<string_addr_pair_t>& member_list
 
 }
 
-int UDPLayer::write(const uint8_t *buffer, int buf_len) const {
+ssize_t UDPLayer::write(const void *buf, size_t nbyte) const {
 	std::list<num_addr_pair_t>::const_iterator gmember_iter;
 	int rc = 0;
 
 	for(gmember_iter = groupmember_list.begin(); gmember_iter != groupmember_list.end(); ++gmember_iter ) {
 		try{
-			rc = send_to(buffer, buf_len, gmember_iter->first, gmember_iter->second);
+			rc = send_to(buf, nbyte, gmember_iter->first, gmember_iter->second);
 		}
 		catch(const char *message) {
 			Logger::log(message, Logger::LOGLEVEL_ERROR);
@@ -70,7 +68,7 @@ int UDPLayer::write(const uint8_t *buffer, int buf_len) const {
 }
 
 void UDPLayer::print(std::ostream &os) const {
-	MediaLayer::print(os);
+	IOInterface::print(os);
 
 	std::list<num_addr_pair_t>::const_iterator gmember_iter;
 	os << "Group members:" << std::endl;

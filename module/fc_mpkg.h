@@ -71,7 +71,7 @@ namespace mavhub {
 		mavlink_mk_fc_status_t mk_fc_status;
 		/// huch attitude struct
 		mavlink_huch_attitude_t huch_attitude;
-		mavlink_huch_altitude_t huch_altitude;
+		mavlink_huch_fc_altitude_t huch_altitude;
 		mavlink_huch_exp_ctrl_t huch_exp_ctrl;
 		mavlink_huch_ranger_t huch_ranger;
 		// pixhawk structs
@@ -82,15 +82,12 @@ namespace mavhub {
 		int mk_debugout_digital_offset;
 
 		// fetch different types from byte based mk_debugout
-		uint16_t debugout_getval_u(mavlink_mk_debugout_t* dbgout,
-															 int index);
-		int16_t debugout_getval_s(mavlink_mk_debugout_t* dbgout,
-															int index);
-		int32_t debugout_getval_s32(mavlink_mk_debugout_t* dbgout,
-																int indexl, int indexh);
+		uint16_t debugout_getval_u(mavlink_mk_debugout_t* dbgout, int index);
+		int16_t debugout_getval_s(mavlink_mk_debugout_t* dbgout, int index);
+		int32_t debugout_getval_s32(mavlink_mk_debugout_t* dbgout, int indexl, int indexh);
 
 		void debugout2attitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_attitude_t* attitude);
-		void debugout2altitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_altitude_t* altitude);
+		void debugout2altitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_fc_altitude_t* altitude);
 		void debugout2exp_ctrl(mavlink_mk_debugout_t* dbgout, mavlink_huch_exp_ctrl_t* exp_ctrl);
 		void debugout2ranger(mavlink_mk_debugout_t* dbgout, mavlink_huch_ranger_t* ranger);
 		void debugout2status(mavlink_mk_debugout_t* dbgout, mavlink_mk_fc_status_t* status);

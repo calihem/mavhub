@@ -49,24 +49,19 @@ namespace mavhub {
 
 	class SenHmc5843 : public I2cSensor {
 		public:
-			SenHmc5843(int _fd, int _update_rate, int _gain, int _mode, int _output);
+			SenHmc5843(unsigned short _dev_id, unsigned short _func_id, std::string _port, int _update_rate, int _debug, int _timings, int _gain, int _mode) throw(const char *);
 			virtual ~SenHmc5843();
 			void print_debug();
 
 		protected:
 			virtual void run();
-			virtual void publish_data(uint64_t time);
-
+			virtual void* get_data_pointer(unsigned int id) throw(const char *);
+			
 		private:
-			mavlink_huch_hmc5843_t hmc5843_data;
+			mavlink_huch_magnetic_kompass_t kompass_data;
 
-			int fd;
-
-			int update_rate;
 			int gain;
 			int mode;
-			int output;
-			bool running;
 
 			/* frequenz */
 			static const int waitFreq[8];

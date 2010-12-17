@@ -7,7 +7,7 @@
 
 #include <iostream> //cout
 
-#include "datacenter.h"
+#include "sensormanager.h"
 using namespace std;
 
 namespace mavhub {
@@ -21,8 +21,9 @@ void TestCore::handle_input(const mavlink_message_t &msg) {
 }
 
 void TestCore::run() {
-	mavlink_huch_bmp085_t bmp085_data_core;
-	mavlink_huch_hmc5843_t hmc5843_data_core;
+	mavlink_huch_altitude_t altitude;
+	mavlink_huch_magnetic_kompass_t kompass;
+	int count = 0;
 	if(!owner) {
 		Logger::log("Owner of TestCore not set", Logger::LOGLEVEL_WARN);
 		return;
@@ -34,18 +35,53 @@ void TestCore::run() {
 	mavlink_msg_heartbeat_pack(100, 200, &msg, system_type, MAV_AUTOPILOT_GENERIC);
 
 	while(1) {
-		owner->send(msg);
+		send(msg);
 		sleep(1);
-		bmp085_data_core = DataCenter::get_bmp085();
-		hmc5843_data_core = DataCenter::get_hmc5843();
-		ostringstream send_stream;
-		if (bmp085_data_core.timestamp) {
-			send_stream << "bmp085;" << bmp085_data_core.temperature << ";" << bmp085_data_core.pressure << ";" << bmp085_data_core.height;
-			Logger::debug(send_stream.str());
+		try {
+			SensorManager::instance().get_data(altitude, 0x01150085);
+
+			ostringstream send_stream00;
+			send_stream00 << "altitude: " << altitude.altitude;		
+			Logger::debug(send_stream00.str());
 		}
-		if (hmc5843_data_core.timestamp) {
-			send_stream << "hmc5843;" << hmc5843_data_core.data_x << ";" << hmc5843_data_core.data_y << ";" << hmc5843_data_core.data_z;
-			Logger::debug(send_stream.str());
+		catch (const char *message) {
+			std::string s(message);
+			s = "in test core: " + s;
+			Logger::warn(s);
+		}
+		try {
+			SensorManager::instance().get_data(kompass, 0x01165843);
+
+			ostringstream send_stream01;
+			send_stream01 << "kompass: " << kompass.data_x << ";" << kompass.data_y << ";" << kompass.data_z;
+			Logger::debug(send_stream01.str());
+		}
+		catch (const char *message) {
+			std::string s(message);
+			s = "in test core: " + s;
+			Logger::warn(s);
+		}
+
+		switch(count++) {
+			case 5:
+				SensorManager::instance().stop_sensor(0x01150085);
+				break;
+			case 7:
+				SensorManager::instance().stop_sensor(0x01165843);
+				break;
+			case 10:
+				SensorManager::instance().start_sensor(0x01165843);
+				break;
+			case 11:
+				SensorManager::instance().start_sensor(0x01150085);
+				break;
+			case 13:
+				SensorManager::instance().restart_sensor(0x01150085);
+				SensorManager::instance().remove_sensor(0x01165843);
+				break;
+			case 15:
+				SensorManager::instance().remove_sensor(0x01150085);
+				break;
 		}
 	}
 }

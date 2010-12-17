@@ -2,11 +2,10 @@
 
 #include <math.h> //pow
 #include <iostream> //cout
-#include <sstream> //stringstream
 
 #include "logger.h" //"printf"
 #include "utility.h"
-#include "datacenter.h" //i2c-mutex, data
+// #include "datacenter.h"
 
 using namespace std;
 
@@ -15,55 +14,68 @@ namespace mavhub {
 const int SenHmc5843::waitFreq[] = {2000000, 1000000, 500000, 200000, 100000, 50000, 20000, 10000};
 const int SenHmc5843::gainFactor[] =  {1620,1300,970,780,530,460,390,280};
 
-SenHmc5843::SenHmc5843(int _fd, int _update_rate, int _gain, int _mode, int _output):
-	fd(_fd), output(_output)  {
+SenHmc5843::SenHmc5843(unsigned short _dev_id, unsigned short _func_id, string _port, int _update_rate, int _debug, int _timings, int _gain, int _mode) throw(const char *) {
+	//FIXME Initialisierung
+	dev_id = _dev_id;
+	func_id = _func_id;
+	update_rate = _update_rate;
+	debug = _debug;
+	timings = _timings; 
+
+	// limit parameters to valid values
+	mode = _mode < 4? _mode: 1; // default: single-conversion mode
+	gain = _gain < 8? _gain: 1; // default: +-1Gs
+	update_rate = _update_rate < 8? _update_rate: DRDEFAULT; // default: 10Hz
 
 	uint8_t buffer[2];
 
 	Logger::debug("hmc5843: init...");
 
-	running = true;
-	pthread_mutex_lock( &i2c_mutex );
-	i2c_set_adr(fd,HMC5843_ADR);
+	status = RUNNING;	
+	try {
+		/* check config */
+		if (get_data_pointer(func_id << 16) == NULL) {
+			throw "sensor doesn't support configured function";
+		}
 
-	/* mode */
-	buffer[0] = MR;
-	mode = _mode < 4? _mode: 1; // default: single-conversion mode
-	buffer[1] = mode;
+		fd = i2c_init(_port);
+		i2c_start_conversion(fd, HMC5843_ADR);
 
-	if (write(fd, buffer, 2) != 2) {
-	    Logger::warn("hmc5843_init(): Failed to write to slave.");
-	}
+		/* mode */
+		buffer[0] = MR;
+		buffer[1] = mode;
 
-	/* setup gain */
-	buffer[0] = CRB;
-	gain = _gain < 8? _gain: 1; // default value
-	buffer[1] = gain;
+		i2c_write_bytes(fd, buffer, 2);
 
-	if (write(fd, buffer, 2) != 2) {
-		Logger::warn("hmc5843_init(): Failed to write to slave.");
-	}
+		/* setup gain */
+		buffer[0] = CRB;
+		buffer[1] = gain;
 
-	/* setup data rate */
-	buffer[0] = CRA;
-		/* limit to valid data rates */
-	update_rate = _update_rate < 8? _update_rate: DRDEFAULT;
+		i2c_write_bytes(fd, buffer, 2);
+
+		/* setup data rate */
+		buffer[0] = CRA;
 		/* in single conversion mode data rate should be 0,3,4,7 - why ever */
-	buffer[1] = (mode == SINGLE_CONVERSION_MODE)? DR100HZ: update_rate;
+		buffer[1] = (mode == SINGLE_CONVERSION_MODE)? DR100HZ: update_rate;
 
-	if (write(fd, buffer, 2) != 2) {
-		Logger::warn("hmc5843_init(): Failed to write to slave.");
+		i2c_write_bytes(fd, buffer, 2);
+		Logger::debug("done");
+		status = STOPPED;
 	}
-	output = _output;
+	catch(const char *message) {
+		status = UNINITIALIZED;
+		i2c_end_conversion(fd);
 
-	pthread_mutex_unlock( &i2c_mutex );
-	running = false;
-	Logger::debug("done\n");
+		string s(message);
+		throw ("SenHmc5843(): " + s).c_str();
+	}
+
+	i2c_end_conversion(fd);
 }
 
 SenHmc5843::~SenHmc5843() {
-	running = false;
-	join( thread );
+	status = STOPPED;
+	join();
 }
 
 void SenHmc5843::run() {
@@ -73,89 +85,100 @@ void SenHmc5843::run() {
 	uint64_t frequency = wait_time;
 	uint64_t start = get_time_us();
 	uint64_t time_output = start + 1000000;
+	uint64_t usec;
 
 	Logger::debug("hmc5843: running");
+	i2c_start_conversion(fd, HMC5843_ADR);
+	try {
+		status = RUNNING;
 
-	pthread_mutex_lock( &i2c_mutex );
-	i2c_set_adr(fd, HMC5843_ADR);
-	running = true;
+		while(status == RUNNING) {
+			/* mode - start measurement */
+			if (mode == SINGLE_CONVERSION_MODE) {
+				buffer[0] = MR;
+				buffer[1] = mode;
 
-	while(running) {
-		/* mode - start measurement */
-		if (mode == SINGLE_CONVERSION_MODE) {
-			buffer[0] = MR;
-			buffer[1] = mode;
-
-			if (write(fd, buffer, 2) != 2) {
-				Logger::warn("SenHmc5843::run(): Failed to write to slave.");
+				i2c_write_bytes(fd, buffer, 2);
+				/* device auto-increments its reg-pointer to data-adress */
+			} else {
+				/* CONTINUOUS_CONVERSION_MODE - set reg-pointer to data-adress */
+				buffer[0] = DATA;
+				i2c_write_bytes(fd, buffer, 2);	
 			}
-			/* device auto-increments its reg-pointer to data-adress */
-		} else {
-			/* CONTINUOUS_CONVERSION_MODE - set reg-pointer to data-adress */
-			buffer[0] = DATA;
-			if (write(fd, buffer, 2) != 2) {
-				Logger::warn("SenHmc5843::run(): Failed to write to slave.");
-			}				
-		}
-		pthread_mutex_unlock( &i2c_mutex);
+			i2c_end_conversion(fd);
 
-		/* wait */
-		usleep(wait_time);
+			/* wait time */
+			usec = get_time_us();
+			uint64_t end = usec;
+			wait_time = waitFreq[update_rate] - (end - start);
+			wait_time = (wait_time < 0)? 0: wait_time;
+			//Logger::log("hmc5843 frequency: ", frequency, Logger::LOGLEVEL_DEBUG);
+			//Logger::log("hmc5843 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
+		
+			/* wait */
+			usleep(wait_time);
 
-		/* get data */
-		pthread_mutex_lock( &i2c_mutex );
-		i2c_set_adr(fd, HMC5843_ADR);
-		if (read(fd, buffer, 6) != 6) {
-			Logger::warn("SenHmc5843::run(): Failed to read from slave.");
-		} else {
-			/* assign buffer to calibration data */
-			hmc5843_data.data_x = (int16_t)((buffer[0] << 8) + buffer[1]);
-			hmc5843_data.data_y = (int16_t)((buffer[2] << 8) + buffer[3]);
-			hmc5843_data.data_z = (int16_t)((buffer[4] << 8) + buffer[5]);
-			hmc5843_data.data_x /= gainFactor[gain];
-			hmc5843_data.data_y /= gainFactor[gain];
-			hmc5843_data.data_z /= gainFactor[gain];
+			/* calculate frequency */
+			end = get_time_us();
+			frequency = (15 * frequency + end - start) / 16;
+			start = end;
 
-			/* pass data */
-			publish_data(start);
+			/* get data */
+			i2c_start_conversion(fd, HMC5843_ADR);
+			i2c_read_bytes(fd, buffer, 6);
+
+			/* assign buffer to data */
+			{ // begin of data mutex scope
+				cpp_pthread::Lock ri_lock(data_mutex);
+				kompass_data.data_x = (int16_t)((buffer[0] << 8) + buffer[1]);
+				kompass_data.data_y = (int16_t)((buffer[2] << 8) + buffer[3]);
+				kompass_data.data_z = (int16_t)((buffer[4] << 8) + buffer[5]);
+				kompass_data.data_x /= gainFactor[gain];
+				kompass_data.data_y /= gainFactor[gain];
+				kompass_data.data_z /= gainFactor[gain];
+				kompass_data.usec = usec;
+			} // end of data mutex scope
 
 			/* debug data */
-			if (output & DEBUG) print_debug();
-		}
+			if (debug) print_debug();
 
-		/* calculate frequency and wait time */
-		uint64_t end = get_time_us();
-		frequency = (15 * frequency + end - start) / 16;
-		wait_time = wait_time + waitFreq[update_rate] - frequency;
-		wait_time = (wait_time < 0)? 0: wait_time;
-		start = end;
-		//Logger::log("hmc5843 frequency: ", frequency, Logger::LOGLEVEL_DEBUG);
-		//Logger::log("hmc5843 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
-		
-		/* timings/benchmark output */
-		if (output & TIMINGS) {
-			if (time_output <= end) {
-				Logger::log("hmc5843 frequency: ", (float)1000000/frequency, Logger::LOGLEVEL_DEBUG);
-				//Logger::log("hmc5843 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
-				time_output += 1000000;
+			/* timings/benchmark output */
+			if (timings) {
+				if (time_output <= end) {
+					Logger::log("hmc5843 frequency: ", (float)1000000/frequency, Logger::LOGLEVEL_DEBUG);
+					//Logger::log("hmc5843 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
+					time_output += 1000000;
+				}
 			}
 		}
 	}
+	catch(const char *message) {
+		i2c_end_conversion(fd);
+		status = STRANGE;
+
+		string s(message);
+		throw ("SenHmc5843::run(): " + s).c_str();
+	}
 	/* unlock i2c */
-	pthread_mutex_unlock( &i2c_mutex);
+	i2c_end_conversion(fd);
 
 	Logger::debug("hmc5843: stopped");
 }
 
 void SenHmc5843::print_debug() {
 	ostringstream send_stream;
-	send_stream << "hmc5843;" << hmc5843_data.data_x << ";" << hmc5843_data.data_y << ";" << hmc5843_data.data_z;
+	send_stream << "hmc5843;" << kompass_data.data_x << ";" << kompass_data.data_y << ";" << kompass_data.data_z;
 	Logger::debug(send_stream.str());
 }
 
-void SenHmc5843::publish_data(uint64_t time) {
-	hmc5843_data.timestamp = time;
-	DataCenter::set_hmc5843(hmc5843_data);
+void* SenHmc5843::get_data_pointer(unsigned int id) throw(const char *) {
+	if (status == RUNNING) {
+		switch ((0xFFFF0000 & id) >> 16) {
+			case KOMPASS_SENSOR: // kompass 
+				return &kompass_data;
+			default: throw "sensor hmc5843 doesn't support this sensor type";
+		}
+	} throw "sensor hmc5843 isn't running";
 }
 
 } // namespace mavh

@@ -19,15 +19,43 @@ const char* Logger::LoglevelStrings[LoglevelNum] = {
 };
 
 std::ostream& operator <<(std::ostream &os, const Logger::log_level_t &level) {
-	os << static_cast<int>(level);
+	os << Logger::LoglevelStrings[static_cast<int>(level)];
 
 	return os;
 }
 
 std::istream& operator >>(std::istream &is, Logger::log_level_t &level) {
-	int num_loglevel;
-	is >> num_loglevel;
-	level = static_cast<Logger::log_level_t>(num_loglevel % Logger::LoglevelNum);
+	std::string level_string;
+	is >> level_string;
+	if(level_string.empty()) return is;
+
+	switch(level_string.at(0)) {
+		case 'e':
+			level = Logger::LOGLEVEL_ERROR;
+			break;
+		case 'f':
+			level = Logger::LOGLEVEL_FATAL;
+			break;
+		case 'd':
+			level = Logger::LOGLEVEL_DEBUG;
+			break;
+		case 'g':
+			level = Logger::LOGLEVEL_ALL;
+			break;
+		case 'i':
+			level = Logger::LOGLEVEL_INFO;
+			break;
+		case 'o':
+			level = Logger::LOGLEVEL_OFF;
+			break;
+		case 'w':
+			level = Logger::LOGLEVEL_WARN;
+			break;
+		default:
+			level = Logger::LOGLEVEL_ALL;
+			break;
+	}
+
 	return is;
 }
 

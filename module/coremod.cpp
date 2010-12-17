@@ -32,7 +32,7 @@ void CoreModule::run() {
 
 	while(1) {
 		//Logger::log("coremod: system_id", static_cast<int>(owner->system_id()), Logger::LOGLEVEL_INFO);
-		owner->send(msg);
+		send(msg);
 		sleep(1);
 	}
 }

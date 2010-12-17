@@ -1,8 +1,7 @@
 #ifndef _SETTING_H_
 #define _SETTING_H_
 
-#include "file.h"
-#include "logger.h"
+#include "io.h"
 
 #include <map>
 

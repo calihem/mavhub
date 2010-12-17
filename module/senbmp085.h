@@ -2,8 +2,6 @@
 #define _SENBMP085_H_
 
 #include <inttypes.h>
-#include <sys/ioctl.h>
-#include <exception>
 
 #include <mavlink.h>
 
@@ -32,16 +30,16 @@ namespace mavhub {
 
 	class SenBmp085 : public I2cSensor {
 		public:
-			SenBmp085(int _fd, int _update_temp, int _oversampling, int _output) throw(std::exception);
+			SenBmp085(unsigned short _dev_id, unsigned short _func_id, unsigned short _func_id1, unsigned short _func_id2, std::string _port, int _update_rate, int _debug, int _timings, int _update_rate_temp) throw(const char *);
 			virtual ~SenBmp085();
 			void print_debug();
-
+						
 		protected:
 			virtual void run();
-			virtual void publish_data(uint64_t time);
+			virtual void* get_data_pointer(unsigned int id) throw(const char *);
 
 		private:
-			static void read_calibration_data(const int fd, calibration_data_t &cal_data) throw(std::exception);
+			static void read_calibration_data(const int fd, calibration_data_t &cal_data) throw(const char *);
 			static void request_temp_data(const int fd); // throw error
 			static uint64_t request_pres_data(const int fd, const int oversampling); // throw error
 			static int get_temp_data(const int fd); // throw error
@@ -51,15 +49,16 @@ namespace mavhub {
 			static int calc_pres(const int b5, const int oversampling, const int uncomp_pres, const calibration_data_t &cal_data);
 			static float calc_altitude(const int p, const int p0);
 
-			mavlink_huch_bmp085_t bmp085_data;
 			calibration_data_t calibration_data;
+			mavlink_huch_raw_pressure_t raw_pressure;
+			mavlink_huch_temperature_t temperature;
+			mavlink_huch_altitude_t altitude;
 
+			unsigned short func_id1;
+			unsigned short func_id2;
 			int oversampling;
 			int pressure_0;
-			int fd;
-			int update_temp;
-			int output;
-			bool running;
+			int update_rate_temp;
 
 			static const int wait_oversampling[4];
 			#define WAITTEMP 4500

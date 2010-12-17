@@ -10,15 +10,17 @@ namespace cpp_pthread {
 */
 class PThread {
 	public:
-		PThread() {};
+		PThread() : _running(false) {};
 		~PThread() {};
 		const pthread_t& start();
-		static void *join(pthread_t &pthread);
+		void *join();
 
 	protected:
+		pthread_t thread;
+		bool _running;
+
 		virtual void run() = 0;
 		 static void *start_routine_wrapper(void *);
-		pthread_t thread;
 };
 
 /**
@@ -39,10 +41,16 @@ class Lock {
 // PThread
 // ----------------------------------------------------------------------------
 inline const pthread_t& PThread::start() {
+	if(_running) return thread;
+
 	pthread_create(&thread, NULL, start_routine_wrapper, (void *)(this));
+	_running = true;
 	return thread;
 }
-inline void *PThread::join(pthread_t &thread) {
+inline void *PThread::join() {
+	if(!_running) return NULL;
+
+	_running = false;
 	void *rc;
 	pthread_join(thread, &rc);
 	return rc;

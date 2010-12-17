@@ -1,0 +1,7 @@
+#+AUTHOR: huch
+
+HUCH system IDs
+
+| 43 | delta (opt)        |
+| 39 | root@gum2 (verdex) |
+|    |                    |

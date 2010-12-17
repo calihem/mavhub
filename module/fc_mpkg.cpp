@@ -51,7 +51,7 @@ namespace mavhub {
 			publish_data(get_time_us());
 			// deadlock problem
 			// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
-			// owner->send(msg_j);
+			// send(msg_j);
 		}
 
 		// // compare with qk_datatypes
@@ -80,31 +80,32 @@ namespace mavhub {
 		// MKPackage msg_debug_on(1, 'd', 1, buf);
 		// call constructor with: numdata (1), <buf(buf), buflen(1)> pairs
 		MKPackage msg_debug_on(1, 'd', 1, buf, 1);
-		owner->send(msg_debug_on);
+		sleep(3);
+		send(msg_debug_on);
 		Logger::log("FC_Mpkg started, debug request sent to FC", Logger::LOGLEVEL_INFO);
 		// MKPackage msg_setneutral(1, 'c');
 		while(true) {
-			// owner->send(msg_setneutral);
+			// send(msg_setneutral);
 			// Logger::log("FC_Mpkg running", Logger::LOGLEVEL_INFO);
 			// XXX: pass on data
 			// 1. put into datacenter?
 			// 2. retransmit onto protocolstack?
 
 			mavlink_msg_huch_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_attitude);
-			owner->send(msg_i);
-			mavlink_msg_huch_altitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
-			owner->send(msg_i);
+			send(msg_i);
+			mavlink_msg_huch_fc_altitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
+			send(msg_i);
 			mavlink_msg_huch_ranger_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
-			owner->send(msg_i);
+			send(msg_i);
 			mavlink_msg_mk_fc_status_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &mk_fc_status);
-			owner->send(msg_i);
+			send(msg_i);
 			// send pixhawk std struct
 			mavlink_msg_raw_imu_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &raw_imu);
-			owner->send(msg_i);
+			send(msg_i);
 			// mavlink_msg_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &attitude);
 			// owner->send(msg_i);
 			mavlink_msg_manual_control_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &manual_control);
-			owner->send(msg_i);
+			send(msg_i);
 
 			// Logger::log("msg len", msg_i.len, Logger::LOGLEVEL_INFO);
 			usleep(10000);
@@ -149,7 +150,7 @@ namespace mavhub {
 
   }
 
-  void FC_Mpkg::debugout2altitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_altitude_t* altitude) {
+  void FC_Mpkg::debugout2altitude(mavlink_mk_debugout_t* dbgout, mavlink_huch_fc_altitude_t* altitude) {
 		vector<int16_t> v(2);
 		// XXX: use ADval_press
 		altitude->baro = v[0] = debugout_getval_s(dbgout, ATTabsh);
@@ -234,7 +235,7 @@ namespace mavhub {
 
 	void FC_Mpkg::publish_data(uint64_t time) {
 		DataCenter::set_huch_attitude(huch_attitude);
-		DataCenter::set_huch_altitude(huch_altitude);
+		DataCenter::set_huch_fc_altitude(huch_altitude);
 		// XXX: hardware specific mapping
 		DataCenter::set_huch_ranger_at(huch_ranger, 0);
 		DataCenter::set_mk_fc_status(mk_fc_status);

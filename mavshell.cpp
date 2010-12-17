@@ -106,7 +106,7 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				istringstream idstream( argv.at(i+1) );
 				int id;
 				idstream >> id;
-				MediaLayer *link = ProtocolStack::instance().link(id);
+				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
 				if(!link) {
 					send_stream << "No link with ID " << id << " available" << endl;
 					continue;
@@ -155,7 +155,7 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				istringstream istream( argv.at(i+1) );
 				int id;
 				istream >> id;
-				MediaLayer *link = ProtocolStack::instance().link(id);
+				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
 				if(!link) {
 					send_stream << "No link with ID " << id << " available" << endl;
 					send_stream << ProtocolStack::instance();
@@ -169,7 +169,7 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 			}
 		} else if(argv.at(i).compare("ifup") == 0) {
 			try {
-				MediaLayer *link = LinkFactory::build(argv.at(i+1), argv.at(i+2));
+				cpp_io::IOInterface *link = LinkFactory::build(argv.at(i+1), argv.at(i+2));
 				istringstream istream( argv.at(i+3) );
 				ProtocolStack::packageformat_t format;
 				istream >> format;
@@ -186,15 +186,10 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 			try {
 				i++;
 				istringstream istream( argv.at(i) );
-				int loglevel;
+				Logger::log_level_t loglevel;
 				istream >> loglevel;
-				if(loglevel < 0 || loglevel > 6) {
-					send_stream << "Loglevel is: " << Logger::loglevel() << endl;
-					i--;
-				} else {
-					Logger::setLogLevel( static_cast<Logger::log_level_t>(loglevel) );
-					send_stream << "Loglevel is now: " << Logger::loglevel() << endl;
-				}
+				Logger::setLogLevel(loglevel);
+				send_stream << "Loglevel is now: " << Logger::loglevel() << endl;
 			}
 			catch(std::out_of_range& e) {
 				send_stream << "Loglevel is: " << Logger::loglevel() << endl;

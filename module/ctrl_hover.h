@@ -51,7 +51,7 @@ namespace mavhub {
 		/// mavlink attitude
 		mavlink_attitude_t ml_attitude;
 		/// huch altitude struct
-		mavlink_huch_altitude_t altitude;
+		mavlink_huch_fc_altitude_t altitude;
 		/// huch exp ctrl struct
 		mavlink_huch_exp_ctrl_t exp_ctrl;
 		/// huch ranger(s) struct

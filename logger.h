@@ -33,17 +33,35 @@ namespace mavhub {
 
 			/// return true if logging level is lower than LOG_OFF
 			static bool enabled();
-			/// set logging level
+			/// Set global logging level
 			static void setLogLevel(log_level_t loglevel);
-			/// Get logging level
+			/// Get global logging level
 			static log_level_t loglevel();
 
-			template <class T>
-			static void log(const T& message, log_level_t loglevel = LOGLEVEL_ALL);
-			template <class T1, class T2>
-			static void log(const T1& msg1, const T2& msg2, log_level_t loglevel = LOGLEVEL_ALL);
-			template <class T1, class T2, class T3>
-			static void log(const T1& msg1, const T2& msg2, const T3& msg3, log_level_t loglevel = LOGLEVEL_ALL);
+			/**
+			 * \brief Writes message to logger
+			 */
+			template <typename T>
+			static void log(const T& message,
+					const log_level_t msg_loglevel = LOGLEVEL_ALL,
+					const log_level_t local_loglevel = LOGLEVEL_ALL);
+			/**
+			 * \brief Writes two messages to logger
+			 */
+			template <typename T1, typename T2>
+			static void log(const T1& msg1,
+					const T2& msg2,
+					const log_level_t msg_loglevel = LOGLEVEL_ALL,
+					const log_level_t local_loglevel = LOGLEVEL_ALL);
+			/**
+			 * \brief Writes three messages to logger
+			 */
+			template <typename T1, typename T2, typename T3>
+			static void log(const T1& msg1,
+					const T2& msg2,
+					const T3& msg3,
+					const log_level_t msg_loglevel = LOGLEVEL_ALL,
+					const log_level_t local_loglevel = LOGLEVEL_ALL);
 
 			template <class T>
 			static void debug(const T& message);
@@ -101,67 +119,82 @@ namespace mavhub {
 		return log_level;
 	}
 
+#if defined(DISABLELOGGER)
+	inline void Logger::log_preamble(log_level_t loglevel) {}
+	template <typename T>
+	inline void Logger::log(const T& message, const log_level_t msg_loglevel, const log_level_t local_loglevel) {}
+	template <typename T1, typename T2>
+	inline void Logger::log(const T1& msg1,
+			const T2& msg2,
+			const log_level_t msg_loglevel,
+			const log_level_t local_loglevel) {}
+	template <typename T1, typename T2, typename T3>
+	inline void Logger::log(const T1& msg1,
+		const T2& msg2,
+		const T3& msg3,
+		const log_level_t msg_loglevel,
+		const log_level_t local_loglevel) {}
+#else
 	inline void Logger::log_preamble(log_level_t loglevel) {
-#if !defined(DISABLELOGGER)
 		time_t rawtime;
 		struct tm *timeinfo;
 
 		time (&rawtime);
 		timeinfo = localtime(&rawtime);
 		*out_stream << "["
-			<< std::setw(7) << std::setfill(' ') << std::left << LoglevelStrings[static_cast<int>(loglevel)]
+			<< std::setw(7) << std::setfill(' ') << std::left << loglevel
 			<< " " << std::setw(2) << std::setfill('0') << std::right << timeinfo->tm_hour
 			<< ":" << std::setw(2) << timeinfo->tm_min
 			<< ":" << std::setw(2) << timeinfo->tm_sec
 			<< "] ";
-#endif
 	}
-	template <class T>
-	inline void Logger::log(const T& message, log_level_t loglevel) {
-#if !defined(DISABLELOGGER)
-		if( loglevel >= log_level  ) {
+	template <typename T>
+	void Logger::log(const T& message, const log_level_t msg_loglevel, const log_level_t local_loglevel) {
+		if( msg_loglevel >= local_loglevel && msg_loglevel >= log_level  ) {
 #if defined(_REENTRANT)
 		pthread_mutex_lock(&stream_mutex);
 #endif
-			log_preamble(loglevel);
+			log_preamble(msg_loglevel);
 			*out_stream << message << std::endl;
 #if defined(_REENTRANT)
 		pthread_mutex_unlock(&stream_mutex);
 #endif
 		}
-#endif //DISABLELOGGER
 	}
-	template <class T1, class T2>
-	inline void Logger::log(const T1& msg1, const T2& msg2, log_level_t loglevel) {
-#if !defined(DISABLELOGGER)
-		if( loglevel >= log_level  ) {
+	template <typename T1, typename T2>
+	void Logger::log(const T1& msg1,
+			const T2& msg2,
+			const log_level_t msg_loglevel,
+			const log_level_t local_loglevel) {
+		if( msg_loglevel >= local_loglevel && msg_loglevel >= log_level  ) {
 #if defined(_REENTRANT)
 		pthread_mutex_lock(&stream_mutex);
 #endif
-			log_preamble(loglevel);
+			log_preamble(msg_loglevel);
 			*out_stream << msg1 << " " << msg2 << std::endl;
 #if defined(_REENTRANT)
 		pthread_mutex_unlock(&stream_mutex);
 #endif
 		}
-#endif //DISABLELOGGER
 	}
-	template <class T1, class T2, class T3>
-	inline void Logger::log(const T1& msg1, const T2& msg2, const T3& msg3, log_level_t loglevel) {
-#if !defined(DISABLELOGGER)
-		if( loglevel >= log_level  ) {
+	template <typename T1, typename T2, typename T3>
+	void Logger::log(const T1& msg1,
+		const T2& msg2,
+		const T3& msg3,
+		const log_level_t msg_loglevel,
+		const log_level_t local_loglevel) {
+		if( msg_loglevel >= local_loglevel && msg_loglevel >= log_level  ) {
 #if defined(_REENTRANT)
 		pthread_mutex_lock(&stream_mutex);
 #endif
-			log_preamble(loglevel);
+			log_preamble(msg_loglevel);
 			*out_stream << msg1 << " "  << msg2 << " "  << msg3 << std::endl;
 #if defined(_REENTRANT)
 		pthread_mutex_unlock(&stream_mutex);
 #endif
 		}
-#endif
 	}
-
+#endif //DISABLELOGGER
 	template <class T>
 	inline void Logger::debug(const T& message) {
 		log(message, LOGLEVEL_DEBUG);

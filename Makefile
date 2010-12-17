@@ -1,13 +1,14 @@
 TARGET_1 = mavhub
 SRCS_1   = main.cpp \
 	logger.cpp \
-	lib/file.cpp \
+	lib/io.cpp \
 	lib/setting.cpp \
 	protocolstack.cpp \
 	uart.cpp \
 	protocollayer.cpp \
 	mkpackage.cpp \
 	network.cpp \
+	factory/sensor_factory.cpp \
 	factory/factory_app.cpp \
 	module/pp.cpp \
 	module/pp_uss.cpp \
@@ -16,17 +17,19 @@ SRCS_1   = main.cpp \
 	module/pp_ir.cpp \
 	module/coremod.cpp \
 	module/testcore.cpp \
-	module/mkrcmod.cpp \
+	app/mk_app.cpp \
 	module/fc_mpkg.cpp \
 	module/ctrl_hover.cpp \
 	module/filter_kalmancv.cpp \
 	module/PID.cpp \
+	module/sensor.cpp \
 	module/i2csensor.cpp \
 	module/senbmp085.cpp \
 	module/senhmc5843.cpp \
 	module/senExpCtrl.cpp \
-	datacenter.cpp \
-	mavshell.cpp
+	mavshell.cpp \
+	sensormanager.cpp \
+	datacenter.cpp
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET_1}.log" )
 CXX_CFLAGS += -DSTDOUTLOG
@@ -47,7 +50,7 @@ ARCH ?= $(SUBARCH)
 CROSS_COMPILE ?= 
 
 # define any directories containing header files other than /usr/include
-INCLUDES = -I. -Imodule -I../mavlink/include/huch
+INCLUDES = -I. -Imodule -I../mavlink/include/huch -I../mkhuchlink
 
 # compiler flags to generate dependency files.
 GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d

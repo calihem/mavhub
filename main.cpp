@@ -7,12 +7,8 @@
 #include "logger.h"
 #include "protocolstack.h"
 #include "protocollayer.h"
-#include "datacenter.h"
+//#include "datacenter.h"
 #include "mavshell.h"
-
-// apps
-// #include "module/fc_mpkg.h"
-// #include "module/ctrl_hover.h"
 
 using namespace std;
 using namespace mavhub;
@@ -22,7 +18,6 @@ using namespace cpp_io;
 uint16_t system_id(42);
 int tcp_port(32000);
 string cfg_filename("mavhub.d/mavhub.conf");
-list<I2cSensor*> i2c_sensors;
 
 int main(int argc, char **argv) {
 
@@ -39,27 +34,25 @@ int main(int argc, char **argv) {
 	catch(const invalid_argument &ia) {
 		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
 	}
-
-	// start modules
-	for (list<I2cSensor*>::iterator iter = i2c_sensors.begin(); iter != i2c_sensors.end(); ++iter) {
-		(*iter)->start();
-	}
+ 
+	// start sensors
+	SensorManager::instance().start_all_sensors();
 
 	//activate stack
-	pthread_t stack_thread = ProtocolStack::instance().start();
+	ProtocolStack::instance().start();
 	
 	//start mav shell
 	try {
 		MAVShell *mav_shell = new MAVShell(tcp_port);
-		pthread_t shell_thread = mav_shell->start();
-		PThread::join(shell_thread);
+		mav_shell->start();
+		mav_shell->join();
 	}
 	catch(const char* message) {
 		cout << message << endl;
 	}
 
-	//join threads
-	PThread::join(stack_thread);
+	//join stack thread
+	ProtocolStack::instance().join();
 }
 
 void read_settings(Setting &settings) {
@@ -95,14 +88,12 @@ void read_settings(Setting &settings) {
 		add_apps(app_list, settings);
 	}
 
-	if( settings.begin_group("sensors") == 0) { //sensor group available
-		string i2c_config_file;
-		if ( settings.value("i2c_config_file", i2c_config_file) ) { 
-			Logger::log("i2c config file is missing in config file:", cfg_filename, Logger::LOGLEVEL_WARN);
-		} else {
-			SensorFactory::build(i2c_sensors, i2c_config_file);
-		}
-		settings.end_group();
+	//read sensors
+	list<string> senors_list;
+	if ( settings.value("sensors", senors_list) ) {
+		Logger::log("List of sensors is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+	} else {
+		add_sensors(senors_list, settings);
 	}
 }
 
@@ -127,7 +118,7 @@ void add_links(const list<string> link_list, Setting &settings) {
 			Logger::log(*link_iter, " group missing in config file", Logger::LOGLEVEL_DEBUG);
 		}
 
-		MediaLayer *layer = LinkFactory::build(link_construction_plan);
+		cpp_io::IOInterface *layer = LinkFactory::build(link_construction_plan);
 		ProtocolStack::instance().add_link(layer, link_construction_plan.package_format);
 	}
 }
@@ -161,6 +152,28 @@ void add_apps(const std::list<std::string> &app_list, Setting &settings) {
 
 		app = AppFactory::build(*app_iter, arg_map);
 		ProtocolStack::instance().add_application(app);
+		arg_map.clear();
+	}
+}
+
+void add_sensors(const std::list<std::string> &sensors_list, Setting &settings) {
+
+	map<string, string> arg_map;
+	for(list<string>::const_iterator sensors_iter = sensors_list.begin(); sensors_iter != sensors_list.end(); ++sensors_iter) {
+		//read from global config file first (because map wouldn't overwrite existing entries)
+		if( settings.begin_group(*sensors_iter) == 0) { //sensor group available
+			settings.values(arg_map);
+			settings.end_group();
+		}
+		try { //next read from sub config file
+			Setting sensors_settings(settings.path() + string("/") + *sensors_iter);
+			sensors_settings.values(arg_map);
+		}
+		catch(const invalid_argument &ia) {
+			Logger::log(ia.what(), Logger::LOGLEVEL_DEBUG);
+		}
+
+		SensorFactory::build(*sensors_iter, arg_map);
 		arg_map.clear();
 	}
 }

@@ -1,0 +1,25 @@
+# This is a config file for the bmp085 pressure sensors
+#
+
+# identification
+# device
+dev_id = 0x85
+# functions
+func_id = 0x115
+func_id1 = 0x121
+func_id2 = 0x122
+
+# hardware connection
+port = /dev/i2c-3
+
+# hardware description
+# mounting etc.
+# TODO
+
+# update rate
+update_rate = 2
+temp_update_rate = 10
+
+# show debug information
+debug = 0
+timings = 1
