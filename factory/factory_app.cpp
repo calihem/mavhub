@@ -6,6 +6,8 @@
 #include "module/testcore.h"
 #include "module/fc_mpkg.h"
 #include "module/ctrl_hover.h"
+#include "module/ctrl_bump.h"
+#include "module/sim_crrcsim.h"
 #include "app/mk_app.h"
 
 #include <iostream>
@@ -48,6 +50,12 @@ namespace mavhub {
 		} else if(lowercase_name == "ctrl_hover_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Hover(args);
+		} else if(lowercase_name == "ctrl_bump_app") {
+			// pass only configuration map into constructor
+			return new Ctrl_Bump(args);
+		} else if(lowercase_name == "sim_crrcsim_app") {
+			// pass only configuration map into constructor
+			return new Sim_Crrcsimule(args);
 		} else if(lowercase_name == "mk_app") {
 			std::string dev_name;
 			find_iter = args.find("device");
@@ -63,6 +71,8 @@ namespace mavhub {
 				istream >> baudrate;
 			}
 			return new MKApp(loglevel, dev_name, baudrate);
+		} else {
+			Logger::log("factory/app: no such app", lowercase_name, Logger::LOGLEVEL_WARN);
 		}
 	
 		return NULL;

@@ -182,6 +182,12 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 			catch(std::out_of_range& e) {
 				send_stream << "Not enough arguments given for ifup" << endl;
 			}
+		} else if(argv.at(i).compare("applist") == 0) {
+			std::list<AppLayer*> app_list = ProtocolStack::instance().get_app_list();
+			std::list<AppLayer*>::iterator app_iter = app_list.begin();
+			for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
+				send_stream << "ID:" << (*app_iter)->get_app_id() << ", " << (*app_iter)->get_app_name() << endl;
+			}
 		} else if(argv.at(i).compare("loglevel") == 0) {
 			try {
 				i++;
@@ -221,6 +227,8 @@ void MAVShell::send_help() {
 		<< "\t" << "list all devices or device with linkID" << endl
 		<< "ifup type device protocol" << endl
 		<< "\t" << "add device with given protocol" << endl
+		<< "applist [appID]" << endl
+		<< "\t" << "list all apps registered with protocolstack" << endl
 		<< "loglevel [0...6]" << endl
 		<< "\t" << "get/set loglevel" << endl
 		<< "shutdown" << endl

@@ -20,8 +20,10 @@ SRCS_1   = main.cpp \
 	app/mk_app.cpp \
 	module/fc_mpkg.cpp \
 	module/ctrl_hover.cpp \
+	module/ctrl_bump.cpp \
 	module/filter_kalmancv.cpp \
 	module/PID.cpp \
+	module/sim_crrcsim.cpp \
 	module/sensor.cpp \
 	module/i2csensor.cpp \
 	module/senbmp085.cpp \

@@ -39,6 +39,7 @@ namespace mavhub {
 			int remove_link(unsigned int link_id);
 
 			void add_application(AppLayer *app);
+			std::list<AppLayer*> get_app_list();
 			void send(const mavlink_message_t &msg, const AppLayer *app) const;
 			void send(const MKPackage &msg, const AppLayer *app) const;
 
@@ -130,6 +131,9 @@ namespace mavhub {
 			if(*app_iter != app)
 				(*app_iter)->handle_input(msg);
 		}
+	}
+	inline std::list<AppLayer*> ProtocolStack::get_app_list() {
+		return app_list;
 	}
 
 } // namespace mavhub

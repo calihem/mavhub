@@ -1,5 +1,6 @@
 component_id = 26
 numsens = 5
+loglevel = info
 # first: channel, second: type
 # types: see ctrl_hover.h (USS, BARO, ACC, IR1, IR2, ...)
 inmap = 0:0 1:1 2:2 3:3 4:4

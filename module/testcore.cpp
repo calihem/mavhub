@@ -12,6 +12,8 @@ using namespace std;
 
 namespace mavhub {
 TestCore::TestCore() {
+	app_id = 0;
+	app_name = "testcore";
 }
 
 TestCore::~TestCore() {}

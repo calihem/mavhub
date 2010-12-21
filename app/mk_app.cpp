@@ -130,6 +130,8 @@ MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port,
 	pthread_mutex_init(&tx_mav_mutex, NULL);
 	pthread_mutex_init(&tx_mk_mutex, NULL);
 	huchlink_msg_init(&tx_mk_msg);
+	app_id = 5;
+	app_name = "mkapp";
 }
 
 MKApp::~MKApp() {}

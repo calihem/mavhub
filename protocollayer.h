@@ -10,6 +10,7 @@
 #include "lib/io.h"
 #include "uart.h"
 #include "network.h"
+#include <string>
 
 namespace mavhub {
 	class ProtocolStack;
@@ -23,11 +24,16 @@ namespace mavhub {
 			AppLayer(const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 			virtual ~AppLayer() {};
 			virtual void handle_input(const mavlink_message_t &msg) = 0;
+			inline int get_app_id() const;
+			inline std::string get_app_name();
 
 		protected:
 			friend class ProtocolStack;
 			const ProtocolStack *owner;
 			Logger::log_level_t loglevel;
+			// proposal
+			int app_id;
+			std::string app_name;
 
 			virtual void run() = 0;
 			void set_owner(const ProtocolStack *stack);
@@ -84,6 +90,12 @@ namespace mavhub {
 	template <typename T1, typename T2, typename T3>
 	inline void AppLayer::log(const T1& msg1, const T2& msg2, const T3& msg3, const Logger::log_level_t loglevel) const {
 		Logger::log(msg1, msg2, msg3, loglevel, AppLayer::loglevel);
+	}
+	inline int AppLayer::get_app_id() const {
+		return app_id;
+	}
+	inline std::string AppLayer::get_app_name() {
+		return app_name;
 	}
 
 	// ----------------------------------------------------------------------------

@@ -10,6 +10,9 @@ using namespace std;
 
 namespace mavhub {
 CoreModule::CoreModule() {
+	app_id = 1;
+	app_name = "coremod";
+	//Logger::log("CoreModule: set appname", app_name, Logger::LOGLEVEL_INFO);
 }
 
 CoreModule::~CoreModule() {}
@@ -28,7 +31,7 @@ void CoreModule::run() {
 	mavlink_message_t msg;
 	mavlink_msg_heartbeat_pack(owner->system_id(), 23, &msg, system_type, MAV_AUTOPILOT_GENERIC);
 
-	Logger::log("CoreModule started", Logger::LOGLEVEL_INFO);
+	Logger::log("CoreModule started with app_id, app_name", app_id, app_name, Logger::LOGLEVEL_INFO);
 
 	while(1) {
 		//Logger::log("coremod: system_id", static_cast<int>(owner->system_id()), Logger::LOGLEVEL_INFO);

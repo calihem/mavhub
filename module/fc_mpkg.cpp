@@ -20,6 +20,8 @@ namespace mavhub {
   FC_Mpkg::FC_Mpkg(int component_id) {
 		FC_Mpkg::component_id = component_id;
 		FC_Mpkg::mk_debugout_digital_offset = 2;
+		app_id = 2;
+		app_name = "fc_mpkg";
   }
 
   FC_Mpkg::~FC_Mpkg() {}
@@ -27,7 +29,7 @@ namespace mavhub {
   void FC_Mpkg::handle_input(const mavlink_message_t &msg) {
 		// vector<int> v(16);
 		//mavlink_message_t msg_j;
-		Logger::log("FC_Mpkg got mavlink_message [len, id]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
+		//Logger::log("FC_Mpkg got mavlink_message [len, id]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		if(msg.msgid == MAVLINK_MSG_ID_MK_DEBUGOUT) {
 			//Logger::log("FC_Mpkg got MK_DEBUGOUT", Logger::LOGLEVEL_INFO);
@@ -76,13 +78,15 @@ namespace mavhub {
 		int buf[1];
 		mavlink_message_t msg_i;
 
+		Logger::log("FC_Mpkg starting", app_id, app_name, Logger::LOGLEVEL_INFO);
+
 		buf[0] = 10;
 		// MKPackage msg_debug_on(1, 'd', 1, buf);
 		// call constructor with: numdata (1), <buf(buf), buflen(1)> pairs
 		MKPackage msg_debug_on(1, 'd', 1, buf, 1);
 		sleep(3);
 		send(msg_debug_on);
-		Logger::log("FC_Mpkg started, debug request sent to FC", Logger::LOGLEVEL_INFO);
+		Logger::log("FC_Mpkg debug request sent to FC", Logger::LOGLEVEL_INFO);
 		// MKPackage msg_setneutral(1, 'c');
 		while(true) {
 			// send(msg_setneutral);

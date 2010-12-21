@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 	catch(const invalid_argument &ia) {
 		Logger::log(ia.what(), Logger::LOGLEVEL_WARN);
 	}
- 
+
 	// start sensors
 	SensorManager::instance().start_all_sensors();
 
@@ -89,11 +89,11 @@ void read_settings(Setting &settings) {
 	}
 
 	//read sensors
-	list<string> senors_list;
-	if ( settings.value("sensors", senors_list) ) {
+	list<string> sensors_list;
+	if ( settings.value("sensors", sensors_list) ) {
 		Logger::log("List of sensors is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
 	} else {
-		add_sensors(senors_list, settings);
+		add_sensors(sensors_list, settings);
 	}
 }
 

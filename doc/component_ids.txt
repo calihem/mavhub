@@ -1,6 +1,0 @@
-$ grep -Hi component mavhub.d/*
-mavhub.d/ctrl_hover_app:component_id = 26
-mavhub.d/fc_mpkg_app:component_id = 23
-$
-
-flightctrl: 25

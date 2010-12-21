@@ -21,6 +21,8 @@ namespace mavhub {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) {
 		read_conf(args);
 		// component_id = component_id_;
+		app_id = 3;
+		app_name = "ctrl_hover";
 		kal = new Kalman_CV();
 		pid_alt = new PID(ctl_bias, ctl_Kc, ctl_Ti, ctl_Td);
 		//numchan = numchan_;
@@ -74,7 +76,7 @@ namespace mavhub {
 		// huch_attitude
 		// huch_altitude
 		// huch_ranger
-		// Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
+		Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HUCH_ATTITUDE:	
