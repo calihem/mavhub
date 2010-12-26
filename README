@@ -1,0 +1,76 @@
+mavhub (Micro Air Vehicle HUB)
+==============================
+TODO
+
+Downloads
+=========
+TODO
+
+Dependencies
+============
+
+Required
+--------
+* mavlink
+
+Optional
+--------
+* autotools
+* doxygen
+* mkhuchlink
+
+Configuration
+=============
+
+Additional libraries
+--------------------
+* MAVLink:
+ ./configure CPPFLAGS="-I$(FULL_PATH_TO_MAVLINK)/include/huch"
+* MKHUCHLink:
+ ./configure CPPFLAGS="-I$(FULL_PATH_TO_MKHUCHLINK)"
+
+Compiler flags
+--------------
+To enable optimization level 2 and to get rid of the debug symbols, enter 
+ ./configure CXXFLAGS="-O2"
+
+Cross compilation
+-----------------
+To cross compile for an arm platform with the angstrom SDK run
+ ./configure --build=`config.guess` --host arm-angstrom-linux-gnueabi 
+
+Examples
+--------
+1) On x86 architecture you might want to enter
+ mkdir build-i686
+ cd build-i686
+ ../configure CXXFLAGS="-O2" \
+	CPPFLAGS="-I/home/user/git/mavlink/include/huch \
+	-I/home/user/git/mkhuchlink"
+
+2) For a typical beagleboard a gumstix configuration run
+ mkdir build-arm
+ cd build-arm
+ ../configure --build=`config.guess` --host arm-angstrom-linux-gnueabi \
+	CXXFLAGS="-O2 \
+	CPPFLAGS="-I/home/user/git/mavlink/include/huch \
+	-I/home/user/git/mkhuchlink"
+
+Compilation
+===========
+After configuration, just type
+ make
+and you will find the binary under src/mavhub.
+
+Documenation
+============
+Documentation can be generated using Doxygen. Please run
+ make doxygen-doc
+and have a look at doc/html/index.html.
+
+Autotools
+=========
+ aclocal -I m4
+ automake
+ autoconf
+
