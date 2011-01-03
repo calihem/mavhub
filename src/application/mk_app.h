@@ -25,6 +25,7 @@ namespace mavhub {
 			virtual void handle_input(const mavlink_message_t &msg);
 
 		protected:
+			virtual void print(std::ostream &os) const;
 			virtual void run();
 
 		private:

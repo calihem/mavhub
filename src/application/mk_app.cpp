@@ -122,7 +122,7 @@ const int8_t MKApp::parameter_ids[parameter_count][15] = {
 
 
 MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port, const unsigned int baudrate) :
-	AppLayer(loglevel),
+	AppLayer("mk_app", loglevel),
 	mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
 	message_time( get_time_us() ),
 	attitude_time( get_time_us() ),
@@ -132,8 +132,6 @@ MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port,
 	pthread_mutex_init(&tx_mav_mutex, NULL);
 	pthread_mutex_init(&tx_mk_mutex, NULL);
 	huchlink_msg_init(&tx_mk_msg);
-	app_id = 5;
-	app_name = "mkapp";
 }
 
 MKApp::~MKApp() {}
@@ -146,7 +144,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			if(mavlink_msg_ping_get_target_system(&msg) == 0) { //ping request
 				//FIXME: put sending in run-loop
 				Lock tx_lock(tx_mav_mutex);
-				mavlink_msg_ping_pack(owner->system_id(),
+				mavlink_msg_ping_pack(owner()->system_id(),
 					component_id,
 					&tx_mav_msg,
 					mavlink_msg_ping_get_seq(&msg),
@@ -159,7 +157,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-			if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner->system_id())
+			if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner()->system_id())
 			&& (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
 				//ask for first parameter value
 				mk_param_type_t param_type= REVISION;
@@ -169,7 +167,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if( (mavlink_msg_param_set_get_target_system(&msg) == owner->system_id())
+			if( (mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id())
 			&& (mavlink_msg_param_set_get_target_component(&msg) == component_id) ) {
 				int8_t parameter_id[15];
 				mavlink_msg_param_set_get_param_id(&msg, parameter_id);
@@ -186,7 +184,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			}
 			break;
 		case MAVLINK_MSG_ID_MANUAL_CONTROL:
-			if( (mavlink_msg_param_request_read_get_target_system(&msg) == owner->system_id()) ) {
+			if( (mavlink_msg_param_request_read_get_target_system(&msg) == owner()->system_id()) ) {
 				mkhuch_extern_control_t extern_control;
 				//set values
 				extern_control.roll = static_cast<int16_t>( mavlink_msg_manual_control_get_roll(&msg) );
@@ -211,7 +209,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			}
 			break;
 		case MAVLINK_MSG_ID_ACTION:
-			if( (mavlink_msg_action_get_target(&msg) == owner->system_id())
+			if( (mavlink_msg_action_get_target(&msg) == owner()->system_id())
 			&& (mavlink_msg_action_get_target_component(&msg) == MAV_COMP_ID_IMU) ) {
 				mkhuch_action_t action;
 				action.id = mavlink_msg_action_get_action(&msg);
@@ -231,7 +229,7 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			const mkhuch_mk_imu_t *mk_imu = reinterpret_cast<const mkhuch_mk_imu_t*>(msg.data);
 			Lock tx_lock(tx_mav_mutex);
 			//forward raw ADC
-			mavlink_msg_huch_imu_raw_adc_pack(owner->system_id(),
+			mavlink_msg_huch_imu_raw_adc_pack(owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
 				mk_imu->x_adc_acc,
@@ -243,7 +241,7 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			send(tx_mav_msg);
 			//forward MK IMU
 			//TODO: add compass value and baro
-			mavlink_msg_huch_mk_imu_pack( owner->system_id(),
+			mavlink_msg_huch_mk_imu_pack( owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
 				message_time,
@@ -255,7 +253,7 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 				(6700*mk_imu->z_adc_gyro)/(3*1024) );
 			send(tx_mav_msg);
 			//forward pressure
-			mavlink_msg_raw_pressure_pack(owner->system_id(),
+			mavlink_msg_raw_pressure_pack(owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
 				message_time,
@@ -291,14 +289,14 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 		case MKHUCH_MSG_TYPE_ACTION_ACK: {
 
 			Lock tx_lock(tx_mav_mutex);
-			mavlink_msg_action_ack_pack(owner->system_id(), component_id, &tx_mav_msg, msg.data[0], msg.data[1]);
+			mavlink_msg_action_ack_pack(owner()->system_id(), component_id, &tx_mav_msg, msg.data[0], msg.data[1]);
 			send(tx_mav_msg);
 			break;
 		}
 		case MKHUCH_MSG_TYPE_SYSTEM_STATUS: {
 			const mkhuch_system_status_t *sys_status = reinterpret_cast<const mkhuch_system_status_t*>(msg.data);
 			Lock tx_lock(tx_mav_mutex);
-			mavlink_msg_sys_status_pack(owner->system_id(),
+			mavlink_msg_sys_status_pack(owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
 				sys_status->mode,
@@ -335,7 +333,7 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			memcpy(&attitude, mkhuch_attitude, sizeof(mkhuch_attitude_t));
 			attitude_time = mavlink_attitude.usec;
 			Lock tx_lock(tx_mav_mutex);
-			mavlink_msg_attitude_encode(owner->system_id(),
+			mavlink_msg_attitude_encode(owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
 				&mavlink_attitude);
@@ -345,6 +343,12 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 		default:
 			break;
 	}
+}
+
+void MKApp::print(std::ostream &os) const {
+	AppLayer::print(os);
+
+	os << "* device: " << mk_dev;
 }
 
 void MKApp::run() {
@@ -437,14 +441,14 @@ size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t
 
 void MKApp::send_heartbeat() {
 	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_heartbeat_pack(owner->system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
+	mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
 	send(tx_mav_msg);
 }
 
 void MKApp::send_mavlink_param_value(const mk_param_type_t param_type) {
 	Lock tx_lock(tx_mav_mutex);
 
-	mavlink_msg_param_value_pack(owner->system_id(),
+	mavlink_msg_param_value_pack(owner()->system_id(),
 		component_id,
 		&tx_mav_msg,
 		get_parameter_id(param_type),

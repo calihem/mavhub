@@ -73,7 +73,7 @@ namespace mavhub {
 			}
 			return new MKApp(loglevel, dev_name, baudrate);
 #else
-			Logger::log("AppFactory: Can't build mk_app, since mkhuchlink not available"); 
+			Logger::log("AppFactory: Can't build mk_app, since mkhuchlink not available", Logger::LOGLEVEL_INFO); 
 			return NULL;
 #endif // HAVE_MKHUCHLINK_H
 		} else {

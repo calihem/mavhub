@@ -159,14 +159,14 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
 				if(!link) {
 					send_stream << "No link with ID " << id << " available" << endl;
-					send_stream << ProtocolStack::instance();
+					send_stream << ProtocolStack::instance().link_list();
 				} else {
 					send_stream << *link;
 					i++;
 				}
 			}
 			catch(std::out_of_range& e) {
-					send_stream << ProtocolStack::instance();
+					send_stream << ProtocolStack::instance().link_list();
 			}
 		} else if(argv.at(i).compare("ifup") == 0) {
 			try {
@@ -184,10 +184,22 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				send_stream << "Not enough arguments given for ifup" << endl;
 			}
 		} else if(argv.at(i).compare("applist") == 0) {
-			std::list<AppLayer*> app_list = ProtocolStack::instance().get_app_list();
-			std::list<AppLayer*>::iterator app_iter = app_list.begin();
-			for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
-				send_stream << "ID:" << (*app_iter)->get_app_id() << ", " << (*app_iter)->get_app_name() << endl;
+			try {
+				istringstream istream( argv.at(i+1) );
+				int id;
+				istream >> id;
+				const AppLayer *app = ProtocolStack::instance().application(id);
+				if(!app) {
+					send_stream << "No application with ID " << id << " available" << endl;
+					send_stream << ProtocolStack::instance().application_list();
+
+				} else {
+					send_stream << *app;
+					i++;
+				}
+			}
+			catch(std::out_of_range& e) {
+					send_stream << ProtocolStack::instance().application_list();
 			}
 		} else if(argv.at(i).compare("loglevel") == 0) {
 			try {
@@ -201,7 +213,10 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 			catch(std::out_of_range& e) {
 				send_stream << "Loglevel is: " << Logger::loglevel() << endl;
 			}
-		} else if(argv.at(i).compare("shutdown") == 0) {
+		} else if(argv.at(i).compare("print") == 0) {
+			send_stream << ProtocolStack::instance();
+		} else if( (argv.at(i).compare("quit") == 0)
+		|| (argv.at(i).compare("shutdown") == 0) ) {
 			// exit whole process - the easy way
 			exit(0);
 		} else {
@@ -217,6 +232,8 @@ void MAVShell::send_help() {
 
 	ostringstream help_stream;
 	help_stream << "addmember linkID IP port" << endl
+		<< "applist [appID]" << endl
+		<< "\t" << "list all applications (or those with appID) registered with protocol stack" << endl
 		<< "\t" << "add group member to broadcast group of UDPLayer" << endl
 		<< "close | exit" << endl
 		<< "\t" << "close connection to mavhub" << endl
@@ -228,11 +245,11 @@ void MAVShell::send_help() {
 		<< "\t" << "list all devices or device with linkID" << endl
 		<< "ifup type device protocol" << endl
 		<< "\t" << "add device with given protocol" << endl
-		<< "applist [appID]" << endl
-		<< "\t" << "list all apps registered with protocolstack" << endl
 		<< "loglevel [0...6]" << endl
 		<< "\t" << "get/set loglevel" << endl
-		<< "shutdown" << endl
+		<< "print" << endl
+		<< "\t" << "print overview" << endl
+		<< "quit | shutdown" << endl
 		<< "\t" << "stop mavhub" << endl
 		;
 

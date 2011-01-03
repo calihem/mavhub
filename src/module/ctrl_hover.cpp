@@ -18,11 +18,9 @@ using namespace std;
 
 namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
-  Ctrl_Hover::Ctrl_Hover(const map<string, string> args) {
+  Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : AppLayer("ctrl_hover") {
 		read_conf(args);
 		// component_id = component_id_;
-		app_id = 3;
-		app_name = "ctrl_hover";
 		kal = new Kalman_CV();
 		pid_alt = new PID(ctl_bias, ctl_Kc, ctl_Ti, ctl_Td);
 		//numchan = numchan_;
@@ -99,13 +97,13 @@ namespace mavhub {
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Hover::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner->system_id()) {
+			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
 				param_request_list = 1;
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if(mavlink_msg_param_set_get_target_system(&msg) == owner->system_id()) {
-				Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this system", (int)owner->system_id(), Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id()) {
+				Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this system", (int)owner()->system_id(), Logger::LOGLEVEL_INFO);
 				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
 					Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, (int8_t*)param_id);
@@ -123,7 +121,7 @@ namespace mavhub {
 		default:
 			break;
 		}
-		if(msg.sysid == owner->system_id() && msg.msgid == 0) {//FIXME: set right msgid
+		if(msg.sysid == owner()->system_id() && msg.msgid == 0) {//FIXME: set right msgid
 			//TODO
 		}
   }
@@ -177,7 +175,7 @@ namespace mavhub {
 
 		Logger::debug("Ctrl_Hover started");
 		// MKPackage msg_setneutral(1, 'c');
-		// owner->send(msg_setneutral);
+		// owner()->send(msg_setneutral);
 		while(true) {
 			gettimeofday(&tk, NULL);
 			//timediff(tdiff, tkm1, tk);
@@ -188,9 +186,9 @@ namespace mavhub {
 			if(param_request_list) {
 				Logger::log("Ctrl_Hover::run: param request", Logger::LOGLEVEL_INFO);
 				param_request_list = 0;
-				mavlink_msg_param_value_pack(owner->system_id(), component_id, &msg, (int8_t *)"setpoint_value", ctl_sp, 1, 0);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_value", ctl_sp, 1, 0);
 				send(msg);
-				mavlink_msg_param_value_pack(owner->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", ctl_sticksp, 1, 0);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", ctl_sticksp, 1, 0);
 				send(msg);
 			}
 
@@ -280,7 +278,7 @@ namespace mavhub {
 			// pos.x += pos.vx * dt * 1e-6;
 			// pos.y += pos.vy * dt * 1e-6;
 			// pos.z += pos.vz * dt * 1e-6;
-			// mavlink_msg_local_position_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &pos);
+			// mavlink_msg_local_position_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &pos);
 			// send(msg);
 
 			// set attitude
@@ -291,7 +289,7 @@ namespace mavhub {
 			ml_attitude.rollspeed  = attitude.xgyro * MKGYRO2RAD;
 			ml_attitude.pitchspeed = attitude.ygyro * MKGYRO2RAD;
 			ml_attitude.yawspeed   = attitude.zgyro * MKGYRO2RAD;
-			mavlink_msg_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
+			mavlink_msg_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
 			send(msg);
 
 			// 3. kalman filter
@@ -317,7 +315,7 @@ namespace mavhub {
 			ctrl_hover_state.kal_s0 = cvmGet(kal->getStatePost(), 0, 0);
 			ctrl_hover_state.kal_s1 = cvmGet(kal->getStatePost(), 1, 0);
 			ctrl_hover_state.kal_s2 = cvmGet(kal->getStatePost(), 2, 0);
-			mavlink_msg_huch_ctrl_hover_state_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
+			mavlink_msg_huch_ctrl_hover_state_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
 			send(msg);
 
 			// 4. run controller
@@ -345,35 +343,35 @@ namespace mavhub {
 			// gas out
 			dbg.ind = 0;
 			dbg.value = gas;
-			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// PID error
 			dbg.ind = 1;
 			dbg.value = pid_alt->getErr();
-			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// PID integral
 			dbg.ind = 2;
 			dbg.value = pid_alt->getPv_int();
-			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// PID derivative
 			dbg.ind = 3;
 			dbg.value = pid_alt->getDpv();
-			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// PId setpoint
 			dbg.ind = 4;
 			dbg.value = pid_alt->getSp();
-			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// attitude_controller_output.thrust = extctrl.gas / 4 - 128;
-			// mavlink_msg_attitude_controller_output_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
+			// mavlink_msg_attitude_controller_output_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
 			// send(msg);
 
 			//extctrl.gas = 255 * (double)rand()/RAND_MAX;

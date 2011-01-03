@@ -5,14 +5,27 @@
 
 namespace mavhub {
 
-AppLayer::AppLayer(const Logger::log_level_t loglevel) : owner(0), loglevel(loglevel) {}
+AppLayer::AppLayer(const std::string& name, const Logger::log_level_t loglevel) :
+	_owner(0),
+	_loglevel(loglevel),
+	_name(name) {}
+
+std::ostream& operator <<(std::ostream &os, const AppLayer &app) {
+	app.print(os);
+	return os;
+}
+
+void AppLayer::print(std::ostream &os) const {
+	os << name() << ":" << std::endl
+		<< "* loglevel: " << _loglevel << std::endl;
+}
 
 void AppLayer::send(const mavlink_message_t &msg) const {
-	if(owner) owner->send(msg, this);
+	if(_owner) _owner->send(msg, this);
 }
 
 void AppLayer::send(const MKPackage &msg) const {
-	if(owner) owner->send(msg, this);
+	if(_owner) _owner->send(msg, this);
 }
 
 // ----------------------------------------------------------------------------
@@ -71,7 +84,7 @@ void UDPLayer::print(std::ostream &os) const {
 	IOInterface::print(os);
 
 	std::list<num_addr_pair_t>::const_iterator gmember_iter;
-	os << "Group members:" << std::endl;
+	os << "* Group members:" << std::endl;
 	for(gmember_iter = groupmember_list.begin(); gmember_iter != groupmember_list.end(); ++gmember_iter) {
 		os << "\t" << inet_ntoa(gmember_iter->first) << " " << gmember_iter->second << std::endl;
 	}

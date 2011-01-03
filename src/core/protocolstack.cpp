@@ -322,6 +322,17 @@ cpp_io::IOInterface* ProtocolStack::link(unsigned int link_id) {
 	return NULL;
 }
 
+const std::list<cpp_io::IOInterface*> ProtocolStack::io_list() const {
+	list<cpp_io::IOInterface*> io_iface_list;
+
+	interface_packet_list_t::const_iterator iface_iter;
+	for(iface_iter = interface_list.begin(); iface_iter != interface_list.end(); ++iface_iter ) {
+		io_iface_list.push_back(iface_iter->first);
+	}
+
+	return io_iface_list;
+}
+
 int ProtocolStack::remove_link(unsigned int link_id) {
 	int rc = -1;
 
@@ -357,18 +368,37 @@ int ProtocolStack::remove_link(unsigned int link_id) {
 void ProtocolStack::add_application(AppLayer *app) {
 	if(!app) return;
 
-	app->set_owner(this);
+	app->owner(this);
 	app_list.push_back(app);
+}
+
+const AppLayer* ProtocolStack::application(const unsigned int app_id) const {
+	if(app_list.size() >= app_id+1) { //ID is in range
+		list<AppLayer*>::const_iterator app_iter = app_list.begin();
+		// seek iterator to right position
+		for(unsigned int i=0; i<app_id; i++) app_iter++;
+		return *app_iter;
+	}
+	return NULL;
 }
 
 std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
 	if(!proto_stack.loop_forever) {
-		os << "Protocolstack down" << endl;
-		return os;
+		os << "Protocol stack down" << endl;
 	}
 
+	os << endl << "_Interfaces_" << endl;
+	os << proto_stack.interface_list;
+
+	os << endl << "_Applications_" << endl;
+	os << proto_stack.application_list();
+
+	return os;
+}
+
+std::ostream& operator <<(std::ostream &os, const ProtocolStack::interface_packet_list_t &ifp_list) {
 	// print headline
-	os << std::setw(3) << "ID" 
+	os << std::setw(3) << "ID"
 		<< std::setw(15) << "Type"
 		<< std::setw(15) << "Device" 
 		<< std::setw(10) << "Protocol" 
@@ -376,11 +406,29 @@ std::ostream& operator <<(std::ostream &os, const ProtocolStack &proto_stack) {
 	
 	ProtocolStack::interface_packet_list_t::const_iterator iface_iter;
 	int id = 0;
-	for(iface_iter = proto_stack.interface_list.begin(); iface_iter != proto_stack.interface_list.end(); ++iface_iter ) {
+	for(iface_iter =ifp_list.begin(); iface_iter != ifp_list.end(); ++iface_iter ) {
 		os << std::setw(3) << id
 			<< std::setw(15) << iface_iter->first->description()
 			<< std::setw(15) << iface_iter->first->name()
 			<< std::setw(10) << iface_iter->second
+			<< endl;
+		id++;
+	}
+
+	return os;
+}
+
+std::ostream& operator <<(std::ostream &os, const std::list<AppLayer*> &app_list) {
+	// print headline
+	os << std::setw(3) << "ID"
+		<< std::setw(15) << "Name"
+		<< endl;
+
+	list<AppLayer*>::const_iterator app_iter;
+	int id = 0;
+	for(app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter ) {
+		os << std::setw(3) << id
+			<< std::setw(15) << static_cast<const AppLayer*>(*app_iter)->name()
 			<< endl;
 		id++;
 	}

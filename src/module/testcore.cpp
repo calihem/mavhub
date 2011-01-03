@@ -11,9 +11,7 @@
 using namespace std;
 
 namespace mavhub {
-TestCore::TestCore() {
-	app_id = 0;
-	app_name = "testcore";
+TestCore::TestCore() : AppLayer("testcore") {
 }
 
 TestCore::~TestCore() {}
@@ -26,7 +24,7 @@ void TestCore::run() {
 	mavlink_huch_altitude_t altitude;
 	mavlink_huch_magnetic_kompass_t kompass;
 	int count = 0;
-	if(!owner) {
+	if(!owner()) {
 		Logger::log("Owner of TestCore not set", Logger::LOGLEVEL_WARN);
 		return;
 	}

@@ -9,11 +9,9 @@
 using namespace std;
 
 namespace mavhub {
-Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) {
+Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) : AppLayer("crrcsim") {
 	// initialize module parameters from conf
 	read_conf(args);
-	//app_id = 4;
-	//app_name = "crrcsim";
 }
 
 Sim_Crrcsimule::~Sim_Crrcsimule() {}
@@ -23,19 +21,19 @@ void Sim_Crrcsimule::handle_input(const mavlink_message_t &msg) {
 }
 
 void Sim_Crrcsimule::run() {
-	if(!owner) {
+	if(!owner()) {
 		Logger::log("Owner of Sim_Crrcsimule not set", Logger::LOGLEVEL_WARN);
 		return;
 	}
 
 	int system_type = MAV_QUADROTOR;
 	mavlink_message_t msg_heartbeat;
-	mavlink_msg_heartbeat_pack(owner->system_id(), component_id, &msg_heartbeat, system_type, MAV_AUTOPILOT_GENERIC);
+	mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_heartbeat, system_type, MAV_AUTOPILOT_GENERIC);
 
 	Logger::log("Sim_Crrcsimule started", Logger::LOGLEVEL_INFO);
 
 	while(1) {
-		//Logger::log("sim_crrcsim: system_id", static_cast<int>(owner->system_id()), Logger::LOGLEVEL_INFO);
+		//Logger::log("sim_crrcsim: system_id", static_cast<int>(owner()->system_id()), Logger::LOGLEVEL_INFO);
 		send(msg_heartbeat);
 		sleep(1);
 	}

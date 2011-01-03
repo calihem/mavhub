@@ -22,30 +22,33 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	class AppLayer : public cpp_pthread::PThread {
 		public:
-			AppLayer(const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+			AppLayer(const std::string& name, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 			virtual ~AppLayer() {};
+			friend std::ostream& operator <<(std::ostream &os, const AppLayer &app);
+
 			virtual void handle_input(const mavlink_message_t &msg) = 0;
-			const int get_app_id() const;
-			const std::string& get_app_name() const;
+			int id() const;
+			const std::string& name() const;
+			const ProtocolStack* owner() const;
 
 		protected:
 			friend class ProtocolStack;
-			const ProtocolStack *owner;
-			Logger::log_level_t loglevel;
-			// proposal
-			int app_id;
-			std::string app_name;
+			const ProtocolStack *_owner;
+			Logger::log_level_t _loglevel;
+			std::string _name;
 
-			virtual void run() = 0;
-			void set_owner(const ProtocolStack *stack);
-			void send(const mavlink_message_t &msg) const;
-			void send(const MKPackage &msg) const;
 			template <typename T>
 			void log(const T& message, const Logger::log_level_t loglevel) const;
 			template <typename T1, typename T2>
 			void log(const T1& msg1, const T2& msg2, const Logger::log_level_t loglevel) const;
 			template <typename T1, typename T2, typename T3>
 			inline void log(const T1& msg1, const T2& msg2, const T3& msg3, const Logger::log_level_t loglevel) const;
+			void id(const int id);
+			void owner(const ProtocolStack *stack);
+			virtual void print(std::ostream &os) const;
+			virtual void run() = 0;
+			void send(const mavlink_message_t &msg) const;
+			void send(const MKPackage &msg) const;
 	};
 
 	class UDPLayer : public UDPSocket {
@@ -77,26 +80,26 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// AppLayer
 	// ----------------------------------------------------------------------------
-	inline void AppLayer::set_owner(const ProtocolStack *stack) {
-		owner = stack;
-	}
 	template <typename T>
 	inline void AppLayer::log(const T& message, const Logger::log_level_t loglevel) const {
-		Logger::log(message, loglevel, AppLayer::loglevel);
+		Logger::log(message, loglevel, AppLayer::_loglevel);
 	}
 	template <typename T1, typename T2>
 	inline void AppLayer::log(const T1& msg1, const T2& msg2, const Logger::log_level_t loglevel) const {
-		Logger::log(msg1, msg2, loglevel, AppLayer::loglevel);
+		Logger::log(msg1, msg2, loglevel, AppLayer::_loglevel);
 	}
 	template <typename T1, typename T2, typename T3>
 	inline void AppLayer::log(const T1& msg1, const T2& msg2, const T3& msg3, const Logger::log_level_t loglevel) const {
-		Logger::log(msg1, msg2, msg3, loglevel, AppLayer::loglevel);
+		Logger::log(msg1, msg2, msg3, loglevel, AppLayer::_loglevel);
 	}
-	inline const int AppLayer::get_app_id() const {
-		return app_id;
+	inline const std::string& AppLayer::name() const {
+		return _name;
 	}
-	inline const std::string& AppLayer::get_app_name() const {
-		return app_name;
+	inline const ProtocolStack* AppLayer::owner() const {
+		return _owner;
+	}
+	inline void AppLayer::owner(const ProtocolStack *stack) {
+		_owner = stack;
 	}
 
 	// ----------------------------------------------------------------------------

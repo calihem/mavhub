@@ -35,15 +35,16 @@ namespace mavhub {
 			const uint8_t system_id() const;
 			
 			int add_link(cpp_io::IOInterface *interface, const packageformat_t format);
-			cpp_io::IOInterface *link(unsigned int link_id);
+			cpp_io::IOInterface *link(const unsigned int link_id);
+			const std::list<cpp_io::IOInterface*> io_list() const;
+			const interface_packet_list_t &link_list() const;
 			int remove_link(unsigned int link_id);
 
 			void add_application(AppLayer *app);
-			std::list<AppLayer*> get_app_list();
+			const std::list<AppLayer*> &application_list() const;
+			const AppLayer* application(const unsigned int app_id) const;
 			void send(const mavlink_message_t &msg, const AppLayer *app) const;
 			void send(const MKPackage &msg, const AppLayer *app) const;
-
-// 			void join();
 
 		protected:
 			virtual void run();
@@ -90,6 +91,10 @@ namespace mavhub {
 			/// convert MikroKopter packet to MAVLINK packet
 			int mk2mavlink(const MKPackage &mk_msg, mavlink_message_t &mav_msg);
 	};
+
+	std::ostream& operator <<(std::ostream &os, const ProtocolStack::interface_packet_list_t &ifp_list);
+	std::ostream& operator <<(std::ostream &os, const std::list<AppLayer*> &app_list);
+
 	// ----------------------------------------------------------------------------
 	// ProtocolStack
 	// ----------------------------------------------------------------------------
@@ -113,6 +118,12 @@ namespace mavhub {
 		return is;
 	}
 
+	inline const std::list<AppLayer*> &ProtocolStack::application_list() const {
+		return app_list;
+	}
+	inline const ProtocolStack::interface_packet_list_t &ProtocolStack::link_list() const {
+		return interface_list;
+	}
 	inline void ProtocolStack::system_id(const uint8_t system_id) {
 		sys_id = system_id;
 	}
@@ -131,9 +142,6 @@ namespace mavhub {
 			if(*app_iter != app)
 				(*app_iter)->handle_input(msg);
 		}
-	}
-	inline std::list<AppLayer*> ProtocolStack::get_app_list() {
-		return app_list;
 	}
 
 } // namespace mavhub
