@@ -3,7 +3,6 @@ config.h
 config.log
 config.status
 configure.scan
-install-sh
 *.cpp~
 *.h~
 *in~
