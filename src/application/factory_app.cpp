@@ -9,6 +9,8 @@
 #include "module/ctrl_bump.h"
 #include "module/sim_crrcsim.h"
 #include "mk_app.h"
+#include "acc_calibration_app/acc_calibration_app.h"
+#include "attitude_filter_app/attitude_filter_app.h"
 
 #include <iostream>
 
@@ -39,6 +41,36 @@ namespace mavhub {
 			return new TestCore();
 		} else if(lowercase_name == "core_app") {
 			return new CoreModule();
+		} else if(lowercase_name == "acc_calibration_app") {
+			std::string arg;
+			int number_of_measurements_for_determine_min_max(50);
+			find_iter = args.find("number_of_measurements_for_determine_min_max");
+			if(find_iter != args.end()) {
+				istringstream istream(find_iter->second);
+				istream >> number_of_measurements_for_determine_min_max;
+			}
+			uint32_t measurement_timeout_in_us(1000000);
+			find_iter = args.find("measurement_timeout_in_us");
+			if(find_iter != args.end()) {
+				istringstream istream(find_iter->second);
+				istream >> measurement_timeout_in_us;
+			}
+			return new AccCalibrationApp(loglevel, number_of_measurements_for_determine_min_max, measurement_timeout_in_us);
+		} else if(lowercase_name == "attitude_filter_app") {
+			std::string arg;
+			int number_of_measurements_for_gyro_bias_mean(50);
+			find_iter = args.find("number_of_measurements_for_gyro_bias_mean");
+			if(find_iter != args.end()) {
+				istringstream istream(find_iter->second);
+				istream >> number_of_measurements_for_gyro_bias_mean;
+			}
+			uint32_t measurement_timeout_in_us(100000);
+			find_iter = args.find("measurement_timeout_in_us");
+			if(find_iter != args.end()) {
+				istringstream istream(find_iter->second);
+				istream >> measurement_timeout_in_us;
+			}
+			return new AttitudeFilterApp(loglevel, measurement_timeout_in_us, number_of_measurements_for_gyro_bias_mean);
 		} else if(lowercase_name == "fc_mpkg_app") {
 			int component_id = 0;
 			std::map<std::string,std::string>::const_iterator iter = args.find("component_id");

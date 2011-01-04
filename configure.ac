@@ -62,7 +62,8 @@ AC_CONFIG_FILES([Makefile
                  src/io/Makefile
                  src/module/Makefile
                  src/protocol/Makefile
-                 src/sensor/Makefile])
+                 src/sensor/Makefile
+                 src/test_mavhub/Makefile])
 
 AC_OUTPUT
 

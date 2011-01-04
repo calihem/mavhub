@@ -111,6 +111,56 @@ namespace mavhub {
 		return tp.tv_sec * 1E6 + tp.tv_usec;
 	}
 
+	/**
+ 	* Adds a us delta to a timeval struct
+ 	* 
+ 	* @param time the timeval struct to which the delta should be added.
+ 	* @param delta_us the delta time in microseconds.
+ 	* @return the timeval struct with the added delta.
+ 	*/
+	inline struct timeval add_delta_us_to_timeval(const struct timeval &time, uint32_t delta_us) {
+		struct timeval ret;
+		
+		int time_div_sec = (time.tv_usec + delta_us) / 1000000;
+		
+		ret.tv_sec = time.tv_sec + time_div_sec;
+		ret.tv_usec = (time.tv_usec + delta_us) % 1000000;
+	
+		return ret;
+	}
+
+	/**
+ 	* Adds a ns delta to a timespec struct
+ 	* 
+ 	* @param time the timespec struct to which the delta should be added.
+ 	* @param delta_ns the delta time in nanoseconds.
+ 	* @return the timespec struct with the added delta.
+ 	*/
+	inline struct timespec add_delta_ns_to_timespec(const struct timespec &time, uint32_t delta_ns) {
+		struct timespec ret;
+		
+		int time_div_sec = (time.tv_nsec + delta_ns) / 1000000000;
+		
+		ret.tv_sec = time.tv_sec + time_div_sec;
+		ret.tv_nsec = (time.tv_nsec + delta_ns) % 1000000000;
+	
+		return ret;
+	}
+
+	/**
+ 	* Converts a timeval to a timespec
+ 	* 
+ 	* @param the timeval struct.
+ 	* @return the timespec struct.
+ 	*/
+	inline struct timespec timeval_to_timespec(const struct timeval &time) {
+		struct timespec ret;
+		
+		ret.tv_sec = time.tv_sec;
+		ret.tv_nsec = time.tv_usec * 1000;
+		
+		return ret;
+	}
 
 } // namespace mavhub
 
