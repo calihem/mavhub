@@ -5,7 +5,7 @@ include $(top_srcdir)/am/am_incl_common.am
 
 bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
-	test_mavhub.cpp \
+	mavhub_test.cpp \
 	utility_test.cpp \
 	application/acc_calibration_app_test.cpp
 

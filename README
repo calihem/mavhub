@@ -16,7 +16,12 @@ Required
 Optional
 --------
 * autotools
+* boost C++ library
+  - http://www.boost.org/
+* boost Unit Test Framework
+  - http://www.boost.org/doc/libs/1_45_0/libs/test/doc/html/index.html
 * doxygen
+  - http://www.doxygen.org
 * mkhuchlink
 
 Configuration
@@ -38,6 +43,11 @@ Cross compilation
 -----------------
 To cross compile for an arm platform with the angstrom SDK run
  ./configure --build=`config.guess` --host arm-angstrom-linux-gnueabi 
+
+Unit tests
+----------
+To compile the test program in the tests directory, enable test support via
+ ./configure --enable-tests=yes
 
 Examples
 --------

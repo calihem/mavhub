@@ -4,6 +4,7 @@
 AC_PREREQ([2.67])
 AC_INIT([mavhub], [0.1], [mavhub@calihem.de])
 
+AC_LANG([C++])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_AUX_DIR([auxdir])
@@ -28,6 +29,26 @@ DX_XML_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
 DX_INIT_DOXYGEN([$PACKAGE_NAME], [doc/Doxyfile], [doc])
+
+# unit tests support
+AC_ARG_ENABLE(tests,
+	AC_HELP_STRING([--enable-tests=yes|no],
+		[enable automated tests (default is no)]),
+	[case "${enableval}" in
+		yes)
+			tests=true
+			AX_BOOST_BASE
+			AX_BOOST_UNIT_TEST_FRAMEWORK
+			;;
+		no)
+			tests=false
+			;;
+		*)
+			AC_MSG_ERROR(bad value ${enableval} for --enable-tests)
+			;;
+		esac],
+	[tests=false])
+AM_CONDITIONAL(COND_UNIT_TESTS, test x$tests = xtrue)
 
 # Checks for libraries.
 AC_CHECK_LIB([cv], [cvCreateMat])
@@ -63,7 +84,7 @@ AC_CONFIG_FILES([Makefile
                  src/module/Makefile
                  src/protocol/Makefile
                  src/sensor/Makefile
-                 src/test_mavhub/Makefile])
+                 tests/Makefile])
 
 AC_OUTPUT
 
@@ -72,4 +93,5 @@ echo "
   Prefix.........: $prefix
   C++ Compiler...: $CXX $CXXFLAGS $CPPFLAGS
   Linker.........: $LD $LDFLAGS $LIBS
+  Unit tests.....: $tests
 "

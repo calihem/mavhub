@@ -1,4 +1,4 @@
-#include "../utility.h"
+#include "utility.h"
 #include <boost/test/unit_test.hpp>
 
 using namespace mavhub;

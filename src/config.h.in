@@ -3,6 +3,12 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
+/* define if the Boost::Unit_Test_Framework library is available */
+#undef HAVE_BOOST_UNIT_TEST_FRAMEWORK
+
 /* Define to 1 if you have the `bzero' function. */
 #undef HAVE_BZERO
 

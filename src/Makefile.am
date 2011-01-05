@@ -1,6 +1,6 @@
 include $(top_srcdir)/am/am_incl_common.am
 
-SUBDIRS = application core io module protocol sensor test_mavhub
+SUBDIRS = application core io module protocol sensor
 
 # additional include paths necessary to compile the C++ program
 # AM_CXXFLAGS = 

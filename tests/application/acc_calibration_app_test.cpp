@@ -1,4 +1,4 @@
-#include "../../application/acc_calibration_app/acc_calibration_app.h"
+#include "application/acc_calibration_app/acc_calibration_app.h"
 #include <boost/test/unit_test.hpp>
 
 using namespace mavhub;
