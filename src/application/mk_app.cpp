@@ -258,8 +258,9 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 				&tx_mav_msg,
 				message_time,
 				mk_imu->press_abs,
-				0,
-				0);
+				0,	//press_diff1
+				0,	//press_diff2
+				0);	//temperature
 			send(tx_mav_msg);
 			//TODO: forward magneto
 			break;
