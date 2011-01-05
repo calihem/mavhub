@@ -114,7 +114,7 @@ void AttitudeFilterApp::runAttitudeFilter() {
 	
 	// Precompute values needed in computations below
 		// Compute calibrated gyro values
-		float curCalOmegaX = cur
+	//	float curCalOmegaX = cur
 	
 	float curSinPhi = sin(curPhi);
 	float curCosPhi = cos(curPhi);
