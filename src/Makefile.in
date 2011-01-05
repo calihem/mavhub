@@ -244,7 +244,7 @@ AM_CPPFLAGS = -D_REENTRANT -DSTDOUTLOG
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src
-SUBDIRS = application core io module protocol sensor
+SUBDIRS = application core io module protocol sensor test_mavhub
 mavhub_SOURCES = \
 	main.cpp \
 	mavshell.cpp \
