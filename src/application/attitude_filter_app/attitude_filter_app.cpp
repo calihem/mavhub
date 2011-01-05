@@ -104,7 +104,33 @@ void AttitudeFilterApp::initializeAttitudeFilter() {
 }
 
 void AttitudeFilterApp::runAttitudeFilter() {
+	// Get current state estimate variables
+	float curPhi	= cvmGet(mCurrentStateEstimate, 0, 0);
+	float curTheta	= cvmGet(mCurrentStateEstimate, 1, 0);
+	float curPsi	= cvmGet(mCurrentStateEstimate, 2, 0);
+	float curBOmX	= cvmGet(mCurrentStateEstimate, 3, 0);
+	float curBOmY	= cvmGet(mCurrentStateEstimate, 4, 0);
+	float curBOmZ	= cvmGet(mCurrentStateEstimate, 5, 0);
 	
+	// Precompute values needed in computations below
+		// Compute calibrated gyro values
+		float curCalOmegaX = cur
+	
+	float curSinPhi = sin(curPhi);
+	float curCosPhi = cos(curPhi);
+	float curSinTheta = sin(curTheta);
+	float curCosTheta = cos(curTheta);
+	float curTanTheta = tan(curTheta);
+	float curSinPsi = sin(curPsi);
+	float curCosPsi = cos(curPsi);
+	
+	float curSinPhi_M_TanTheta = curSinPhi * curTanTheta;
+	float curCosPhi_M_TanTheta = curCosPhi * curTanTheta;
+	
+	float curSinPhi_D_CosTheta = curSinPhi / curCosTheta;
+	float curCosPhi_D_CosTheta = curCosPhi / curCosTheta;
+
+	// Compute Jacobian matrices
 }
 
 void AttitudeFilterApp::computeCurrentDt() {
@@ -113,7 +139,10 @@ void AttitudeFilterApp::computeCurrentDt() {
 	gettimeofday(&currentTime, NULL);
 	
 	// Compute dt with lastTime
+	struct timeval diff;
+	timediff(diff, mLastTime, currentTime);
 	
+	mDt = diff.tv_sec + diff.tv_usec / 1000000.f;
 }
 
 void AttitudeFilterApp::computeJacobianMatrices() {
@@ -126,6 +155,9 @@ void AttitudeFilterApp::computeJacobianMatrices() {
 	float curBOmZ	= cvmGet(mCurrentStateEstimate, 5, 0);
 	
 	// Precompute values needed in computations below
+		// Compute calibrated gyro values
+//		float curCalOmegaX
+	
 	float curSinPhi = sin(curPhi);
 	float curCosPhi = cos(curPhi);
 	float curSinTheta = sin(curTheta);

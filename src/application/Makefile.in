@@ -52,7 +52,9 @@ AR = ar
 ARFLAGS = cru
 libapp_a_AR = $(AR) $(ARFLAGS)
 libapp_a_LIBADD =
-am_libapp_a_OBJECTS = factory_app.$(OBJEXT) mk_app.$(OBJEXT)
+am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
+	attitude_filter_app.$(OBJEXT) factory_app.$(OBJEXT) \
+	mk_app.$(OBJEXT)
 libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -206,6 +208,8 @@ AM_CXXFLAGS = -I$(top_srcdir)/src
 # AM_CXXFLAGS += 
 noinst_LIBRARIES = libapp.a
 libapp_a_SOURCES = \
+	acc_calibration_app/acc_calibration_app.cpp \
+	attitude_filter_app/attitude_filter_app.cpp \
 	factory_app.cpp \
 	mk_app.cpp
 
@@ -257,6 +261,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acc_calibration_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attitude_filter_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/factory_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
 
@@ -273,6 +279,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+acc_calibration_app.o: acc_calibration_app/acc_calibration_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT acc_calibration_app.o -MD -MP -MF $(DEPDIR)/acc_calibration_app.Tpo -c -o acc_calibration_app.o `test -f 'acc_calibration_app/acc_calibration_app.cpp' || echo '$(srcdir)/'`acc_calibration_app/acc_calibration_app.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/acc_calibration_app.Tpo $(DEPDIR)/acc_calibration_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='acc_calibration_app/acc_calibration_app.cpp' object='acc_calibration_app.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o acc_calibration_app.o `test -f 'acc_calibration_app/acc_calibration_app.cpp' || echo '$(srcdir)/'`acc_calibration_app/acc_calibration_app.cpp
+
+acc_calibration_app.obj: acc_calibration_app/acc_calibration_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT acc_calibration_app.obj -MD -MP -MF $(DEPDIR)/acc_calibration_app.Tpo -c -o acc_calibration_app.obj `if test -f 'acc_calibration_app/acc_calibration_app.cpp'; then $(CYGPATH_W) 'acc_calibration_app/acc_calibration_app.cpp'; else $(CYGPATH_W) '$(srcdir)/acc_calibration_app/acc_calibration_app.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/acc_calibration_app.Tpo $(DEPDIR)/acc_calibration_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='acc_calibration_app/acc_calibration_app.cpp' object='acc_calibration_app.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o acc_calibration_app.obj `if test -f 'acc_calibration_app/acc_calibration_app.cpp'; then $(CYGPATH_W) 'acc_calibration_app/acc_calibration_app.cpp'; else $(CYGPATH_W) '$(srcdir)/acc_calibration_app/acc_calibration_app.cpp'; fi`
+
+attitude_filter_app.o: attitude_filter_app/attitude_filter_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT attitude_filter_app.o -MD -MP -MF $(DEPDIR)/attitude_filter_app.Tpo -c -o attitude_filter_app.o `test -f 'attitude_filter_app/attitude_filter_app.cpp' || echo '$(srcdir)/'`attitude_filter_app/attitude_filter_app.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/attitude_filter_app.Tpo $(DEPDIR)/attitude_filter_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='attitude_filter_app/attitude_filter_app.cpp' object='attitude_filter_app.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o attitude_filter_app.o `test -f 'attitude_filter_app/attitude_filter_app.cpp' || echo '$(srcdir)/'`attitude_filter_app/attitude_filter_app.cpp
+
+attitude_filter_app.obj: attitude_filter_app/attitude_filter_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT attitude_filter_app.obj -MD -MP -MF $(DEPDIR)/attitude_filter_app.Tpo -c -o attitude_filter_app.obj `if test -f 'attitude_filter_app/attitude_filter_app.cpp'; then $(CYGPATH_W) 'attitude_filter_app/attitude_filter_app.cpp'; else $(CYGPATH_W) '$(srcdir)/attitude_filter_app/attitude_filter_app.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/attitude_filter_app.Tpo $(DEPDIR)/attitude_filter_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='attitude_filter_app/attitude_filter_app.cpp' object='attitude_filter_app.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o attitude_filter_app.obj `if test -f 'attitude_filter_app/attitude_filter_app.cpp'; then $(CYGPATH_W) 'attitude_filter_app/attitude_filter_app.cpp'; else $(CYGPATH_W) '$(srcdir)/attitude_filter_app/attitude_filter_app.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

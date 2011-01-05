@@ -5,6 +5,50 @@ using namespace mavhub;
 
 BOOST_AUTO_TEST_SUITE(UtilityTestSuite)
 
+BOOST_AUTO_TEST_CASE(Test_timediff)
+{
+	struct timeval time1, time2, res;
+	
+	// Test zero diff
+	time1.tv_sec = 0;
+	time1.tv_usec = 0;
+	time2.tv_sec = 0;
+	time2.tv_usec = 0;
+	
+	timediff(res, time1, time2);
+	
+	BOOST_CHECK_EQUAL(res.tv_sec, 0);
+	BOOST_CHECK_EQUAL(res.tv_usec, 0);
+	
+	// Test time2 non zero, time1 zero diff
+	time2.tv_sec = 123;
+	time2.tv_usec = 12345;
+	
+	timediff(res, time1, time2);
+	
+	BOOST_CHECK_EQUAL(res.tv_sec, 123);
+	BOOST_CHECK_EQUAL(res.tv_usec, 12345);
+	
+	// Test time2 and time1 nonzero diff
+	time1.tv_sec = 1;
+	time1.tv_usec = 5;
+	
+	timediff(res, time1, time2);
+	
+	BOOST_CHECK_EQUAL(res.tv_sec, 122);
+	BOOST_CHECK_EQUAL(res.tv_usec, 12340);
+
+	// Test time2 and time1 with overflow diff
+	time1.tv_sec = 120;
+	time1.tv_usec = 12346;
+	
+	timediff(res, time1, time2);
+	
+	BOOST_CHECK_EQUAL(res.tv_sec, 2);
+	BOOST_CHECK_EQUAL(res.tv_usec, 999999);
+
+}
+
 BOOST_AUTO_TEST_CASE(Test_add_delta_us_to_timeval)
 {
 	// Test some delta adds

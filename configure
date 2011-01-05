@@ -7306,7 +7306,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/application/Makefile src/core/Makefile src/io/Makefile src/module/Makefile src/protocol/Makefile src/sensor/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/application/Makefile src/core/Makefile src/io/Makefile src/module/Makefile src/protocol/Makefile src/sensor/Makefile src/test_mavhub/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -8128,6 +8128,7 @@ do
     "src/module/Makefile") CONFIG_FILES="$CONFIG_FILES src/module/Makefile" ;;
     "src/protocol/Makefile") CONFIG_FILES="$CONFIG_FILES src/protocol/Makefile" ;;
     "src/sensor/Makefile") CONFIG_FILES="$CONFIG_FILES src/sensor/Makefile" ;;
+    "src/test_mavhub/Makefile") CONFIG_FILES="$CONFIG_FILES src/test_mavhub/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5 ;;
   esac
