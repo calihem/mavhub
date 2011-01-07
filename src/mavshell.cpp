@@ -232,9 +232,9 @@ void MAVShell::send_help() {
 
 	ostringstream help_stream;
 	help_stream << "addmember linkID IP port" << endl
+		<< "\t" << "add group member to broadcast group of UDPLayer" << endl
 		<< "applist [appID]" << endl
 		<< "\t" << "list all applications (or those with appID) registered with protocol stack" << endl
-		<< "\t" << "add group member to broadcast group of UDPLayer" << endl
 		<< "close | exit" << endl
 		<< "\t" << "close connection to mavhub" << endl
 		<< "help" << endl

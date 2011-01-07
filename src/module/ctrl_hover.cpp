@@ -37,7 +37,7 @@ namespace mavhub {
 		for(int i = 0; i < numchan; i++) {
 			// XXX: iter vs. index
 			chanmap[i] = iter->second;
-			Logger::log("Ctrl_Hover chantype", chanmap[i], Logger::LOGLEVEL_INFO);
+			Logger::log("Ctrl_Hover chantype", chanmap[i], Logger::LOGLEVEL_DEBUG);
 			// assign preprocessors according to sensor type
 			switch(chanmap[i]) {
 			case USS:
@@ -466,7 +466,6 @@ namespace mavhub {
 
 	void Ctrl_Hover::read_conf(const map<string, string> args) {
 		map<string,string>::const_iterator iter;
-		Logger::log("hier", Logger::LOGLEVEL_INFO);
 
 		iter = args.find("component_id");
 		if( iter != args.end() ) {
@@ -536,16 +535,16 @@ namespace mavhub {
 		}
 
 		// XXX
-		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: numchan", numchan, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: inmap", chanmap_pairs, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_bias", ctl_bias, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_Kc", ctl_Kc, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_Ti", ctl_Ti, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_Td", ctl_Td, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_sp", ctl_sp, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_bref", ctl_bref, Logger::LOGLEVEL_INFO);
-		Logger::log("ctrl_hover::read_conf: ctl_sticksp", ctl_sticksp, Logger::LOGLEVEL_INFO);
+		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: numchan", numchan, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: inmap", chanmap_pairs, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_bias", ctl_bias, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_Kc", ctl_Kc, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_Ti", ctl_Ti, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_Td", ctl_Td, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_sp", ctl_sp, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_bref", ctl_bref, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_sticksp", ctl_sticksp, Logger::LOGLEVEL_DEBUG);
 
 		return;
 	}
