@@ -8,5 +8,5 @@ noinst_LIBRARIES = libapp.a
 libapp_a_SOURCES = \
 	acc_calibration_app/acc_calibration_app.cpp \
 	attitude_filter_app/attitude_filter_app.cpp \
-	factory_app.cpp \
+	app_factory.cpp \
 	mk_app.cpp

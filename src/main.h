@@ -27,8 +27,8 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
-#include "factory.h"
 #include "core/setting.h"
+#include "io/link_factory.h"
 
 #include <inttypes.h> //uint8_t
 #include <string>

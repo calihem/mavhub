@@ -32,7 +32,7 @@
 #include "core/logger.h"
 #include "core/protocolstack.h"
 #include "utility.h"
-#include "factory.h"
+#include "io/link_factory.h"
 
 #include <iterator>     //istream_iterator
 #include <cstdlib>      //exit

@@ -30,6 +30,8 @@
 #include "core/protocolstack.h"
 #include "core/protocollayer.h"
 #include "core/mavshell.h"
+#include "application/app_factory.h"
+#include "sensor/sensor_factory.h"
 
 #include <iostream>     // cout
 #include <cstring>      // strcmp

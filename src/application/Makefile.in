@@ -54,7 +54,7 @@ ARFLAGS = cru
 libapp_a_AR = $(AR) $(ARFLAGS)
 libapp_a_LIBADD =
 am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
-	attitude_filter_app.$(OBJEXT) factory_app.$(OBJEXT) \
+	attitude_filter_app.$(OBJEXT) app_factory.$(OBJEXT) \
 	mk_app.$(OBJEXT)
 libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
@@ -215,7 +215,7 @@ noinst_LIBRARIES = libapp.a
 libapp_a_SOURCES = \
 	acc_calibration_app/acc_calibration_app.cpp \
 	attitude_filter_app/attitude_filter_app.cpp \
-	factory_app.cpp \
+	app_factory.cpp \
 	mk_app.cpp
 
 all: all-am
@@ -267,8 +267,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acc_calibration_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/app_factory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attitude_filter_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/factory_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
 
 .cpp.o:

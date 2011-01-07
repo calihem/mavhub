@@ -7,5 +7,6 @@ noinst_LIBRARIES = libio.a
 
 libio_a_SOURCES = \
 	io.cpp \
+	link_factory.cpp \
 	uart.cpp \
 	network.cpp
