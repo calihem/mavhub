@@ -1,4 +1,4 @@
-/*!
+/**
  * \mainpage MAVHUB Index Page
  *
  * \section intro_sec Introduction
@@ -11,4 +11,10 @@
  *
  * \subsection download Download
  *
+ */
+
+/**
+ * \namespace mavhub
+ *
+ * \brief The namespace for the MAVHUB project.
  */
