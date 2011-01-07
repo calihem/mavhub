@@ -22,6 +22,7 @@ SRCS_1   = main.cpp \
 	module/ctrl_hover.cpp \
 	module/ctrl_bump.cpp \
 	module/filter_kalmancv.cpp \
+	module/filter_fir.cpp \
 	module/PID.cpp \
 	module/sim_crrcsim.cpp \
 	module/sensor.cpp \
@@ -60,7 +61,7 @@ GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 # CXX_CFLAGS 	+= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT $(GENDEPFLAGS)
 # CXX_CFLAGS 	+= -g -Wall -Wextra -pedantic -std=c++98 -O2 -D_REENTRANT
 CXX_CFLAGS 	+= -Wall -pedantic -O2 -D_REENTRANT -Wno-long-long
-CXX_LDFLAGS 	= -lpthread -lcv
+CXX_LDFLAGS 	= -lpthread $(CV_LDFLAGS)
 
 # Make variables (AS, LD, CXX, ...)
 AS		= $(CROSS_COMPILE)as

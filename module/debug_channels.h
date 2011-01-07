@@ -1,0 +1,19 @@
+#ifndef _DEBUG_CHANNELS_H_
+#define _DEBUG_CHANNELS_H_
+
+enum debug_channel {
+	ALT_GAS,
+	ALT_PID_ERR,
+	ALT_PID_INT,
+	ALT_PID_D,
+	ALT_PID_SP,
+	BUMP_GAS,
+	BUMP_ENABLE,
+	BUMP_DT_S,
+	DBG_VALID_USS,
+	DBG_VALID_IR1,
+	DBG_VALID_IR2,
+	ALT_DT_S
+};
+
+#endif

@@ -3,8 +3,8 @@
 #ifndef _CTRL_HOVER_H_
 #define _CTRL_HOVER_H_
 
+#include "debug_channels.h"
 #include "logger.h"
-// #include "thread.h"
 #include "filter_kalmancv.h"
 #include "PID.h"
 #include "protocollayer.h"
@@ -70,14 +70,14 @@ namespace mavhub {
 		PID* pid_alt;
 		/// number of sensor inputs processed by the module
 		int numchan;
-		list< pair<int, int> > chanmap_pairs;
-		vector<int> chanmap;
+		std::list< std::pair<int, int> > chanmap_pairs;
+		std::vector<int> chanmap;
 		/// raw sensor input array
-		vector<int> raw;
+		std::vector<int> raw;
 		/// pre-processed sensor array: first: value, second: status/valid
-		vector< pair< double, int > > pre;
+		std::vector< std::pair< double, int > > pre;
 		/// preprocessor modules
-		vector<PreProcessor *> premod;
+		std::vector<PreProcessor *> premod;
 		/// barometer reference
 		double baro_ref;
 		// config variables
@@ -89,6 +89,8 @@ namespace mavhub {
 		int ctl_sp;
 		int ctl_bref;
 		int ctl_sticksp;
+		// output
+		int output_enable;
 
 		// parameters
 		int param_request_list;
@@ -97,15 +99,11 @@ namespace mavhub {
 		/// strapdown matrix setter
 		int sd_comp_C(mavlink_huch_attitude_t *a, CvMat *C);
 
-		/// check value is in range?
-		int in_range(double val, double low, double high);
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
+		/// send debug data
+		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value);
   };
-	// utility: in_range
-	inline int Ctrl_Hover::in_range(double val, double low, double high) {
-		return(val >= low && val <= high);
-	}
 
 }
 

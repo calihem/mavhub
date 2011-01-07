@@ -15,4 +15,13 @@ namespace mavhub {
 		p.second = 1;
 		return p;
 	}
+
+	void PreProcessorBARO::calc(std::vector< std::pair< double, int > > &pre, int chan, int s) {
+		// std::pair<double, int> p;
+		// Logger::log("PreProcessorUSS::calc", chan, s, Logger::LOGLEVEL_INFO);
+		pre[chan].first = static_cast<double>(s);
+		pre[chan].second = 1;
+		return;
+	}
+
 }

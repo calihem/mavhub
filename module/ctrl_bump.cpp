@@ -34,7 +34,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Bump::handle_input(const mavlink_message_t &msg) {
-		static vector<int> v(16);
+		// static vector<int> v(16);
 		static int8_t param_id[15];
 
 		switch(msg.msgid) {
@@ -164,14 +164,12 @@ namespace mavhub {
 			frequency = (15 * frequency + end - start) / 16;
 			start = end;
 
-			//Logger::log("Ctrl_Bump slept for", wait_time, Logger::LOGLEVEL_INFO);
+			// Logger::log("Ctrl_Bump slept for", wait_time, Logger::LOGLEVEL_INFO);
 
 			gettimeofday(&tk, NULL);
 			//timediff(tdiff, tkm1, tk);
 			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			tkm1 = tk; // save current time
-
-
 
 			if(gdt_enable)
 				// XXX: limit
@@ -197,19 +195,19 @@ namespace mavhub {
 			//extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
 			// gas out
-			dbg.ind = 0;
+			dbg.ind = BUMP_GAS;
 			dbg.value = gas;
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// gdt enable
-			dbg.ind = 1;
+			dbg.ind = BUMP_ENABLE;
 			dbg.value = gdt_enable;
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			// dt
-			dbg.ind = 2;
+			dbg.ind = BUMP_DT_S;
 			dbg.value = dt * 1e-6;
 			mavlink_msg_debug_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);

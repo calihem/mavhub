@@ -10,8 +10,6 @@
 
 #include "opencv/cv.h" // opencv headers
 
-using namespace std;
-
 namespace mavhub {
 	/// Kalman filter class: hover (altitude)
   class Kalman_CV {
@@ -30,7 +28,7 @@ namespace mavhub {
 		/// static cv matrix print function
 		static inline void cvPrintMat(CvMat* M, int rows, int cols, char* name) {
 			int i,j;
-			ostringstream s;
+			std::ostringstream s;
 			s << name << " = [\n";
 			// printf("%s = [\n", name);
 			for(i=0; i < rows; i++) {

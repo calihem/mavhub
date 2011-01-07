@@ -29,7 +29,7 @@ void CoreModule::run() {
 
 	int system_type = MAV_QUADROTOR;
 	mavlink_message_t msg;
-	mavlink_msg_heartbeat_pack(owner->system_id(), 23, &msg, system_type, MAV_AUTOPILOT_GENERIC);
+	mavlink_msg_heartbeat_pack(owner->system_id(), 23, &msg, system_type, MAV_AUTOPILOT_HUCH);
 
 	Logger::log("CoreModule started with app_id, app_name", app_id, app_name, Logger::LOGLEVEL_INFO);
 

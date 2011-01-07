@@ -2,6 +2,7 @@
 
 HUCH system IDs
 
-| 43 | delta (opt)        |
-| 39 | root@gum2 (verdex) |
-|    |                    |
+| 43 | delta (opt)            |
+| 39 | root@gum2 (verdex)     |
+| 40 | root@qk01 (beagle/opt) |
+|    |                        |

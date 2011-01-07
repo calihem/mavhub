@@ -17,6 +17,8 @@ namespace mavhub {
 	static timeval& timediff(timeval &diff, const timeval &t1, const timeval &t2);
 	std::istream& operator >>(std::istream &is, std::list<std::string> &string_list);
 	static uint64_t get_time_us();
+	/// check value is in range?
+	int in_range(double val, double low, double high);
 
 	// ----------------------------------------------------------------------------
 	// Implementation
@@ -111,6 +113,10 @@ namespace mavhub {
 		return tp.tv_sec * 1E6 + tp.tv_usec;
 	}
 
+	// utility: in_range
+	inline int in_range(double val, double low, double high) {
+		return(val >= low && val <= high);
+	}
 
 } // namespace mavhub
 

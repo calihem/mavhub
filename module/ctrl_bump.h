@@ -3,6 +3,7 @@
 #ifndef _CTRL_BUMP_H_
 #define _CTRL_BUMP_H_
 
+#include "debug_channels.h"
 #include "logger.h"
 // #include "thread.h"
 #include "protocollayer.h"

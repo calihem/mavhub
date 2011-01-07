@@ -46,7 +46,7 @@ namespace mavhub {
 
 			// put into standard pixhawk structs
 			// raw IMU
-			set_pxh_raw_imu();
+			//set_pxh_raw_imu();
 			set_pxh_attitude();
 			set_pxh_manual_control();
 
@@ -104,8 +104,8 @@ namespace mavhub {
 			mavlink_msg_mk_fc_status_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &mk_fc_status);
 			send(msg_i);
 			// send pixhawk std struct
-			mavlink_msg_raw_imu_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &raw_imu);
-			send(msg_i);
+			// mavlink_msg_raw_imu_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &raw_imu);
+			// send(msg_i);
 			// mavlink_msg_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &attitude);
 			// owner->send(msg_i);
 			mavlink_msg_manual_control_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &manual_control);
@@ -178,7 +178,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk raw_imu
 	void FC_Mpkg::set_pxh_raw_imu() {
-		raw_imu.usec = get_time_us();
+		raw_imu.usec = 0; // get_time_us(); XXX: qgc bug
 		raw_imu.xacc = huch_attitude.xacc;
 		raw_imu.yacc = huch_attitude.yacc;
 		raw_imu.zacc = huch_attitude.zaccraw;
@@ -192,7 +192,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk attitude
 	void FC_Mpkg::set_pxh_attitude() {
-		attitude.usec = get_time_us();
+		attitude.usec = 0; // get_time_us(); XXX: qgc bug
 		attitude.roll  = huch_attitude.xgyroint * MKGYRO2RAD;
 		attitude.pitch = huch_attitude.ygyroint * MKGYRO2RAD;
 		attitude.yaw   = huch_attitude.zgyroint * MKGYRO2RAD;
@@ -238,11 +238,11 @@ namespace mavhub {
 	}
 
 	void FC_Mpkg::publish_data(uint64_t time) {
-		DataCenter::set_huch_attitude(huch_attitude);
-		DataCenter::set_huch_fc_altitude(huch_altitude);
+		//DataCenter::set_huch_attitude(huch_attitude);
+		//DataCenter::set_huch_fc_altitude(huch_altitude);
 		// XXX: hardware specific mapping
 		DataCenter::set_huch_ranger_at(huch_ranger, 0);
-		DataCenter::set_mk_fc_status(mk_fc_status);
+		//DataCenter::set_mk_fc_status(mk_fc_status);
 	}
 
 }

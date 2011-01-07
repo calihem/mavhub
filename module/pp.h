@@ -3,7 +3,7 @@
 
 
 #include "logger.h"
-/* #include "protocollayer.h" */
+#include "utility.h"
 
 #include <vector>
 
@@ -17,6 +17,7 @@ namespace mavhub {
 		PreProcessor();
 		virtual ~PreProcessor();
 		virtual std::pair<double, int> calc(int chan, int s) = 0;
+		virtual void calc(std::vector< std::pair< double, int > > &pre, int chan, int s) = 0;
 
 	private:
 		std::vector<int> sig;
