@@ -1,31 +1,61 @@
+/****************************************************************************
+** Copyright 2011 Humboldt-Universitaet zu Berlin
+**
+** This file is part of MAVHUB.
+**
+** MAVHUB is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** MAVHUB is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with MAVHUB.  If not, see <http://www.gnu.org/licenses/>.
+**
+*****************************************************************************/
+/**
+ * \file main.cpp
+ * \date created at 2010/07/26
+ *
+ * \sa main.h
+ */
+
 #include "main.h"
 
 #include "core/logger.h"
 #include "core/protocolstack.h"
 #include "core/protocollayer.h"
-#include "mavshell.h"
+#include "core/mavshell.h"
 
-#include <iostream> //cout
-#include <cstring> //strcmp
-#include <cstdlib> //exit
+#include <iostream>     // cout
+#include <cstring>      // strcmp
+#include <cstdlib>      // exit
 
 using namespace std;
 using namespace mavhub;
 using namespace cpp_pthread;
 using namespace cpp_io;
 
-uint16_t system_id(42);
-int tcp_port(32000);
-string cfg_filename("mavhub.d/mavhub.conf");
+uint16_t system_id(42); ///< \var System ID in mavlink context
+int tcp_port(32000);	///< \var TCP port of configuration shell
+string cfg_filename("mavhub.d/mavhub.conf"); ///< \var name of configuration file
 
+/**
+ * \brief Entry point of mavhub.
+ * \param argc The number of arguments given by command line.
+ * \param argv The arguments given as a vector of strings.
+ */
 int main(int argc, char **argv) {
 
-	//list<I2cSensor*> i2c_sensors;
 	Logger::setLogLevel(Logger::LOGLEVEL_WARN);
 
 	parse_argv(argc, argv);
 
-	//open config file and read settings
+	// open config file and read settings
 	try {
 		Setting settings(cfg_filename, std::ios_base::in);
 		read_settings(settings);
@@ -37,20 +67,20 @@ int main(int argc, char **argv) {
 	// start sensors
 	SensorManager::instance().start_all_sensors();
 
-	//activate stack
+	// activate stack
 	ProtocolStack::instance().start();
-	
-	//start mav shell
+
+	// start configuration shell
 	try {
 		MAVShell *mav_shell = new MAVShell(tcp_port);
 		mav_shell->start();
 		mav_shell->join();
 	}
-	catch(const char* message) {
+	catch(const char *message) {
 		cout << message << endl;
 	}
 
-	//join stack thread
+	// join stack thread
 	ProtocolStack::instance().join();
 }
 
@@ -89,7 +119,7 @@ void read_settings(Setting &settings) {
 
 	//read sensors
 	list<string> sensors_list;
-	if ( settings.value("sensors", sensors_list) ) {
+	if( settings.value("sensors", sensors_list) ) {
 		Logger::log("List of sensors is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
 	} else {
 		add_sensors(sensors_list, settings);
@@ -100,18 +130,18 @@ void add_links(const list<string> link_list, Setting &settings) {
 	LinkFactory::link_construction_plan_t link_construction_plan;
 
 	for(list<string>::const_iterator link_iter = link_list.begin(); link_iter != link_list.end(); ++link_iter) {
-		try { //first read from sub config file
+		try {   //first read from sub config file
 			Setting link_settings(settings.path() + string("/") + *link_iter);
 			read_link_configuration(link_construction_plan, link_settings);
 		}
 		catch(const invalid_argument &ia) {
 			Logger::log(ia.what(), Logger::LOGLEVEL_DEBUG);
 		}
-		
-		if( settings.begin_group(*link_iter) == 0) { //link group available
+
+		if(settings.begin_group(*link_iter) == 0) {  //link group available
 			//read from global config file
 			read_link_configuration(link_construction_plan, settings);
-			
+
 			settings.end_group();
 		} else {
 			Logger::log(*link_iter, " group missing in config file", Logger::LOGLEVEL_DEBUG);
@@ -137,11 +167,11 @@ void add_apps(const std::list<std::string> &app_list, Setting &settings) {
 	map<string, string> arg_map;
 	for(list<string>::const_iterator app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
 		//read from global config file first (because map wouldn't overwrite existing entries)
-		if( settings.begin_group(*app_iter) == 0) { //app group available
+		if(settings.begin_group(*app_iter) == 0) {  //app group available
 			settings.values(arg_map);
 			settings.end_group();
 		}
-		try { //next read from sub config file
+		try {   //next read from sub config file
 			Setting app_settings(settings.path() + string("/") + *app_iter);
 			app_settings.values(arg_map);
 		}
@@ -160,11 +190,11 @@ void add_sensors(const std::list<std::string> &sensors_list, Setting &settings) 
 	map<string, string> arg_map;
 	for(list<string>::const_iterator sensors_iter = sensors_list.begin(); sensors_iter != sensors_list.end(); ++sensors_iter) {
 		//read from global config file first (because map wouldn't overwrite existing entries)
-		if( settings.begin_group(*sensors_iter) == 0) { //sensor group available
+		if(settings.begin_group(*sensors_iter) == 0) {  //sensor group available
 			settings.values(arg_map);
 			settings.end_group();
 		}
-		try { //next read from sub config file
+		try {   //next read from sub config file
 			Setting sensors_settings(settings.path() + string("/") + *sensors_iter);
 			sensors_settings.values(arg_map);
 		}
@@ -178,7 +208,7 @@ void add_sensors(const std::list<std::string> &sensors_list, Setting &settings) 
 }
 
 void parse_argv(int argc, char **argv) {
-	for(int i=1; i<argc; i++) {
+	for(int i = 1; i < argc; i++) {
 		if( !strcmp(argv[i], "-c") || !strcmp(argv[i], "--config") ) {
 			if(++i < argc) {
 				cfg_filename = argv[i];
@@ -186,7 +216,7 @@ void parse_argv(int argc, char **argv) {
 				cout << "ERROR: file argument missing" << endl;
 				exit(-1);
 			}
-		} else 	if( !strcmp(argv[i], "-h") || !strcmp(argv[i], "--help") ) {
+		} else if( !strcmp(argv[i], "-h") || !strcmp(argv[i], "--help") ) {
 			print_help();
 			exit(0);
 		} else if( !strcmp(argv[i], "-p") || !strcmp(argv[i], "--port") ) {

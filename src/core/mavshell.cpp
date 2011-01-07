@@ -1,3 +1,32 @@
+/****************************************************************************
+** Copyright 2011 Humboldt-Universitaet zu Berlin
+**
+** This file is part of MAVHUB.
+**
+** MAVHUB is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** MAVHUB is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with MAVHUB.  If not, see <http://www.gnu.org/licenses/>.
+**
+*****************************************************************************/
+/**
+ * \file mavshell.cpp
+ * \date created at 2010/08/24
+ * \author Michael Schulz
+ *
+ * \brief Implementation of MAVShell.
+ *
+ * \sa mavshell.h
+ */
+
 #include "mavshell.h"
 
 #include "core/logger.h"
@@ -5,23 +34,21 @@
 #include "utility.h"
 #include "factory.h"
 
-#include <iterator> //istream_iterator
-#include <cstdlib> //exit
-#include <stdexcept> // out_of_range exception
+#include <iterator>     //istream_iterator
+#include <cstdlib>      //exit
+#include <stdexcept>    // out_of_range exception
 
-#include <iostream> //cout
+#include <iostream>     //cout
 using namespace std;
 
 namespace mavhub {
 
 MAVShell::MAVShell(uint16_t port) throw(const char*) :
-		server_socket(port, 1),
-		client_socket(NULL),
-		input_stream(ios_base::out|ios_base::in) {
-}
+	server_socket(port, 1),
+	client_socket(NULL),
+	input_stream(ios_base::out|ios_base::in) { }
 
-MAVShell::~MAVShell() {
-}
+MAVShell::~MAVShell() { }
 
 void MAVShell::run() {
 
@@ -56,15 +83,10 @@ void MAVShell::handle_client() {
 	int received;
 	char rx_buffer[BUFFERLENGTH];
 
-	while( (received = client_socket->receive(rx_buffer, BUFFERLENGTH)) > 0 ) {
+	while( ( received = client_socket->receive(rx_buffer, BUFFERLENGTH) ) > 0 ) {
 		Logger::log("MAVShell received", received, "bytes", Logger::LOGLEVEL_DEBUG);
 		// append rx_buffer to input_stream
 		input_stream.write(rx_buffer, received);
-		// append rx_buffer to input_stream but without '\r'
-// 		for(int i=0; i<received; i++) {
-// 			if (rx_buffer[i] != '\r')
-// 				input_stream.put(rx_buffer[i]);
-// 		}
 
 		tokenize_stream(input_stream);
 	}
@@ -73,14 +95,14 @@ void MAVShell::handle_client() {
 	client_socket = NULL;
 }
 
-void MAVShell::send_message(const std::string& msg) {
+void MAVShell::send_message(const std::string &msg) {
 	if(!client_socket) return;
 
-	client_socket->send(msg.c_str(), msg.size());
+	client_socket->send( msg.c_str(), msg.size() );
 	client_socket->send("\n\r> ", 4);
 }
 
-void MAVShell::tokenize_stream(std::stringstream& sstream) {
+void MAVShell::tokenize_stream(std::stringstream &sstream) {
 	string cmd_line;
 	//get command line (everything up to '\n')
 	while( getline(sstream, cmd_line) ) {
@@ -97,10 +119,10 @@ void MAVShell::tokenize_stream(std::stringstream& sstream) {
 	sstream.clear();
 }
 
-void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
+void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 	ostringstream send_stream;
 
-	for(unsigned int i=0; i<argv.size(); i++) {
+	for(unsigned int i = 0; i < argv.size(); i++) {
 		if(argv.at(i).compare("addmember") == 0) {
 			try{
 				//get link belonging to ID
@@ -125,11 +147,11 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				udp_layer->add_groupmember(argv.at(i+2), port);
 				i += 3;
 			}
-			catch(std::out_of_range& e) {
+			catch(std::out_of_range &e) {
 				send_stream << "Not enough arguments given for addmember" << endl;
 			}
-		} else if( (argv.at(i).compare("close") == 0) 
-		|| (argv.at(i).compare("exit") == 0) ) {
+		} else if( (argv.at(i).compare("close") == 0)
+			  || (argv.at(i).compare("exit") == 0) ) {
 			//close connection
 			if(!client_socket) return;
 			client_socket->disconnect();
@@ -142,13 +164,13 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				istringstream istream( argv.at(i) );
 				int id;
 				istream >> id;
-				if( ProtocolStack::instance().remove_link(id) != 0 ) {
+				if(ProtocolStack::instance().remove_link(id) != 0) {
 					send_stream << "Removing of link with ID " << id << " failed" << endl;
 				} else {
 					send_stream << "Removed link with ID " << id << endl;
 				}
 			}
-			catch(std::out_of_range& e) {
+			catch(std::out_of_range &e) {
 				send_stream << "ID argument is missing" << endl;
 			}
 		} else if(argv.at(i).compare("iflist") == 0) {
@@ -165,12 +187,12 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 					i++;
 				}
 			}
-			catch(std::out_of_range& e) {
-					send_stream << ProtocolStack::instance().link_list();
+			catch(std::out_of_range &e) {
+				send_stream << ProtocolStack::instance().link_list();
 			}
 		} else if(argv.at(i).compare("ifup") == 0) {
 			try {
-				cpp_io::IOInterface *link = LinkFactory::build(argv.at(i+1), argv.at(i+2));
+				cpp_io::IOInterface *link = LinkFactory::build( argv.at(i+1), argv.at(i+2) );
 				istringstream istream( argv.at(i+3) );
 				ProtocolStack::packageformat_t format;
 				istream >> format;
@@ -180,7 +202,7 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				}
 				i += 3;
 			}
-			catch(std::out_of_range& e) {
+			catch(std::out_of_range &e) {
 				send_stream << "Not enough arguments given for ifup" << endl;
 			}
 		} else if(argv.at(i).compare("applist") == 0) {
@@ -198,8 +220,8 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 					i++;
 				}
 			}
-			catch(std::out_of_range& e) {
-					send_stream << ProtocolStack::instance().application_list();
+			catch(std::out_of_range &e) {
+				send_stream << ProtocolStack::instance().application_list();
 			}
 		} else if(argv.at(i).compare("loglevel") == 0) {
 			try {
@@ -210,13 +232,13 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 				Logger::setLogLevel(loglevel);
 				send_stream << "Loglevel is now: " << Logger::loglevel() << endl;
 			}
-			catch(std::out_of_range& e) {
+			catch(std::out_of_range &e) {
 				send_stream << "Loglevel is: " << Logger::loglevel() << endl;
 			}
 		} else if(argv.at(i).compare("print") == 0) {
 			send_stream << ProtocolStack::instance();
 		} else if( (argv.at(i).compare("quit") == 0)
-		|| (argv.at(i).compare("shutdown") == 0) ) {
+			  || (argv.at(i).compare("shutdown") == 0) ) {
 			// exit whole process - the easy way
 			exit(0);
 		} else {
@@ -224,36 +246,36 @@ void MAVShell::execute_cmd(const std::vector<std::string>& argv) {
 		}
 	}
 
-	send_message(send_stream.str());
+	send_message( send_stream.str() );
 }
 
 void MAVShell::send_help() {
 	if(!client_socket) return;
 
 	ostringstream help_stream;
-	help_stream << "addmember linkID IP port" << endl
-		<< "\t" << "add group member to broadcast group of UDPLayer" << endl
-		<< "applist [appID]" << endl
-		<< "\t" << "list all applications (or those with appID) registered with protocol stack" << endl
-		<< "close | exit" << endl
-		<< "\t" << "close connection to mavhub" << endl
-		<< "help" << endl
-		<< "\t" << "print usage summary" << endl
-		<< "ifdown linkID" << endl
-		<< "\t" << "remove device with id" << endl
-		<< "iflist [linkID]" << endl
-		<< "\t" << "list all devices or device with linkID" << endl
-		<< "ifup type device protocol" << endl
-		<< "\t" << "add device with given protocol" << endl
-		<< "loglevel [0...6]" << endl
-		<< "\t" << "get/set loglevel" << endl
-		<< "print" << endl
-		<< "\t" << "print overview" << endl
-		<< "quit | shutdown" << endl
-		<< "\t" << "stop mavhub" << endl
-		;
+	help_stream	<< "addmember linkID IP port" << endl
+			<< "\t" << "add group member to broadcast group of UDPLayer" << endl
+			<< "applist [appID]" << endl
+			<< "\t" << "list all applications (or those with appID) registered with protocol stack" << endl
+			<< "close | exit" << endl
+			<< "\t" << "close connection to mavhub" << endl
+			<< "help" << endl
+			<< "\t" << "print usage summary" << endl
+			<< "ifdown linkID" << endl
+			<< "\t" << "remove device with id" << endl
+			<< "iflist [linkID]" << endl
+			<< "\t" << "list all devices or device with linkID" << endl
+			<< "ifup type device protocol" << endl
+			<< "\t" << "add device with given protocol" << endl
+			<< "loglevel [0...6]" << endl
+			<< "\t" << "get/set loglevel" << endl
+			<< "print" << endl
+			<< "\t" << "print overview" << endl
+			<< "quit | shutdown" << endl
+			<< "\t" << "stop mavhub" << endl
+	;
 
-	client_socket->send(help_stream.str().c_str(), help_stream.str().size() );
+	client_socket->send( help_stream.str().c_str(), help_stream.str().size() );
 }
 
 void MAVShell::welcome() {

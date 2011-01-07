@@ -3,10 +3,7 @@ config.h
 config.log
 config.status
 configure.scan
-*.cpp~
-*.h~
-*in~
-*.conf~
+*~
 *.swp
 .deps/
 autom4te.cache/

@@ -6,16 +6,13 @@ SUBDIRS = application core io module protocol sensor
 # AM_CXXFLAGS = 
 
 bin_PROGRAMS = mavhub
-mavhub_SOURCES =  \
-	main.cpp \
-	mavshell.cpp \
-	datacenter.cpp
+mavhub_SOURCES =  main.cpp
 
 mavhub_LDADD = \
 	$(top_builddir)/src/application/libapp.a \
+	$(top_builddir)/src/module/libmodule.a \
+	$(top_builddir)/src/sensor/libsensor.a \
+	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
-	$(top_builddir)/src/module/libmodule.a \
-	$(top_builddir)/src/protocol/libprotocol.a \
-	$(top_builddir)/src/sensor/libsensor.a \
 	$(AM_LDFLAGS)
