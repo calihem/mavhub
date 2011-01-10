@@ -19,6 +19,9 @@ using namespace std;
 namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : AppLayer("ctrl_hover") {
+		// sensible pre-config defaults
+		ctl_mingas = 5.0;
+		ctl_maxgas = 800;
 		read_conf(args);
 		// component_id = component_id_;
 		kal = new Kalman_CV();
@@ -189,7 +192,7 @@ namespace mavhub {
 		pos.vy = 0.0;
 		pos.vz = 0.0;
 
-		Logger::debug("Ctrl_Hover started");
+		Logger::log("Ctrl_Hover started:", name(), Logger::LOGLEVEL_INFO);
 		// MKPackage msg_setneutral(1, 'c');
 		// owner()->send(msg_setneutral);
 		while(true) {
@@ -376,8 +379,16 @@ namespace mavhub {
 				}
 			}
 
-			if(manual_control.thrust < 5) // reset below threshold
+			// reset integral
+			if(manual_control.thrust < ctl_mingas) // reset below threshold
 				pid_alt->setIntegral(0.0);
+
+			// limit integral
+			if(gas > ctl_maxgas)
+				pid_alt->setIntegralM1();
+
+			// min/max limits
+			gas = limit_gas(gas);
 
 			extctrl.gas = (int16_t)gas;
 
@@ -527,6 +538,18 @@ namespace mavhub {
 			s >> ctl_sticksp;
 		}
 
+		iter = args.find("ctl_mingas");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> ctl_mingas;
+		}
+
+		iter = args.find("ctl_maxgas");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> ctl_maxgas;
+		}
+
 		// outout enable
 		iter = args.find("output_enable");
 		if( iter != args.end() ) {
@@ -545,6 +568,8 @@ namespace mavhub {
 		Logger::log("ctrl_hover::read_conf: ctl_sp", ctl_sp, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_bref", ctl_bref, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_sticksp", ctl_sticksp, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_mingas", ctl_mingas, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_maxgas", ctl_maxgas, Logger::LOGLEVEL_DEBUG);
 
 		return;
 	}

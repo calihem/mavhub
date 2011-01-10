@@ -91,7 +91,7 @@ namespace mavhub {
 		}
 		else if(t0 > (gdt_t0 + (2 * gdt_delay))
 						&& t0 < (gdt_t0 + (3 * gdt_delay))) {
-			gas = gdt_gas - 10;
+			gas = gdt_gas - 15;
 		}
 		else if (t0 > (gdt_t0 + (3 * gdt_delay))) {
 			gdt_enable = 0;
@@ -211,8 +211,10 @@ namespace mavhub {
 			send(msg);
 
 			//Logger::log("Ctrl_Bump: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
-			MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-			send(msg_extctrl);
+			if(output_enable > 0) {
+				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
+				send(msg_extctrl);
+			}
 			
 			// stats
 			run_cnt += 1;

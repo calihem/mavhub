@@ -39,7 +39,7 @@ namespace mavhub {
 		// Q - process noise covariance
 		cvSetIdentity( cvkal->process_noise_cov, cvRealScalar(5e-3));
 		// R - measurement covariance
-		const float R[] = {0.00457, 0.0, 0.0,  0.0, 0.0, \
+		const float R[] = {0.3, 0.0, 0.0,  0.0, 0.0, \
 											 0.0,     0.5, 0.0,  0.0, 0.0, \
 											 0.0,     0.0, 0.01, 0.0, 0.0, \
 											 0.0,     0.0, 0.0,  0.005, 0.0, \

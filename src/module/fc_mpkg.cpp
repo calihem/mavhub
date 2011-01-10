@@ -97,8 +97,8 @@ namespace mavhub {
 			send(msg_i);
 			mavlink_msg_huch_fc_altitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
 			send(msg_i);
-			mavlink_msg_huch_ranger_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
-			send(msg_i);
+			// mavlink_msg_huch_ranger_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
+			// send(msg_i);
 			mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &mk_fc_status);
 			send(msg_i);
 			// send pixhawk std struct

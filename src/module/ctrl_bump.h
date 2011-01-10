@@ -33,6 +33,8 @@ namespace mavhub {
 		uint64_t gdt_t0;
 		int gdt_delay;
 		double gdt_gas;
+		// output
+		int output_enable;
 		/// controller bias (hovergas)
 		/* int ctl_bias; */
 		/* double ctl_Kc; */

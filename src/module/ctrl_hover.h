@@ -89,6 +89,8 @@ namespace mavhub {
 		int ctl_sp;
 		int ctl_bref;
 		int ctl_sticksp;
+		double ctl_mingas;
+		double ctl_maxgas;
 		// output
 		int output_enable;
 
@@ -103,7 +105,18 @@ namespace mavhub {
 		virtual void read_conf(const std::map<std::string, std::string> args);
 		/// send debug data
 		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value);
+		// limit gas
+		virtual int limit_gas(double gas);
   };
+
+	// limit gas
+	inline int Ctrl_Hover::limit_gas(double gas) {
+		if(gas < ctl_mingas)
+			gas = ctl_mingas; // mingas
+		if (gas > ctl_maxgas)
+			gas = ctl_maxgas; // maxgas
+		return gas;
+	}
 
 }
 
