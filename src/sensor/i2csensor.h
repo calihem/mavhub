@@ -7,13 +7,6 @@
 
 #include "sensor.h"
 
-//FIXME die müssen hier noch weg
-/* output defines */
-#define NONE	0x00
-#define MAVHUB	0x01
-#define DEBUG	0x02
-#define TIMINGS	0x04
-
 namespace mavhub {
 
 	class I2cSensor : public Sensor {
