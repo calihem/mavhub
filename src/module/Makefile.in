@@ -207,7 +207,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -DSTDOUTLOG
+AM_CPPFLAGS = -D_REENTRANT -Wall -pedantic -DSTDOUTLOG
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src
