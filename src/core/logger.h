@@ -64,7 +64,6 @@ class Logger {
 
 		/**
 		 * \brief Output stream operator for enumeration type log_level_t.
-		 * \param os
 		 * \param[out] os The output stream.
 		 * \tparam[in] level The log level which should be streamed to output
 		 * stream os.
