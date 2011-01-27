@@ -1,5 +1,5 @@
-#ifndef _FACTORY_APP_H_
-#define _FACTORY_APP_H_
+#ifndef _APP_FACTORY_H_
+#define _APP_FACTORY_H_
 
 #include <string>
 #include <map>

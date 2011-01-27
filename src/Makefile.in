@@ -51,15 +51,14 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_mavhub_OBJECTS = main.$(OBJEXT) mavshell.$(OBJEXT) \
-	datacenter.$(OBJEXT)
+am_mavhub_OBJECTS = main.$(OBJEXT)
 mavhub_OBJECTS = $(am_mavhub_OBJECTS)
 mavhub_DEPENDENCIES = $(top_builddir)/src/application/libapp.a \
-	$(top_builddir)/src/core/libcore.a \
-	$(top_builddir)/src/io/libio.a \
 	$(top_builddir)/src/module/libmodule.a \
+	$(top_builddir)/src/sensor/libsensor.a \
 	$(top_builddir)/src/protocol/libprotocol.a \
-	$(top_builddir)/src/sensor/libsensor.a
+	$(top_builddir)/src/core/libcore.a \
+	$(top_builddir)/src/io/libio.a
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -245,23 +244,19 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -DSTDOUTLOG
+AM_CPPFLAGS = -D_REENTRANT -Wall -pedantic -DSTDOUTLOG
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src
 SUBDIRS = application core io module protocol sensor
-mavhub_SOURCES = \
-	main.cpp \
-	mavshell.cpp \
-	datacenter.cpp
-
+mavhub_SOURCES = main.cpp
 mavhub_LDADD = \
 	$(top_builddir)/src/application/libapp.a \
+	$(top_builddir)/src/module/libmodule.a \
+	$(top_builddir)/src/sensor/libsensor.a \
+	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
-	$(top_builddir)/src/module/libmodule.a \
-	$(top_builddir)/src/protocol/libprotocol.a \
-	$(top_builddir)/src/sensor/libsensor.a \
 	$(AM_LDFLAGS)
 
 all: config.h
@@ -363,9 +358,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/datacenter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavshell.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
