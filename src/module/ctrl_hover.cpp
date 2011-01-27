@@ -194,7 +194,13 @@ namespace mavhub {
 		CvMat *accel_g; // global accel vector (derotated)
 		mavlink_local_position_t pos;
 		int run_cnt = 0;
+		int run_cnt_cyc = 0;
 		double gas;
+
+		// heartbeat
+		int system_type = MAV_QUADROTOR;
+		mavlink_message_t msg_hb;
+		mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
 
 		// XXX: infrared valid FIRs
 		double tmp_c[] = {0.125, 0.25, 0.25, 0.25, 0.125};
@@ -306,7 +312,7 @@ namespace mavhub {
 			mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
 			send(msg);
 
-			continue;
+			// continue;
 
 			// 1. collect data
 
@@ -354,7 +360,7 @@ namespace mavhub {
 			pre[4].second = (filt_valid_ir2.calc(pre[4].second) >= 1.0) ? 1 : 0;
 
 			// XXX: pack this into preprocessing proper
-			if(pre[0].second > 0 && run_cnt % 100 == 0)
+			if(pre[0].second > 0 && run_cnt_cyc == 0)
 				reset_baro_ref(pre[0].first);
 			pre[1].first = pre[1].first - baro_ref;
 			
@@ -469,31 +475,24 @@ namespace mavhub {
 			gas = limit_gas(gas);
 
 			extctrl.gas = (int16_t)gas;
+			// extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
+			// send control output to FC
+			// Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
+			if(output_enable > 0) {
+				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
+				send(msg_extctrl);
+			}
+
+			// send debug signals to groundstation
 			// gas out
-			dbg.ind = ALT_GAS;
-			dbg.value = gas;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
-
+			send_debug(&msg, &dbg, ALT_GAS, gas);
 			// PID error
-			dbg.ind = ALT_PID_ERR;
-			dbg.value = pid_alt->getErr();
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
-
+			send_debug(&msg, &dbg, ALT_PID_ERR, pid_alt->getErr());
 			// PID integral
-			dbg.ind = ALT_PID_INT;
-			dbg.value = pid_alt->getPv_int();
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
-
+			send_debug(&msg, &dbg, ALT_PID_INT, pid_alt->getPv_int());
 			// PID derivative
-			dbg.ind = ALT_PID_D;
-			dbg.value = pid_alt->getDpv();
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
-
+			send_debug(&msg, &dbg, ALT_PID_D, pid_alt->getDpv());
 			// PID setpoint
 			send_debug(&msg, &dbg, ALT_PID_SP, pid_alt->getSp());
 			// VALID USS
@@ -510,17 +509,13 @@ namespace mavhub {
 			// attitude_controller_output.thrust = extctrl.gas / 4 - 128;
 			// mavlink_msg_attitude_controller_output_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
 			// send(msg);
-
-			//extctrl.gas = 255 * (double)rand()/RAND_MAX;
-
-			//Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
-			if(output_enable > 0) {
-				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-				send(msg_extctrl);
-			}
 			
 			// stats
 			run_cnt += 1;
+			run_cnt_cyc = run_cnt % 100;
+			// send heartbeat
+			if(run_cnt_cyc == 0)
+				send(msg_hb);
 			// XXX: usleep call takes ~5000 us?
 			//usleep(10000);
 		}
