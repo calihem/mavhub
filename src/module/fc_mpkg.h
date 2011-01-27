@@ -68,6 +68,7 @@ namespace mavhub {
 		// mavlink_message_t msg_j;
 		/// MK DebugOut structure
 		mavlink_mk_debugout_t mk_debugout;
+		/// MK FC Status
 		mavlink_mk_fc_status_t mk_fc_status;
 		/// huch attitude struct
 		mavlink_huch_attitude_t huch_attitude;

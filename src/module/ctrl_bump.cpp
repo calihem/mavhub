@@ -60,6 +60,9 @@ namespace mavhub {
 					}	else if(!strcmp("gdt_gas", (const char *)param_id)) {
 						gdt_gas = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Bump::handle_input: PARAM_SET request for gdt_gas", gdt_gas, Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("output_enable", (const char *)param_id)) {
+						output_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Bump::handle_input: PARAM_SET request for output_enable", output_enable, Logger::LOGLEVEL_INFO);
 					}	
 				}
 			}
@@ -78,6 +81,8 @@ namespace mavhub {
 		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gdt_delay", gdt_delay, 1, 0);
 		send(msg);
 		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gdt_gas", gdt_gas, 1, 0);
+		send(msg);
+		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
 		send(msg);
 	}
 
@@ -276,8 +281,16 @@ namespace mavhub {
 		// 	s >> ctl_sticksp;
 		// }
 
+		// outout enable
+		iter = args.find("output_enable");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> output_enable;
+		}
+
 		// XXX
 		Logger::log("ctrl_bump::read_conf: component_id", component_id, Logger::LOGLEVEL_INFO);
+		Logger::log("ctrl_bump::read_conf: output_enable", output_enable, Logger::LOGLEVEL_INFO);
 		// Logger::log("ctrl_bump::read_conf: ctl_bias", ctl_bias, Logger::LOGLEVEL_INFO);
 		// Logger::log("ctrl_bump::read_conf: ctl_Kc", ctl_Kc, Logger::LOGLEVEL_INFO);
 		// Logger::log("ctrl_bump::read_conf: ctl_Ti", ctl_Ti, Logger::LOGLEVEL_INFO);

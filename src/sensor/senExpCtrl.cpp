@@ -105,14 +105,14 @@ void SenExpCtrl::run() {
 			// get values
 			memcpy(&exprx_value[0], buffer+1, 8);
 
-			// XXX: smart++
+			// FIXME: smart++
 			exp_ctrl_rx_data.value0 = exprx_value[0];
 			exp_ctrl_rx_data.value1 = exprx_value[1];
 			exp_ctrl_rx_data.value2 = exprx_value[2];
 			exp_ctrl_rx_data.value3 = exprx_value[3];
 
-			// XXX: kopter specific mapping
-			// XXX: 0 is USS
+			// FIXME: kopter specific mapping
+			// FIXME: 0 is USS
 			huch_ranger.ranger2 = exprx_value[2];
 			huch_ranger.ranger3 = exprx_value[0];
 
@@ -132,7 +132,7 @@ void SenExpCtrl::run() {
 			//Logger::log("ExpCtrl rx_t:", (int)exp_ctrl_rx_data.version, exp_ctrl_rx_data.value0, Logger::LOGLEVEL_INFO);
 
 			// pass more data
-			// XXX: system_id
+			// FIXME: system_id
 			// mavlink_msg_huch_exp_ctrl_rx_encode(39, static_cast<uint8_t>(component_id), &msg, &exp_ctrl_rx_data);
 
 			/* debug data */
@@ -167,7 +167,7 @@ void SenExpCtrl::print_debug() {
 
 void SenExpCtrl::publish_data(uint64_t time) {
 	DataCenter::set_exp_ctrl(exp_ctrl_rx_data);
-	// XXX: hardware specific mapping
+	// FIXME: hardware specific mapping
 	DataCenter::set_huch_ranger_at(huch_ranger, 1);
 	DataCenter::set_huch_ranger_at(huch_ranger, 2);
 }

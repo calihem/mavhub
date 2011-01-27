@@ -35,7 +35,7 @@ namespace mavhub {
 	}
 
 	double PID::calc(double dt) {
-		// Logger::log("PID::calc:", pv, setpoint, Logger::LOGLEVEL_INFO);
+		// Logger::log("PID::calc:", pv, sp, Logger::LOGLEVEL_INFO);
 		// Logger::log("PID::calc:", bias, Kc, Logger::LOGLEVEL_INFO);
 		// Logger::log("PID::calc:", Ti, Td, Logger::LOGLEVEL_INFO);
 
@@ -60,11 +60,15 @@ namespace mavhub {
 			pv_int = 12000.0;
 		if (pv_int < -12000.0)
 			pv_int = -12000.0;
+
+		// divide by zero
+		if(Ti != 0)
+			ipart = pv_int / Ti;
+		else
+			ipart = 0.0;
 		
-		ipart = pv_int / Ti;
-		
-		// compute corrective
-		return(bias + Kc * (err + ipart + dpart));
+		// compute corrective (watch dpart sign)
+		return(bias + Kc * (err + ipart - dpart));
 	}
 
 	double PID::getIntegral() {

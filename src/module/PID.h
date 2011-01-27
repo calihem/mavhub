@@ -42,6 +42,23 @@ namespace mavhub {
 		/// get pv_int_m1
 		double getPv_int_m1();
 
+		/// get controller bias
+		double getBias();
+		/// get controller gain
+		double getKc();
+		/// get controller reset time
+		double getTi();
+		/// get controller derivative time
+		double getTd();
+		/// set controller bias
+		void setBias(double bias);
+		/// set controller gain
+		void setKc(double kc);
+		/// set reset time
+		void setTi(double ti);
+		/// set controller gain
+		void setTd(double td);
+
 	private:
 		double bias; //!< controller bias
 		double Kc; //!< controller gain (P-part coefficient)
@@ -60,14 +77,33 @@ namespace mavhub {
 		double pv_int_m1; //!< \f$ \int_{t_0}^{t_{k-1}} e(t) dt \f$
 	};
 
+	/// set setpoint
 	inline void PID::setSp(double sp_) {
 		sp = sp_;
 	}
+	/// get setpoint
 	inline double PID::getSp() {return sp;}
 	/// set process variable
 	inline void PID::setPv(double meas) {
 		pv = meas;
 	}
+	/// set controller bias
+	inline void PID::setBias(double bias_) { bias = bias_; }
+	/// set controller gain
+	inline void PID::setKc(double kc_) { Kc = kc_; }
+	/// set reset time
+	inline void PID::setTi(double ti_) { Ti = ti_; }
+	/// set controller gain
+	inline void PID::setTd(double td_) { Td = td_; }
+	
+	/// get controller bias
+	inline double PID::getBias() {return bias;}
+	/// get controller bias
+	inline double PID::getKc() {return Kc;}
+	/// get controller bias
+	inline double PID::getTi() {return Ti;}
+	/// get controller bias
+	inline double PID::getTd() {return Td;}
 	/// get process variable current value
 	inline double PID::getPv() {return pv;}
 	/// get error

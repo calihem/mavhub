@@ -32,7 +32,45 @@ namespace mavhub {
 			ACC,
 			IR_SHARP_30_3V,
 			IR_SHARP_150_3V,
-			STATUS
+			STATUS,
+			IR_SHARP_30_5V,
+			IR_SHARP_150_5V
+		};
+
+		/// debugout type to index map
+		enum mk_debugout_map_t {
+			USSvalue = 0,
+			USSlastvalid = 1,
+			USScred = 2, // XXX: changed in FC to sticknick, roll, yaw
+			ADval_press = 3,
+			ATTabsh = 4,
+			ATTrelh = 5,
+			USSoffset = 6,
+			USSstatus = 7,
+			ADval_gyrroll = 8,
+			ADval_gyrnick = 9,
+			ADval_gyryaw = 10,
+			ATTrelacctopint = 11,
+			ADval_ubat = 12,
+			GASmixfrac1 = 13,
+			GASmixfrac2 = 14,
+			RC_rssi = 15,
+			ATTmeanaccnick = 16,
+			ATTmeanaccroll = 17,
+			ATTmeanacctop = 18,
+			ATTintnickl = 19,
+			ATTintrolll = 20,
+			ATTintyawl = 21,
+			FCParam_extctlswitch = 22,
+			FCParam_gpsswitch = 23,
+			ADval_accnick = 24,
+			ADval_accroll = 25,
+			ADval_acctop = 26,
+			CTL_stickgas = 27,
+			ADval_acctopraw = 28,
+			ATTintnickh = 29,
+			ATTintrollh = 30,
+			ATTintyawh = 31
 		};
 
   protected:
@@ -46,10 +84,10 @@ namespace mavhub {
   private:
 		/// component id
 		uint16_t component_id;
+
+		// HUCH stuff
 		/// huch attitude struct
 		mavlink_huch_attitude_t attitude;
-		/// mavlink attitude
-		mavlink_attitude_t ml_attitude;
 		/// huch altitude struct
 		mavlink_huch_fc_altitude_t altitude;
 		/// huch exp ctrl struct
@@ -60,10 +98,21 @@ namespace mavhub {
 		extern_control_t extctrl;
 		/// local state
 		mavlink_huch_ctrl_hover_state_t ctrl_hover_state;
-		/// manual control input
+		/// MK DebugOut structure
+		mavlink_mk_debugout_t mk_debugout;
+		/// MK FC Status
+		mavlink_mk_fc_status_t mk_fc_status;
+
+		// PIXHAWK stuff
+		/// pixhawk raw imu
+		mavlink_raw_imu_t raw_imu;
+		/// pixhawk attitude
+		mavlink_attitude_t ml_attitude;
+		/// pixhawk manual control input
 		mavlink_manual_control_t manual_control;
-		/// attitude controller output
+		/// pixhawk attitude controller output
 		mavlink_attitude_controller_output_t attitude_controller_output;
+
 		/// Kalman instance
 		Kalman_CV* kal;
 		/// PID instance (altitude)
@@ -105,8 +154,25 @@ namespace mavhub {
 		virtual void read_conf(const std::map<std::string, std::string> args);
 		/// send debug data
 		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value);
-		// limit gas
+		/// limit gas
 		virtual int limit_gas(double gas);
+
+		// MK debug structure conversion
+		int mk_debugout_digital_offset;
+		// fetch different types from byte based mk_debugout
+		uint16_t debugout_getval_u(mavlink_mk_debugout_t* dbgout, int index);
+		int16_t debugout_getval_s(mavlink_mk_debugout_t* dbgout, int index);
+		int32_t debugout_getval_s32(mavlink_mk_debugout_t* dbgout, int indexl, int indexh);
+
+		void debugout2attitude(mavlink_mk_debugout_t* dbgout);
+		void debugout2altitude(mavlink_mk_debugout_t* dbgout);
+		void debugout2exp_ctrl(mavlink_mk_debugout_t* dbgout, mavlink_huch_exp_ctrl_t* exp_ctrl);
+		void debugout2ranger(mavlink_mk_debugout_t* dbgout, mavlink_huch_ranger_t* ranger);
+		void debugout2status(mavlink_mk_debugout_t* dbgout, mavlink_mk_fc_status_t* status);
+
+		void set_pxh_raw_imu();
+		void set_pxh_attitude();
+		void set_pxh_manual_control();
   };
 
 	// limit gas

@@ -34,6 +34,7 @@ namespace mavhub {
 		baro_ref = 0.0;
 		param_request_list = 0;
 		param_count = 2;
+		mk_debugout_digital_offset = 2;
 		list<pair<int, int> >::const_iterator iter;
 		//iter = chanmap_.begin();
 		iter = chanmap_pairs.begin();
@@ -60,6 +61,14 @@ namespace mavhub {
 				// sigma, beta, k
 				premod[i] = new PreProcessorIR(300.0, 1000.0, 9.3028e-09, 4.2196e-06, 0.42);
 				break;
+			case IR_SHARP_30_5V:
+				// sigma, beta, k
+				premod[i] = new PreProcessorIR(40.0, 320.0, 1.1882e-06, 1.9528e-05, 0.42);
+				break;
+			case IR_SHARP_150_5V:
+				// sigma, beta, k
+				premod[i] = new PreProcessorIR(300.0, 1000.0, 9.3028e-09, 4.2196e-06, 0.42);
+				break;
 			}	
 			iter++;
 		}
@@ -80,24 +89,50 @@ namespace mavhub {
 		Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		switch(msg.msgid) {
-		case MAVLINK_MSG_ID_HUCH_ATTITUDE:	
-			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
-			//Logger::log("Ctrl_Hover got huch_attitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
-			mavlink_msg_huch_attitude_decode(&msg, &attitude);
-			//Logger::log("Ctrl_Hover", attitude.xacc, Logger::LOGLEVEL_INFO);
+
+		case MAVLINK_MSG_ID_MK_DEBUGOUT:
+			// Logger::log("Ctrl_Hover got MK_DEBUGOUT", Logger::LOGLEVEL_INFO);
+			mavlink_msg_mk_debugout_decode(&msg, (mavlink_mk_debugout_t *)&mk_debugout);
+			// MK FlightCtrl IMU data
+			debugout2attitude(&mk_debugout);
+			// MK FlightCtrl Barometric sensor data
+			debugout2altitude(&mk_debugout);
+			// MK huch-FlightCtrl I2C USS data
+			// XXX: this should be in kopter config, e.g. if settings == fc_has_uss
+			debugout2ranger(&mk_debugout, &ranger);
+			// real debugout data
+			debugout2status(&mk_debugout, &mk_fc_status);
+
+			// put into standard pixhawk structs
+			// raw IMU
+			//set_pxh_raw_imu();
+			set_pxh_attitude();
+			set_pxh_manual_control();
+
+			// publish_data(get_time_us());
+			// deadlock problem
+			// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
+			// send(msg_j);
 			break;
-		case MAVLINK_MSG_ID_HUCH_FC_ALTITUDE:
-			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
-			//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
-			mavlink_msg_huch_fc_altitude_decode(&msg, &altitude);
-			//Logger::log("Ctrl_Hover", altitude.baro, altitude.baroref, Logger::LOGLEVEL_INFO);
-			break;
-		case MAVLINK_MSG_ID_MANUAL_CONTROL:
-			// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
-			//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
-			mavlink_msg_manual_control_decode(&msg, &manual_control);
-			// Logger::log("Ctrl_Hover", (int)manual_control.target, manual_control.thrust, Logger::LOGLEVEL_INFO);
-			break;
+
+		// case MAVLINK_MSG_ID_HUCH_ATTITUDE:	
+		// 	// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
+		// 	//Logger::log("Ctrl_Hover got huch_attitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
+		// 	mavlink_msg_huch_attitude_decode(&msg, &attitude);
+		// 	//Logger::log("Ctrl_Hover", attitude.xacc, Logger::LOGLEVEL_INFO);
+		// 	break;
+		// case MAVLINK_MSG_ID_HUCH_FC_ALTITUDE:
+		// 	// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
+		// 	//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
+		// 	mavlink_msg_huch_fc_altitude_decode(&msg, &altitude);
+		// 	//Logger::log("Ctrl_Hover", altitude.baro, altitude.baroref, Logger::LOGLEVEL_INFO);
+		// 	break;
+		// case MAVLINK_MSG_ID_MANUAL_CONTROL:
+		// 	// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
+		// 	//Logger::log("Ctrl_Hover got huch_altitude [seq]:", (int)msg.seq, Logger::LOGLEVEL_INFO);
+		// 	mavlink_msg_manual_control_decode(&msg, &manual_control);
+		// 	// Logger::log("Ctrl_Hover", (int)manual_control.target, manual_control.thrust, Logger::LOGLEVEL_INFO);
+		// 	break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Hover::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
 			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
@@ -119,7 +154,20 @@ namespace mavhub {
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_sp", ctl_sp, Logger::LOGLEVEL_INFO);
 					}	else if(!strcmp("output_enable", (const char *)param_id)) {
 						output_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_sp", output_enable, Logger::LOGLEVEL_INFO);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", output_enable, Logger::LOGLEVEL_INFO);
+						// PID params
+					}	else if(!strcmp("PID_bias", (const char *)param_id)) {
+						pid_alt->setBias((double)mavlink_msg_param_set_get_param_value(&msg));
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", pid_alt->getBias(), Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("PID_Kc", (const char *)param_id)) {
+						pid_alt->setKc((double)mavlink_msg_param_set_get_param_value(&msg));
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", pid_alt->getKc(), Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("PID_Ti", (const char *)param_id)) {
+						pid_alt->setTi((double)mavlink_msg_param_set_get_param_value(&msg));
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", pid_alt->getTi(), Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("PID_Td", (const char *)param_id)) {
+						pid_alt->setTd((double)mavlink_msg_param_set_get_param_value(&msg));
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", pid_alt->getTd(), Logger::LOGLEVEL_INFO);
 					}	
 				}
 			}
@@ -133,7 +181,7 @@ namespace mavhub {
   }
 
   void Ctrl_Hover::run() {
-		// int buf[1];
+		int buf[1]; // to MK buffer
 		uint8_t flags = 0;
 		uint64_t dt = 0;
 		struct timeval tk, tkm1; // timevals
@@ -193,6 +241,14 @@ namespace mavhub {
 		pos.vz = 0.0;
 
 		Logger::log("Ctrl_Hover started:", name(), Logger::LOGLEVEL_INFO);
+		
+		// request debug msgs
+		buf[0] = 10;
+		MKPackage msg_debug_on(1, 'd', 1, buf, 1);
+		sleep(1);
+		send(msg_debug_on);
+		Logger::log("Ctrl_Hover debug request sent to FC", Logger::LOGLEVEL_INFO);
+
 		// MKPackage msg_setneutral(1, 'c');
 		// owner()->send(msg_setneutral);
 		while(true) {
@@ -217,7 +273,7 @@ namespace mavhub {
 			//timediff(tdiff, tkm1, tk);
 			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			tkm1 = tk; // save current time
-
+			
 			// return params list
 			if(param_request_list) {
 				Logger::log("Ctrl_Hover::run: param request", Logger::LOGLEVEL_INFO);
@@ -228,7 +284,29 @@ namespace mavhub {
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
 				send(msg);
+				// PID params
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
+				send(msg);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Kc", pid_alt->getKc(), 1, 0);
+				send(msg);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Ti", pid_alt->getTi(), 1, 0);
+				send(msg);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
+				send(msg);
 			}
+
+			// process some message forwarding
+			mavlink_msg_huch_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude);
+			send(msg);
+			// mavlink_msg_huch_fc_altitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
+			// send(msg);
+			mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
+			send(msg);
+			// send pixhawk std structs
+			mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
+			send(msg);
+
+			continue;
 
 			// 1. collect data
 
@@ -262,14 +340,14 @@ namespace mavhub {
 			pre[1].first -= (0.05 * pre[2].first);
 
 			// IR1: 0 = uss, 4 = ir2
-			if(pre[0].first <= 320.0 && pre[4].first <= 320.0)
+			if(pre[0].first <= 300.0) // && pre[4].first <= 300.0)
 				pre[3].second = 1;
 			else	
 				pre[3].second = 0;
 			pre[3].second = (filt_valid_ir1.calc(pre[3].second) >= 1.0) ? 1 : 0;
 
 			// IR2
-			if(in_range(pre[0].first, 300.0, 1000.0))
+			if(in_range(pre[0].first, 300.0, 700.0))
 				pre[4].second = 1;
 			else
 				pre[4].second = 0;
@@ -418,14 +496,12 @@ namespace mavhub {
 
 			// PID setpoint
 			send_debug(&msg, &dbg, ALT_PID_SP, pid_alt->getSp());
-
 			// VALID USS
 			send_debug(&msg, &dbg, DBG_VALID_USS, pre[0].second * 256);
 			// VALID IR1
 			send_debug(&msg, &dbg, DBG_VALID_IR1, pre[3].second * 256);
 			// VALID IR2
 			send_debug(&msg, &dbg, DBG_VALID_IR2, pre[4].second * 256);
-
 			// dt
 			send_debug(&msg, &dbg, ALT_DT_S, dt * 1e-6);
 
@@ -458,7 +534,6 @@ namespace mavhub {
 		mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), msg, dbg);
 		send(*msg);
 	}
-
 
 	void Ctrl_Hover::preproc() {
 		// Logger::log("preprocessing :)", Logger::LOGLEVEL_INFO);
@@ -606,6 +681,126 @@ namespace mavhub {
 		cvmSet(C, 2, 2, cphi * ctheta);
 		// cvPrintMat(C, 3, 3, "C");
 		return 0;
+	}
+
+  void Ctrl_Hover::debugout2attitude(mavlink_mk_debugout_t* dbgout) {
+		// int i;
+		static vector<int> v(16);
+		// for mkcom mapping compatibility:
+		// xaccmean, yaccmean, zacc
+		attitude.xacc     = v[0]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_accnick);
+		attitude.yacc     = v[1]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_accroll);
+		attitude.zacc     = v[2]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_acctop);
+		attitude.zaccraw  = v[3]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_acctopraw);
+		attitude.xaccmean = v[4]  = Ctrl_Hover::debugout_getval_s(dbgout, ATTmeanaccnick);
+		attitude.yaccmean = v[5]  = Ctrl_Hover::debugout_getval_s(dbgout, ATTmeanaccroll);
+		attitude.zaccmean = v[6]  = Ctrl_Hover::debugout_getval_s(dbgout, ATTmeanacctop);
+		attitude.xgyro    = v[7]  = -Ctrl_Hover::debugout_getval_s(dbgout, ADval_gyrroll);
+		attitude.ygyro    = v[8]  = -Ctrl_Hover::debugout_getval_s(dbgout, ADval_gyrnick);
+		attitude.zgyro    = v[9]  = -Ctrl_Hover::debugout_getval_s(dbgout, ADval_gyryaw);
+		attitude.xgyroint = v[10] = -Ctrl_Hover::debugout_getval_s32(dbgout, ATTintrolll, ATTintrollh);
+		attitude.ygyroint = v[11] = -Ctrl_Hover::debugout_getval_s32(dbgout, ATTintnickl, ATTintnickh);
+		attitude.zgyroint = v[12] = -Ctrl_Hover::debugout_getval_s32(dbgout, ATTintyawl, ATTintyawh);
+		attitude.xmag = v[13] = 0.0;
+		attitude.ymag = v[14] = 0.0;
+		attitude.zmag = v[15] = 0.0;
+
+		// Logger::log("debugout2attitude:", v, Logger::LOGLEVEL_INFO);
+
+		// despair debug
+		// printf("blub: ");
+		// printf("%u,", (uint8_t)dbgout->debugout[0]);
+		// printf("%u,", (uint8_t)dbgout->debugout[1]);
+		// for(i = 0; i < 64; i++) {
+		// 	printf("%u,", (uint8_t)dbgout->debugout[i+2]);
+		// }
+		// printf("\n");
+  }
+
+  void Ctrl_Hover::debugout2altitude(mavlink_mk_debugout_t* dbgout) {
+		static vector<int16_t> v(2);
+		// XXX: use ADval_press
+		altitude.baro = v[0] = debugout_getval_s(dbgout, ATTabsh);
+		// altitude->baro = v[0] = debugout_getval_u(dbgout, ADval_press);
+		// Logger::log("debugout2altitude:", v, altitude->baro, Logger::LOGLEVEL_INFO);
+  }
+
+	// this puts USS signal into ranger1 (hardware with USS sensor on
+	// FC i2c
+  void Ctrl_Hover::debugout2ranger(mavlink_mk_debugout_t* dbgout, mavlink_huch_ranger_t* ranger) {
+		static vector<uint16_t> v(3);
+		ranger->ranger1 = v[0] = debugout_getval_u(dbgout, USSvalue);
+		DataCenter::set_huch_ranger_at(*ranger, 0);
+		// Logger::log("debugout2ranger:", v, Logger::LOGLEVEL_INFO);
+  }
+
+  void Ctrl_Hover::debugout2status(mavlink_mk_debugout_t* dbgout, mavlink_mk_fc_status_t* status) {
+		static vector<uint16_t> v(3);
+		status->rssi = v[0] = debugout_getval_s(dbgout, RC_rssi);
+		status->batt = v[1] = debugout_getval_s(dbgout, ADval_ubat);
+		status->gas  = v[2] = debugout_getval_s(dbgout, GASmixfrac2);
+		// Logger::log("debugout2status:", v, Logger::LOGLEVEL_INFO);
+  }
+
+	// copy huch data into std pixhawk raw_imu
+	void Ctrl_Hover::set_pxh_raw_imu() {
+		raw_imu.usec = 0; // get_time_us(); XXX: qgc bug
+		raw_imu.xacc = attitude.xacc;
+		raw_imu.yacc = attitude.yacc;
+		raw_imu.zacc = attitude.zaccraw;
+		raw_imu.xgyro = attitude.xgyro;
+		raw_imu.ygyro = attitude.ygyro;
+		raw_imu.zgyro = attitude.zgyro;
+		raw_imu.xmag = attitude.xmag;
+		raw_imu.ymag = attitude.ymag;
+		raw_imu.zmag = attitude.zmag;
+	}
+
+	// copy huch data into std pixhawk attitude
+	void Ctrl_Hover::set_pxh_attitude() {
+		ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
+		ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
+		ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
+		ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;
+		ml_attitude.rollspeed  = attitude.xgyro * MKGYRO2RAD;
+		ml_attitude.pitchspeed = attitude.ygyro * MKGYRO2RAD;
+		ml_attitude.yawspeed   = attitude.zgyro * MKGYRO2RAD;
+	}
+
+	// copy huch data into std pixhawk attitude
+	void Ctrl_Hover::set_pxh_manual_control() {
+		manual_control.target = owner()->system_id();
+		manual_control.thrust = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
+	}
+
+  // fetch unsigned int from mk_debugout
+  uint16_t Ctrl_Hover::debugout_getval_u(mavlink_mk_debugout_t* dbgout, int index) {
+		int i;
+		i = 2 * index + mk_debugout_digital_offset;
+		return (uint16_t)dbgout->debugout[i+1] << 8 |
+			(uint8_t)dbgout->debugout[i];
+  }
+
+  // fetch signed int from mk_debugout
+  int16_t Ctrl_Hover::debugout_getval_s(mavlink_mk_debugout_t* dbgout, int index) {
+		int i;
+		i = 2 * index + mk_debugout_digital_offset;
+		return (int16_t)dbgout->debugout[i+1] << 8 |
+			(uint8_t)dbgout->debugout[i]; // unsigned part
+  }
+
+  // fetch signed int32 from mk_debugout
+  int32_t Ctrl_Hover::debugout_getval_s32(mavlink_mk_debugout_t* dbgout, int indexl, int indexh) {
+		int il, ih;
+		uint16_t ul, uh;
+		il = 2 * indexl + mk_debugout_digital_offset;
+		ih = 2 * indexh + mk_debugout_digital_offset;
+		ul = (uint16_t)dbgout->debugout[il+1] << 8 |
+			(uint8_t)dbgout->debugout[il];
+		uh = (uint16_t)dbgout->debugout[ih+1] << 8 |
+			(uint8_t)dbgout->debugout[ih];
+
+		return (int32_t) uh << 16 | ul;
 	}
 
 }
