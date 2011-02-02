@@ -141,8 +141,8 @@ void ProtocolStack::read(const fd_set& fds) {
 						data_length = stop_iter-buf_iter->begin()+1;
 						mk_package = new MKPackage(&(*buf_iter)[0], data_length);
 					}
-					catch(const char *message) {
-						Logger::log(message, Logger::LOGLEVEL_ERROR, STACK_LOGLEVEL);
+					catch(const std::exception& e) {
+						Logger::log(e.what(), Logger::LOGLEVEL_ERROR, STACK_LOGLEVEL);
 						//no valid MKPackage, remove data up to next start sign
 						std::vector<uint8_t>::iterator start_iter;
 						start_iter = std::find(stop_iter+1, buf_iter->end(), '#');

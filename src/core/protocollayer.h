@@ -180,9 +180,9 @@ class UDPLayer : public UDPSocket {
 		/**
 		 * \brief UDPLayer constructor.
 		 * \param port The UDP port.
-		 * \throws const char* error description message
+		 * \throws std::exception exception with description message
 		 */
-		UDPLayer(int port) throw(const char*);
+		UDPLayer(int port) throw(const std::exception&);
 
 		/**
 		 * UDPLayer destructor.
@@ -210,16 +210,16 @@ class UDPLayer : public UDPSocket {
 		 * \brief Adds an IP-port-pair to group.
 		 * \param addr IP address of new group member
 		 * \param port UDP port of new group member
-		 * \throws const char* error description message
+		 * \throws std::exception exception with description message
 		 */
-		void add_groupmember(const std::string &addr, uint16_t port) throw(const char*);
+		void add_groupmember(const std::string &addr, uint16_t port) throw(const std::exception&);
 
 		/**
 		 * \brief Adds a list of IP-port-pairs to group.
 		 * \param member_list List of new group members
-		 * \throws const char* error description message
+		 * \throws std::exception exception with description message
 		 */
-		void add_groupmembers(const std::list<string_addr_pair_t> &member_list) throw(const char*);
+		void add_groupmembers(const std::list<string_addr_pair_t> &member_list) throw(const std::exception&);
 
 	protected:
 		/**

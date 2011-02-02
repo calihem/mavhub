@@ -60,7 +60,7 @@ void AppLayer::send(const MKPackage &msg) const {
 // ----------------------------------------------------------------------------
 // UDPLayer
 // ----------------------------------------------------------------------------
-UDPLayer::UDPLayer(int port) throw(const char*) :
+UDPLayer::UDPLayer(int port) throw(const std::exception&) :
 	UDPSocket(port) {
 
 	enable_blocking_mode(false);
@@ -68,17 +68,17 @@ UDPLayer::UDPLayer(int port) throw(const char*) :
 
 UDPLayer::~UDPLayer() { }
 
-void UDPLayer::add_groupmember(const std::string &addr, uint16_t port) throw(const char*) {
+void UDPLayer::add_groupmember(const std::string &addr, uint16_t port) throw(const std::exception&) {
 	in_addr num_addr;
 
 	if(inet_aton(addr.c_str(), &num_addr) == 0) {
-		throw "Assignment of IP Address failed";
+		throw std::runtime_error("Assignment of IP Address failed");
 	}
 
 	groupmember_list.push_back( std::make_pair(num_addr, port) );
 }
 
-void UDPLayer::add_groupmembers(const std::list<string_addr_pair_t> &member_list) throw(const char*) {
+void UDPLayer::add_groupmembers(const std::list<string_addr_pair_t> &member_list) throw(const std::exception&) {
 	if( member_list.empty() ) return;
 
 	std::list<string_addr_pair_t>::const_iterator it;
@@ -86,8 +86,8 @@ void UDPLayer::add_groupmembers(const std::list<string_addr_pair_t> &member_list
 		try {
 			add_groupmember(it->first, it->second);
 		}
-		catch(const char *message) {
-			throw message;
+		catch(const std::exception& e) {
+			throw e;
 		}
 	}
 
@@ -101,8 +101,8 @@ ssize_t UDPLayer::write(const void *buf, size_t nbyte) const {
 		try{
 			rc = send_to(buf, nbyte, gmember_iter->first, gmember_iter->second);
 		}
-		catch(const char *message) {
-			Logger::log(message, Logger::LOGLEVEL_ERROR);
+		catch(const std::exception& e) {
+			Logger::log(e.what(), Logger::LOGLEVEL_ERROR);
 		}
 	}
 

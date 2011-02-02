@@ -1,13 +1,13 @@
 #ifndef _NETWORK_H_
 #define _NETWORK_H_
 
-#include "io/io.h"
-#include "core/logger.h"
+#include "io.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <stdexcept>
 #include <inttypes.h> //uint8_t
 #include <map>
 #include <list>
@@ -38,8 +38,8 @@ namespace mavhub {
 	class Socket : public cpp_io::IOInterface {
 		public:
 			virtual int open() = 0;
-			std::string foreign_addr() const throw(const char*);
-			uint16_t foreign_port() const throw(const char*);
+			std::string foreign_addr() const throw(const std::exception&);
+			uint16_t foreign_port() const throw(const std::exception&);
 			static const std::string& proto_to_name(const int type);
 
 		protected:
@@ -50,7 +50,7 @@ namespace mavhub {
 			struct sockaddr_in si_self;
 			mutable struct sockaddr_in si_other;
 			
-			void bind(const int port) throw(const char*);
+			void bind(const int port) throw(const std::exception&);
 			int open(const int type, const int protocol);
 		private:
 			Socket(const Socket &socket);
@@ -59,7 +59,7 @@ namespace mavhub {
 
 	class UDPSocket : public Socket {
 		public:
-			UDPSocket(int port) throw(const char*);
+			UDPSocket(int port) throw(const std::exception&);
 			virtual ~UDPSocket();
 
 			virtual int open();
@@ -78,7 +78,7 @@ namespace mavhub {
 			 * @param source_addr address of source system as a dots-and-number string
 			 * @param source_port port number of source system in host byte order
 			 */
-			int recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const char*);
+			int recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const std::exception&);
 
 			/**
 			 * @brief send data to given system
@@ -88,7 +88,7 @@ namespace mavhub {
 			 * @param foreign_port port number of destination system in host byte order
 			 * @return number of bytes actually sent
 			 */
-			int send_to(const void *buffer, int buf_len, const std::string &foreign_addr, uint16_t foreign_port) const throw(const char*);
+			int send_to(const void *buffer, int buf_len, const std::string &foreign_addr, uint16_t foreign_port) const throw(const std::exception&);
 			/**
 			 * @brief send data to given system
 			 * @param buffer data to send
@@ -97,7 +97,7 @@ namespace mavhub {
 			 * @param foreign_port port number of destination system in host byte order
 			 * @return number of bytes actually sent
 			 */
-			int send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*);
+			int send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const std::exception&);
 
 		private:
 	};
@@ -127,13 +127,13 @@ namespace mavhub {
 	
 	class TCPServerSocket : public Socket {
 		public:
-			TCPServerSocket(uint16_t port, int connections) throw(const char*);
-// 			TCPServerSocket(const std::string &address, uint16_t port) throw(const char*);
+			TCPServerSocket(uint16_t port, int connections) throw(const std::exception&);
+// 			TCPServerSocket(const std::string &address, uint16_t port) throw(const std::exception&);
 			virtual ~TCPServerSocket();
 
 			virtual int open();
 
-			TCPSocket* accept() throw(const char*);
+			TCPSocket* accept() throw(const std::exception&);
 
 		
 	};

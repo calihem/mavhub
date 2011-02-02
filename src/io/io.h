@@ -18,14 +18,14 @@ class IOInterface {
 		/// Removes the path from filename
 		static const std::string filename(const std::string& fullname);
 		/// Returns file descriptor
-		const int handle() const;
+		int handle() const;
 		/// Get the system name of file (with path), e.g. /dev/ttyS0
 		const std::string& name() const;
 		/// Set (full) name of file
 		void name(const std::string& name);
 		/// Extracts the path from filename
 		static const std::string path(const std::string& fullname);
-		virtual const bool is_open() const;
+		virtual bool is_open() const;
 		virtual int open() = 0;
 		virtual void close();
 		/// Reads maximum nbyte from file to buf
@@ -63,7 +63,7 @@ class FStream : public std::fstream {
 		const std::string& full_name() const;
 		const std::string name() const;
 		const std::string path() const;
-		const std::ios_base::openmode omode() const;
+		std::ios_base::openmode omode() const;
 
 	private:
 		/// full name of file
@@ -101,7 +101,7 @@ inline int IOInterface::enable_blocking_mode(bool enabled) {
 	return fcntl(fd, F_SETFL, mode);
 }
 
-inline const int IOInterface::handle() const {
+inline int IOInterface::handle() const {
 	return fd;
 }
 
@@ -113,7 +113,7 @@ inline void IOInterface::print(std::ostream &os) const {
 	os << _description << ": " << _name << std::endl;
 }
 
-inline const bool IOInterface::is_open() const {
+inline bool IOInterface::is_open() const {
 	return (fd >= 0);
 }
 
@@ -156,7 +156,7 @@ inline const std::string FStream::path() const { //FIXME: do and use static func
 	return file_name.substr(0, found);
 }
 
-inline const std::ios_base::openmode FStream::omode() const {
+inline std::ios_base::openmode FStream::omode() const {
 	return open_mode;
 }
 

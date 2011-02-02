@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
 		mav_shell->start();
 		mav_shell->join();
 	}
-	catch(const char *message) {
-		cout << message << endl;
+	catch(const std::exception& e) {
+		cout << e.what() << endl;
 	}
 
 	// join stack thread

@@ -2,6 +2,7 @@
 
 #include "core/logger.h"
 
+#include <stdexcept>
 #include <cstdarg> //va_list
 #include <algorithm> //find
 
@@ -36,13 +37,13 @@ MKPackage::MKPackage(uint8_t addr, uint8_t cmd, int numofdata, ...) : addr(addr)
 	encode();
 }
 
-MKPackage::MKPackage(const uint8_t *data, int length) throw(const char*) : encoded(data, data+length) {
+MKPackage::MKPackage(const uint8_t *data, int length) throw(const std::exception&) : encoded(data, data+length) {
 
 	try{
 		decode();
 	}
-	catch(const char *message) {
-		throw "ERROR: Input data of MKPackage is not valid";
+	catch(const std::exception& e) {
+		throw std::runtime_error("ERROR: Input data of MKPackage is not valid");
 		return;
 	}
 	addr = encoded.at(1)-'a';
@@ -130,7 +131,7 @@ void MKPackage::encode() {
 	encoded.push_back('\r');
 }
 
-void MKPackage::decode() throw(const char*) {
+void MKPackage::decode() throw(const std::exception&) {
 
 	if(encoded.size() < 4			//package has at least 4 bytes 
 	|| encoded.at(0) != '#'			//package has to start with #
@@ -141,7 +142,7 @@ Logger::log("[0]: ", encoded.at(0), Logger::LOGLEVEL_DEBUG);
 Logger::log("[size-1]: ", encoded.at(encoded.size()-1), Logger::LOGLEVEL_DEBUG);
 Logger::log("checkCRC: ", checkCRC(), Logger::LOGLEVEL_DEBUG);
 
-		throw "ERROR: MKPackage::decode";
+		throw std::runtime_error("ERROR: MKPackage::decode");
 		return;
 	}
 	int tmp1, tmp2, tmp3, tmp4;

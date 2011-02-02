@@ -140,8 +140,13 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 	log("MKApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
 
 	switch(msg.msgid) {
-		case MAVLINK_MSG_ID_PING:
-			if(mavlink_msg_ping_get_target_system(&msg) == 0) { //ping request
+		case MAVLINK_MSG_ID_PING: {
+			mavlink_ping_t ping;
+			mavlink_msg_ping_decode(&msg, &ping);
+			if(ping.target_system == 0) { //ping request
+				if(ping.target_component != 0
+				&& ping.target_component != component_id) break;
+
 				//FIXME: put sending in run-loop
 				Lock tx_lock(tx_mav_mutex);
 				mavlink_msg_ping_pack(owner()->system_id(),
@@ -150,12 +155,14 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 					mavlink_msg_ping_get_seq(&msg),
 					msg.sysid,
 					msg.compid,
-					get_time_us());
+					ping.time);
 				send(tx_mav_msg);
-			} else { //ping answer
-				//TODO
+			} else if(ping.target_system == owner()->system_id()) { //ping answer
+				if(ping.target_component != component_id) break;
+				//TODO: react on answer
 			}
 			break;
+		}
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner()->system_id())
 			&& (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
@@ -210,7 +217,7 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			break;
 		case MAVLINK_MSG_ID_ACTION:
 			if( (mavlink_msg_action_get_target(&msg) == owner()->system_id())
-			&& (mavlink_msg_action_get_target_component(&msg) == MAV_COMP_ID_IMU) ) {
+			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
 				mkhuch_action_t action;
 				action.id = mavlink_msg_action_get_action(&msg);
 				send(MKHUCH_MSG_TYPE_ACTION, &action, sizeof(mkhuch_action_t));

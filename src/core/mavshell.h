@@ -48,9 +48,9 @@ class MAVShell : public cpp_pthread::PThread {
 		/**
 		 * \brief MAVShell constructor with optional TCP port.
 		 * \param port TCP communication port.
-		 * \throws const char* error description message
+		 * \throws std::exception exception with description message
 		 */
-		MAVShell(uint16_t port = 32000) throw(const char*);
+		MAVShell(uint16_t port = 32000) throw(const std::exception&);
 
 		/**
 		 * \brief MAVShell destructor.

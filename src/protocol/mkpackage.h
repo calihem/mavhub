@@ -10,7 +10,7 @@ namespace mavhub {
 		public:
 			MKPackage(uint8_t addr, uint8_t cmd, const uint8_t *data = 0, int length = 0);
 			MKPackage(uint8_t addr, uint8_t cmd, int numofdata, ...);
-			MKPackage(const uint8_t *data, int length) throw(const char*);
+			MKPackage(const uint8_t *data, int length) throw(const std::exception&);
 			virtual ~MKPackage();
 			
 			const uint8_t *rawData() const;
@@ -28,7 +28,7 @@ namespace mavhub {
 			std::vector<uint8_t> encoded;
 			
 			void encode();
-			void decode() throw(const char*);
+			void decode() throw(const std::exception&);
 	};
 
 	// ----------------------------------------------------------------------------

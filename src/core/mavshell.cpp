@@ -43,7 +43,7 @@ using namespace std;
 
 namespace mavhub {
 
-MAVShell::MAVShell(uint16_t port) throw(const char*) :
+MAVShell::MAVShell(uint16_t port) throw(const std::exception&) :
 	server_socket(port, 1),
 	client_socket(NULL),
 	input_stream(ios_base::out|ios_base::in) { }
@@ -58,8 +58,8 @@ void MAVShell::run() {
 			handle_client();
 		}
 	}
-	catch(const char *message) {
-		cout << message << endl;
+	catch(const std::exception& e) {
+		cout << e.what() << endl;
 	}
 }
 
@@ -73,8 +73,8 @@ void MAVShell::handle_client() {
 		remote_port = client_socket->foreign_port();
 		Logger::log(remote_addr, remote_port, "connected", Logger::LOGLEVEL_INFO);
 	}
-	catch(const char *message) {
-		Logger::log(message);
+	catch(const std::exception& e) {
+		Logger::log( e.what() );
 	}
 
 	//send welcome message

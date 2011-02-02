@@ -1,6 +1,5 @@
 #include "network.h"
 
-#include "core/logger.h"
 #include "utility.h"
 
 #include <cstring> //memset
@@ -82,13 +81,13 @@ int Socket::open(const int type, const int protocol) {
 	return fd;
 }
 
-std::string Socket::foreign_addr() const throw(const char*) {
+std::string Socket::foreign_addr() const throw(const std::exception&) {
 	struct sockaddr_storage addr;
 	socklen_t len = sizeof(addr);
 	char ip_str[INET6_ADDRSTRLEN];
 
 	if(getpeername(fd, (sockaddr*)&addr, &len) < 0) {
-		throw "Fetching of address info about the remote side of the connection failed";
+		throw std::runtime_error("Fetching of address info about the remote side of the connection failed");
 		return string();
 	} else if(addr.ss_family == AF_INET) { //IPv4
 		struct sockaddr_in *sa_in = (struct sockaddr_in *)&addr;
@@ -101,13 +100,13 @@ std::string Socket::foreign_addr() const throw(const char*) {
 	return string(ip_str);
 }
 
-uint16_t Socket::foreign_port() const throw(const char*) {
+uint16_t Socket::foreign_port() const throw(const std::exception&) {
 	union sockaddr_u addr;
 	socklen_t len = sizeof(addr.sockaddr);
 	uint16_t port = 0;
 	
 	if(getpeername(fd, &addr.sockaddr, &len) < 0) {
-		throw "Fetching of address info about the remote side of the connection failed";
+		throw std::runtime_error("Fetching of address info about the remote side of the connection failed");
 	} else if(addr.storage.ss_family == AF_INET) { //IPv4
 		port = ntohs(addr.in.sin_port);
 	} else { //IPv6
@@ -134,19 +133,19 @@ const std::string& Socket::proto_to_name(const int type) {
 	return protocol_names[0];
 }
 
-void Socket::bind(int port) throw(const char*) {
+void Socket::bind(int port) throw(const std::exception&) {
 	//assign server port
 	si_self.sin_port = htons(port);
 
 	if( ::bind(fd, (struct sockaddr*)&si_self, sizeof(si_self)) < 0) {
-		throw "Binding of socket failed";
+		throw std::runtime_error("Binding of socket failed");
 	}
 }
 
 // ----------------------------------------------------------------------------
 // UDPSocket
 // ----------------------------------------------------------------------------
-UDPSocket::UDPSocket(int port) throw(const char*) :
+UDPSocket::UDPSocket(int port) throw(const std::exception&) :
 		Socket(SOCK_DGRAM, IPPROTO_UDP) {
 
 	//configure own socket address
@@ -157,8 +156,8 @@ UDPSocket::UDPSocket(int port) throw(const char*) :
 		outstream << port;
 		_name = outstream.str();
 	}
-	catch(const char *message) {
-		throw message;
+	catch(const std::exception& e) {
+		throw e;
 	}
 }
 
@@ -181,7 +180,7 @@ int UDPSocket::recv_any(void *buffer, int buf_len) const {
 		);
 }
 
-int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const char*) {
+int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, uint16_t source_port) const throw(const std::exception&) {
 	sockaddr_in si_source;
 	socklen_t source_len = sizeof(si_source);
 	int rc;
@@ -195,7 +194,7 @@ int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, ui
 		      );
 
 	if(rc < 0) {
-		throw("UDPSocket::recv_from failed");
+		throw std::runtime_error("UDPSocket::recv_from failed");
 	}
 	
 	source_addr = inet_ntoa(si_source.sin_addr);
@@ -204,25 +203,25 @@ int UDPSocket::recv_from(void *buffer, int buf_len, std::string &source_addr, ui
 	return rc;
 }
 
-int UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const char*) {
+int UDPSocket::send_to(const void *buffer, int buf_len, const string &foreign_addr, uint16_t foreign_port) const throw(const std::exception&) {
 	in_addr num_foreign_addr;
 	int rc;
 
 	//convert string to numeric ip and assign it
 	if( inet_aton(foreign_addr.c_str(), &num_foreign_addr) == 0) {
-		throw "Assignment of IP Address failed";
+		throw std::runtime_error("Assignment of IP Address failed");
 	}
 	try{
 		rc = send_to(buffer, buf_len, num_foreign_addr, foreign_port);
 	}
-	catch(const char *message) {
-		throw(message);
+	catch(const std::exception& e) {
+		throw e;
 	}
 	
 	return rc;
 }
 
-int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const char*) {
+int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, uint16_t foreign_port) const throw(const std::exception&) {
 	//assign address
 	si_other.sin_addr = foreign_addr;
 	//assign port in network byte order
@@ -242,8 +241,7 @@ int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, ui
 		sizeof(si_other)
 		);
 	if(rc < 0 ) {
-		std::cout << "errno: " << errno << ", rc: " << rc << std::endl;
-		throw "Send failed";
+		throw std::runtime_error("Send failed with error", strerror(errno));
 	}
 
 	return rc;
@@ -260,8 +258,8 @@ TCPSocket::TCPSocket(const std::string &foreign_addr, uint16_t foreign_port) :
 	try {
 		connect(foreign_addr, foreign_port);
 	}
-	catch(const char *message) {
-		throw message;
+	catch(const std::exception& e) {
+		throw e;
 	}
 }
 
@@ -315,7 +313,7 @@ int TCPSocket::receive(void *buffer, int buf_len) const {
 // ----------------------------------------------------------------------------
 // TCPServerSocket
 // ----------------------------------------------------------------------------
-TCPServerSocket::TCPServerSocket(uint16_t port, int connections) throw(const char*) :
+TCPServerSocket::TCPServerSocket(uint16_t port, int connections) throw(const std::exception&) :
 		Socket(SOCK_STREAM, IPPROTO_TCP) {
 
 	//configure own socket address
@@ -324,22 +322,22 @@ TCPServerSocket::TCPServerSocket(uint16_t port, int connections) throw(const cha
 	try {
 		bind(port);
 	}
-	catch(const char *message) {
-		throw message;
+	catch(const std::exception& e) {
+		throw e;
 	}
 	
 	if(::listen(fd, connections) < 0) {
-		throw "Listen failed";
+		throw std::runtime_error("Listen failed");
 	}
 }
 
 TCPServerSocket::~TCPServerSocket() {
 }
 
-TCPSocket* TCPServerSocket::accept() throw(const char*) {
+TCPSocket* TCPServerSocket::accept() throw(const std::exception&) {
 	int socket_fd;
 	if( (socket_fd = ::accept(fd, NULL, 0)) < 0 ) {
-		throw "Accept failed";
+		throw std::runtime_error("Accept failed");
 	}
 
 	return new TCPSocket(socket_fd);

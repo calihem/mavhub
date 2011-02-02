@@ -42,8 +42,8 @@ cpp_io::IOInterface* LinkFactory::build(const link_construction_plan_t &plan) {
 			try{
 				layer = new UART(plan.dev_name, UART::baudrate_to_speed(plan.baudrate) | CS8 | CLOCAL | CREAD);
 			}
-			catch(const char *message) {
-				Logger::error(message);
+			catch(const std::exception& e) {
+				Logger::error(e.what());
 			}
 			break;
 		case UDPLink:
@@ -55,14 +55,14 @@ cpp_io::IOInterface* LinkFactory::build(const link_construction_plan_t &plan) {
 						try{
 							udp_layer->add_groupmembers(plan.groupmember_list);
 						}
-						catch(const char *message) {
-							Logger::log(message, Logger::LOGLEVEL_DEBUG);
+						catch(const std::exception& e) {
+							Logger::log(e.what(), Logger::LOGLEVEL_DEBUG);
 						}
 					}
 				}
 			}
-			catch(const char *message) {
-				Logger::error(message);
+			catch(const std::exception& e) {
+				Logger::error(e.what());
 			}
 			break;
 		default:
