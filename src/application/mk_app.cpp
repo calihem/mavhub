@@ -131,7 +131,7 @@ MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port,
 
 	pthread_mutex_init(&tx_mav_mutex, NULL);
 	pthread_mutex_init(&tx_mk_mutex, NULL);
-	huchlink_msg_init(&tx_mk_msg);
+	mkhuchlink_msg_init(&tx_mk_msg);
 }
 
 MKApp::~MKApp() {}
@@ -365,12 +365,12 @@ void MKApp::run() {
 	timeval timeout;
 	uint8_t input;
 	mkhuch_message_t rx_msg;
-	huchlink_status_t link_status;
+	mkhuchlink_status_t link_status;
 	uint64_t delta_time = 0, tmp64;
 
 	log("MKApp running", Logger::LOGLEVEL_DEBUG);
 
-	huchlink_status_initialize(&link_status);
+	mkhuchlink_status_initialize(&link_status);
 
 	while(_running) {
 		timeout.tv_sec = 1; timeout.tv_usec = 0;
@@ -385,7 +385,7 @@ void MKApp::run() {
 
 		//read from device
 		while( mk_dev.read(&input, 1) > 0 ) {
-			if( huchlink_parse_char(input, &rx_msg, &link_status) == 0) {
+			if( mkhuchlink_parse_char(input, &rx_msg, &link_status) == 0) {
 				tmp64 = message_time;
 				message_time = get_time_us();
 
@@ -417,7 +417,7 @@ size_t MKApp::send(const mkhuch_message_t& msg) {
 
 	sent += mk_dev.write(&(msg.sync), 3);
 	sent += mk_dev.write(msg.data, msg.len);
-	sent += mk_dev.write(&(msg.crc), 2);
+	sent += mk_dev.write(&(msg.hash), 1);
 
 	return sent;
 }
@@ -425,7 +425,6 @@ size_t MKApp::send(const mkhuch_message_t& msg) {
 size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t size) {
 	size_t sent = 0;
 	char buf = MKHUCH_MESSAGE_START;
-	uint16_t crc;
 	Lock tx_lock(tx_mk_mutex);
 
 	//send header and data
@@ -434,15 +433,17 @@ size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t
 	sent += mk_dev.write(&size, 1);
 	sent += mk_dev.write(data, size);
 
-	//calc and send crc
-	crc_init(&crc);
-	crc_accumulate(type, &crc);
-	crc_accumulate(size, &crc);
+	//calc and send hash value
+	uint8_t hash;
+	mkhuchlink_hash_init(&hash);
+	hash = mkhuchlink_hash_update(type, hash);
+	hash = mkhuchlink_hash_update(size, hash);
 	const uint8_t *data_ptr = static_cast<const uint8_t*>(data);
 	for(uint8_t i=0; i<size; i++) {
-		crc_accumulate(*data_ptr++, &crc);
+		hash = mkhuchlink_hash_update(*data_ptr++, hash);
 	}
-	sent += mk_dev.write(&crc, 2);
+	hash = ~hash;
+	sent += mk_dev.write(&hash, 1);
 
 	return sent;
 }

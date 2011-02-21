@@ -5,6 +5,7 @@
 #include <cstring> //memset
 #include <netdb.h> //hostent
 #include <iostream>
+#include <sstream>
 #include <cerrno>
 
 using std::string;
@@ -241,7 +242,9 @@ int UDPSocket::send_to(const void *buffer, int buf_len, in_addr foreign_addr, ui
 		sizeof(si_other)
 		);
 	if(rc < 0 ) {
-		throw std::runtime_error("Send failed with error", strerror(errno));
+		std::stringstream error_msg;
+		error_msg << "Send failed with error " << strerror(errno);
+		throw std::runtime_error( error_msg.str() );
 	}
 
 	return rc;
