@@ -7143,13 +7143,58 @@ fi
 
 
 # Checks for libraries.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateMat in -lcv" >&5
-$as_echo_n "checking for cvCreateMat in -lcv... " >&6; }
-if test "${ac_cv_lib_cv_cvCreateMat+set}" = set; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for newwin in -lncurses" >&5
+$as_echo_n "checking for newwin in -lncurses... " >&6; }
+if test "${ac_cv_lib_ncurses_newwin+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcv  $LIBS"
+LIBS="-lncurses  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char newwin ();
+int
+main ()
+{
+return newwin ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_ncurses_newwin=yes
+else
+  ac_cv_lib_ncurses_newwin=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncurses_newwin" >&5
+$as_echo "$ac_cv_lib_ncurses_newwin" >&6; }
+if test "x$ac_cv_lib_ncurses_newwin" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBNCURSES 1
+_ACEOF
+
+  LIBS="-lncurses $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateMat in -lcxcore" >&5
+$as_echo_n "checking for cvCreateMat in -lcxcore... " >&6; }
+if test "${ac_cv_lib_cxcore_cvCreateMat+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcxcore  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -7169,17 +7214,62 @@ return cvCreateMat ();
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_cv_cvCreateMat=yes
+  ac_cv_lib_cxcore_cvCreateMat=yes
 else
-  ac_cv_lib_cv_cvCreateMat=no
+  ac_cv_lib_cxcore_cvCreateMat=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cv_cvCreateMat" >&5
-$as_echo "$ac_cv_lib_cv_cvCreateMat" >&6; }
-if test "x$ac_cv_lib_cv_cvCreateMat" = x""yes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cxcore_cvCreateMat" >&5
+$as_echo "$ac_cv_lib_cxcore_cvCreateMat" >&6; }
+if test "x$ac_cv_lib_cxcore_cvCreateMat" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBCXCORE 1
+_ACEOF
+
+  LIBS="-lcxcore $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateKalman in -lcv" >&5
+$as_echo_n "checking for cvCreateKalman in -lcv... " >&6; }
+if test "${ac_cv_lib_cv_cvCreateKalman+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcv  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cvCreateKalman ();
+int
+main ()
+{
+return cvCreateKalman ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_cv_cvCreateKalman=yes
+else
+  ac_cv_lib_cv_cvCreateKalman=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cv_cvCreateKalman" >&5
+$as_echo "$ac_cv_lib_cv_cvCreateKalman" >&6; }
+if test "x$ac_cv_lib_cv_cvCreateKalman" = x""yes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBCV 1
 _ACEOF
