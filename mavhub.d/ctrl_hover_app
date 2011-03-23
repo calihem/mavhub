@@ -12,3 +12,9 @@ ctl_Td = 0.28882
 ctl_sp = 850
 ctl_bref = 1
 ctl_sticksp = 0
+ctl_mingas = 10.0
+ctl_maxgas = 800.0
+output_enable = 1
+gs_enable = 1
+gs_enable_dbg = 1
+

@@ -142,6 +142,8 @@ namespace mavhub {
 		double ctl_maxgas;
 		// output
 		int output_enable;
+		int gs_enable; // groundstation enable generic mavlink data
+		int gs_enable_dbg; // groundstation enable debug data
 
 		// parameters
 		int param_request_list;

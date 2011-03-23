@@ -139,7 +139,7 @@ namespace mavhub {
 		extctrl.roll = 0; //roll;
 		extctrl.yaw = 0; //yaw;
 		extctrl.gas = 0; //gas;	/* MotorGas = min(ExternControl.Gas, StickGas) */
-		extctrl.height = 0; //height;
+		//extctrl.height = 0; //height;
 		/* for autopilot */
 		extctrl.AP_flags = flags;
 		extctrl.frame = 'E';	/* get ack from flightctrl */

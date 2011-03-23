@@ -281,7 +281,7 @@ int ProtocolStack::mk2mavlink(const MKPackage &mk_msg, mavlink_message_t &mav_ms
 int ProtocolStack::add_link(cpp_io::IOInterface *interface, const packageformat_t format) {
 	if(!interface) return -1;
 
-	if(interface_list.size() == MAVLINK_COMM_NB_HIGH) {
+	if(interface_list.size() == MAVLINK_COMM_NUM_BUFFERS) {
 		Logger::log("reached maximum number of interfaces", Logger::LOGLEVEL_WARN, STACK_LOGLEVEL);
 		return -2;
 	}

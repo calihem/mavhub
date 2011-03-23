@@ -18,12 +18,12 @@
 
 typedef struct 
 {
-	uint8_t	remote_buttons;
- 	int8_t nick;
-	int8_t roll;
-	int8_t yaw;
-	uint16_t	gas;
- 	uint16_t height;
+	uint8_t	 remote_buttons;
+ 	int16_t  nick;
+	int16_t  roll;
+	int16_t  yaw;
+	uint16_t gas;
+ 	// uint16_t height;
 	volatile uint8_t AP_flags;
 	uint8_t	frame;
 	uint8_t	config;
