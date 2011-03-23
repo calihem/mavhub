@@ -6,6 +6,7 @@
 #include "module/testcore.h"
 #include "module/fc_mpkg.h"
 #include "module/ctrl_hover.h"
+#include "module/ctrl_lateral.h"
 #include "module/ctrl_bump.h"
 #include "module/sim_crrcsim.h"
 #include "mk_app.h"
@@ -82,6 +83,9 @@ namespace mavhub {
 		} else if(lowercase_name == "ctrl_hover_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Hover(args);
+		} else if(lowercase_name == "ctrl_lateral_app") {
+			// pass only configuration map into constructor
+			return new Ctrl_Lateral(args);
 		} else if(lowercase_name == "ctrl_bump_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Bump(args);

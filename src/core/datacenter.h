@@ -26,6 +26,13 @@ namespace mavhub {
 			static void set_huch_fc_altitude(const mavlink_huch_fc_altitude_t &huch_fc_altitude);
 			static void set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger, int index);
 			static void set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status);
+			/// set FC legacy extctrl components
+			static void set_extctrl_nick(const int16_t nick);
+			static void set_extctrl_roll(const int16_t roll);
+			static void set_extctrl_yaw(const int16_t yaw);
+			static const int16_t get_extctrl_nick();
+			static const int16_t get_extctrl_roll();
+			static const int16_t get_extctrl_yaw();
 
 		private:
 			//data structs
@@ -45,7 +52,10 @@ namespace mavhub {
 			static mavlink_huch_fc_altitude_t huch_altitude;
 			static mavlink_huch_ranger_t huch_ranger;
 			static mavlink_mk_fc_status_t mk_fc_status;
-
+			static int16_t extctrl_nick;
+			static int16_t extctrl_roll;
+			static int16_t extctrl_yaw;
+			static pthread_mutex_t extctrl_mutex;
 			
 			DataCenter();
 			DataCenter(const DataCenter &data);
@@ -159,6 +169,47 @@ namespace mavhub {
 		Lock ri_lock(mk_fc_mutex);
 		DataCenter::mk_fc_status = mk_fc_status_a;
 	}
+
+	// extctrl component setters
+	inline void DataCenter::set_extctrl_nick(const int16_t nick) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		DataCenter::extctrl_nick = nick;
+	}
+	inline void DataCenter::set_extctrl_roll(const int16_t roll) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		DataCenter::extctrl_roll = roll;
+	}
+	inline void DataCenter::set_extctrl_yaw(const int16_t yaw) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		DataCenter::extctrl_yaw = yaw;
+	}
+	
+	// extctrl component getters
+	inline const int16_t DataCenter::get_extctrl_nick() {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		return DataCenter::extctrl_nick;
+	}
+	inline const int16_t DataCenter::get_extctrl_roll() {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		return DataCenter::extctrl_roll;
+	}
+	inline const int16_t DataCenter::get_extctrl_yaw() {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		return DataCenter::extctrl_yaw;
+	}
+
 
 } // namespace mavhub
 

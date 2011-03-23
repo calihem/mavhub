@@ -56,9 +56,9 @@ libmodule_a_LIBADD =
 am_libmodule_a_OBJECTS = pp.$(OBJEXT) pp_uss.$(OBJEXT) \
 	pp_acc.$(OBJEXT) pp_baro.$(OBJEXT) pp_ir.$(OBJEXT) \
 	coremod.$(OBJEXT) fc_mpkg.$(OBJEXT) ctrl_hover.$(OBJEXT) \
-	ctrl_bump.$(OBJEXT) filter_kalmancv.$(OBJEXT) \
-	filter_fir.$(OBJEXT) PID.$(OBJEXT) sim_crrcsim.$(OBJEXT) \
-	testcore.$(OBJEXT)
+	ctrl_lateral.$(OBJEXT) ctrl_bump.$(OBJEXT) \
+	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) PID.$(OBJEXT) \
+	sim_crrcsim.$(OBJEXT) testcore.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -224,6 +224,7 @@ libmodule_a_SOURCES = \
 	coremod.cpp \
 	fc_mpkg.cpp \
 	ctrl_hover.cpp \
+	ctrl_lateral.cpp \
 	ctrl_bump.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
@@ -283,6 +284,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coremod.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_bump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_hover.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_lateral.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fc_mpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_fir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_kalmancv.Po@am__quote@

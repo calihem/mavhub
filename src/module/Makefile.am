@@ -14,6 +14,7 @@ libmodule_a_SOURCES = \
 	coremod.cpp \
 	fc_mpkg.cpp \
 	ctrl_hover.cpp \
+	ctrl_lateral.cpp \
 	ctrl_bump.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
