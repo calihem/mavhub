@@ -89,7 +89,6 @@ namespace mavhub {
 		Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		switch(msg.msgid) {
-
 		case MAVLINK_MSG_ID_MK_DEBUGOUT:
 			// Logger::log("Ctrl_Hover got MK_DEBUGOUT", Logger::LOGLEVEL_INFO);
 			mavlink_msg_mk_debugout_decode(&msg, (mavlink_mk_debugout_t *)&mk_debugout);
@@ -446,6 +445,10 @@ namespace mavhub {
 			gas = limit_gas(gas);
 
 			extctrl.gas = (int16_t)gas;
+			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
+			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
+			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+			// Logger::log("Ctrl_Hover nick", , Logger::LOGLEVEL_INFO);
 			// extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
 			// send control output to FC
@@ -769,11 +772,14 @@ namespace mavhub {
   }
 
   void Ctrl_Hover::debugout2status(mavlink_mk_debugout_t* dbgout, mavlink_mk_fc_status_t* status) {
-		static vector<uint16_t> v(3);
+		static vector<int16_t> v(6);
 		status->rssi = v[0] = debugout_getval_s(dbgout, RC_rssi);
 		status->batt = v[1] = debugout_getval_s(dbgout, ADval_ubat);
 		status->gas  = v[2] = debugout_getval_s(dbgout, GASmixfrac2);
-		// Logger::log("debugout2status:", v, Logger::LOGLEVEL_INFO);
+		status->nick  = v[3] = debugout_getval_s(dbgout, StickNick);
+		status->roll  = v[4] = debugout_getval_s(dbgout, StickRoll);
+		status->yaw  = v[5] = debugout_getval_s(dbgout, StickYaw);
+		Logger::log("debugout2status:", v, Logger::LOGLEVEL_INFO);
   }
 
 	// copy huch data into std pixhawk raw_imu

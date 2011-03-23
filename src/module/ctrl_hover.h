@@ -41,11 +41,11 @@ namespace mavhub {
 		enum mk_debugout_map_t {
 			USSvalue = 0,
 			USSlastvalid = 1,
-			USScred = 2, // XXX: changed in FC to sticknick, roll, yaw
+			StickNick = 2, // XXX: changed in FC to sticknick, roll, yaw
 			ADval_press = 3,
 			ATTabsh = 4,
-			ATTrelh = 5,
-			USSoffset = 6,
+			StickRoll = 5,
+			StickYaw = 6,
 			USSstatus = 7,
 			ADval_gyrroll = 8,
 			ADval_gyrnick = 9,

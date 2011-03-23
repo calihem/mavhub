@@ -175,19 +175,19 @@ namespace mavhub {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		DataCenter::extctrl_nick = nick;
+		extctrl_nick = nick;
 	}
 	inline void DataCenter::set_extctrl_roll(const int16_t roll) {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		DataCenter::extctrl_roll = roll;
+		extctrl_roll = roll;
 	}
 	inline void DataCenter::set_extctrl_yaw(const int16_t yaw) {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		DataCenter::extctrl_yaw = yaw;
+		extctrl_yaw = yaw;
 	}
 	
 	// extctrl component getters
@@ -195,19 +195,19 @@ namespace mavhub {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		return DataCenter::extctrl_nick;
+		return extctrl_nick;
 	}
 	inline const int16_t DataCenter::get_extctrl_roll() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		return DataCenter::extctrl_roll;
+		return extctrl_roll;
 	}
 	inline const int16_t DataCenter::get_extctrl_yaw() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		return DataCenter::extctrl_yaw;
+		return extctrl_yaw;
 	}
 
 
