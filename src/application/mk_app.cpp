@@ -235,6 +235,15 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 	switch(msg.type) {
 		case MKHUCH_MSG_TYPE_MK_IMU: {
 			const mkhuch_mk_imu_t *mk_imu = reinterpret_cast<const mkhuch_mk_imu_t*>(msg.data);
+// std::ostringstream logstream;
+// logstream << message_time << " " 
+// 	<< mk_imu->x_adc_acc << " "
+// 	<< mk_imu->y_adc_acc << " "
+// 	<< mk_imu->z_adc_acc << " "
+// 	<< mk_imu->x_adc_gyro << " "
+// 	<< mk_imu->y_adc_gyro << " "
+// 	<< mk_imu->z_adc_gyro;
+// Logger::log(logstream.str(), Logger::LOGLEVEL_ALL, Logger::LOGLEVEL_ALL);
 			mavlink_huch_imu_raw_adc_t imu_raw_adc;
 			imu_raw_adc.xacc = mk_imu->x_adc_acc;
 			imu_raw_adc.yacc = mk_imu->y_adc_acc;
@@ -385,7 +394,7 @@ void MKApp::run() {
 
 	mkhuchlink_status_initialize(&link_status);
 
-	while(_running) {
+	while( !interrupted() ) {
 		timeout.tv_sec = 1; timeout.tv_usec = 0;
 		FD_ZERO(&read_fds); FD_SET( mk_dev.handle(), &read_fds);
 
