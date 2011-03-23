@@ -27,6 +27,10 @@ namespace mavhub {
 		int16_t roll;
 		int16_t yaw;
 
+		// params
+		int param_request_list;
+		int prm_test_nick;
+
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
 	};
