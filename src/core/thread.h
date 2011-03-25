@@ -148,7 +148,7 @@ inline void* PThread::join() {
 	void *rc;
 	interrupt();
 	pthread_join(thread, &rc);
-	if(rc) _running = false;
+	_running = false;
 	return rc;
 }
 inline void PThread::interrupt() {

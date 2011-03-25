@@ -8,7 +8,7 @@
 #include "filter_kalmancv.h"
 #include "stat_meanvar.h"
 #include "PID.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 #include "qk_helper.h"
 #include "pp.h"
 #include "pp_uss.h"
@@ -20,7 +20,7 @@
 
 namespace mavhub {
 	/// Controller: hover (altitude)
-  class Ctrl_Hover : public AppLayer {
+  class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
   public:
 		/// Constructor
 		// Ctrl_Hover(int component_id_, int numchan, const std::list< std::pair<int, int> > chanmap, const std::map<std::string, std::string> args);
@@ -28,6 +28,7 @@ namespace mavhub {
 		virtual ~Ctrl_Hover();
 		/// mavhub protocolstack input handler
 		virtual void handle_input(const mavlink_message_t &msg);
+		virtual void handle_input(const mk_message_t &msg);
 		/// sensor types
 		enum sensor_types_t {
 			USS_FC = 0,

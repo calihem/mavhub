@@ -53,7 +53,11 @@ AR = ar
 ARFLAGS = cru
 libprotocol_a_AR = $(AR) $(ARFLAGS)
 libprotocol_a_LIBADD =
-am_libprotocol_a_OBJECTS = mkpackage.$(OBJEXT)
+am_libprotocol_a_OBJECTS = protocol.$(OBJEXT) \
+	mavlink_protocol.$(OBJEXT) mkhuchlink_protocol.$(OBJEXT) \
+	mklink_protocol.$(OBJEXT) protocollayer.$(OBJEXT) \
+	protocolstack.$(OBJEXT) link_factory.$(OBJEXT) \
+	mkpackage.$(OBJEXT)
 libprotocol_a_OBJECTS = $(am_libprotocol_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -211,6 +215,13 @@ AM_CXXFLAGS = -I$(top_srcdir)/src
 # AM_CXXFLAGS += 
 noinst_LIBRARIES = libprotocol.a
 libprotocol_a_SOURCES = \
+	protocol.cpp \
+	mavlink_protocol.cpp \
+	mkhuchlink_protocol.cpp \
+	mklink_protocol.cpp \
+	protocollayer.cpp \
+	protocolstack.cpp \
+	link_factory.cpp \
 	mkpackage.cpp
 
 all: all-am
@@ -261,7 +272,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/link_factory.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkhuchlink_protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mklink_protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkpackage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocollayer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocolstack.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

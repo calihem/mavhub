@@ -5,11 +5,11 @@
 
 #include "debug_channels.h"
 #include "core/logger.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 #include "PID.h"
 
 namespace mavhub {
-	class Ctrl_Zrate : public AppLayer {
+	class Ctrl_Zrate : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
 	public:
 		/// Ctor: zrate controller
 		Ctrl_Zrate(const std::map<std::string, std::string>);
@@ -17,6 +17,7 @@ namespace mavhub {
 		virtual ~Ctrl_Zrate();
 		/// protocol stack input handling
 		virtual void handle_input(const mavlink_message_t &msg);
+		virtual void handle_input(const mk_message_t &msg);
 
 	protected:
 		/// this thread's main method

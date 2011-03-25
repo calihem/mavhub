@@ -4,7 +4,7 @@
 
 #include <mavlink.h>
 #include "core/datacenter.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 
 #include <cstdlib>
 #include <sstream>
@@ -16,7 +16,7 @@
 using namespace std;
 
 namespace mavhub {
-	Ctrl_Lateral::Ctrl_Lateral(const map<string, string> args) : AppLayer("ctrl_lateral") {
+	Ctrl_Lateral::Ctrl_Lateral(const map<string, string> args) : AppInterface("ctrl_lateral"), AppLayer("ctrl_lateral") {
 		read_conf(args);
 		param_request_list = 0;
 		prm_test_nick = 0;
@@ -43,13 +43,13 @@ namespace mavhub {
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
+			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
 				param_request_list = 1;
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if(mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id()) {
-				Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this system", (int)owner()->system_id(), Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+				Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
 				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
 					Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
@@ -82,7 +82,7 @@ namespace mavhub {
   void Ctrl_Lateral::run() {
 		// generic
 		static mavlink_message_t msg;
-		static mavlink_debug_t dbg;
+		//static mavlink_debug_t dbg;
 		// timing
 		uint64_t dt = 0;
 		double dtf = 0.0;
@@ -146,7 +146,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
 					send(msg);
 				}
 
@@ -242,11 +242,22 @@ namespace mavhub {
 			if(roll < -100.0)
 				roll = -100.0;
 
-			send_debug(&msg, &dbg, 100, x, component_id);
-			send_debug(&msg, &dbg, 101, y, component_id);
-			send_debug(&msg, &dbg, 105, nick, component_id);
-			send_debug(&msg, &dbg, 106, roll, component_id);
-			send_debug(&msg, &dbg, 107, atan2f(-nick, -roll), component_id);
+			mavlink_msg_debug_pack(system_id(), component_id, &msg, 100, x);
+			AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_debug_pack(system_id(), component_id, &msg, 101, y);
+			AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_debug_pack(system_id(), component_id, &msg, 105, nick);
+			AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_debug_pack(system_id(), component_id, &msg, 106, roll);
+			AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, 107, atan2f(-nick, -roll) );
+			AppLayer<mavlink_message_t>::send(msg);
+	
+			//send_debug(&msg, &dbg, 100, x, component_id);
+			//send_debug(&msg, &dbg, 101, y, component_id);
+			//send_debug(&msg, &dbg, 105, nick, component_id);
+			//send_debug(&msg, &dbg, 106, roll, component_id);
+			//send_debug(&msg, &dbg, 107, atan2f(-nick, -roll), component_id);
 
 			DataCenter::set_extctrl_nick(nick);
 			DataCenter::set_extctrl_roll(roll);

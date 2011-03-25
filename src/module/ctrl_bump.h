@@ -6,18 +6,19 @@
 #include "debug_channels.h"
 #include "core/logger.h"
 // #include "thread.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 #include "qk_helper.h"
 
 namespace mavhub {
 	/// Controller: system bumping (gas)
-  class Ctrl_Bump : public AppLayer {
+  class Ctrl_Bump : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
   public:
 		/// Constructor
 		Ctrl_Bump(const std::map<std::string, std::string> args);
 		virtual ~Ctrl_Bump();
 		/// mavhub protocolstack input handler
 		virtual void handle_input(const mavlink_message_t &msg);
+		virtual void handle_input(const mk_message_t &msg);
 
   protected:
 		/// this thread's main method

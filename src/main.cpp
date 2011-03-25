@@ -26,11 +26,16 @@
 
 #include "main.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#include "core/core.h"
 #include "core/logger.h"
-#include "core/protocolstack.h"
-#include "core/protocollayer.h"
+#include "protocol/protocolstack.h"
+#include "protocol/protocollayer.h"
 #include "core/mavshell.h"
-#include "application/app_factory.h"
+#include "application/app_store.h"
 #include "sensor/sensor_factory.h"
 
 #include <iostream>     // cout
@@ -42,7 +47,6 @@ using namespace mavhub;
 using namespace cpp_pthread;
 using namespace cpp_io;
 
-uint16_t system_id(42); ///< \var System ID in mavlink context
 int tcp_port(32000);	///< \var TCP port of configuration shell
 string cfg_filename("mavhub.d/mavhub.conf"); ///< \var name of configuration file
 
@@ -69,9 +73,6 @@ int main(int argc, char **argv) {
 	// start sensors
 	SensorManager::instance().start_all_sensors();
 
-	// activate stack
-	ProtocolStack::instance().start();
-
 	// start configuration shell
 	try {
 		MAVShell *mav_shell = new MAVShell(tcp_port);
@@ -83,21 +84,42 @@ int main(int argc, char **argv) {
 	}
 
 	// join stack thread
-	ProtocolStack::instance().join();
+#ifdef HAVE_MAVLINK_H
+	ProtocolStack<mavlink_message_t>::instance().join();
+#endif // HAVE_MAVLINK_H
 }
 
 void read_settings(Setting &settings) {
-	//read loglevel
+	//read global loglevel
 	Logger::log_level_t loglevel;
 	if( settings.value("loglevel", loglevel) )
 		Logger::log("Loglevel is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
 	else
 		Logger::setLogLevel(loglevel);
 
+	//read loglevel of stack
+	if(settings.begin_group("stack") == 0) {  //stack group available
+		if( settings.value("loglevel", loglevel) )
+			Logger::log("Loglevel for stack is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
+		else {
+#ifdef HAVE_MAVLINK_H
+				ProtocolStack<mavlink_message_t>::instance().loglevel(loglevel);
+#endif // HAVE_MAVLINK_H
+#ifdef HAVE_MKHUCHLINK_H
+				ProtocolStack<mkhuch_message_t>::instance().loglevel(loglevel);
+#endif // HAVE_MKHUCHLINK_H
+#ifdef HAVE_MKLINK_H
+				ProtocolStack<mk_message_t>::instance().loglevel(loglevel);
+#endif // HAVE_MKLINK_H
+		}
+		settings.end_group();
+	}
+
 	//read system ID
+	uint16_t system_id(42);
 	if( settings.value("system_id", system_id) )
 		Logger::log("System ID is missing in config file: ", cfg_filename, Logger::LOGLEVEL_WARN);
-	ProtocolStack::instance().system_id(system_id);
+	Core::system_id(system_id);
 
 	//read TCP port of MAVShell
 	if( settings.value("tcp_port", tcp_port) )
@@ -150,7 +172,31 @@ void add_links(const list<string> link_list, Setting &settings) {
 		}
 
 		cpp_io::IOInterface *layer = LinkFactory::build(link_construction_plan);
-		ProtocolStack::instance().add_link(layer, link_construction_plan.package_format);
+		if(!layer) {
+			Logger::log("Construction of", *link_iter, "failed", Logger::LOGLEVEL_WARN);
+			continue;
+		}
+		switch(link_construction_plan.protocol_type) {
+			case MAVLINK:
+#ifdef HAVE_MAVLINK_H
+				ProtocolStack<mavlink_message_t>::instance().add_link(layer);
+				break;
+#endif // HAVE_MAVLINK_H
+#ifdef HAVE_MKHUCHLINK_H
+			case MKHUCHLINK:
+				ProtocolStack<mkhuch_message_t>::instance().add_link(layer);
+				break;
+#endif // HAVE_MKHUCHLINK_H
+#ifdef HAVE_MKLINK_H
+			case MKLINK:
+				ProtocolStack<mk_message_t>::instance().add_link(layer);
+				break;
+#endif // HAVE_MKLINK_H
+
+			default:
+				Logger::log("Adding of", *link_iter, "failed, due to unkwnown protocol type", Logger::LOGLEVEL_DEBUG);
+				break;
+		}
 	}
 }
 
@@ -159,13 +205,12 @@ void read_link_configuration(LinkFactory::link_construction_plan_t &link_plan, S
 	settings.value("name", link_plan.dev_name);
 	settings.value("port", link_plan.port);
 	settings.value("baudrate", link_plan.baudrate);
-	settings.value("protocol", link_plan.package_format);
+	settings.value("protocol", link_plan.protocol_type);
 	settings.value("members", link_plan.groupmember_list);
 }
 
 void add_apps(const std::list<std::string> &app_list, Setting &settings) {
 
-	AppLayer *app;
 	map<string, string> arg_map;
 	for(list<string>::const_iterator app_iter = app_list.begin(); app_iter != app_list.end(); ++app_iter) {
 		//read from global config file first (because map wouldn't overwrite existing entries)
@@ -180,9 +225,7 @@ void add_apps(const std::list<std::string> &app_list, Setting &settings) {
 		catch(const invalid_argument &ia) {
 			Logger::log(ia.what(), Logger::LOGLEVEL_DEBUG);
 		}
-
-		app = AppFactory::build(*app_iter, arg_map);
-		ProtocolStack::instance().add_application(app);
+		AppStore::order(*app_iter, arg_map);
 		arg_map.clear();
 	}
 }

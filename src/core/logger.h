@@ -143,6 +143,78 @@ class Logger {
 				const T3 &msg3,
 				const log_level_t msg_loglevel = LOGLEVEL_ALL,
 				const log_level_t local_loglevel = LOGLEVEL_ALL);
+		/**
+		 * \brief Writes four messages to logger
+		 * \tparam msg1 First message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg2 Second message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg3 Third message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg4 Fourth message which will be written to logger
+		 * by output stream operator.
+		 * \param msg_loglevel The log level for given messages.
+		 * \param local_loglevel The log level of the current context 
+		 * (application, module, etc.).
+		 */
+		template<typename T1, typename T2, typename T3, typename T4>
+		static void log(const T1 &msg1,
+				const T2 &msg2,
+				const T3 &msg3,
+				const T4 &msg4,
+				const log_level_t msg_loglevel = LOGLEVEL_ALL,
+				const log_level_t local_loglevel = LOGLEVEL_ALL);
+		/**
+		 * \brief Writes five messages to logger
+		 * \tparam msg1 First message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg2 Second message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg3 Third message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg4 Fourth message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg5 Fifth message which will be written to logger
+		 * by output stream operator.
+		 * \param msg_loglevel The log level for given messages.
+		 * \param local_loglevel The log level of the current context 
+		 * (application, module, etc.).
+		 */
+		template<typename T1, typename T2, typename T3, typename T4, typename T5>
+		static void log(const T1 &msg1,
+				const T2 &msg2,
+				const T3 &msg3,
+				const T4 &msg4,
+				const T5 &msg5,
+				const log_level_t msg_loglevel = LOGLEVEL_ALL,
+				const log_level_t local_loglevel = LOGLEVEL_ALL);
+		/**
+		 * \brief Writes six messages to logger
+		 * \tparam msg1 First message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg2 Second message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg3 Third message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg4 Fourth message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg5 Fifth message which will be written to logger
+		 * by output stream operator.
+		 * \tparam msg6 Sixth message which will be written to logger
+		 * by output stream operator.
+		 * \param msg_loglevel The log level for given messages.
+		 * \param local_loglevel The log level of the current context 
+		 * (application, module, etc.).
+		 */
+		template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+		static void log(const T1 &msg1,
+				const T2 &msg2,
+				const T3 &msg3,
+				const T4 &msg4,
+				const T5 &msg5,
+				const T6 &msg6,
+				const log_level_t msg_loglevel = LOGLEVEL_ALL,
+				const log_level_t local_loglevel = LOGLEVEL_ALL);
 
 		/**
 		 * \brief Writes message with log level LOGLEVEL_DEBUG to logger.
@@ -327,6 +399,63 @@ void Logger::log(const T1 &msg1,
 #endif
 		log_preamble(msg_loglevel);
 		*out_stream << msg1 << " "  << msg2 << " "  << msg3 << std::endl;
+#if defined(_REENTRANT)
+		pthread_mutex_unlock(&stream_mutex);
+#endif
+	}
+}
+template<typename T1, typename T2, typename T3, typename T4>
+void Logger::log(const T1 &msg1,
+		 const T2 &msg2,
+		 const T3 &msg3,
+		 const T4 &msg4,
+		 const log_level_t msg_loglevel,
+		 const log_level_t local_loglevel) {
+	if(msg_loglevel >= local_loglevel && msg_loglevel >= log_level) {
+#if defined(_REENTRANT)
+		pthread_mutex_lock(&stream_mutex);
+#endif
+		log_preamble(msg_loglevel);
+		*out_stream << msg1 << " "  << msg2 << " "  << msg3 << " " << msg4 << std::endl;
+#if defined(_REENTRANT)
+		pthread_mutex_unlock(&stream_mutex);
+#endif
+	}
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5>
+void Logger::log(const T1 &msg1,
+		 const T2 &msg2,
+		 const T3 &msg3,
+		 const T4 &msg4,
+		 const T5 &msg5,
+		 const log_level_t msg_loglevel,
+		 const log_level_t local_loglevel) {
+	if(msg_loglevel >= local_loglevel && msg_loglevel >= log_level) {
+#if defined(_REENTRANT)
+		pthread_mutex_lock(&stream_mutex);
+#endif
+		log_preamble(msg_loglevel);
+		*out_stream << msg1 << " "  << msg2 << " "  << msg3 << " " << msg4 << " " << msg5 << std::endl;
+#if defined(_REENTRANT)
+		pthread_mutex_unlock(&stream_mutex);
+#endif
+	}
+}
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+void Logger::log(const T1 &msg1,
+		 const T2 &msg2,
+		 const T3 &msg3,
+		 const T4 &msg4,
+		 const T5 &msg5,
+		 const T6 &msg6,
+		 const log_level_t msg_loglevel,
+		 const log_level_t local_loglevel) {
+	if(msg_loglevel >= local_loglevel && msg_loglevel >= log_level) {
+#if defined(_REENTRANT)
+		pthread_mutex_lock(&stream_mutex);
+#endif
+		log_preamble(msg_loglevel);
+		*out_stream << msg1 << " "  << msg2 << " "  << msg3 << " " << msg4 << " " << msg5 << " " << msg6 << std::endl;
 #if defined(_REENTRANT)
 		pthread_mutex_unlock(&stream_mutex);
 #endif

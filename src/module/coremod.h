@@ -1,13 +1,13 @@
 #ifndef _COREMOD_H_
 #define _COREMOD_H_
 
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 
 #include <inttypes.h> //uint8_t
 
 namespace mavhub {
 
-	class CoreModule : public AppLayer {
+	class CoreModule : public AppLayer<mavlink_message_t> {
 		public:
 			CoreModule();
 			virtual ~CoreModule();

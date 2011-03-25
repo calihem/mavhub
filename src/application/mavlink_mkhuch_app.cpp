@@ -1,4 +1,4 @@
-#include "mk_app.h"
+#include "mavlink_mkhuch_app.h"
 
 #ifdef HAVE_MKHUCHLINK_H
 
@@ -13,7 +13,7 @@ namespace mavhub {
 // macros for state_vector
 #define STATE_PARAM_REQUEST_LIST	1
 
-const int8_t MKApp::parameter_ids[parameter_count][15] = {
+const int8_t MAVLinkMKHUCHApp::parameter_ids[parameter_count][15] = {
 	"REVISION",
 	"CHANNEL_0",
 	"CHANNEL_1",
@@ -121,25 +121,24 @@ const int8_t MKApp::parameter_ids[parameter_count][15] = {
 };
 
 
-MKApp::MKApp(const Logger::log_level_t loglevel) :
-	AppInterface("mk_app", loglevel),
-	AppLayer<mavlink_message_t>("mk_app", loglevel),
-	AppLayer<mkhuch_message_t>("mk_app", loglevel)
-// 	mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
-// 	message_time( get_time_us() ),
-// 	attitude_time( get_time_us() ),
+MAVLinkMKHUCHApp::MAVLinkMKHUCHApp(const Logger::log_level_t loglevel) :
+	AppInterface("mavlink_mkhuch_app", loglevel),
+	AppLayer<mavlink_message_t>("mavlink_mkhuch_app", loglevel),
+	AppLayer<mkhuch_message_t>("mavlink_mkhuch_app", loglevel),
+	mkhuch_msg_time( get_time_us() ),
+	heartbeat_time(0)
 // 	parameter_request(255),
 // 	parameter_time(0) {
 	{
-// 	pthread_mutex_init(&tx_mav_mutex, NULL);
-// 	pthread_mutex_init(&tx_mk_mutex, NULL);
+	pthread_mutex_init(&tx_mav_mutex, NULL);
+	pthread_mutex_init(&tx_mkhuch_mutex, NULL);
 // 	mkhuchlink_msg_init(&tx_mk_msg);
 }
 
-MKApp::~MKApp() {}
+MAVLinkMKHUCHApp::~MAVLinkMKHUCHApp() {}
 
-void MKApp::handle_input(const mavlink_message_t &msg) {
-	log("MKApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
+void MAVLinkMKHUCHApp::handle_input(const mavlink_message_t &msg) {
+	log("MAVLinkMKHUCHApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
 /*
 	switch(msg.msgid) {
 		case MAVLINK_MSG_ID_PING: {
@@ -230,21 +229,22 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 	}*/
 }
 
-void MKApp::handle_input(const mkhuch_message_t& msg) {
-	log("MKApp got mkhuch_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
-/*
+void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
+	uint64_t last_mkhuch_msg_time = mkhuch_msg_time;
+	mkhuch_msg_time = get_time_us();
+
+	log("MAVLinkMKHUCHApp got mkhuch_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
+
+	//send heartbeat approx. after 1s
+	heartbeat_time += mkhuch_msg_time - last_mkhuch_msg_time;
+	if( heartbeat_time > 1000000 ) {
+		send_heartbeat();
+		heartbeat_time = 0;
+	}
+
 	switch(msg.type) {
 		case MKHUCH_MSG_TYPE_MK_IMU: {
 			const mkhuch_mk_imu_t *mk_imu = reinterpret_cast<const mkhuch_mk_imu_t*>(msg.data);
-// std::ostringstream logstream;
-// logstream << message_time << " " 
-// 	<< mk_imu->x_adc_acc << " "
-// 	<< mk_imu->y_adc_acc << " "
-// 	<< mk_imu->z_adc_acc << " "
-// 	<< mk_imu->x_adc_gyro << " "
-// 	<< mk_imu->y_adc_gyro << " "
-// 	<< mk_imu->z_adc_gyro;
-// Logger::log(logstream.str(), Logger::LOGLEVEL_ALL, Logger::LOGLEVEL_ALL);
 			mavlink_huch_imu_raw_adc_t imu_raw_adc;
 			imu_raw_adc.xacc = mk_imu->x_adc_acc;
 			imu_raw_adc.yacc = mk_imu->y_adc_acc;
@@ -255,16 +255,16 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			DataCenter::set_huch_imu_raw_adc(imu_raw_adc);
 			Lock tx_lock(tx_mav_mutex);
 			//forward raw ADC
-			mavlink_msg_huch_imu_raw_adc_encode(owner()->system_id(),
+			mavlink_msg_huch_imu_raw_adc_encode(system_id(),
 				component_id,
 				&tx_mav_msg,
 				&imu_raw_adc
 				);
-			send(tx_mav_msg);
+			AppLayer<mavlink_message_t>::send(tx_mav_msg);
 			//forward MK IMU
 			//TODO: add compass value and baro
 			mavlink_huch_mk_imu_t huch_mk_imu;
-			huch_mk_imu.usec = message_time;
+			huch_mk_imu.usec = mkhuch_msg_time;
 			huch_mk_imu.xacc = (2500*mk_imu->x_acc)/1024; //convert normalized analog to mg
 			huch_mk_imu.yacc = (2500*mk_imu->y_acc)/1024;
 			huch_mk_imu.zacc = (2500*mk_imu->z_acc)/1024;
@@ -272,30 +272,30 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			huch_mk_imu.ygyro = (6700*mk_imu->y_adc_gyro)/(3*1024);
 			huch_mk_imu.zgyro = (6700*mk_imu->z_adc_gyro)/(3*1024);
 			DataCenter::set_huch_mk_imu(huch_mk_imu);
-			mavlink_msg_huch_mk_imu_encode( owner()->system_id(),
+			mavlink_msg_huch_mk_imu_encode(system_id(),
 				component_id,
 				&tx_mav_msg,
 				&huch_mk_imu
 				);
-			send(tx_mav_msg);
+			AppLayer<mavlink_message_t>::send(tx_mav_msg);
 			//forward pressure
 			mavlink_raw_pressure_t raw_pressure;
-			raw_pressure.usec = message_time;
+			raw_pressure.usec = mkhuch_msg_time;
 			raw_pressure.press_abs = mk_imu->press_abs;
 			raw_pressure.press_diff1 = 0;	//press_diff1
 			raw_pressure.press_diff2 = 0;	//press_diff2
 			raw_pressure.temperature = 0;	//temperature
 			DataCenter::set_raw_pressure(raw_pressure);
-			mavlink_msg_raw_pressure_encode(owner()->system_id(),
+			mavlink_msg_raw_pressure_encode(system_id(),
 				component_id,
 				&tx_mav_msg,
 				&raw_pressure
 				);
-			send(tx_mav_msg);
+			AppLayer<mavlink_message_t>::send(tx_mav_msg);
 			//TODO: forward magneto
 			break;
 		}
-		case MKHUCH_MSG_TYPE_PARAM_VALUE: {
+/*		case MKHUCH_MSG_TYPE_PARAM_VALUE: {
 			const mkhuch_param_t *param = reinterpret_cast<const mkhuch_param_t*>(msg.data);
 			//set parameter
 			uint8_t index;
@@ -316,15 +316,15 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 			//inform others
 			send_mavlink_param_value( static_cast<mk_param_type_t>(index) );
 			break;
-		}
-		case MKHUCH_MSG_TYPE_ACTION_ACK: {
+		}*/
+/*		case MKHUCH_MSG_TYPE_ACTION_ACK: {
 
 			Lock tx_lock(tx_mav_mutex);
 			mavlink_msg_action_ack_pack(owner()->system_id(), component_id, &tx_mav_msg, msg.data[0], msg.data[1]);
 			send(tx_mav_msg);
 			break;
-		}
-		case MKHUCH_MSG_TYPE_SYSTEM_STATUS: {
+		}*/
+/*		case MKHUCH_MSG_TYPE_SYSTEM_STATUS: {
 			const mkhuch_system_status_t *sys_status = reinterpret_cast<const mkhuch_system_status_t*>(msg.data);
 			Lock tx_lock(tx_mav_mutex);
 			mavlink_msg_sys_status_pack(owner()->system_id(),
@@ -339,51 +339,42 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 				sys_status->packet_drop);
 			send(tx_mav_msg);
 			break;
-		}
-		case MKHUCH_MSG_TYPE_BOOT:
+		}*/
+/*		case MKHUCH_MSG_TYPE_BOOT:
 			//TODO
-			break;
+			break;*/
 		case MKHUCH_MSG_TYPE_ATTITUDE: {
 			const mkhuch_attitude_t *mkhuch_attitude = reinterpret_cast<const mkhuch_attitude_t*>(msg.data);
 			mavlink_attitude_t mavlink_attitude;
-			mavlink_attitude.usec = message_time;
-			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angle);
-			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angle);
-			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angle);
-			uint64_t delta_time = mavlink_attitude.usec - attitude_time;
-			if(delta_time > 150) {
-				uint64_t delta_time = mavlink_attitude.usec - attitude_time;
-				mavlink_attitude.rollspeed = (1745.329251994329577*(attitude.roll_angle - mkhuch_attitude->roll_angle)) / delta_time;
-				mavlink_attitude.pitchspeed = (1745.329251994329577*(attitude.pitch_angle - mkhuch_attitude->pitch_angle)) / delta_time;
-				mavlink_attitude.yawspeed = (1745.329251994329577*(attitude.yaw_angle - mkhuch_attitude->yaw_angle)) / delta_time;
-			} else {
-				mavlink_attitude.rollspeed = 0;
-				mavlink_attitude.pitchspeed = 0;
-				mavlink_attitude.yawspeed = 0;
-			}
-			memcpy(&attitude, mkhuch_attitude, sizeof(mkhuch_attitude_t));
-			attitude_time = mavlink_attitude.usec;
+			mavlink_attitude.usec = mkhuch_msg_time;
+			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angle);		//convert cdeg to rad with (pi/180)/10 
+			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angle);	//convert cdeg to rad with (pi/180)/10
+			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angle);		//convert cdeg to rad with (pi/180)/10
+			//FIXME
+			mavlink_attitude.rollspeed = 0;
+			mavlink_attitude.pitchspeed = 0;
+			mavlink_attitude.yawspeed = 0;
 			Lock tx_lock(tx_mav_mutex);
-			mavlink_msg_attitude_encode(owner()->system_id(),
+			mavlink_msg_attitude_encode(system_id(),
 				component_id,
 				&tx_mav_msg,
 				&mavlink_attitude);
-			send(tx_mav_msg);
+			AppLayer<mavlink_message_t>::send(tx_mav_msg);
 			break;
 		}
 		default:
 			break;
-	}*/
+	}
 }
 
-void MKApp::print(std::ostream &os) const {
+void MAVLinkMKHUCHApp::print(std::ostream &os) const {
 // 	AppLayer<mavlink_message_t>::print(os);
 
 // 	os << "* device: " << mk_dev;
 }
 
-void MKApp::run() {
-	log("MKApp running", Logger::LOGLEVEL_DEBUG);
+void MAVLinkMKHUCHApp::run() {
+	log("MAVLinkMKHUCHApp running", Logger::LOGLEVEL_DEBUG);
 /*	fd_set read_fds;
 	int fds_ready;
 	timeval timeout;
@@ -392,7 +383,7 @@ void MKApp::run() {
 	mkhuchlink_status_t link_status;
 	uint64_t delta_time = 0, tmp64;
 
-	log("MKApp running", Logger::LOGLEVEL_DEBUG);
+	log("MAVLinkMKHUCHApp running", Logger::LOGLEVEL_DEBUG);
 
 	mkhuchlink_status_initialize(&link_status);
 
@@ -427,16 +418,16 @@ void MKApp::run() {
 		if(parameter_request != 255) {
 			uint64_t time = get_time_us();
 			if( (time - parameter_time) > 500000 ) { //message lost
-				log("MKApp: request timeout for parameter index", static_cast<int>(parameter_request), Logger::LOGLEVEL_WARN);
+				log("MAVLinkMKHUCHApp: request timeout for parameter index", static_cast<int>(parameter_request), Logger::LOGLEVEL_WARN);
 				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &parameter_request, sizeof(mk_param_type_t));
 				parameter_time = get_time_us();
 			}
 		}
 	}
-	log("MKApp stopped", Logger::LOGLEVEL_DEBUG);*/
+	log("MAVLinkMKHUCHApp stopped", Logger::LOGLEVEL_DEBUG);*/
 }
 
-// size_t MKApp::send(const mkhuch_message_t& msg) {
+// size_t MAVLinkMKHUCHApp::send(const mkhuch_message_t& msg) {
 // 	size_t sent = 0;
 
 // 	sent += mk_dev.write(&(msg.sync), 3);
@@ -446,7 +437,7 @@ void MKApp::run() {
 // 	return sent;
 // }
 
-// size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t size) {
+// size_t MAVLinkMKHUCHApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t size) {
 // 	size_t sent = 0;
 // 	char buf = MKHUCH_MESSAGE_START;
 // 	Lock tx_lock(tx_mk_mutex);
@@ -472,13 +463,13 @@ void MKApp::run() {
 // 	return sent;
 // }
 
-// void MKApp::send_heartbeat() {
-/*	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
-	send(tx_mav_msg);*/
-// }
+void MAVLinkMKHUCHApp::send_heartbeat() {
+	Lock tx_lock(tx_mav_mutex);
+	mavlink_msg_heartbeat_pack(system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
+	AppLayer<mavlink_message_t>::send(tx_mav_msg);
+}
 
-// void MKApp::send_mavlink_param_value(const mk_param_type_t param_type) {
+// void MAVLinkMKHUCHApp::send_mavlink_param_value(const mk_param_type_t param_type) {
 /*	Lock tx_lock(tx_mav_mutex);
 
 	mavlink_msg_param_value_pack(owner()->system_id(),
@@ -491,7 +482,7 @@ void MKApp::run() {
 	send(tx_mav_msg);*/
 // }
 
-// const int MKApp::parameter_id_to_index(const int8_t *parameter_id) {
+// const int MAVLinkMKHUCHApp::parameter_id_to_index(const int8_t *parameter_id) {
 	//TODO: use efficient search algorithm
 /*	for(int i=0; i<parameter_count; i++) {
 		if(strncmp( (const char*)parameter_id, (const char*)parameter_ids[i], 15) == 0) {

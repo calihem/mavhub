@@ -10,7 +10,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
@@ -18,7 +18,10 @@ using namespace std;
 
 namespace mavhub {
 	// Ctrl_Bump::Ctrl_Bump(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
-  Ctrl_Bump::Ctrl_Bump(const map<string, string> args) : AppLayer("ctrl_bump") {
+  Ctrl_Bump::Ctrl_Bump(const map<string, string> args) :
+	AppInterface("ctrl_bump"),
+	AppLayer<mavlink_message_t>("ctrl_bump"),
+	AppLayer<mk_message_t>("ctrl_bump") {
 		read_conf(args);
 		// component_id = component_id_;
 		param_count = 1;
@@ -38,14 +41,14 @@ namespace mavhub {
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Bump::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
+			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
 				param_list();
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
 			Logger::log("Ctrl_Bump::handle_input: PARAM_SET", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id()) {
-				Logger::log("Ctrl_Bump::handle_input: PARAM_SET for this system", (int)owner()->system_id(), Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+				Logger::log("Ctrl_Bump::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
 				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
 					Logger::log("Ctrl_Bump::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
@@ -72,18 +75,20 @@ namespace mavhub {
 		}
   }
 
+  void Ctrl_Bump::handle_input(const mk_message_t &msg) { }
+
 	void Ctrl_Bump::param_list() {
 		static mavlink_message_t msg;
 		// return params list
 		Logger::log("Ctrl_Bump::param_list", Logger::LOGLEVEL_INFO);
-		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gdt_enable", gdt_enable, 1, 0);
-		send(msg);
-		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gdt_delay", gdt_delay, 1, 0);
-		send(msg);
-		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gdt_gas", gdt_gas, 1, 0);
-		send(msg);
-		mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
-		send(msg);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gdt_enable", gdt_enable, 1, 0);
+		AppLayer<mavlink_message_t>::send(msg);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gdt_delay", gdt_delay, 1, 0);
+		AppLayer<mavlink_message_t>::send(msg);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gdt_gas", gdt_gas, 1, 0);
+		AppLayer<mavlink_message_t>::send(msg);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
+		AppLayer<mavlink_message_t>::send(msg);
 	}
 
 	double Ctrl_Bump::gdt_eval(uint64_t dt) {
@@ -148,7 +153,7 @@ namespace mavhub {
 		Logger::log("Ctrl_Bump started", Logger::LOGLEVEL_INFO);
 
 		// MKPackage msg_setneutral(1, 'c');
-		// owner()->send(msg_setneutral);
+		// send(msg_setneutral);
 
 		while(true) {
 				
@@ -200,25 +205,26 @@ namespace mavhub {
 			// gas out
 			dbg.ind = BUMP_GAS;
 			dbg.value = gas;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			// gdt enable
 			dbg.ind = BUMP_ENABLE;
 			dbg.value = gdt_enable;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			// dt
 			dbg.ind = BUMP_DT_S;
 			dbg.value = dt * 1e-6;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			//Logger::log("Ctrl_Bump: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
 			if(output_enable > 0) {
-				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-				send(msg_extctrl);
+				mk_message_t msg_extctrl;
+				mklink_msg_pack(&msg_extctrl, MK_FC_ADDRESS, MK_MSG_TYPE_SET_EXT_CTRL, &extctrl, sizeof(extctrl));
+				AppLayer<mk_message_t>::send(msg_extctrl);
 			}
 			
 			// stats

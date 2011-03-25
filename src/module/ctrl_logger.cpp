@@ -17,7 +17,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
@@ -25,7 +25,8 @@ using namespace std;
 
 namespace mavhub {
   Ctrl_Logger::Ctrl_Logger(const map<string, string> args) : 
-		AppLayer("ctrl_logger")
+		AppInterface("ctrl_logger"),
+		AppLayer<mavlink_message_t>("ctrl_logger")
 	{
 		char outstr[200];
 		time_t t;

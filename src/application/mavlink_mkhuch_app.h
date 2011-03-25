@@ -1,5 +1,5 @@
-#ifndef _MK_APP_H_
-#define _MK_APP_H_
+#ifndef _MAVLINK_MKHUCH_APP_H_
+#define _MAVLINK_MKHUCH_APP_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -15,12 +15,12 @@
 
 namespace mavhub {
 
-	class MKApp : public AppLayer<mavlink_message_t>, public AppLayer<mkhuch_message_t> {
+	class MAVLinkMKHUCHApp : public AppLayer<mavlink_message_t>, public AppLayer<mkhuch_message_t> {
 		public:
 			static const int component_id = 25;
 
-			MKApp(const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
-			virtual ~MKApp();
+			MAVLinkMKHUCHApp(const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+			virtual ~MAVLinkMKHUCHApp();
 
 			virtual void handle_input(const mavlink_message_t &msg);
 			virtual void handle_input(const mkhuch_message_t &msg);
@@ -33,30 +33,27 @@ namespace mavhub {
 			static const int parameter_count = 104;
 			static const int8_t parameter_ids[parameter_count][15];
 
+			/// Time of last received MKHUCH message
+			uint64_t mkhuch_msg_time;
+			/// Time difference since last heartbeat
+			uint64_t heartbeat_time;
 			/// tx buffer for mavlink messages
-// 			mavlink_message_t tx_mav_msg;
+			mavlink_message_t tx_mav_msg;
 			/// Mutex to protect tx_mav_msg
-// 			pthread_mutex_t tx_mav_mutex;
-			uint8_t parameters[parameter_count];
-			/// Serial port to MK
-// 			UART mk_dev;
-			/// tx buffer for MK messages
-// 			mkhuch_message_t tx_mk_msg;
-			/// Mutex to protect tx_mk_msg
-// 			pthread_mutex_t tx_mk_mutex;
-			/// Time of last received mkhuch message
-// 			uint64_t message_time;
-			/// Last received attitude
-// 			mkhuch_attitude_t attitude;
-			/// Time of last received attitude
-// 			uint64_t attitude_time;
+			pthread_mutex_t tx_mav_mutex;
+// 			uint8_t parameters[parameter_count];
+			/// tx buffer for MKHUCH messages
+			mkhuch_message_t tx_mkhuch_msg;
+			/// Mutex to protect tx_mkhuch_msg
+			pthread_mutex_t tx_mkhuch_mutex;
 			/// Last requested parameter from MK
 // 			uint8_t parameter_request;
 			/// Time of last parameter answer from MK
 // 			uint64_t parameter_time;
 
 // 			using AppLayer::send;
-// 			void send_heartbeat();
+			/// Send mavlink heartbeat
+			void send_heartbeat();
 // 			void send_mavlink_param_value(const mk_param_type_t param_type);
 // 			const uint8_t get_parameter(const mk_param_type_t param_type) const;
 // 			const int8_t* get_parameter_id(const mk_param_type_t param_type) const;
@@ -70,12 +67,12 @@ namespace mavhub {
 	};
 
 	// ----------------------------------------------------------------------------
-	// MKApp
+	// MAVLinkMKHUCHApp
 	// ----------------------------------------------------------------------------
-// 	inline const uint8_t MKApp::get_parameter(const mk_param_type_t param_type) const {
+// 	inline const uint8_t MAVLinkMKHUCHApp::get_parameter(const mk_param_type_t param_type) const {
 // 		return parameters[param_type];
 // 	}
-// 	inline const int8_t* MKApp::get_parameter_id(const mk_param_type_t param_type) const {
+// 	inline const int8_t* MAVLinkMKHUCHApp::get_parameter_id(const mk_param_type_t param_type) const {
 // 		return parameter_ids[param_type];
 // 	}
 } // namespace mavhub

@@ -2,11 +2,11 @@
 #define _SIM_CRRCSIM_H_
 
 #include <inttypes.h> //uint8_t
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 
 namespace mavhub {
 
-	class Sim_Crrcsimule : public AppLayer {
+	class Sim_Crrcsimule : public AppLayer<mavlink_message_t> {
 		public:
 			Sim_Crrcsimule(const std::map<std::string, std::string> args);
 			virtual ~Sim_Crrcsimule();

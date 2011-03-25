@@ -60,6 +60,9 @@
 /* Define to 1 if you have the <mkhuchlink.h> header file. */
 #undef HAVE_MKHUCHLINK_H
 
+/* Define to 1 if you have the <mklink.h> header file. */
+#undef HAVE_MKLINK_H
+
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 

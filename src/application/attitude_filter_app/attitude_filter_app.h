@@ -1,13 +1,13 @@
 #ifndef _ATTITUDE_FILTER_APP_H_
 #define _ATTITUDE_FILTER_APP_H_
 
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 #include "core/thread.h"
 #include <opencv/cv.h>
 
 namespace mavhub {
 
-	class AttitudeFilterApp : public AppLayer {
+	class AttitudeFilterApp : public AppLayer<mavlink_message_t> {
 		
 		public:
 			AttitudeFilterApp(const Logger::log_level_t loglevel, uint32_t usMeasurementTimeout, int numberOfMeasurementsForGyroBiasMean);

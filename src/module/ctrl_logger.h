@@ -5,10 +5,10 @@
 
 #include "debug_channels.h"
 #include "core/logger.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 
 namespace mavhub {
-	class Ctrl_Logger : public AppLayer {
+	class Ctrl_Logger : public AppLayer<mavlink_message_t> {
 	public:
 		Ctrl_Logger(const std::map<std::string, std::string> args);
 		virtual ~Ctrl_Logger();

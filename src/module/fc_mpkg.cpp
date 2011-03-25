@@ -10,14 +10,17 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
 using namespace std;
 
 namespace mavhub {
-  FC_Mpkg::FC_Mpkg(int component_id) : AppLayer("fc_mpkg") {
+  FC_Mpkg::FC_Mpkg(int component_id) :
+	AppInterface("fc_mpkg"),
+	AppLayer<mavlink_message_t>("fc_mpkg"),
+	AppLayer<mk_message_t>("fc_mpkg") {
 		FC_Mpkg::component_id = component_id;
 		FC_Mpkg::mk_debugout_digital_offset = 2;
   }
@@ -72,6 +75,8 @@ namespace mavhub {
 		// }
   }
 
+  void FC_Mpkg::handle_input(const mk_message_t &msg) { }
+
   void FC_Mpkg::run() {
 		int buf[1];
 		mavlink_message_t msg_i;
@@ -81,9 +86,10 @@ namespace mavhub {
 		buf[0] = 10;
 		// MKPackage msg_debug_on(1, 'd', 1, buf);
 		// call constructor with: numdata (1), <buf(buf), buflen(1)> pairs
-		MKPackage msg_debug_on(1, 'd', 1, buf, 1);
+		mk_message_t msg_debug_on;
+		mklink_msg_pack(&msg_debug_on, MK_FC_ADDRESS, MK_MSG_TYPE_POLL_DEBUG, buf, 1);
 		sleep(3);
-		send(msg_debug_on);
+		AppLayer<mk_message_t>::send(msg_debug_on);
 		Logger::log("FC_Mpkg debug request sent to FC", Logger::LOGLEVEL_INFO);
 		// MKPackage msg_setneutral(1, 'c');
 		while(true) {
@@ -93,21 +99,21 @@ namespace mavhub {
 			// 1. put into datacenter?
 			// 2. retransmit onto protocolstack?
 
-			mavlink_msg_huch_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_attitude);
-			send(msg_i);
-			mavlink_msg_huch_fc_altitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
-			send(msg_i);
-			// mavlink_msg_huch_ranger_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
+			mavlink_msg_huch_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_attitude);
+			AppLayer<mavlink_message_t>::send(msg_i);
+			mavlink_msg_huch_fc_altitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_altitude);
+			AppLayer<mavlink_message_t>::send(msg_i);
+			// mavlink_msg_huch_ranger_encode(system_id(), static_cast<uint8_t>(component_id), &msg_i, &huch_ranger);
 			// send(msg_i);
-			mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &mk_fc_status);
-			send(msg_i);
+			mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg_i, &mk_fc_status);
+			AppLayer<mavlink_message_t>::send(msg_i);
 			// send pixhawk std struct
 			// mavlink_msg_raw_imu_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &raw_imu);
 			// send(msg_i);
 			// mavlink_msg_attitude_encode(owner->system_id(), static_cast<uint8_t>(component_id), &msg_i, &attitude);
 			// owner->send(msg_i);
-			mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg_i, &manual_control);
-			send(msg_i);
+			mavlink_msg_manual_control_encode(system_id(), static_cast<uint8_t>(component_id), &msg_i, &manual_control);
+			AppLayer<mavlink_message_t>::send(msg_i);
 
 			// Logger::log("msg len", msg_i.len, Logger::LOGLEVEL_INFO);
 			usleep(10000);
@@ -201,7 +207,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk attitude
 	void FC_Mpkg::set_pxh_manual_control() {
-		manual_control.target = owner()->system_id();
+		manual_control.target = system_id();
 		manual_control.thrust = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
 	}
 

@@ -9,7 +9,6 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
 
 using namespace std;
 

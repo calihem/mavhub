@@ -13,8 +13,8 @@ using namespace cpp_pthread;
 namespace mavhub {
 
 AttitudeFilterApp::AttitudeFilterApp(const Logger::log_level_t loglevel, uint32_t usMeasurementTimeout, int numberOfMeasurementsForGyroBiasMean) :
-		AppLayer("attitude_filter_app", loglevel) {
-
+		AppInterface("attitude_filter_app", loglevel),
+		AppLayer<mavlink_message_t>("attitude_filter_app", loglevel) {
 	// Transfer initialization parameters to class members
 	mUSMeasurementTimeout = usMeasurementTimeout;
 	mNumberOfMeasurementsForGyroBiasMean = numberOfMeasurementsForGyroBiasMean;

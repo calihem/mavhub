@@ -2,7 +2,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include <mavlink.h>
 
 #include <iostream> //cout
@@ -11,7 +11,7 @@
 using namespace std;
 
 namespace mavhub {
-TestCore::TestCore() : AppLayer("testcore") {
+TestCore::TestCore() : AppInterface("testcore"), AppLayer("testcore") {
 }
 
 TestCore::~TestCore() {}

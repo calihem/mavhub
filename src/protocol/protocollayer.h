@@ -30,11 +30,13 @@
 #ifndef _PROTOCOLLAYER_H_
 #define _PROTOCOLLAYER_H_
 
+#include "core/core.h"
 #include "core/thread.h"
 #include "core/logger.h"
 #include "io/io.h"
 #include "io/uart.h"
 #include "io/network.h"
+#include "protocol/protocolstack.h"
 
 #include <inttypes.h> //uint8_t
 #include <string>
@@ -44,27 +46,24 @@
 
 namespace mavhub {
 
-class ProtocolStack;
-class MKPackage;
-
 /**
- * \class AppLayer
+ * \class AppInterface
  * \brief Interface class for applications.
  */
-class AppLayer : public cpp_pthread::PThread {
+class AppInterface : public cpp_pthread::PThread {
 	public:
 		/**
-		 * \brief AppLayer constructor with application name
+		 * \brief AppInterface constructor with application name
 		 * and optional log level.
 		 * \param name Human readable application name.
 		 * \param loglevel The local log level of the application.
 		 */
-		AppLayer(const std::string &name, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+		AppInterface(const std::string &name, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 
 		/**
-		 * \brief AppLayer destructor.
+		 * \brief AppInterface destructor.
 		 */
-		virtual ~AppLayer() { };
+		virtual ~AppInterface() { };
 
 		/**
 		 * \brief Output stream operator for class AppLayer.
@@ -73,13 +72,7 @@ class AppLayer : public cpp_pthread::PThread {
 		 * stream os.
 		 * \return Reference to output stream os.
  		 */
-		friend std::ostream& operator <<(std::ostream &os, const AppLayer &app);
-
-		/**
-		 * \brief Handle new mavlink messages.
-		 * \param msg The mavlink message to process.
-		 */
-		virtual void handle_input(const mavlink_message_t &msg) = 0;
+		friend std::ostream& operator <<(std::ostream &os, const AppInterface &app);
 
 		/**
 		 * \brief Get the application name
@@ -88,14 +81,26 @@ class AppLayer : public cpp_pthread::PThread {
 		const std::string& name() const;
 
 		/**
-		 * \brief Get the ProtocolStack
-		 * \return Pointer to the owning protocol stack.
+		 * \brief Get the Owner
+		 * \return Pointer to the owning instance (protocol stack).
 		 */
-		const ProtocolStack* owner() const;
+		const void* owner() const;
+
+		/**
+		 * \brief Sets the owner
+		 * \param owner The protocol stack owning the instance of
+		 * the application layer
+		 */
+		void owner(const void *owner);
+
+		/**
+		 * \brief Get the system ID
+		 * \return System ID
+		 */
+		static const uint16_t system_id();
 
 	protected:
-		friend class ProtocolStack;
-		const ProtocolStack *_owner;	///< owning protocol stack
+		const void *_owner;			///< pointer to owner
 		Logger::log_level_t _loglevel;	///< local log level of application
 		std::string _name;		///< human readable name of application
 
@@ -108,8 +113,8 @@ class AppLayer : public cpp_pthread::PThread {
 		 * \param loglevel The log level of the message.
 		 * \sa Logger::log
 		 */
-		template<typename T>
-		void log(const T &message, const Logger::log_level_t loglevel) const;
+		template<typename T1>
+		void log(const T1 &message, const Logger::log_level_t loglevel) const;
 
 		/**
 		 * \brief Writes two message to logger.
@@ -123,6 +128,7 @@ class AppLayer : public cpp_pthread::PThread {
 		 */
 		template<typename T1, typename T2>
 		void log(const T1 &msg1, const T2 &msg2, const Logger::log_level_t loglevel) const;
+
 		/**
 		 * \brief Writes three message to logger.
 		 *
@@ -138,47 +144,57 @@ class AppLayer : public cpp_pthread::PThread {
 		inline void log(const T1 &msg1, const T2 &msg2, const T3 &msg3, const Logger::log_level_t loglevel) const;
 
 		/**
-		 * \brief Sets the owning ProtocolStack
-		 * \param stack The protocol stack owning the instance of
-		 * the application layer
-		 */
-		void owner(const ProtocolStack *stack);
-
-		/**
 		 * \brief Writes an application summary to output stream.
 		 * \param os Output stream to which summary should be written.
 		 */
 		virtual void print(std::ostream &os) const;
 
 		/**
+		 * \copydoc PThread::run
+		 */
+		virtual void run() = 0;
+};
+
+/**
+ * \class Application
+ * \brief Base class for applications.
+ */
+template <class T>
+class AppLayer : virtual public AppInterface {
+	public:
+		/**
+		 * \brief AppLayer constructor with application name
+		 * and optional log level.
+		 * \param name Human readable application name.
+		 * \param loglevel The local log level of the application.
+		 */
+		AppLayer(const std::string &name, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+
+		/**
+		 * \brief AppLayer destructor.
+		 */
+		virtual ~AppLayer() { };
+
+		/**
+		 * \brief Handle new mavlink messages.
+		 * \param msg The mavlink message to process.
+		 */
+		virtual void handle_input(const T &msg) = 0;
+
+	protected:
+		template <class TT> friend class ProtocolStack;
+
+		/**
 		 * \brief Main application loop.
 		 * \sa PThread::run
 		 */
 		virtual void run() = 0;
-	
-		/**
-		 * \brief Sends a mavlink message over protocol stack.
-		 * \param msg The mavlink message to send.
-		 * \todo Move type specific methods to own class, e.g. MAVLinkApp
-		 */
-		void send(const mavlink_message_t &msg) const;
 
 		/**
-		 * \brief Sends a MikroKopter message over protocol stack.
-		 * \param msg The MikroKopter message to send.
-		 * \todo Move type specific methods to own class, e.g. MKApp
+		 * \brief Sends a message over protocol stack.
+		 * \param msg The message to send.
 		 */
-		void send(const MKPackage &msg) const;
-
-		/**
-		 * \brief Sends a mavlink debug message over protocol stack.
- 		 * \param msg The mavlink message to send.
- 		 * \param dbg The mavlink debug structure.
- 		 * \param index The debug index.
- 		 * \param value The debug value.
-		 * \todo None
-		 */
-		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value, uint16_t compid);
+		void send(const T &msg) const;
 };
 
 /**
@@ -242,31 +258,66 @@ class UDPLayer : public UDPSocket {
 		/// list of group members with numeric IP address and port
 		std::list<num_addr_pair_t> groupmember_list;
 };
+// ----------------------------------------------------------------------------
+// AppInterface
+// ----------------------------------------------------------------------------
+inline AppInterface::AppInterface(const std::string &name, const Logger::log_level_t loglevel) :
+	_owner(NULL),
+	_loglevel(loglevel),
+	_name(name) { }
+
+inline std::ostream& operator <<(std::ostream &os, const AppInterface &app) {
+	app.print(os);
+	return os;
+}
+
+template<typename T1>
+inline void AppInterface::log(const T1 &message, const Logger::log_level_t loglevel) const {
+	Logger::log(message, loglevel, AppInterface::_loglevel);
+}
+template<typename T1, typename T2>
+inline void AppInterface::log(const T1 &msg1, const T2 &msg2, const Logger::log_level_t loglevel) const {
+	Logger::log(msg1, msg2, loglevel, AppInterface::_loglevel);
+}
+template<typename T1, typename T2, typename T3>
+inline void AppInterface::log(const T1 &msg1, const T2 &msg2, const T3 &msg3, const Logger::log_level_t loglevel) const {
+	Logger::log(msg1, msg2, msg3, loglevel, AppInterface::_loglevel);
+}
+
+inline const std::string& AppInterface::name() const {
+	return _name;
+}
+
+inline const void* AppInterface::owner() const {
+	return _owner;
+}
+
+inline void AppInterface::owner(const void *owner) {
+	_owner = owner;
+}
+
+inline void AppInterface::print(std::ostream &os) const {
+	os << name() << ":" << std::endl
+		<< "* loglevel: " << _loglevel << std::endl;
+}
+
+inline const uint16_t AppInterface::system_id() {
+	return Core::system_id();
+}
 
 // ----------------------------------------------------------------------------
 // AppLayer
 // ----------------------------------------------------------------------------
-template<typename T>
-inline void AppLayer::log(const T &message, const Logger::log_level_t loglevel) const {
-	Logger::log(message, loglevel, AppLayer::_loglevel);
+template <class T>
+AppLayer<T>::AppLayer(const std::string &name, const Logger::log_level_t loglevel) :
+	AppInterface(name, loglevel) { }
+
+template <class T>
+inline void AppLayer<T>::send(const T &msg) const {
+	ProtocolStack<T>::instance().send_to_apps(msg, this);
+	ProtocolStack<T>::instance().send_over_links(msg);
 }
-template<typename T1, typename T2>
-inline void AppLayer::log(const T1 &msg1, const T2 &msg2, const Logger::log_level_t loglevel) const {
-	Logger::log(msg1, msg2, loglevel, AppLayer::_loglevel);
-}
-template<typename T1, typename T2, typename T3>
-inline void AppLayer::log(const T1 &msg1, const T2 &msg2, const T3 &msg3, const Logger::log_level_t loglevel) const {
-	Logger::log(msg1, msg2, msg3, loglevel, AppLayer::_loglevel);
-}
-inline const std::string& AppLayer::name() const {
-	return _name;
-}
-inline const ProtocolStack* AppLayer::owner() const {
-	return _owner;
-}
-inline void AppLayer::owner(const ProtocolStack *stack) {
-	_owner = stack;
-}
+
 
 // ----------------------------------------------------------------------------
 // UDPLayer

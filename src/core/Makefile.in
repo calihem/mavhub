@@ -53,9 +53,8 @@ AR = ar
 ARFLAGS = cru
 libcore_a_AR = $(AR) $(ARFLAGS)
 libcore_a_LIBADD =
-am_libcore_a_OBJECTS = datacenter.$(OBJEXT) logger.$(OBJEXT) \
-	mavshell.$(OBJEXT) setting.$(OBJEXT) protocolstack.$(OBJEXT) \
-	protocollayer.$(OBJEXT)
+am_libcore_a_OBJECTS = core.$(OBJEXT) datacenter.$(OBJEXT) \
+	logger.$(OBJEXT) mavshell.$(OBJEXT) setting.$(OBJEXT)
 libcore_a_OBJECTS = $(am_libcore_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -213,12 +212,11 @@ AM_CXXFLAGS = -I$(top_srcdir)/src
 # AM_CXXFLAGS += 
 noinst_LIBRARIES = libcore.a
 libcore_a_SOURCES = \
+	core.cpp \
 	datacenter.cpp \
 	logger.cpp \
 	mavshell.cpp \
-	setting.cpp \
-	protocolstack.cpp \
-	protocollayer.cpp
+	setting.cpp
 
 all: all-am
 
@@ -268,11 +266,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/datacenter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavshell.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocollayer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocolstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setting.Po@am__quote@
 
 .cpp.o:

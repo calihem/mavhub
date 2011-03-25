@@ -6,9 +6,8 @@ include $(top_srcdir)/am/am_incl_common.am
 noinst_LIBRARIES = libcore.a
 
 libcore_a_SOURCES = \
+	core.cpp \
 	datacenter.cpp \
 	logger.cpp \
 	mavshell.cpp \
-	setting.cpp \
-	protocolstack.cpp \
-	protocollayer.cpp
+	setting.cpp

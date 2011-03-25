@@ -4,7 +4,7 @@
 
 #include <mavlink.h>
 #include "core/datacenter.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include "qk_helper.h"
 #include "protocol/mkpackage.h"
 
@@ -16,7 +16,10 @@
 using namespace std;
 
 namespace mavhub {
-	Ctrl_Zrate::Ctrl_Zrate(const map<string, string> args) : AppLayer("ctrl_zrate") {
+	Ctrl_Zrate::Ctrl_Zrate(const map<string, string> args) : 
+		AppInterface("ctrl_zrate"),
+		AppLayer<mavlink_message_t>("ctrl_zrate"),
+		AppLayer<mk_message_t>("ctrl_zrate") {
 		read_conf(args);
 		param_request_list = 0;
 		pid_zrate = new PID((int)params["ctl_bias"],
@@ -44,13 +47,13 @@ namespace mavhub {
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Zrate::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
+			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
 				param_request_list = 1;
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if(mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id()) {
-				Logger::log("Ctrl_Zrate::handle_input: PARAM_SET for this system", (int)owner()->system_id(), Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+				Logger::log("Ctrl_Zrate::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
 				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
 					Logger::log("Ctrl_Zrate::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
@@ -73,6 +76,10 @@ namespace mavhub {
 		}		
 	}
 
+  void Ctrl_Zrate::handle_input(const mk_message_t &msg) {
+
+  }
+
   void Ctrl_Zrate::run() {
 		// generic
 		static mavlink_message_t msg;
@@ -90,7 +97,7 @@ namespace mavhub {
 		// heartbeat
 		int system_type = MAV_QUADROTOR;
 		mavlink_message_t msg_hb;
-		mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
 		// "check in"
 		//send(msg_hb);
 
@@ -159,8 +166,8 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
-					send(msg);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					AppLayer<mavlink_message_t>::send(msg);
 				}
 			}
 
@@ -213,12 +220,17 @@ namespace mavhub {
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
 
-			send_debug(&msg, &dbg, 103, DataCenter::get_extctrl_nick(), component_id);
-			send_debug(&msg, &dbg, 104, DataCenter::get_extctrl_roll(), component_id);
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, 103, DataCenter::get_extctrl_nick() );
+			AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, 104, DataCenter::get_extctrl_roll() );
+			AppLayer<mavlink_message_t>::send(msg);
+			//send_debug(&msg, &dbg, 103, DataCenter::get_extctrl_nick(), component_id);
+			//send_debug(&msg, &dbg, 104, DataCenter::get_extctrl_roll(), component_id);
 
 			if(params["output_enable"] > 0) {
-				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-				send(msg_extctrl);
+				mk_message_t msg_extctrl;
+				mklink_msg_pack(&msg_extctrl, MK_FC_ADDRESS, MK_MSG_TYPE_SET_EXT_CTRL, &extctrl, sizeof(extctrl));
+				AppLayer<mk_message_t>::send(msg_extctrl);
 			}
 
 			// DataCenter::set_extctrl_nick(nick);
@@ -228,31 +240,31 @@ namespace mavhub {
 
 			dbg.ind = 0;
 			dbg.value = dt * 1e-6; //wait_time;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			dbg.ind = 1;
 			dbg.value = zrate_sp;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			dbg.ind = 2;
 			dbg.value = zrate_av;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			dbg.ind = 3;
 			dbg.value = manual_control.thrust; // zrate_err;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			dbg.ind = 4;
 			dbg.value = gas; //extctrl.gas;
-			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
-			send(msg);
+			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			if(my_cnt % 50 == 0 && params["en_heartbeat"] > 0.0)
-				send(msg_hb);
+				AppLayer<mavlink_message_t>::send(msg_hb);
 
 			my_cnt++;
 		}
