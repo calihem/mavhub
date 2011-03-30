@@ -113,8 +113,10 @@ void SenExpCtrl::run() {
 
 			// FIXME: kopter specific mapping
 			// FIXME: 0 is USS
-			huch_ranger.ranger2 = exprx_value[2];
-			huch_ranger.ranger3 = exprx_value[0];
+			// huch_ranger.ranger2 = exprx_value[2];
+			// huch_ranger.ranger3 = exprx_value[0];
+			huch_ranger.ranger2 = exprx_value[0];
+			huch_ranger.ranger3 = exprx_value[1];
 
 			publish_data(start);
 

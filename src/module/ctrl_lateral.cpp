@@ -17,6 +17,7 @@ namespace mavhub {
 	Ctrl_Lateral::Ctrl_Lateral(const map<string, string> args) : AppLayer("ctrl_lateral") {
 		read_conf(args);
 		param_request_list = 0;
+		prm_test_nick = 0;
 	}
 
 	Ctrl_Lateral::~Ctrl_Lateral() {
@@ -26,6 +27,11 @@ namespace mavhub {
 		static int8_t param_id[15];
 		Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
+		case MAVLINK_MSG_ID_HUCH_WARPING:
+			Logger::log("Ctrl_Lateral: got warping msg", Logger::LOGLEVEL_INFO);
+			mavlink_msg_huch_warping_decode(&msg, (mavlink_huch_warping_t *)&huch_warping);
+			Logger::log("psi_est:", huch_warping.psi_estimate, Logger::LOGLEVEL_INFO);
+			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
 			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
@@ -56,9 +62,11 @@ namespace mavhub {
 	}
 
   void Ctrl_Lateral::run() {
+		// generic
+		static mavlink_message_t msg;
+		// timing
 		uint64_t dt = 0;
 		struct timeval tk, tkm1; // timevals
-		// more timing
 		int update_rate = 10; // 100 Hz
 		int wait_freq = update_rate? 1000000 / update_rate: 0;
 		int wait_time = wait_freq;
@@ -70,11 +78,16 @@ namespace mavhub {
 		double tmp;
 		int16_t nick, roll, yaw;
 		vector<int16_t> v(3);
+		int nick_test_dur, nick_test_delay;
+		int my_cnt;
 
 		gettimeofday(&tk, NULL);
 		gettimeofday(&tkm1, NULL);
 
 		nick = roll = yaw = 0;
+		nick_test_dur = 0;
+		nick_test_delay = 10;
+		my_cnt = 0;
 
 		Logger::log("Ctrl_Lateral started:", name(), Logger::LOGLEVEL_INFO);
 		while(true) {
@@ -93,29 +106,75 @@ namespace mavhub {
 			frequency = (15 * frequency + end - start) / 16;
 			start = end;
 
-			Logger::log("Ctrl_Lateral slept for", wait_time, component_id, Logger::LOGLEVEL_INFO);
+			// Logger::log("Ctrl_Lateral slept for", wait_time, component_id, Logger::LOGLEVEL_INFO);
 
 			gettimeofday(&tk, NULL);
 			//timediff(tdiff, tkm1, tk);
 			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			tkm1 = tk; // save current time
 
+			// param handling
+			if(param_request_list) {
+				Logger::log("Ctrl_Lateral::run: param request", Logger::LOGLEVEL_INFO);
+				param_request_list = 0;
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_nick", prm_test_nick, 1, 0);
+				send(msg);
+			}
+
+			// // test huch_warping
+			// huch_warping.psi_estimate = 1.234;
+			// mavlink_msg_huch_warping_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_warping);
+			// send(msg);
+
+			if(prm_test_nick > 0) {
+				nick_test_delay--;
+			}
+
+			if(nick_test_delay == 0) {
+				nick_test_dur = 2;
+				prm_test_nick = 0;
+				nick_test_delay = 10;
+			}
+
 			// body
-			tmp = rand() * RAND_MAX_TO_M1;
-			tmp -= 0.5;
-			tmp *= 1000;
-			nick = v[0] = (int16_t)tmp;
-			tmp = rand() * RAND_MAX_TO_M1;
-			tmp -= 0.5;
-			tmp *= 1000;
-			roll = v[1] = (int16_t)tmp;
-			tmp = rand() * RAND_MAX_TO_M1;
-			tmp *= 1000;
-			yaw = v[2] = (int16_t)tmp;
+			if (0) {
+				tmp = rand() * RAND_MAX_TO_M1;
+				tmp -= 0.5;
+				tmp *= 1000;
+				nick = v[0] = (int16_t)tmp;
+				tmp = rand() * RAND_MAX_TO_M1;
+				tmp -= 0.5;
+				tmp *= 1000;
+				roll = v[1] = (int16_t)tmp;
+				tmp = rand() * RAND_MAX_TO_M1;
+				tmp *= 1000;
+				yaw = v[2] = (int16_t)tmp;
+			}
+			//if(nick_test_dur > 0) {
+			if(my_cnt % 40 == 0 || my_cnt % 40 == 1) {
+				nick = 200;
+				nick_test_dur--;
+			} else if (my_cnt % 40 == 10 || my_cnt % 40 == 11) {
+				nick = -200;
+				nick_test_dur--;
+			} else if (my_cnt % 40 == 20 || my_cnt % 40 == 21) {
+				roll = 200;
+			} else if (my_cnt % 40 == 30 || my_cnt % 40 == 31) {
+				roll = -200;
+			}
+			else {
+				nick = 0;
+				roll = 0;
+			}
+			//roll = 0;
+			yaw = 0;
+
 			DataCenter::set_extctrl_nick(nick);
 			DataCenter::set_extctrl_roll(roll);
 			DataCenter::set_extctrl_yaw(yaw);
-			Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
+			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
+
+			my_cnt++;
 		}
 	}
 

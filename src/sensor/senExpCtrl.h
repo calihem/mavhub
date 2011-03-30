@@ -34,7 +34,7 @@ class SenExpCtrl : public I2cSensor {
 	private:
 		// void i2c_set_adr(const int fd, const int adr); // throw error
 		mavlink_huch_distance_t sensor_data[2];
-		mavlink_huch_exp_ctrl_t exp_ctrl_data;
+		//mavlink_huch_exp_ctrl_t exp_ctrl_data;
 		mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
 		mavlink_huch_ranger_t huch_ranger;
 

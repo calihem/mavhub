@@ -14,6 +14,8 @@
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
+#define PI2 6.2831853071795862
+
 using namespace std;
 
 namespace mavhub {
@@ -22,6 +24,7 @@ namespace mavhub {
 		// sensible pre-config defaults
 		ctl_mingas = 5.0;
 		ctl_maxgas = 800;
+		set_neutral_rq = 0;
 		read_conf(args);
 		// component_id = component_id_;
 		kal = new Kalman_CV();
@@ -63,11 +66,11 @@ namespace mavhub {
 				break;
 			case IR_SHARP_30_5V:
 				// sigma, beta, k
-				premod[i] = new PreProcessorIR(40.0, 320.0, 1.1882e-06, 1.9528e-05, 0.42);
+				premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-08, 3.7778e-5, 0.42);
 				break;
 			case IR_SHARP_150_5V:
 				// sigma, beta, k
-				premod[i] = new PreProcessorIR(300.0, 1000.0, 9.3028e-09, 4.2196e-06, 0.42);
+				premod[i] = new PreProcessorIR(250.0, 1500.0, 1.5369e-07, 8.8526e-06, 0.42);
 				break;
 			}	
 			iter++;
@@ -154,6 +157,11 @@ namespace mavhub {
 					}	else if(!strcmp("output_enable", (const char *)param_id)) {
 						output_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", output_enable, Logger::LOGLEVEL_INFO);
+						// action requests
+					}	else if(!strcmp("set_neutral_rq", (const char *)param_id)) {
+						set_neutral_rq = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for set_neutral_rq", set_neutral_rq, Logger::LOGLEVEL_INFO);
+						// enable groundstation talk
 					}	else if(!strcmp("gs_enable", (const char *)param_id)) {
 						gs_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_enable", gs_enable, Logger::LOGLEVEL_INFO);
@@ -261,8 +269,6 @@ namespace mavhub {
 		send(msg_debug_on);
 		Logger::log("Ctrl_Hover debug request sent to FC", Logger::LOGLEVEL_INFO);
 
-		// MKPackage msg_setneutral(1, 'c');
-		// owner()->send(msg_setneutral);
 		while(true) {
 			/* wait time */
 			usec = get_time_us();
@@ -307,6 +313,10 @@ namespace mavhub {
 			// 2. preprocess: linearize, common units, heuristic filtering
 			preproc();
 
+			// 2.a0: range correction from attitude for infrared rangers
+			att2dist(3);
+			att2dist(4);
+
 			// 2.a. validity / kalman H
 
 			// gone to pp_uss
@@ -320,6 +330,7 @@ namespace mavhub {
 			pre[1].first -= (0.05 * pre[2].first);
 
 			// IR1: 0 = uss, 4 = ir2
+			// FIXME: use IR1 own's measurement
 			if(pre[0].first <= 300.0) // && pre[4].first <= 300.0)
 				pre[3].second = 1;
 			else	
@@ -327,6 +338,7 @@ namespace mavhub {
 			pre[3].second = (filt_valid_ir1.calc(pre[3].second) >= 1.0) ? 1 : 0;
 
 			// IR2
+			// FIXME: use IR2 own's measurement
 			if(in_range(pre[0].first, 300.0, 700.0))
 				pre[4].second = 1;
 			else
@@ -469,6 +481,9 @@ namespace mavhub {
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
 				send(msg);
+				// trigger setneutral
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
+				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_enable", gs_enable, 1, 0);
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_enable_dbg", gs_enable_dbg, 1, 0);
@@ -482,6 +497,14 @@ namespace mavhub {
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
 				send(msg);
+			}
+
+			// set neutral?
+			if(set_neutral_rq > 0) {
+				Logger::log("Requesting setneutral from flightcontrol", Logger::LOGLEVEL_INFO);
+				MKPackage msg_setneutral(1, 'c');
+				send(msg_setneutral);
+				set_neutral_rq = 0;
 			}
 
 			// typed message forwarding
@@ -569,6 +592,47 @@ namespace mavhub {
 		baro_ref = pre[1].first - ref;
 		//Logger::log("Resetting baro ref", Logger::LOGLEVEL_INFO);
 	}
+
+	// pre-processing: use attitude for ranger correction
+	void Ctrl_Hover::att2dist(int chan) {
+		static mavlink_message_t msg;
+		static mavlink_debug_t dbg;
+		//float alpha, beta, reading_f;
+		double z;
+		float z_corr;
+		//long long int reading_new;
+
+		// attitude.xgyroint;
+		// attitude.ygyroint;
+		// attitude.zgyroint;
+
+		z = pre[chan].first;
+
+		// alpha = PI2 * (float)gyrnick / (GYR_DEG * 360);
+		// beta = PI2 * (float)gyrroll / (GYR_DEG * 360);
+		// reading_f = (float)reading;
+		// reading_f = cosf(alpha) * cosf(beta) * reading_f;
+
+		//reading_new = (long long int)cosf(alpha) * cosf(beta) * reading_f;
+
+		// printf("spp_dist2att: %d, %f, %d, %d, %f, %f, %f\n", reading, reading_f, gyrnick, gyrroll,
+		// 			 alpha, beta, reading_f);
+
+		z_corr = cosf(ml_attitude.roll) \
+			* cosf(ml_attitude.pitch) \
+			* z;
+
+		send_debug(&msg, &dbg, ALT_CORR_BASE + ((chan - 3) * 2), z);
+		send_debug(&msg, &dbg, ALT_CORR_BASE + ((chan - 3) * 2) + 1, z_corr);
+
+		// Logger::log("att2dist", ml_attitude.roll, ml_attitude.pitch, Logger::LOGLEVEL_INFO);
+		// Logger::log("att2dist", z, z_corr, Logger::LOGLEVEL_INFO);
+		// reading_new = (long long int)reading_f;
+		// return(reading_new);
+		pre[chan].first = z_corr;
+		return;
+	}
+	
 
 	void Ctrl_Hover::read_conf(const map<string, string> args) {
 		map<string,string>::const_iterator iter;
@@ -779,7 +843,7 @@ namespace mavhub {
 		status->nick  = v[3] = debugout_getval_s(dbgout, StickNick);
 		status->roll  = v[4] = debugout_getval_s(dbgout, StickRoll);
 		status->yaw  = v[5] = debugout_getval_s(dbgout, StickYaw);
-		Logger::log("debugout2status:", v, Logger::LOGLEVEL_INFO);
+		//Logger::log("debugout2status:", v, Logger::LOGLEVEL_INFO);
   }
 
 	// copy huch data into std pixhawk raw_imu

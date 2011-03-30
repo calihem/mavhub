@@ -27,14 +27,14 @@ namespace mavhub {
 		virtual void handle_input(const mavlink_message_t &msg);
 		/// sensor types
 		enum sensor_types_t {
-			USS,
-			BARO,
-			ACC,
-			IR_SHARP_30_3V,
-			IR_SHARP_150_3V,
-			STATUS,
-			IR_SHARP_30_5V,
-			IR_SHARP_150_5V
+			USS = 0,
+			BARO = 1,
+			ACC = 2,
+			IR_SHARP_30_3V = 3,
+			IR_SHARP_150_3V = 4,
+			STATUS = 5,
+			IR_SHARP_30_5V = 6,
+			IR_SHARP_150_5V = 7
 		};
 
 		/// debugout type to index map
@@ -80,6 +80,8 @@ namespace mavhub {
 		virtual void preproc();
 		/// reset barometer reference
 		virtual void reset_baro_ref(double ref);
+		/// pre-processing: use attitude for ranger correction
+		virtual void att2dist(int chan);
 
   private:
 		/// component id
@@ -144,6 +146,8 @@ namespace mavhub {
 		int output_enable;
 		int gs_enable; // groundstation enable generic mavlink data
 		int gs_enable_dbg; // groundstation enable debug data
+		// action requests
+		int set_neutral_rq;
 
 		// parameters
 		int param_request_list;
