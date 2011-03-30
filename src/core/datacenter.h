@@ -12,6 +12,22 @@ namespace mavhub {
 			static const mavlink_raw_imu_t get_raw_imu();
 			static void set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu);
 			static const mavlink_huch_exp_ctrl_rx_t get_exp_ctrl();
+			/**
+			 * HUCH IMU raw adc
+			 */
+			static void set_huch_imu_raw_adc(const mavlink_huch_imu_raw_adc_t &huch_imu_raw_adc);
+			static const mavlink_huch_imu_raw_adc_t get_huch_imu_raw_adc();
+			/**
+			 * HUCH MK IMU
+			 */
+			static void set_huch_mk_imu(const mavlink_huch_mk_imu_t &huch_mk_imu);
+			static const mavlink_huch_mk_imu_t get_huch_mk_imu();
+			/**
+			 * Raw pressure
+			 */
+			static void set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure);
+			static const mavlink_raw_pressure_t get_raw_pressure();
+
 			/// Set ExpCtrl data
 			static void set_exp_ctrl(const mavlink_huch_exp_ctrl_rx_t &exp_ctrl_rx_data);
 
@@ -37,11 +53,17 @@ namespace mavhub {
 		private:
 			//data structs
 			static mavlink_raw_imu_t raw_imu;
+			static mavlink_huch_imu_raw_adc_t huch_imu_raw_adc;
+			static mavlink_huch_mk_imu_t huch_mk_imu;
+			static mavlink_raw_pressure_t raw_pressure;
 
 			//sync data
 			static pthread_mutex_t raw_imu_mutex;
 			static pthread_mutex_t exp_ctrl_mutex;
-			
+			static pthread_mutex_t huch_imu_raw_adc_mutex;
+			static pthread_mutex_t huch_mk_imu_mutex;
+			static pthread_mutex_t raw_pressure_mutex;
+
 			/// ExpCtrl data structure
 			static mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
 
@@ -95,6 +117,51 @@ namespace mavhub {
 		DataCenter::exp_ctrl_rx_data = exp_ctrl_rx_data;
 	}
 
+	inline const mavlink_huch_imu_raw_adc_t DataCenter::get_huch_imu_raw_adc() {
+		using namespace cpp_pthread;
+
+		Lock ira_lock(raw_imu_mutex);
+		mavlink_huch_imu_raw_adc_t imu_raw_adc_copy(huch_imu_raw_adc);
+
+		return imu_raw_adc_copy;
+	}
+	inline void DataCenter::set_huch_imu_raw_adc(const mavlink_huch_imu_raw_adc_t &huch_imu_raw_adc) {
+		using namespace cpp_pthread;
+
+		Lock ira_lock(huch_imu_raw_adc_mutex);
+		DataCenter::huch_imu_raw_adc = huch_imu_raw_adc;
+	}
+
+	inline const mavlink_huch_mk_imu_t DataCenter::get_huch_mk_imu() {
+		using namespace cpp_pthread;
+
+		Lock mi_lock(huch_mk_imu_mutex);
+		mavlink_huch_mk_imu_t mk_imu_copy(huch_mk_imu);
+
+		return mk_imu_copy;
+	}
+	inline void DataCenter::set_huch_mk_imu(const mavlink_huch_mk_imu_t &huch_mk_imu) {
+		using namespace cpp_pthread;
+
+		Lock mi_lock(huch_imu_raw_adc_mutex);
+		DataCenter::huch_mk_imu = huch_mk_imu;
+	}
+
+	inline const mavlink_raw_pressure_t DataCenter::get_raw_pressure() {
+		using namespace cpp_pthread;
+
+		Lock rp_lock(raw_pressure_mutex);
+		mavlink_raw_pressure_t raw_pressure_copy(raw_pressure);
+
+		return raw_pressure_copy;
+	}
+	inline void DataCenter::set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure) {
+		using namespace cpp_pthread;
+
+		Lock rp_lock(raw_pressure_mutex);
+		DataCenter::raw_pressure = raw_pressure;
+	
+	}
 
 // FlightCtrl legacy functions
 	// attitude

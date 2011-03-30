@@ -4,6 +4,7 @@
 
 #include "core/logger.h"
 #include "core/protocolstack.h"
+#include "core/datacenter.h"
 #include "utility.h"
 
 using namespace cpp_pthread;
@@ -234,40 +235,61 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 	switch(msg.type) {
 		case MKHUCH_MSG_TYPE_MK_IMU: {
 			const mkhuch_mk_imu_t *mk_imu = reinterpret_cast<const mkhuch_mk_imu_t*>(msg.data);
+// std::ostringstream logstream;
+// logstream << message_time << " " 
+// 	<< mk_imu->x_adc_acc << " "
+// 	<< mk_imu->y_adc_acc << " "
+// 	<< mk_imu->z_adc_acc << " "
+// 	<< mk_imu->x_adc_gyro << " "
+// 	<< mk_imu->y_adc_gyro << " "
+// 	<< mk_imu->z_adc_gyro;
+// Logger::log(logstream.str(), Logger::LOGLEVEL_ALL, Logger::LOGLEVEL_ALL);
+			mavlink_huch_imu_raw_adc_t imu_raw_adc;
+			imu_raw_adc.xacc = mk_imu->x_adc_acc;
+			imu_raw_adc.yacc = mk_imu->y_adc_acc;
+			imu_raw_adc.zacc = mk_imu->z_adc_acc;
+			imu_raw_adc.xgyro = mk_imu->x_adc_gyro;
+			imu_raw_adc.ygyro = mk_imu->y_adc_gyro;
+			imu_raw_adc.zgyro = mk_imu->z_adc_gyro;
+			DataCenter::set_huch_imu_raw_adc(imu_raw_adc);
 			Lock tx_lock(tx_mav_mutex);
 			//forward raw ADC
-			mavlink_msg_huch_imu_raw_adc_pack(owner()->system_id(),
+			mavlink_msg_huch_imu_raw_adc_encode(owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
-				mk_imu->x_adc_acc,
-				mk_imu->y_adc_acc,
-				mk_imu->z_adc_acc,
-				mk_imu->x_adc_gyro,
-				mk_imu->y_adc_gyro,
-				mk_imu->z_adc_gyro);
+				&imu_raw_adc
+				);
 			send(tx_mav_msg);
 			//forward MK IMU
 			//TODO: add compass value and baro
-			mavlink_msg_huch_mk_imu_pack( owner()->system_id(),
+			mavlink_huch_mk_imu_t huch_mk_imu;
+			huch_mk_imu.usec = message_time;
+			huch_mk_imu.xacc = (2500*mk_imu->x_acc)/1024; //convert normalized analog to mg
+			huch_mk_imu.yacc = (2500*mk_imu->y_acc)/1024;
+			huch_mk_imu.zacc = (2500*mk_imu->z_acc)/1024;
+			huch_mk_imu.xgyro = (6700*mk_imu->x_adc_gyro)/(3*1024); //convert analog to 0.1 deg./sec.
+			huch_mk_imu.ygyro = (6700*mk_imu->y_adc_gyro)/(3*1024);
+			huch_mk_imu.zgyro = (6700*mk_imu->z_adc_gyro)/(3*1024);
+			DataCenter::set_huch_mk_imu(huch_mk_imu);
+			mavlink_msg_huch_mk_imu_encode( owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
-				message_time,
-				(2500*mk_imu->x_acc)/1024, //convert normalized analog to mg
-				(2500*mk_imu->y_acc)/1024,
-				(2500*mk_imu->z_acc)/1024,
-				(6700*mk_imu->x_adc_gyro)/(3*1024), //convert analog to 0.1 deg./sec.
-				(6700*mk_imu->y_adc_gyro)/(3*1024),
-				(6700*mk_imu->z_adc_gyro)/(3*1024) );
+				&huch_mk_imu
+				);
 			send(tx_mav_msg);
 			//forward pressure
-			mavlink_msg_raw_pressure_pack(owner()->system_id(),
+			mavlink_raw_pressure_t raw_pressure;
+			raw_pressure.usec = message_time;
+			raw_pressure.press_abs = mk_imu->press_abs;
+			raw_pressure.press_diff1 = 0;	//press_diff1
+			raw_pressure.press_diff2 = 0;	//press_diff2
+			raw_pressure.temperature = 0;	//temperature
+			DataCenter::set_raw_pressure(raw_pressure);
+			mavlink_msg_raw_pressure_encode(owner()->system_id(),
 				component_id,
 				&tx_mav_msg,
-				message_time,
-				mk_imu->press_abs,
-				0,	//press_diff1
-				0,	//press_diff2
-				0);	//temperature
+				&raw_pressure
+				);
 			send(tx_mav_msg);
 			//TODO: forward magneto
 			break;
@@ -372,7 +394,7 @@ void MKApp::run() {
 
 	mkhuchlink_status_initialize(&link_status);
 
-	while(_running) {
+	while( !interrupted() ) {
 		timeout.tv_sec = 1; timeout.tv_usec = 0;
 		FD_ZERO(&read_fds); FD_SET( mk_dev.handle(), &read_fds);
 

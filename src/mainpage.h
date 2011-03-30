@@ -18,3 +18,9 @@
  *
  * \brief The namespace for the MAVHUB project.
  */
+
+/**
+ * \namespace cpp_pthread
+ *
+ * \brief Namespace for C++ wrapper for the POSIX pthread library.
+ */

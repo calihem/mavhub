@@ -15,7 +15,7 @@ Setting::~Setting() {
 }
 
 template <class T>
-Setting::Setting& operator <<(Setting &setting, const std::map<std::string, T> &val_map) {
+Setting& operator <<(Setting &setting, const std::map<std::string, T> &val_map) {
 
 	typename map<std::string, T>::const_iterator i;
 	for(i=val_map.begin(); i!=val_map.end(); ++i) {

@@ -14,6 +14,7 @@
 #include "attitude_filter_app/attitude_filter_app.h"
 
 #include <iostream>
+#include <algorithm> //transform
 
 using namespace std;
 

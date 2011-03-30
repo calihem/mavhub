@@ -51,7 +51,9 @@ AC_ARG_ENABLE(tests,
 AM_CONDITIONAL(COND_UNIT_TESTS, test x$tests = xtrue)
 
 # Checks for libraries.
-AC_CHECK_LIB([cv], [cvCreateMat])
+AC_CHECK_LIB([ncurses], [newwin])
+AC_CHECK_LIB([cxcore], [cvCreateMat])
+AC_CHECK_LIB([cv], [cvCreateKalman])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 
 # Checks for header files.
