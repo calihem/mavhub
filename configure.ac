@@ -54,6 +54,8 @@ AM_CONDITIONAL(COND_UNIT_TESTS, test x$tests = xtrue)
 AC_CHECK_LIB([ncurses], [newwin])
 AC_CHECK_LIB([cxcore], [cvCreateMat])
 AC_CHECK_LIB([cv], [cvCreateKalman])
+AC_CHECK_LIB([opencv_core], [cvCreateMat])
+AC_CHECK_LIB([opencv_legacy], [cvCreateKalman])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 
 # Checks for header files.
