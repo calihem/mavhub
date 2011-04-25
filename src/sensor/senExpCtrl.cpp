@@ -13,13 +13,17 @@ using namespace std;
 
 namespace mavhub {
 
-SenExpCtrl::SenExpCtrl(unsigned short _dev_id, 
-	unsigned short _func_id, 
-	std::string _port, 
-	int _update_rate, 
-	int _debug, 
-	int _timings ) throw(const char *)
-{
+	SenExpCtrl::SenExpCtrl(unsigned short _dev_id, 
+												 unsigned short _func_id, 
+												 std::string _port, 
+												 int _update_rate, 
+												 int _debug, 
+												 int _timings,
+												 std::list< std::pair<int, int> > _chanmap_pairs
+												 )
+		throw(const char *) :
+		chanmap(EXPCTRL_NUMCHAN)
+	{
 	//FIXME Initialisierung
 	dev_id = _dev_id;
 	func_id = _func_id;
@@ -28,6 +32,16 @@ SenExpCtrl::SenExpCtrl(unsigned short _dev_id,
 	timings = _timings; 
 
 	Logger::log("ExpCtrl: init...", timings, Logger::LOGLEVEL_INFO);
+
+	// channel mapping
+	list<pair<int, int> >::const_iterator iter;
+	iter = _chanmap_pairs.begin();
+	for(int i = 0; i < EXPCTRL_NUMCHAN; i++) {
+		// FIXME: rather two concurrent iterators?
+		chanmap[i] = iter->second;
+		Logger::log("sensrf02: chantype", chanmap[i], Logger::LOGLEVEL_DEBUG);
+		iter++;
+	}
 
 	status = RUNNING;	
 	try {
@@ -106,30 +120,34 @@ void SenExpCtrl::run() {
 			memcpy(&exprx_value[0], buffer+1, 8);
 
 			// FIXME: smart++
-			exp_ctrl_rx_data.value0 = exprx_value[0];
-			exp_ctrl_rx_data.value1 = exprx_value[1];
-			exp_ctrl_rx_data.value2 = exprx_value[2];
-			exp_ctrl_rx_data.value3 = exprx_value[3];
+			// exp_ctrl_rx_data.value0 = exprx_value[0];
+			// exp_ctrl_rx_data.value1 = exprx_value[1];
+			// exp_ctrl_rx_data.value2 = exprx_value[2];
+			// exp_ctrl_rx_data.value3 = exprx_value[3];
 
 			// FIXME: kopter specific mapping
 			// FIXME: 0 is USS
 			// huch_ranger.ranger2 = exprx_value[2];
 			// huch_ranger.ranger3 = exprx_value[0];
-			huch_ranger.ranger2 = exprx_value[0];
-			huch_ranger.ranger3 = exprx_value[1];
 
-			publish_data(start);
+			// home / qk01
+			// huch_ranger.ranger2 = exprx_value[0];
+			// huch_ranger.ranger3 = exprx_value[1];
 
 			/* assign buffer to data */
 			{ // begin of data mutex scope
+				int i;
 				cpp_pthread::Lock ri_lock(data_mutex);
-				sensor_data[0].distance = exprx_value[2];
-				sensor_data[0].usec = start;
-				sensor_data[1].distance = exprx_value[0];
-				sensor_data[1].usec = start;
+				for(i=0; i < EXPCTRL_NUMCHAN; i++) {
+					sensor_data[i].analog = exprx_value[i];
+					sensor_data[i].usec = start;
+					//Logger::log("ExpCtrl sensor:", i, sensor_data[i].analog, Logger::LOGLEVEL_INFO);
+				}
 			} // end of data mutex scope
 
-			
+			// FIXME: if(publish) else poll or whatever
+			publish_data(start);
+
 			// Logger::log("ExpCtrl:", (int)exp_ctrl_rx_data.version, exprx_value, Logger::LOGLEVEL_INFO);
 			//Logger::log("ExpCtrl rx_t:", (int)exp_ctrl_rx_data.version, exp_ctrl_rx_data.value0, Logger::LOGLEVEL_INFO);
 
@@ -168,10 +186,10 @@ void SenExpCtrl::print_debug() {
 }
 
 void SenExpCtrl::publish_data(uint64_t time) {
-	DataCenter::set_exp_ctrl(exp_ctrl_rx_data);
-	// FIXME: hardware specific mapping
-	DataCenter::set_huch_ranger_at(huch_ranger, 1);
-	DataCenter::set_huch_ranger_at(huch_ranger, 2);
+	int i;
+	for(i=0; i < EXPCTRL_NUMCHAN; i++) {
+		DataCenter::set_sensor(chanmap[i], (double)sensor_data[i].analog);
+	}
 }
 
 void* SenExpCtrl::get_data_pointer(unsigned int id) throw(const char *) {

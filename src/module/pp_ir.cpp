@@ -8,6 +8,7 @@ namespace mavhub {
 		llim = llim_;
 		ulim = ulim_;
 		double tmp_c[] = {0.125, 0.25, 0.25, 0.25, 0.125};
+		filt = new FIR(5, tmp_c);
 		filt_valid = new FIR(5, tmp_c);
 	}
 
@@ -25,7 +26,7 @@ namespace mavhub {
 	void PreProcessorIR::calc(std::vector< std::pair< double, int > > &pre, int chan, int s) {
 		// std::pair<double, int> p;
 		// Logger::log("PreProcessorUSS::calc", chan, s, Logger::LOGLEVEL_INFO);
-		pre[chan].first = sens_lin_ir(static_cast<double>(s));
+		pre[chan].first = filt->calc(sens_lin_ir(static_cast<double>(s)));
 		pre[chan].second = 0;
 		return;
 	}

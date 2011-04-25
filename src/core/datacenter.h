@@ -4,6 +4,8 @@
 #include "core/thread.h"
 #include <mavlink.h>
 
+#define DC_NUMSENS 10 // FIXME: get from config
+
 namespace mavhub {
 
 	class DataCenter {
@@ -50,6 +52,10 @@ namespace mavhub {
 			static const int16_t get_extctrl_roll();
 			static const int16_t get_extctrl_yaw();
 
+			// unified sensor array read/write
+			static void set_sensor(const int id, const double val);
+			static const double get_sensor(const int id);
+
 		private:
 			//data structs
 			static mavlink_raw_imu_t raw_imu;
@@ -78,6 +84,10 @@ namespace mavhub {
 			static int16_t extctrl_roll;
 			static int16_t extctrl_yaw;
 			static pthread_mutex_t extctrl_mutex;
+
+			// unified sensor array
+			static pthread_mutex_t sensors_mutex;
+			static double sensors[DC_NUMSENS];
 			
 			DataCenter();
 			DataCenter(const DataCenter &data);
@@ -277,6 +287,28 @@ namespace mavhub {
 		return extctrl_yaw;
 	}
 
+	// unified sensor array read/write
+	inline void DataCenter::set_sensor(const int id, const double val) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(sensors_mutex);
+		if(id >= 0 && id < DC_NUMSENS)
+			sensors[id] = val;
+		//else
+			//Logger::log("DC::set_sensor: invalid index", Logger::LOGLEVEL_DEBUG);
+		return;
+	}
+	inline const double DataCenter::get_sensor(const int id) {
+		using namespace cpp_pthread;
+
+		Lock ri_lock(extctrl_mutex);
+		if(id >= 0 && id < DC_NUMSENS)
+			return sensors[id];
+		else {
+			//Logger::log("DC::get_sensor: invalid index", Logger::LOGLEVEL_DEBUG);
+			return -1;
+		}
+	}
 
 } // namespace mavhub
 

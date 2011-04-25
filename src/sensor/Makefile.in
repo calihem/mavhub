@@ -54,8 +54,9 @@ ARFLAGS = cru
 libsensor_a_AR = $(AR) $(ARFLAGS)
 libsensor_a_LIBADD =
 am_libsensor_a_OBJECTS = sensor.$(OBJEXT) i2csensor.$(OBJEXT) \
-	senbmp085.$(OBJEXT) senhmc5843.$(OBJEXT) senExpCtrl.$(OBJEXT) \
-	sensor_factory.$(OBJEXT) sensormanager.$(OBJEXT)
+	senbmp085.$(OBJEXT) senhmc5843.$(OBJEXT) sensrf02.$(OBJEXT) \
+	senExpCtrl.$(OBJEXT) sensor_factory.$(OBJEXT) \
+	sensormanager.$(OBJEXT)
 libsensor_a_OBJECTS = $(am_libsensor_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -217,6 +218,7 @@ libsensor_a_SOURCES = \
 	i2csensor.cpp \
 	senbmp085.cpp \
 	senhmc5843.cpp \
+	sensrf02.cpp \
 	senExpCtrl.cpp \
 	sensor_factory.cpp \
 	sensormanager.cpp
@@ -276,6 +278,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sensor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sensor_factory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sensormanager.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sensrf02.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

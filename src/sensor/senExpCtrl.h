@@ -1,28 +1,33 @@
 #ifndef _SENEXPCTRL_H_
 #define _SENEXPCTRL_H_
 
+#include <mavlink.h>
+#include "i2csensor.h"
+
+
 #include <inttypes.h>
 /* #include <linux/i2c.h> */
 /* #include <linux/i2c-dev.h> */
 #include <sys/ioctl.h>
-
-#include <mavlink.h>
-
-#include "i2csensor.h"
-
+#include <list>
+#include <vector>
 
 #define	EXPCTRL_ADR	0x50
+
+#define EXPCTRL_NUMCHAN 4
 
 namespace mavhub {
 
 class SenExpCtrl : public I2cSensor {
 	public:
 		SenExpCtrl(unsigned short _dev_id, 
-			unsigned short _func_id, 
-			std::string _port, 
-			int _update_rate, 
-			int _debug, 
-			int _timings )throw(const char *);
+							 unsigned short _func_id, 
+							 std::string _port, 
+							 int _update_rate, 
+							 int _debug, 
+							 int _timings,
+							 std::list< std::pair<int, int> > _chanmap_pairs)
+			throw(const char *);
 		virtual ~SenExpCtrl();
 		void print_debug();
 
@@ -33,11 +38,14 @@ class SenExpCtrl : public I2cSensor {
 
 	private:
 		// void i2c_set_adr(const int fd, const int adr); // throw error
-		mavlink_huch_distance_t sensor_data[2];
+		// FIXME: ExpCtrl measurement doesnt need to be a "distance", just a voltage
+		mavlink_huch_analog_t sensor_data[EXPCTRL_NUMCHAN];
+		// std::vector<int> chanmap;
 		//mavlink_huch_exp_ctrl_t exp_ctrl_data;
 		mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
 		mavlink_huch_ranger_t huch_ranger;
 
+		std::vector<int> chanmap;
 };
 // ----------------------------------------------------------------------------
 // I2cSensors

@@ -10,6 +10,7 @@ pthread_mutex_t DataCenter::extctrl_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::huch_imu_raw_adc_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::huch_mk_imu_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::raw_pressure_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t DataCenter::sensors_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 mavlink_raw_imu_t DataCenter::raw_imu = {};
 mavlink_huch_imu_raw_adc_t DataCenter::huch_imu_raw_adc = {};
@@ -25,5 +26,7 @@ mavlink_huch_exp_ctrl_rx_t DataCenter::exp_ctrl_rx_data = {};
 	int16_t DataCenter::extctrl_nick = 0;
 	int16_t DataCenter::extctrl_roll = 0;
 	int16_t DataCenter::extctrl_yaw = 0;
+
+	double DataCenter::sensors[DC_NUMSENS] = {};
 
 } //namespace mavhub

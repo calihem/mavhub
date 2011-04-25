@@ -60,6 +60,11 @@ namespace mavhub {
 			return cvkal->measurement_matrix;
 		}
 
+		/// kalman measurement noise covariance getter
+		inline CvMat* getMeasNoiseCov() {
+			return cvkal->measurement_noise_cov;
+		}
+
 		/// kalman state post getter
 		inline CvMat* getStatePost() {
 			return cvkal->state_post;
@@ -67,14 +72,20 @@ namespace mavhub {
 
 		/// kalman measurement setter
 		inline void setMeasAt(int row, int col, double val) {
-			// XXX: check bound violation
+			// FIXME: check bound violation
 			cvmSet(meas, row, col, val);
 		}
 
 		/// kalman measurement matrix setter
 		inline void setMeasTransAt(int row, int col, double val) {
-			// XXX: check bound violation
+			// FIXME: check bound violation
 			cvmSet(cvkal->measurement_matrix, row, col, val);
+		}
+
+		/// kalman measurement noise covariance setter
+		inline void setMeasNoiseCovAt(int row, int col, double val) {
+			// FIXME: check bound violation
+			cvmSet(cvkal->measurement_noise_cov, row, col, val);
 		}
 
 		// protected:

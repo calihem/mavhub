@@ -1,9 +1,12 @@
 #include "sensor_factory.h"
+#include "utility.h"
 
 #include "core/logger.h"
 
 #include <sstream> //stringstream
 #include <iterator> //istream_iterator
+
+#include <list>
 
 using namespace std;
 
@@ -21,6 +24,7 @@ namespace mavhub {
 		int update_rate = 0;
 		int debug = 0;
 		int timings = 0; 
+		std::list< std::pair<int, int> > chanmap_pairs;
 		// sensor specific paramterers
 		// bmp085
 		int update_rate_temp = 0;
@@ -39,6 +43,12 @@ namespace mavhub {
 			else if (iter->first == "update_rate") std::istringstream(iter->second) >> update_rate;
 			else if (iter->first == "debug") std::istringstream(iter->second) >> debug;
 			else if (iter->first == "timings") std::istringstream(iter->second) >> timings;
+			else if (iter->first == "chanmap") {
+				istringstream s(iter->second);
+				s >> chanmap_pairs;
+				// Logger::debug("blub");
+				// Logger::debug(s);
+			}
 			// sensor specific paramterers
 			// bmp085
 			else if (iter->first == "func_id1") std::istringstream(iter->second) >> std::hex >> func_id1;
@@ -48,8 +58,9 @@ namespace mavhub {
 			// hmc5843
 			else if (iter->first == "gain") std::istringstream(iter->second) >> gain;
 			else if (iter->first == "mode") std::istringstream(iter->second) >> mode;
-			//Logger::debug(iter->first);
-			//Logger::debug(iter->second);
+
+			// Logger::debug(iter->first);
+			// Logger::debug(iter->second);
 		}
 
 		/* create instance */
@@ -60,7 +71,9 @@ namespace mavhub {
 			else if (sensor_name == "hmc5843") 
 				s = new SenHmc5843(dev_id, func_id, port, update_rate, debug, timings, gain, mode);
 			else if (sensor_name == "exp_ctrl")
-				s = new SenExpCtrl(dev_id, func_id, port, update_rate, debug, timings);
+				s = new SenExpCtrl(dev_id, func_id, port, update_rate, debug, timings, chanmap_pairs);
+			else if (sensor_name == "srf02")
+				s = new SenSrf02(dev_id, func_id, port, update_rate, debug, timings, chanmap_pairs);
 		}
 		catch (const char *message) {
 			std::string s(message);

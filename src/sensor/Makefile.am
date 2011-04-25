@@ -10,6 +10,7 @@ libsensor_a_SOURCES = \
 	i2csensor.cpp \
 	senbmp085.cpp \
 	senhmc5843.cpp \
+	sensrf02.cpp \
 	senExpCtrl.cpp \
 	sensor_factory.cpp \
 	sensormanager.cpp

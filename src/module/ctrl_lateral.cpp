@@ -18,6 +18,7 @@ namespace mavhub {
 		read_conf(args);
 		param_request_list = 0;
 		prm_test_nick = 0;
+		prm_yaw_P = 100.0;
 	}
 
 	Ctrl_Lateral::~Ctrl_Lateral() {
@@ -25,12 +26,12 @@ namespace mavhub {
 
   void Ctrl_Lateral::handle_input(const mavlink_message_t &msg) {
 		static int8_t param_id[15];
-		Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
+		//Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HUCH_WARPING:
-			Logger::log("Ctrl_Lateral: got warping msg", Logger::LOGLEVEL_INFO);
+			//Logger::log("Ctrl_Lateral: got warping msg", Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_warping_decode(&msg, (mavlink_huch_warping_t *)&huch_warping);
-			Logger::log("psi_est:", huch_warping.psi_estimate, Logger::LOGLEVEL_INFO);
+			//Logger::log("psi_est:", huch_warping.psi_estimate, Logger::LOGLEVEL_INFO);
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
@@ -48,10 +49,9 @@ namespace mavhub {
 					if(!strcmp("prm_test_nick", (const char *)param_id)) {
 						prm_test_nick = (int)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_nick", prm_test_nick, Logger::LOGLEVEL_INFO);
-					// }	else if(!strcmp("setpoint_value", (const char *)param_id)) {
-					// 	ctl_sp = (double)mavlink_msg_param_set_get_param_value(&msg);
-					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_sp", ctl_sp, Logger::LOGLEVEL_INFO);
-					// }	
+					}	else if(!strcmp("prm_yaw_P", (const char *)param_id)) {
+						prm_yaw_P = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for prm_yaw_P", prm_yaw_P, Logger::LOGLEVEL_INFO);
 					}
 				}
 			}
@@ -119,6 +119,8 @@ namespace mavhub {
 				param_request_list = 0;
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_nick", prm_test_nick, 1, 0);
 				send(msg);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_yaw_P", prm_yaw_P, 1, 0);
+				send(msg);
 			}
 
 			// // test huch_warping
@@ -151,23 +153,30 @@ namespace mavhub {
 				yaw = v[2] = (int16_t)tmp;
 			}
 			//if(nick_test_dur > 0) {
-			if(my_cnt % 40 == 0 || my_cnt % 40 == 1) {
-				nick = 200;
-				nick_test_dur--;
-			} else if (my_cnt % 40 == 10 || my_cnt % 40 == 11) {
-				nick = -200;
-				nick_test_dur--;
-			} else if (my_cnt % 40 == 20 || my_cnt % 40 == 21) {
-				roll = 200;
-			} else if (my_cnt % 40 == 30 || my_cnt % 40 == 31) {
-				roll = -200;
-			}
-			else {
+			if(0) {
+				if(my_cnt % 40 == 0 || my_cnt % 40 == 1) {
+					nick = 200;
+					nick_test_dur--;
+				} else if (my_cnt % 40 == 10 || my_cnt % 40 == 11) {
+					nick = -200;
+					nick_test_dur--;
+				} else if (my_cnt % 40 == 20 || my_cnt % 40 == 21) {
+					roll = 200;
+				} else if (my_cnt % 40 == 30 || my_cnt % 40 == 31) {
+					roll = -200;
+				}
+				else {
+					nick = 0;
+					roll = 0;
+				}
+			} else {
 				nick = 0;
 				roll = 0;
 			}
 			//roll = 0;
-			yaw = 0;
+			yaw = (int16_t)(prm_yaw_P * (0.0 + huch_warping.psi_estimate));
+			//Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_warping.psi_estimate, yaw, Logger::LOGLEVEL_INFO);
+			//yaw = 0;
 
 			DataCenter::set_extctrl_nick(nick);
 			DataCenter::set_extctrl_roll(roll);

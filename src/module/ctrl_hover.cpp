@@ -15,38 +15,58 @@
 #include "core/datacenter.h"
 
 #define PI2 6.2831853071795862
+#define WINSIZE 9
+#define WINSIZE_HALF WINSIZE/2
 
 using namespace std;
 
 namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
-  Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : AppLayer("ctrl_hover") {
+  Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : 
+		AppLayer("ctrl_hover"), 
+		uss_win(WINSIZE, 0.0),
+		uss_win_sorted(WINSIZE, 0.0),
+		uss_win_idx(0),
+		uss_win_idx_m1(0),
+		uss_med(0.0),
+		d_uss(0.0)
+	{
 		// sensible pre-config defaults
-		ctl_mingas = 5.0;
-		ctl_maxgas = 800;
+		params["ctl_mingas"] = 5.0;
+		params["ctl_maxgas"] = 800;
 		set_neutral_rq = 0;
 		read_conf(args);
-		// component_id = component_id_;
-		kal = new Kalman_CV();
+		// Logger::log("ctrl_hover: param numsens", params["numsens"], Logger::LOGLEVEL_INFO);
+		numchan = params["numsens"];
+		kal = new Kalman_CV(); // FIXME: should be parameterised
 		pid_alt = new PID(ctl_bias, ctl_Kc, ctl_Ti, ctl_Td);
-		//numchan = numchan_;
+
+		typemap.reserve(numchan);
 		chanmap.reserve(numchan);
 		raw.reserve(numchan);
 		pre.reserve(numchan);
+		premean.resize(numchan);
+		precov.resize(numchan);
 		premod.reserve(numchan);
+
+		// stats = cvCreateMat(numchan, 2, CV_32FC1);
+		// stats_data = cvCreateMat(numchan, 16, CV_32FC1);
+		stats.resize(numchan);
+
 		baro_ref = 0.0;
 		param_request_list = 0;
 		param_count = 2;
 		mk_debugout_digital_offset = 2;
 		list<pair<int, int> >::const_iterator iter;
 		//iter = chanmap_.begin();
-		iter = chanmap_pairs.begin();
+		iter = typemap_pairs.begin();
 		for(int i = 0; i < numchan; i++) {
 			// XXX: iter vs. index
-			chanmap[i] = iter->second;
-			Logger::log("Ctrl_Hover chantype", chanmap[i], Logger::LOGLEVEL_DEBUG);
+			typemap[i] = iter->second;
+			Logger::log("Ctrl_Hover chantype", typemap[i], Logger::LOGLEVEL_DEBUG);
 			// assign preprocessors according to sensor type
-			switch(chanmap[i]) {
+			switch(typemap[i]) {
+			case USS_FC:
 			case USS:
 				premod[i] = new PreProcessorUSS();
 				break;
@@ -73,6 +93,17 @@ namespace mavhub {
 				premod[i] = new PreProcessorIR(250.0, 1500.0, 1.5369e-07, 8.8526e-06, 0.42);
 				break;
 			}	
+			premean[i] = 0.0;
+			precov[i] = 1.0;
+			stats[i] = new Stat_MeanVar(64);
+			iter++;
+		}
+		// channel mapping
+		iter = chanmap_pairs.begin();
+		for(int i = 0; i < numchan; i++) {
+			// XXX: iter vs. index
+			chanmap[i] = iter->second;
+			Logger::log("Ctrl_Hover chanmap", i, chanmap[i], Logger::LOGLEVEL_DEBUG);
 			iter++;
 		}
   }
@@ -89,7 +120,7 @@ namespace mavhub {
 		// huch_attitude
 		// huch_altitude
 		// huch_ranger
-		Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
+		//Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_MK_DEBUGOUT:
@@ -101,7 +132,8 @@ namespace mavhub {
 			debugout2altitude(&mk_debugout);
 			// MK huch-FlightCtrl I2C USS data
 			// XXX: this should be in kopter config, e.g. if settings == fc_has_uss
-			debugout2ranger(&mk_debugout, &ranger);
+			if(typemap[0] == USS_FC)
+				debugout2ranger(&mk_debugout, &ranger);
 			// real debugout data
 			debugout2status(&mk_debugout, &mk_fc_status);
 
@@ -148,13 +180,24 @@ namespace mavhub {
 					Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
 					Logger::log("Ctrl_Hover::handle_input: PARAM_SET for param_id", param_id, Logger::LOGLEVEL_INFO);
-					if(!strcmp("setpoint_stick", (const char *)param_id)) {
-						ctl_sticksp = (int)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_sticksp", ctl_sticksp, Logger::LOGLEVEL_INFO);
-					}	else if(!strcmp("setpoint_value", (const char *)param_id)) {
-						ctl_sp = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_sp", ctl_sp, Logger::LOGLEVEL_INFO);
-					}	else if(!strcmp("output_enable", (const char *)param_id)) {
+
+					typedef map<string, double>::const_iterator ci;
+					for(ci p = params.begin(); p!=params.end(); ++p) {
+						// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+						if(!strcmp(p->first.data(), (const char *)param_id)) {
+							params[p->first] = (int)mavlink_msg_param_set_get_param_value(&msg);
+							Logger::log("x Ctrl_Hover::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
+						}
+					}
+
+					// if(!strcmp("ctl_sticksp", (const char *)param_id)) {
+					// 	params["ctl_sticksp"] = (int)mavlink_msg_param_set_get_param_value(&msg);
+					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for params[\"ctl_sticksp\"]", params["ctl_sticksp"], Logger::LOGLEVEL_INFO);
+					// }	else if(!strcmp("ctl_setpoint", (const char *)param_id)) {
+					// 	params["ctl_setpoint"] = (double)mavlink_msg_param_set_get_param_value(&msg);
+					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_setpoint", params["ctl_setpoint"], Logger::LOGLEVEL_INFO);
+					// }	else
+					if(!strcmp("output_enable", (const char *)param_id)) {
 						output_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", output_enable, Logger::LOGLEVEL_INFO);
 						// action requests
@@ -165,9 +208,12 @@ namespace mavhub {
 					}	else if(!strcmp("gs_enable", (const char *)param_id)) {
 						gs_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_enable", gs_enable, Logger::LOGLEVEL_INFO);
-					}	else if(!strcmp("gs_enable_dbg", (const char *)param_id)) {
-						gs_enable_dbg = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_enable_dbg", gs_enable_dbg, Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("gs_en_dbg", (const char *)param_id)) {
+						gs_en_dbg = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg", gs_en_dbg, Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("gs_en_stats", (const char *)param_id)) {
+						gs_en_stats = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_stats", gs_en_stats, Logger::LOGLEVEL_INFO);
 						// PID params
 					}	else if(!strcmp("PID_bias", (const char *)param_id)) {
 						pid_alt->setBias((double)mavlink_msg_param_set_get_param_value(&msg));
@@ -216,13 +262,23 @@ namespace mavhub {
 		mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
 
 		// XXX: infrared valid FIRs
-		double tmp_c[] = {0.125, 0.25, 0.25, 0.25, 0.125};
-		FIR filt_valid_ir1(5, tmp_c);
-		FIR filt_valid_ir2(5, tmp_c);
+		double tmp_c[] = {0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05};
+		// double tmp_c[] = {0.125, 0.25, 0.25, 0.25, 0.125};
+		FIR filt_valid_uss(11, tmp_c);
+		FIR filt_valid_ir1(11, tmp_c);
+		FIR filt_valid_ir2(11, tmp_c);
+
+		// USS smoothing
+		// CvMat* fmu_src = cvCreateMat(1, 8, CV_32FC1);
+		// CvMat* fmu_dst = cvCreateMat(1, 8, CV_32FC1);
+		// cvSmooth filt_median_uss1(fmu_src, fmu_dst, CV_MEDIAN, 1, 0, 0.0, 0.0);
+		
 
 		// more timing
-		int update_rate = 100; // 100 Hz
-		int wait_freq = update_rate? 1000000 / update_rate: 0;
+		// 100 Hz is too much at the moment, especially with more than one
+		// UDP interface
+		// int update_rate = 50; // 100 Hz
+		int wait_freq = ctl_update_rate? 1000000 / ctl_update_rate: 0;
 		int wait_time = wait_freq;
 		uint64_t frequency = wait_time;
 		uint64_t start = get_time_us();
@@ -274,7 +330,11 @@ namespace mavhub {
 			usec = get_time_us();
 			uint64_t end = usec;
 			wait_time = wait_freq - (end - start);
-			wait_time = (wait_time < 0)? 0: wait_time;
+			// wait_time = (wait_time < 0)? 0: wait_time;
+			if(wait_time < 0) {
+				Logger::log("ALARM: time", Logger::LOGLEVEL_INFO);
+				wait_time = 0;
+			}
 		
 			/* wait */
 			usleep(wait_time);
@@ -297,62 +357,132 @@ namespace mavhub {
 			// 1. collect data
 
 			// get ranger data
-			ranger = DataCenter::get_huch_ranger();
+			//ranger = DataCenter::get_huch_ranger();
 			// Logger::log(ranger.ranger1, ranger.ranger2, ranger.ranger3, Logger::LOGLEVEL_INFO);
 
-			raw[0] = ranger.ranger1; // USS
+			// double tmp = tmp;
+			raw[0] = (int)DataCenter::get_sensor(chanmap[0]); //ranger.ranger1; // USS
 			raw[1] = altitude.baro; // barometer
 			raw[2] = attitude.zacc; // z-acceleration
-			raw[3] = ranger.ranger2; // ir ranger 1
-			raw[4] = ranger.ranger3; // ir ranger 2
+			raw[3] = (int)DataCenter::get_sensor(chanmap[3]); //ranger.ranger2; // ir ranger 1
+			raw[4] = (int)DataCenter::get_sensor(chanmap[4]); // ranger.ranger3; // ir ranger 2
+
+			// record raw altitude readings
+			// Logger::log("hc_raw_en", params["hc_raw_en"], Logger::LOGLEVEL_INFO);
+			if(params["hc_raw_en"] >= 1.0) {
+				// copy data
+				//for(int i = 0; i < params["numsens"]; i++) {
+				hc_raw.raw0 = raw[0];
+				hc_raw.raw1 = raw[1];
+				hc_raw.raw2 = raw[2];
+				hc_raw.raw3 = raw[3];
+				hc_raw.raw4 = raw[4];
+					//}
+				// send
+				mavlink_msg_huch_hc_raw_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &hc_raw);
+				send(msg);
+			}
 
 			// o.str("");
 			// o << "ctrl_hover raw: dt: " << dt << ", uss: " << raw[0] << ", baro: " << raw[1] << ", zacc: " << raw[2] << ", ir1: " << raw[3] << ", ir2: " << raw[4];
-			//Logger::log(o.str(), Logger::LOGLEVEL_INFO);
+			// Logger::log(o.str(), Logger::LOGLEVEL_INFO);
 
 			// 2. preprocess: linearize, common units, heuristic filtering
 			preproc();
 
 			// 2.a0: range correction from attitude for infrared rangers
-			att2dist(3);
-			att2dist(4);
+			//att2dist(3);
+			//att2dist(4);
 
-			// 2.a. validity / kalman H
+			// 2.z post pre-processing running statistics
+			for(int i = 0; i < numchan; i++) {
+				stats[i]->update(pre[i].first);
+				// Logger::log("ctrl_hover: stats:", stats[i]->get_mean(),
+				// 						stats[i]->get_var(), Logger::LOGLEVEL_INFO);
+			}
 
-			// gone to pp_uss
-			// // USS
-			// if(in_range(pre[0].first, 100.0, 2000.0))
-			// 	pre[0].second = 1;
-			// else
-			// 	pre[0].second = 0;
+			// 2.a. validity / kalman H, kalman R
+			double tmp_valid;
 
+			////////////////////////////////////////////////////////////
+			// USS
+			// USS smoothing / median filtering
+			uss_win_idx_m1 = uss_win_idx;
+			uss_win_idx = (uss_win_idx + 1) % WINSIZE;
+			uss_win[uss_win_idx] = pre[0].first;
+			uss_win_sorted = uss_win;
+			sort(uss_win_sorted.begin(), uss_win_sorted.end());
+			//Logger::log("ctrl_hover: vector size", uss_win.size(), Logger::LOGLEVEL_INFO);
+			// Logger::log("ctrl_hover: median window:", uss_win, Logger::LOGLEVEL_INFO);
+			// Logger::log("ctrl_hover: median window:", uss_win_sorted, Logger::LOGLEVEL_INFO);
+			uss_med = uss_win_sorted[WINSIZE_HALF];
+			//Logger::log("ctrl_hover: median window:", 1000 * dt * 1e-6, uss_med, Logger::LOGLEVEL_INFO);
+
+			// check max z velocity
+			d_uss = fabs(uss_win[uss_win_idx_m1] - uss_win[uss_win_idx]);
+			// if(d_uss > (1000 * dt * 1e-6) && params["uss_med_en"] >= 1.0) { // || pre[0].second == 0) {
+			// Logger::log("ctrl_hover: median window:", uss_med, d_uss, Logger::LOGLEVEL_INFO);
+			pre[0].first = uss_med;
+			// }
+			
+			if(in_range(pre[0].first, params["uss_llim"], params["uss_hlim"]) &&
+				 pre[3].first > params["uss_llim"])
+				tmp_valid = 1.0;
+			else {
+				tmp_valid = 0.0;
+				// retain last valid
+				pre[0].first = uss_win[uss_win_idx_m1];
+			}
+			// filter valid
+			// tmp_valid_filt = ;
+			// binarise and assign
+			pre[0].second = (filt_valid_uss.calc(tmp_valid) >= 0.99) ? 1 : 0;
+
+			////////////////////////////////////////////////////////////
 			// BARO: correct from accel-z
 			pre[1].first -= (0.05 * pre[2].first);
+			// if(pre[3].first < 300.0) {
+			// 	pre[1].second = 0;
+			// } else {
+			// 	pre[1].second = 1;
+			// }
 
+			////////////////////////////////////////////////////////////
 			// IR1: 0 = uss, 4 = ir2
 			// FIXME: use IR1 own's measurement
-			if(pre[0].first <= 300.0) // && pre[4].first <= 300.0)
-				pre[3].second = 1;
-			else	
-				pre[3].second = 0;
-			pre[3].second = (filt_valid_ir1.calc(pre[3].second) >= 1.0) ? 1 : 0;
+			// if(pre[0].first <= 300.0) //
+			//if(in_range(pre[3].first, 100.0, 200.0))
+			if(in_range(pre[3].first, 39.0, 300.0) &&
+				 pre[0].first < 500.0)
+				tmp_valid = 1.0;
+			else
+				tmp_valid = 0.0;
+			pre[3].second = (filt_valid_ir1.calc(tmp_valid) >= 0.99) ? 1 : 0;
 
+			////////////////////////////////////////////////////////////
 			// IR2
 			// FIXME: use IR2 own's measurement
-			if(in_range(pre[0].first, 300.0, 700.0))
-				pre[4].second = 1;
+			// if(in_range(pre[0].first, 300.0, 700.0))
+			// if(in_range(pre[4].first, 300.0, 560.0))
+			if(in_range(pre[4].first, 300.0, 500.0) &&
+				 pre[3].first > 300.0)
+				tmp_valid = 1;
 			else
-				pre[4].second = 0;
-			pre[4].second = (filt_valid_ir2.calc(pre[4].second) >= 1.0) ? 1 : 0;
+				tmp_valid = 0;
+			pre[4].second = (filt_valid_ir2.calc(tmp_valid) >= 0.99) ? 1 : 0;
 
-			// XXX: pack this into preprocessing proper
-			if(pre[0].second > 0 && run_cnt_cyc == 0)
-				reset_baro_ref(pre[0].first);
+			// FIXME: pack this into preprocessing proper
+			// enable / disable via parameter
+			if((pre[0].second > 0 || pre[3].second > 0) &&
+				 run_cnt_cyc == 0 && params["ctl_bref"]) {
+				//reset_baro_ref(pre[0].first);
+				//reset_baro_ref(cvmGet(kal->getStatePost(), 0, 0));
+			}
 			pre[1].first = pre[1].first - baro_ref;
 			
-			// 2.b set kalman measurement transform matrix H
+			// // 2.b set kalman measurement transform matrix H
 			for(int i = 0; i < numchan; i++) {
-				switch(chanmap[i]) {
+				switch(typemap[i]) {
 				case ACC:
 					kal->setMeasTransAt(i, 2, pre[i].second);
 					break;
@@ -361,7 +491,56 @@ namespace mavhub {
 					break;
 				}
 			}
-			//Kalman_CV::cvPrintMat(kal->getMeasTransMat(), 5, 3, (char *)"H");
+			// //Kalman_CV::cvPrintMat(kal->getMeasTransMat(), 5, 3, (char *)"H");
+
+			// start cov
+			// // 2.c set kalman measurement noise covariance matrix R
+			vector<double> covvec(2);
+			// for(int i = 0; i < numchan; i++) {
+			// 	switch(typemap[i]) {
+			// 	case ACC:
+			// 		covvec[0] = 20.0;
+			// 		covvec[1] = 0.01;
+			// 		break;
+			// 	case USS_FC:
+			// 	case USS:
+			// 		covvec[0] = 40.0;
+			// 		covvec[1] = 0.2;
+			// 		break;
+			// 	case BARO:
+			// 		covvec[0] = 40.0;
+			// 		covvec[1] = 0.5;
+			// 		break;
+			// 	case IR_SHARP_30_3V:
+			// 	case IR_SHARP_30_5V:
+			// 		covvec[0] = 40.0;
+			// 		covvec[1] = 0.1;
+			// 		break;
+			// 	case IR_SHARP_150_3V:
+			// 	case IR_SHARP_150_5V:
+			// 		covvec[0] = 40.0;
+			// 		covvec[1] = 0.3;
+			// 		break;
+			// 	default:
+			// 		// kal->setMeasTransAt(i, 0, pre[i].second);
+			// 		break;
+			// 	}
+			// 	// determine heuristic "variance"
+			// 	stats[i]->update_heur(integrate_and_saturate(stats[i]->get_var_e(),
+			// 																							 pre[i].second,
+			// 																							 covvec[1],
+			// 																							 covvec[0]));
+			// 	// Logger::log("ctrl_hov:",
+			// 	// 						stats[i]->get_var_e(),
+			// 	// 						calc_var_nonlin(stats[i]->get_var_e(), covvec[1], covvec[0]), Logger::LOGLEVEL_INFO);
+
+			// 	//kal->setMeasNoiseCovAt(i, i, covvec[pre[i].second]);
+			// 	kal->setMeasNoiseCovAt(i, i, calc_var_nonlin(stats[i]->get_var_e(), covvec[1], covvec[0]));
+			// 	// stats[i]->update_heur(calc_var_nonlin(stats[i]->get_var_e(), covvec[1], covvec[0]));
+			// }
+			// end cov
+
+			//	Kalman_CV::cvPrintMat(kal->getMeasNoiseCov(), 5, 5, (char *)"R");
 
 			// debug out
 			// o.str("");
@@ -430,15 +609,15 @@ namespace mavhub {
 
 			// 4. run controller
 			// setpoint on stick
-			if(ctl_sticksp) {
-				ctl_sp = (int)(manual_control.thrust * 15.0);
+			if(params["ctl_sticksp"]) {
+				params["ctl_setpoint"] = (int)(manual_control.thrust * 15.0);
 			}
 
-			pid_alt->setSp(ctl_sp);
+			pid_alt->setSp(params["ctl_setpoint"]);
 			gas = pid_alt->calc((double)dt * 1e-6, ctrl_hover_state.kal_s0);
 
 			// enforce more limits
-			if(!ctl_sticksp) {
+			if(!params["ctl_sticksp"]) {
 				if(gas > (manual_control.thrust * 4)) { // 4 <- stick_gain
 					pid_alt->setIntegralM1();
 					gas = manual_control.thrust * 4;
@@ -446,11 +625,11 @@ namespace mavhub {
 			}
 
 			// reset integral
-			if(manual_control.thrust < ctl_mingas) // reset below threshold
+			if(manual_control.thrust < params["ctl_mingas"]) // reset below threshold
 				pid_alt->setIntegral(0.0);
 
 			// limit integral
-			if(gas > ctl_maxgas)
+			if(gas > params["ctl_maxgas"])
 				pid_alt->setIntegralM1();
 
 			// min/max limits
@@ -475,10 +654,18 @@ namespace mavhub {
 			if(param_request_list) {
 				Logger::log("Ctrl_Hover::run: param request", Logger::LOGLEVEL_INFO);
 				param_request_list = 0;
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_value", ctl_sp, 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", ctl_sticksp, 1, 0);
-				send(msg);
+
+				typedef map<string, double>::const_iterator ci;
+				for(ci p = params.begin(); p!=params.end(); ++p) {
+					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+					mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					send(msg);
+				}
+
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_value", ctl_sp, 1, 0);
+				// send(msg);
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", params["ctl_sticksp"], 1, 0);
+				// send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
 				send(msg);
 				// trigger setneutral
@@ -486,7 +673,9 @@ namespace mavhub {
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_enable", gs_enable, 1, 0);
 				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_enable_dbg", gs_enable_dbg, 1, 0);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", gs_en_dbg, 1, 0);
+				send(msg);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_stats", gs_en_stats, 1, 0);
 				send(msg);
 				// PID params
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
@@ -497,6 +686,7 @@ namespace mavhub {
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
 				send(msg);
+				
 			}
 
 			// set neutral?
@@ -508,9 +698,11 @@ namespace mavhub {
 			}
 
 			// typed message forwarding
-			// huch attitude
+
+			// // huch attitude
 			mavlink_msg_huch_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude);
 			send(msg);
+
 			// huch_fc_altitude
 			// mavlink_msg_huch_fc_altitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
 			// send(msg);
@@ -531,17 +723,17 @@ namespace mavhub {
 			}
 
 			// send debug signals to groundstation
-			if(gs_enable_dbg) {
+			if(gs_en_dbg) {
 				// gas out
 				send_debug(&msg, &dbg, ALT_GAS, gas);
 				// // PID error
 				// send_debug(&msg, &dbg, ALT_PID_ERR, pid_alt->getErr());
-				// // PID integral
-				// send_debug(&msg, &dbg, ALT_PID_INT, pid_alt->getPv_int());
+				// PID integral
+				send_debug(&msg, &dbg, ALT_PID_INT, pid_alt->getPv_int());
 				// // PID derivative
 				// send_debug(&msg, &dbg, ALT_PID_D, pid_alt->getDpv());
-				// // PID setpoint
-				// send_debug(&msg, &dbg, ALT_PID_SP, pid_alt->getSp());
+				// PID setpoint
+				send_debug(&msg, &dbg, ALT_PID_SP, pid_alt->getSp());
 				// VALID USS
 				send_debug(&msg, &dbg, DBG_VALID_USS, pre[0].second * 256);
 				// VALID IR1
@@ -550,6 +742,18 @@ namespace mavhub {
 				send_debug(&msg, &dbg, DBG_VALID_IR2, pre[4].second * 256);
 				// dt
 				send_debug(&msg, &dbg, ALT_DT_S, dt * 1e-6);
+			}
+
+			// send debug signals to groundstation
+			if(gs_en_stats) {
+				int i, offs;
+				for(i = 0; i < numchan; i++) {
+					offs = i * 3;
+					send_debug(&msg, &dbg, CH1_MEAN + offs, stats[i]->get_mean());
+					send_debug(&msg, &dbg, CH1_VAR + offs, stats[i]->get_var());
+					send_debug(&msg, &dbg, CH1_VAR_E + offs, calc_var_nonlin(stats[i]->get_var_e(), covvec[1], covvec[0]));
+					//stats[i]->get_var_e());
+				}
 			}
 
 			// XXX: does this make problems with time / qgc?
@@ -646,10 +850,18 @@ namespace mavhub {
 		iter = args.find("numsens");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> numchan;
+			// s >> numchan;
+			s >> params["numsens"];
+			// numchan = 5;
 		}
 
 		iter = args.find("inmap");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> typemap_pairs;
+		}
+
+		iter = args.find("chmap");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
 			s >> chanmap_pairs;
@@ -682,31 +894,35 @@ namespace mavhub {
 		iter = args.find("ctl_sp");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> ctl_sp;
+			// s >> ctl_sp;
+			s >> params["ctl_setpoint"];
 		}
 
 		iter = args.find("ctl_bref");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> ctl_bref;
+			s >> params["ctl_bref"];
 		}
 
 		iter = args.find("ctl_sticksp");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> ctl_sticksp;
+			// s >> ctl_sticksp;
+			s >> params["ctl_sticksp"];
 		}
 
 		iter = args.find("ctl_mingas");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> ctl_mingas;
+			//s >> ctl_mingas;
+			s >> params["ctl_mingas"];
 		}
 
 		iter = args.find("ctl_maxgas");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> ctl_maxgas;
+			// s >> ctl_maxgas;
+			s >> params["ctl_maxgas"];
 		}
 
 		// output enable
@@ -724,28 +940,74 @@ namespace mavhub {
 		}
 
 		// mavlink to groundstation debug data enable
-		iter = args.find("gs_enable_dbg");
+		iter = args.find("gs_en_dbg");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> gs_enable_dbg;
+			s >> gs_en_dbg;
+		}
+
+		// mavlink to groundstation debug statistics data
+		iter = args.find("gs_en_stats");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> gs_en_stats;
+		}
+
+		// main controller update rate
+		iter = args.find("ctl_update_rate");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> ctl_update_rate;
+		}
+		else
+			ctl_update_rate = 100;
+
+		// mavlink to groundstation debug statistics data
+		iter = args.find("uss_med_en");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["uss_med_en"];
+		}
+
+		// enable hover ctrl raw sensor value dump
+		iter = args.find("hc_raw_en");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["hc_raw_en"];
+		}
+
+		// uss sensor conf
+		iter = args.find("uss_llim");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["uss_llim"];
+		}
+
+		// uss sensor conf
+		iter = args.find("uss_hlim");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["uss_hlim"];
 		}
 
 		// XXX
 		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: numchan", numchan, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: inmap", chanmap_pairs, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: inmap", typemap_pairs, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: chmap", chanmap_pairs, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_bias", ctl_bias, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_Kc", ctl_Kc, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_Ti", ctl_Ti, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_Td", ctl_Td, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: ctl_sp", ctl_sp, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: ctl_bref", ctl_bref, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: ctl_sticksp", ctl_sticksp, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: ctl_mingas", ctl_mingas, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: ctl_maxgas", ctl_maxgas, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: params[\"ctl_setpoint\"]", params["ctl_setpoint"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: params[\"ctl_bref\"]", params["ctl_bref"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: params[\"ctl_sticksp\"]", params["ctl_sticksp"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: params[\"ctl_mingas\"]", params["ctl_mingas"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: params[\"ctl_maxgas\"]", params["ctl_maxgas"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: output_enable", output_enable, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_enable", gs_enable, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: gs_enable_dbg", gs_enable_dbg, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: gs_en_dbg", gs_en_dbg, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: ctl_update_rate", ctl_update_rate, Logger::LOGLEVEL_DEBUG);
 
 		return;
 	}
@@ -806,7 +1068,7 @@ namespace mavhub {
 		attitude.ymag = v[14] = 0.0;
 		attitude.zmag = v[15] = 0.0;
 
-		// Logger::log("debugout2attitude:", v, Logger::LOGLEVEL_INFO);
+		//Logger::log("debugout2attitude:", v, Logger::LOGLEVEL_INFO);
 
 		// despair debug
 		// printf("blub: ");
@@ -831,9 +1093,11 @@ namespace mavhub {
   void Ctrl_Hover::debugout2ranger(mavlink_mk_debugout_t* dbgout, mavlink_huch_ranger_t* ranger) {
 		static vector<uint16_t> v(3);
 		ranger->ranger1 = v[0] = debugout_getval_u(dbgout, USSvalue);
-		DataCenter::set_huch_ranger_at(*ranger, 0);
+		// FIXME: typemap[0] is ultrasonic sensors
+		// DataCenter::set_huch_ranger_at(*ranger, 0);
+		DataCenter::set_sensor(chanmap[0], (double)v[0]);
 		// Logger::log("debugout2ranger:", v, Logger::LOGLEVEL_INFO);
-  }
+	}
 
   void Ctrl_Hover::debugout2status(mavlink_mk_debugout_t* dbgout, mavlink_mk_fc_status_t* status) {
 		static vector<int16_t> v(6);

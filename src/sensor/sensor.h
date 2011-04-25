@@ -31,6 +31,7 @@ namespace mavhub {
 			int update_rate;
 			int debug;
 			int timings;
+
 		private:
 
 	};

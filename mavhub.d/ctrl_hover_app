@@ -5,6 +5,8 @@ loglevel = info
 # types: see ctrl_hover.h (USS, BARO, ACC, IR1, IR2, ...)
 inmap = 0:0 1:1 2:2 3:3 4:4
 # inmap = a:0 b:1 c:2 d:3 e:3
+# channel mapping
+chmap = 0:0
 ctl_bias = 370
 ctl_Kc = 0.12207
 ctl_Ti = 4.3538
@@ -16,5 +18,10 @@ ctl_mingas = 10.0
 ctl_maxgas = 800.0
 output_enable = 1
 gs_enable = 1
-gs_enable_dbg = 1
-
+gs_en_dbg = 0
+gs_en_stats = 0
+ctl_update_rate = 100
+uss_med_en = 1
+uss_llim = 200.0
+uss_hlim = 1800.0
+hc_raw_en = 1.0

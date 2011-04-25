@@ -8,6 +8,8 @@
 #include "module/ctrl_hover.h"
 #include "module/ctrl_lateral.h"
 #include "module/ctrl_bump.h"
+#include "module/ctrl_logfileplayer.h"
+#include "module/ctrl_logger.h"
 #include "module/sim_crrcsim.h"
 #include "mk_app.h"
 #include "acc_calibration_app/acc_calibration_app.h"
@@ -87,6 +89,12 @@ namespace mavhub {
 		} else if(lowercase_name == "ctrl_lateral_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Lateral(args);
+		} else if(lowercase_name == "ctrl_logfileplayer_app") {
+			// pass only configuration map into constructor
+			return new Ctrl_LogfilePlayer(args);
+		} else if(lowercase_name == "ctrl_logger_app") {
+			// pass only configuration map into constructor
+			return new Ctrl_Logger(args);
 		} else if(lowercase_name == "ctrl_bump_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Bump(args);

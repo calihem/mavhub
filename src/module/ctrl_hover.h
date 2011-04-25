@@ -6,6 +6,7 @@
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "filter_kalmancv.h"
+#include "stat_meanvar.h"
 #include "PID.h"
 #include "core/protocollayer.h"
 #include "qk_helper.h"
@@ -14,6 +15,8 @@
 #include "pp_acc.h"
 #include "pp_baro.h"
 #include "pp_ir.h"
+
+#include <math.h>
 
 namespace mavhub {
 	/// Controller: hover (altitude)
@@ -27,14 +30,15 @@ namespace mavhub {
 		virtual void handle_input(const mavlink_message_t &msg);
 		/// sensor types
 		enum sensor_types_t {
-			USS = 0,
+			USS_FC = 0,
 			BARO = 1,
 			ACC = 2,
 			IR_SHARP_30_3V = 3,
 			IR_SHARP_150_3V = 4,
 			STATUS = 5,
 			IR_SHARP_30_5V = 6,
-			IR_SHARP_150_5V = 7
+			IR_SHARP_150_5V = 7,
+			USS = 8
 		};
 
 		/// debugout type to index map
@@ -104,6 +108,8 @@ namespace mavhub {
 		mavlink_mk_debugout_t mk_debugout;
 		/// MK FC Status
 		mavlink_mk_fc_status_t mk_fc_status;
+		/// huch hover ctrl (hc) raw altitude readings
+		mavlink_huch_hc_raw_t hc_raw;
 
 		// PIXHAWK stuff
 		/// pixhawk raw imu
@@ -121,38 +127,60 @@ namespace mavhub {
 		PID* pid_alt;
 		/// number of sensor inputs processed by the module
 		int numchan;
+		/// parameters
+		std::map<std::string, double>	params;
+		std::list< std::pair<int, int> > typemap_pairs;
+		std::vector<int> typemap;
 		std::list< std::pair<int, int> > chanmap_pairs;
 		std::vector<int> chanmap;
 		/// raw sensor input array
 		std::vector<int> raw;
 		/// pre-processed sensor array: first: value, second: status/valid
 		std::vector< std::pair< double, int > > pre;
+		std::vector<double> premean;
+		std::vector<double> precov;
+		std::vector<Stat_MeanVar *> stats;
 		/// preprocessor modules
 		std::vector<PreProcessor *> premod;
+		std::vector<double> uss_win, uss_win_sorted;
+		int uss_win_idx;
+		int uss_win_idx_m1;
+		double uss_med, d_uss;
+		/// statistics
+		//std::list< std::vector <double> > stats;
+		/* CvMat* stats; */
+		/* CvMat* stats_data; */
+
 		/// barometer reference
 		double baro_ref;
-		// config variables
+		// config variables / parameters
 		/// controller bias (hovergas)
 		int ctl_bias;
 		double ctl_Kc;
 		double ctl_Ti;
 		double ctl_Td;
-		int ctl_sp;
-		int ctl_bref;
-		int ctl_sticksp;
-		double ctl_mingas;
-		double ctl_maxgas;
+		// int ctl_sp;
+		// int ctl_bref;
+		// int ctl_sticksp;
+		/* double ctl_mingas; */
+		/* double ctl_maxgas; */
+		/* int prm_rst_baro_en; */
 		// output
 		int output_enable;
 		int gs_enable; // groundstation enable generic mavlink data
-		int gs_enable_dbg; // groundstation enable debug data
+		int gs_en_dbg; // groundstation enable debug data
+		int gs_en_stats; // groundstation enable debug data
 		// action requests
 		int set_neutral_rq;
+
 
 		// parameters
 		int param_request_list;
 		int param_count;		
 
+		// update rate
+		int ctl_update_rate;
+		
 		/// strapdown matrix setter
 		int sd_comp_C(mavlink_huch_attitude_t *a, CvMat *C);
 
@@ -179,17 +207,44 @@ namespace mavhub {
 		void set_pxh_raw_imu();
 		void set_pxh_attitude();
 		void set_pxh_manual_control();
+
+		double integrate_and_saturate(double offset, double d, double min, double max);
+		double calc_var_nonlin(double var_e, double min, double max);
   };
 
 	// limit gas
 	inline int Ctrl_Hover::limit_gas(double gas) {
-		if(gas < ctl_mingas)
-			gas = ctl_mingas; // mingas
-		if (gas > ctl_maxgas)
-			gas = ctl_maxgas; // maxgas
+		if(gas < params["ctl_mingas"])
+			gas = params["ctl_mingas"]; // mingas
+		if (gas > params["ctl_maxgas"])
+			gas = params["ctl_maxgas"]; // maxgas
 		return gas;
 	}
 
+	// integrate and saturate
+	inline double Ctrl_Hover::integrate_and_saturate(double offset, double d, double min, double max) {
+		double tmp;
+		//double max = 10.0;
+		d -= 0.5; // shift
+		d *= -1.0; // reverse
+		tmp = offset + d;
+		if(tmp <= min)
+			return min;
+		else if(tmp > max)
+			return max;
+		else
+			return tmp;
+	}
+
+	// calculate nonlinearily scaled variance
+	inline double Ctrl_Hover::calc_var_nonlin(double var_e, double min, double max) {
+		double tmp;
+		//    x1 = (x - lmin) / (lmax - lmin)
+		//    return x1 + (np.exp(x1 * 7) - 1.0)
+		// tmp = (var_e - min) / (max - min);
+		tmp = var_e / (max - min);
+		return tmp + (expf(tmp * 7.0) - 1.0);
+	}
 }
 
 #endif

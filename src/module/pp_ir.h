@@ -17,6 +17,7 @@ namespace mavhub {
 		double m;
 		double k;
 		double llim, ulim;
+		FIR* filt;
 		FIR* filt_valid;
 		virtual double sens_lin_ir(double raw);
 	};

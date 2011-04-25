@@ -27,10 +27,13 @@ namespace mavhub {
 		int16_t roll;
 		int16_t yaw;
 		mavlink_huch_warping_t huch_warping;
+		
 
 		// params
 		int param_request_list;
 		int prm_test_nick;
+		double prm_yaw_P;
+		//int prm_ni
 
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);

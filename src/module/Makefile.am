@@ -16,8 +16,12 @@ libmodule_a_SOURCES = \
 	ctrl_hover.cpp \
 	ctrl_lateral.cpp \
 	ctrl_bump.cpp \
+	ctrl_logfileplayer.cpp \
+	ctrl_logger.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	PID.cpp \
 	sim_crrcsim.cpp \
-	testcore.cpp
+	testcore.cpp \
+	stat_meanvar.cpp \
+	mhparam.cpp

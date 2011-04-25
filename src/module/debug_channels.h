@@ -14,8 +14,11 @@ enum debug_channel {
 	DBG_VALID_IR1 = 9,
 	DBG_VALID_IR2 = 10,
 	ALT_DT_S = 11,
-	ALT_CORR_BASE = 12
-	// next is 16
+	ALT_CORR_BASE = 12,
+	CH1_MEAN = 16,
+	CH1_VAR = 17,
+	CH1_VAR_E = 18
+	// next is 16 + numchan(5) * 3 = 31
 };
 
 #endif

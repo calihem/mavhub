@@ -12,8 +12,8 @@ namespace mavhub {
 		virtual std::pair<double, int> calc(int chan, int s);
 		virtual void calc(std::vector< std::pair< double, int > > &pre, int chan, int s);
 	private:
-		std::vector<double> filt_valid_coef;
-		FIR* filt_valid;
+		//std::vector<double> filt_valid_coef;
+		//FIR* filt_valid;
 	};
 }
 #endif

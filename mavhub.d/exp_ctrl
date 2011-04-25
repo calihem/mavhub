@@ -23,3 +23,6 @@ channel2 = sharpgp2d120
 # show debug information
 debug = 0
 timings = 0
+
+# channel mapping, format: <local>:<global>
+chanmap = 0:1 1:2 2:3 3:4
