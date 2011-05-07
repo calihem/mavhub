@@ -11,6 +11,7 @@
 #include "senhmc5843.h"
 #include "senExpCtrl.h"
 #include "sensrf02.h"
+#include "sencmp02.h"
 
 namespace mavhub {
 	class SensorFactory {

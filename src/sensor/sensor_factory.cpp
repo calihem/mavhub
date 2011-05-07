@@ -74,6 +74,8 @@ namespace mavhub {
 				s = new SenExpCtrl(dev_id, func_id, port, update_rate, debug, timings, chanmap_pairs);
 			else if (sensor_name == "srf02")
 				s = new SenSrf02(dev_id, func_id, port, update_rate, debug, timings, chanmap_pairs);
+			else if (sensor_name == "cmp02")
+				s = new SenCmp02(dev_id, func_id, port, update_rate, debug, timings, chanmap_pairs);
 		}
 		catch (const char *message) {
 			std::string s(message);

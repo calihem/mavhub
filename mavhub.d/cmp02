@@ -1,0 +1,25 @@
+# This is a config file for the SRF02 compass sensors
+#
+
+# identification
+dev_id = 0x5f03
+func_id = 0x118
+
+# hardware connection
+port = /dev/i2c-2
+
+# hardware description
+# mounting etc.
+
+# update rate
+update_rate = 100
+gain = 1
+mode = 1
+
+# show debug information
+debug = 0
+timings = 1
+
+# channel mapping
+chanmap = 0:0
+

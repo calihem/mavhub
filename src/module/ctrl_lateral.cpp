@@ -174,8 +174,16 @@ namespace mavhub {
 				roll = 0;
 			}
 			//roll = 0;
+			// magnetic 2D compass
+			// int comp = DataCenter::get_sensor(6) - 128;
+			// comp = comp % 256;
+			// //comp = (/255.0) * 6.28;
+			// yaw = (int16_t)(prm_yaw_P * (0.0 + (comp/255.0) * 6.28));
+			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
+
+			// FIXME: optical compass
 			yaw = (int16_t)(prm_yaw_P * (0.0 + huch_warping.psi_estimate));
-			//Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_warping.psi_estimate, yaw, Logger::LOGLEVEL_INFO);
+			Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_warping.psi_estimate, yaw, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
 
 			DataCenter::set_extctrl_nick(nick);

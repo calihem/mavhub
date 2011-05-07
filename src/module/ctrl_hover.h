@@ -109,7 +109,7 @@ namespace mavhub {
 		/// MK FC Status
 		mavlink_mk_fc_status_t mk_fc_status;
 		/// huch hover ctrl (hc) raw altitude readings
-		mavlink_huch_hc_raw_t hc_raw;
+		mavlink_huch_hc_raw_t ch_raw;
 
 		// PIXHAWK stuff
 		/// pixhawk raw imu
@@ -167,9 +167,9 @@ namespace mavhub {
 		/* int prm_rst_baro_en; */
 		// output
 		int output_enable;
-		int gs_enable; // groundstation enable generic mavlink data
-		int gs_en_dbg; // groundstation enable debug data
-		int gs_en_stats; // groundstation enable debug data
+		// int gs_enable; // groundstation enable generic mavlink data
+		// int gs_en_dbg; // groundstation enable debug data
+		// int gs_en_stats; // groundstation enable debug data
 		// action requests
 		int set_neutral_rq;
 

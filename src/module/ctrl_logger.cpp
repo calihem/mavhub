@@ -53,21 +53,24 @@ namespace mavhub {
 		// FIXME: from config
 		datafields[0] = "unix_timestamp";
 
-		datafields[1] = "hc_raw0";
-		datafields[2] = "hc_raw1";
-		datafields[3] = "hc_raw2";
-		datafields[4] = "hc_raw3";
-		datafields[5] = "hc_raw4";
+		// hc raw
+		datafields[1] = "ch_raw0";
+		datafields[2] = "ch_raw1";
+		datafields[3] = "ch_raw2";
+		datafields[4] = "ch_raw3";
+		datafields[5] = "ch_raw4";
 
-		datafields[6] = "hc_s_uss";
-		datafields[7] = "hc_s_baro";
-		datafields[8] = "hc_s_accz";
-		datafields[9] = "hc_s_ir1";
-		datafields[10] = "hc_s_ir2";
-		datafields[11] = "hc_s_kal0";
-		datafields[12] = "hc_s_kal1";
-		datafields[13] = "hc_s_kal2";
+		// hc state
+		datafields[6] = "ch_uss";
+		datafields[7] = "ch_baro";
+		datafields[8] = "ch_accz";
+		datafields[9] = "ch_ir1";
+		datafields[10] = "ch_ir2";
+		datafields[11] = "ch_kal0";
+		datafields[12] = "ch_kal1";
+		datafields[13] = "ch_kal2";
 
+		// huch attitude
 		datafields[14] = "ha_xacc";
 		datafields[15] = "ha_yacc";
 		datafields[16] = "ha_zacc";
@@ -85,6 +88,13 @@ namespace mavhub {
 		datafields[28] = "ha_ymag";
 		datafields[29] = "ha_zmag";
 
+		// fc state
+		datafields[30] = "fcs_rssi";
+		datafields[31] = "fcs_batt";
+		datafields[32] = "fcs_nick";
+		datafields[33] = "fcs_roll";
+		datafields[34] = "fcs_yaw";
+		datafields[35] = "fcs_gas";
 
 		// sort(datafields.begin(), datafields.end());
 		// unix timestamp
@@ -129,6 +139,7 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> component_id;
 		}
+		// FIXME: text or raw / binary
 		Logger::log("ctrl_logger::read_conf: component_id", component_id, Logger::LOGLEVEL_INFO);
 	}
 
@@ -150,7 +161,7 @@ namespace mavhub {
 		switch(msg.msgid) {
 			////////////////////// HUCH_HC_RAW
 		case MAVLINK_MSG_ID_HUCH_HC_RAW:
-			Logger::log("Ctrl_Logger got huch_hc_raw msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
+			//Logger::log("Ctrl_Logger got huch_hc_raw msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
 
 			logline_preamble(1, usec);
 
@@ -168,7 +179,7 @@ namespace mavhub {
 			break;
 
 		case MAVLINK_MSG_ID_HUCH_CTRL_HOVER_STATE:
-			Logger::log("Ctrl_Logger got huch_ctrl_hover_state msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
+			//Logger::log("Ctrl_Logger got huch_ctrl_hover_state msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
 
 			logline_preamble(6, usec);
 
@@ -188,7 +199,7 @@ namespace mavhub {
 
 			break;
 		case MAVLINK_MSG_ID_HUCH_ATTITUDE:
-			Logger::log("Ctrl_Logger got huch_attitude msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
+			//Logger::log("Ctrl_Logger got huch_attitude msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
 
 			logline_preamble(14, usec);
 
@@ -213,6 +224,24 @@ namespace mavhub {
 			fwrite(outstr, strlen(outstr), 1, fd);
 
 			logline_coda(29);
+
+			break;
+		case MAVLINK_MSG_ID_MK_FC_STATUS:
+			//Logger::log("Ctrl_Logger got huch_attitude msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
+
+			logline_preamble(30, usec);
+
+			sprintf(outstr, "%d\t%d\t%d\t%d\t%d\t%d\t",
+							mavlink_msg_mk_fc_status_get_rssi(&msg),
+							mavlink_msg_mk_fc_status_get_batt(&msg),
+							mavlink_msg_mk_fc_status_get_nick(&msg),
+							mavlink_msg_mk_fc_status_get_roll(&msg),
+							mavlink_msg_mk_fc_status_get_yaw(&msg),
+							mavlink_msg_mk_fc_status_get_gas(&msg)
+							);
+			fwrite(outstr, strlen(outstr), 1, fd);
+
+			logline_coda(35);
 
 			break;
 		default:

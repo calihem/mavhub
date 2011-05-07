@@ -55,8 +55,8 @@ libsensor_a_AR = $(AR) $(ARFLAGS)
 libsensor_a_LIBADD =
 am_libsensor_a_OBJECTS = sensor.$(OBJEXT) i2csensor.$(OBJEXT) \
 	senbmp085.$(OBJEXT) senhmc5843.$(OBJEXT) sensrf02.$(OBJEXT) \
-	senExpCtrl.$(OBJEXT) sensor_factory.$(OBJEXT) \
-	sensormanager.$(OBJEXT)
+	sencmp02.$(OBJEXT) senExpCtrl.$(OBJEXT) \
+	sensor_factory.$(OBJEXT) sensormanager.$(OBJEXT)
 libsensor_a_OBJECTS = $(am_libsensor_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -219,6 +219,7 @@ libsensor_a_SOURCES = \
 	senbmp085.cpp \
 	senhmc5843.cpp \
 	sensrf02.cpp \
+	sencmp02.cpp \
 	senExpCtrl.cpp \
 	sensor_factory.cpp \
 	sensormanager.cpp
@@ -274,6 +275,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/i2csensor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/senExpCtrl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/senbmp085.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sencmp02.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/senhmc5843.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sensor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sensor_factory.Po@am__quote@

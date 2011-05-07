@@ -35,7 +35,7 @@ const int SenSrf02::waitFreq[] = {2000000, 1000000, 500000, 200000, 100000, 5000
 
 	//uint8_t buffer[2];
 
-	Logger::log("srf02: init, port ", _port, Logger::LOGLEVEL_INFO);
+	Logger::log("sensrf02: init, port ", _port, Logger::LOGLEVEL_INFO);
 
 	//chanmap.reserve(1);
 	list<pair<int, int> >::const_iterator iter;
@@ -43,7 +43,7 @@ const int SenSrf02::waitFreq[] = {2000000, 1000000, 500000, 200000, 100000, 5000
 	for(int i = 0; i < 1; i++) {
 		// FIXME: rather two concurrent iterators?
 		chanmap[i] = iter->second;
-		Logger::log("sensrf02: chantype", chanmap[i], Logger::LOGLEVEL_DEBUG);
+		Logger::log("sensrf02: init, chantype", chanmap[i], Logger::LOGLEVEL_INFO);
 		iter++;
 	}
 
@@ -106,7 +106,7 @@ void SenSrf02::run() {
 	uint64_t time_output = start + 1000000;
 	uint64_t usec;
 
-	Logger::log("srf02: running (Hz)", 1e6 / wait_time, Logger::LOGLEVEL_INFO);
+	Logger::log("sensrf02: running (Hz)", 1e6 / wait_time, Logger::LOGLEVEL_INFO);
 	i2c_start_conversion(fd, SRF02_ADR);
 	try {
 		status = RUNNING;

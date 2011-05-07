@@ -205,15 +205,15 @@ namespace mavhub {
 						set_neutral_rq = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for set_neutral_rq", set_neutral_rq, Logger::LOGLEVEL_INFO);
 						// enable groundstation talk
-					}	else if(!strcmp("gs_enable", (const char *)param_id)) {
-						gs_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_enable", gs_enable, Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("gs_en", (const char *)param_id)) {
+						params["gs_en"] = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en", params["gs_en"], Logger::LOGLEVEL_INFO);
 					}	else if(!strcmp("gs_en_dbg", (const char *)param_id)) {
-						gs_en_dbg = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg", gs_en_dbg, Logger::LOGLEVEL_INFO);
+						params["gs_en_dbg"] = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_INFO);
 					}	else if(!strcmp("gs_en_stats", (const char *)param_id)) {
-						gs_en_stats = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_stats", gs_en_stats, Logger::LOGLEVEL_INFO);
+						params["gs_en_stats"] = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_INFO);
 						// PID params
 					}	else if(!strcmp("PID_bias", (const char *)param_id)) {
 						pid_alt->setBias((double)mavlink_msg_param_set_get_param_value(&msg));
@@ -369,17 +369,17 @@ namespace mavhub {
 
 			// record raw altitude readings
 			// Logger::log("hc_raw_en", params["hc_raw_en"], Logger::LOGLEVEL_INFO);
-			if(params["hc_raw_en"] >= 1.0) {
+			if(params["ch_raw_en"] >= 1.0) {
 				// copy data
 				//for(int i = 0; i < params["numsens"]; i++) {
-				hc_raw.raw0 = raw[0];
-				hc_raw.raw1 = raw[1];
-				hc_raw.raw2 = raw[2];
-				hc_raw.raw3 = raw[3];
-				hc_raw.raw4 = raw[4];
+				ch_raw.raw0 = raw[0];
+				ch_raw.raw1 = raw[1];
+				ch_raw.raw2 = raw[2];
+				ch_raw.raw3 = raw[3];
+				ch_raw.raw4 = raw[4];
 					//}
 				// send
-				mavlink_msg_huch_hc_raw_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &hc_raw);
+				mavlink_msg_huch_hc_raw_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ch_raw);
 				send(msg);
 			}
 
@@ -485,9 +485,15 @@ namespace mavhub {
 				switch(typemap[i]) {
 				case ACC:
 					kal->setMeasTransAt(i, 2, pre[i].second);
+					// kal->setMeasTransAt(i, 2, 1.0);
+					break;
+				case BARO:
+					kal->setMeasTransAt(i, 0, pre[i].second);
+					// kal->setMeasTransAt(i, 0, 1.0);
 					break;
 				default:
 					kal->setMeasTransAt(i, 0, pre[i].second);
+					// kal->setMeasTransAt(i, 0, 0.0);
 					break;
 				}
 			}
@@ -671,11 +677,11 @@ namespace mavhub {
 				// trigger setneutral
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
 				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_enable", gs_enable, 1, 0);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
 				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", gs_en_dbg, 1, 0);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
 				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_stats", gs_en_stats, 1, 0);
+				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
 				send(msg);
 				// PID params
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
@@ -713,7 +719,7 @@ namespace mavhub {
 			mavlink_msg_huch_ctrl_hover_state_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
 			send(msg);
 			// send pixhawk std structs to groundstation
-			if(gs_enable) {
+			if(params["gs_en"]) {
 				// manual control
 				mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
 				send(msg);
@@ -723,7 +729,7 @@ namespace mavhub {
 			}
 
 			// send debug signals to groundstation
-			if(gs_en_dbg) {
+			if(params["gs_en_dbg"]) {
 				// gas out
 				send_debug(&msg, &dbg, ALT_GAS, gas);
 				// // PID error
@@ -745,7 +751,7 @@ namespace mavhub {
 			}
 
 			// send debug signals to groundstation
-			if(gs_en_stats) {
+			if(params["gs_en_stats"]) {
 				int i, offs;
 				for(i = 0; i < numchan; i++) {
 					offs = i * 3;
@@ -933,24 +939,24 @@ namespace mavhub {
 		}
 
 		// mavlink to groundstation enable
-		iter = args.find("gs_enable");
+		iter = args.find("gs_en");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> gs_enable;
+			s >> params["gs_en"];
 		}
 
 		// mavlink to groundstation debug data enable
 		iter = args.find("gs_en_dbg");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> gs_en_dbg;
+			s >> params["gs_en_dbg"];
 		}
 
 		// mavlink to groundstation debug statistics data
 		iter = args.find("gs_en_stats");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> gs_en_stats;
+			s >> params["gs_en_stats"];
 		}
 
 		// main controller update rate
@@ -970,10 +976,10 @@ namespace mavhub {
 		}
 
 		// enable hover ctrl raw sensor value dump
-		iter = args.find("hc_raw_en");
+		iter = args.find("ch_raw_en");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["hc_raw_en"];
+			s >> params["ch_raw_en"];
 		}
 
 		// uss sensor conf
@@ -1005,8 +1011,9 @@ namespace mavhub {
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_mingas\"]", params["ctl_mingas"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_maxgas\"]", params["ctl_maxgas"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: output_enable", output_enable, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: gs_enable", gs_enable, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: gs_en_dbg", gs_en_dbg, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: gs_en", params["gs_en"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_update_rate", ctl_update_rate, Logger::LOGLEVEL_DEBUG);
 
 		return;
