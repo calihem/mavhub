@@ -1,2 +1,4 @@
 component_id = 30
-logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-132403.csv
+# logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-132403.csv
+# logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-132218.csv
+logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-120319.csv

@@ -8,12 +8,15 @@
 #include "i2csensor.h"
 
 #define	SRF02_ADR	0x70
-#define SRF02_NUMCHAN 1
+#define SRF02_NUMCHAN 2
 
-#define SRF02_CMD_VERSION 0x00
-#define SRF02_CMD_RNG 0x02 // not valid for srf02 anyway
+#define SRF02_REG_RD_VERSION 0x00
+#define SRF02_REG_RD_LIGHT 0x01 // not valid for srf02 anyway
+#define SRF02_REG_RD_ECHO_0 0x02 // not valid for srf02 anyway
+#define SRF02_REG_WR_CMD 0x00
+#define SRF02_REG_WR_GAIN 0x01
+#define SRF02_REG_WR_RNG 0x02
 #define SRF02_CMD_TIMING 0xFF //
-#define SRF02_CMD_SETGAIN 0x01 // not valid for srf02 anyway
 #define SRF02_CMD_SETGAIN_VAL 0x10 // not valid for srf02 anyway
 #define SRF02_CMD_STARTRNG 0x00 // not valid for srf02 anyway
 #define SRF02_CMD_STARTRNG_SPEC 0x52 // not valid for srf02 anyway
@@ -67,21 +70,29 @@ namespace mavhub {
 			int get_last_measurement();
 
 		protected:
+			/// main method
 			virtual void run();
+			/// well ...
 			virtual void* get_data_pointer(unsigned int id) throw(const char *);
+			/// return the firmware version from the PIC
 			virtual int get_hw_version();
+			/// set up the sensor during init: for the SRF02 nothing should happen, for the SRF08 and 10 this should set the gain and range registers
 			virtual void set_up();
+			/// initialize ranging
 			virtual void start_ranging();
+			/// read ranging result after it has finished
 			virtual int get_range();
+			/// copy data into datacenter
 			void publish_data(uint64_t time);
 			
 		private:
-			//mavlink_huch_magnetic_kompass_t kompass_data;
+			/// array of distance sensor structures
 			mavlink_huch_distance_t sensor_data[SRF02_NUMCHAN];
+			/// channel mapping: sensor channel to mavhub global logical channels
 			std::vector<int> chanmap;
 
-			int gain;
-			int mode;
+			/* int gain; */
+			/* int mode; */
 
 			/* frequenz */
 			static const int waitFreq[8];

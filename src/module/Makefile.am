@@ -20,6 +20,7 @@ libmodule_a_SOURCES = \
 	ctrl_logger.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
+	filter_median.cpp \
 	PID.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \

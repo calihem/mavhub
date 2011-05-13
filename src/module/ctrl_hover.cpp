@@ -692,7 +692,6 @@ namespace mavhub {
 				send(msg);
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
 				send(msg);
-				
 			}
 
 			// set neutral?
@@ -1058,6 +1057,7 @@ namespace mavhub {
 		static vector<int> v(16);
 		// for mkcom mapping compatibility:
 		// xaccmean, yaccmean, zacc
+		// FIXME: optimize away the vector assignment
 		attitude.xacc     = v[0]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_accnick);
 		attitude.yacc     = v[1]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_accroll);
 		attitude.zacc     = v[2]  = Ctrl_Hover::debugout_getval_s(dbgout, ADval_acctop);

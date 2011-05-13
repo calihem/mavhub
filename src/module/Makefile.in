@@ -58,9 +58,9 @@ am_libmodule_a_OBJECTS = pp.$(OBJEXT) pp_uss.$(OBJEXT) \
 	coremod.$(OBJEXT) fc_mpkg.$(OBJEXT) ctrl_hover.$(OBJEXT) \
 	ctrl_lateral.$(OBJEXT) ctrl_bump.$(OBJEXT) \
 	ctrl_logfileplayer.$(OBJEXT) ctrl_logger.$(OBJEXT) \
-	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) PID.$(OBJEXT) \
-	sim_crrcsim.$(OBJEXT) testcore.$(OBJEXT) \
-	stat_meanvar.$(OBJEXT) mhparam.$(OBJEXT)
+	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) \
+	filter_median.$(OBJEXT) PID.$(OBJEXT) sim_crrcsim.$(OBJEXT) \
+	testcore.$(OBJEXT) stat_meanvar.$(OBJEXT) mhparam.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -232,6 +232,7 @@ libmodule_a_SOURCES = \
 	ctrl_logger.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
+	filter_median.cpp \
 	PID.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
@@ -296,6 +297,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fc_mpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_fir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_kalmancv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_median.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mhparam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_acc.Po@am__quote@

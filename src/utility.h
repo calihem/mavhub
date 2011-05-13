@@ -117,7 +117,17 @@ std::ostream& operator <<(std::ostream &os, const std::vector<T> &value_vector);
 static uint64_t get_time_us();
 
 /**
- * Check if value val is in range (low <= x <= high)
+ * Check if integer value val is in range (low <= x <= high)
+ *
+ * @param value x
+ * @param low range limit
+ * @param high range limit
+ * @return true (1) if x is in specified range
+ */
+int in_range(int x, int low, int high);
+
+/**
+ * Check if double value val is in range (low <= x <= high)
  *
  * @param value x
  * @param low range limit
@@ -242,6 +252,10 @@ inline uint64_t get_time_us() {
 	struct timeval tp;
 	gettimeofday( &tp, NULL );
 	return tp.tv_sec * 1E6 + tp.tv_usec;
+}
+
+inline int in_range(int x, int low, int high) {
+	return x >= low && x <= high;
 }
 
 inline int in_range(double x, double low, double high) {

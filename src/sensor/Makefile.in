@@ -56,7 +56,8 @@ libsensor_a_LIBADD =
 am_libsensor_a_OBJECTS = sensor.$(OBJEXT) i2csensor.$(OBJEXT) \
 	senbmp085.$(OBJEXT) senhmc5843.$(OBJEXT) sensrf02.$(OBJEXT) \
 	sencmp02.$(OBJEXT) senExpCtrl.$(OBJEXT) \
-	sensor_factory.$(OBJEXT) sensormanager.$(OBJEXT)
+	sensor_factory.$(OBJEXT) sensormanager.$(OBJEXT) \
+	filter_median.$(OBJEXT)
 libsensor_a_OBJECTS = $(am_libsensor_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -222,7 +223,8 @@ libsensor_a_SOURCES = \
 	sencmp02.cpp \
 	senExpCtrl.cpp \
 	sensor_factory.cpp \
-	sensormanager.cpp
+	sensormanager.cpp \
+	../module/filter_median.cpp
 
 all: all-am
 
@@ -272,6 +274,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_median.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/i2csensor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/senExpCtrl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/senbmp085.Po@am__quote@
@@ -295,6 +298,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+filter_median.o: ../module/filter_median.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT filter_median.o -MD -MP -MF $(DEPDIR)/filter_median.Tpo -c -o filter_median.o `test -f '../module/filter_median.cpp' || echo '$(srcdir)/'`../module/filter_median.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/filter_median.Tpo $(DEPDIR)/filter_median.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../module/filter_median.cpp' object='filter_median.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o filter_median.o `test -f '../module/filter_median.cpp' || echo '$(srcdir)/'`../module/filter_median.cpp
+
+filter_median.obj: ../module/filter_median.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT filter_median.obj -MD -MP -MF $(DEPDIR)/filter_median.Tpo -c -o filter_median.obj `if test -f '../module/filter_median.cpp'; then $(CYGPATH_W) '../module/filter_median.cpp'; else $(CYGPATH_W) '$(srcdir)/../module/filter_median.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/filter_median.Tpo $(DEPDIR)/filter_median.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../module/filter_median.cpp' object='filter_median.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o filter_median.obj `if test -f '../module/filter_median.cpp'; then $(CYGPATH_W) '../module/filter_median.cpp'; else $(CYGPATH_W) '$(srcdir)/../module/filter_median.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

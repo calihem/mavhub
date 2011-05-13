@@ -151,7 +151,7 @@ namespace mavhub {
 		// time_t t;
 		// struct tm *tmp;
 		struct timeval tv;
-		int usec;
+		int usec; // in milliseconds
 
 		// Logger::log("Ctrl_Logger got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
 
