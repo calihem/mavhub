@@ -15,6 +15,7 @@ libmodule_a_SOURCES = \
 	fc_mpkg.cpp \
 	ctrl_hover.cpp \
 	ctrl_lateral.cpp \
+	ctrl_zrate.cpp \
 	ctrl_bump.cpp \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \

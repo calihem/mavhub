@@ -110,6 +110,7 @@ namespace mavhub {
 		int uss_win_idx;
 		int uss_win_idx_m1;
 		double uss_med, d_uss;
+		int uss_plaus; // plausible value?
 		/// statistics
 		//std::list< std::vector <double> > stats;
 		/* CvMat* stats; */
@@ -149,7 +150,13 @@ namespace mavhub {
 		int sd_comp_C(mavlink_huch_attitude_t *a, CvMat *C);
 
 		/// read data from config
+		virtual void conf_defaults();
+		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
+		/// set kalman matrix R from ch params
+		virtual void kal_setRFromParams();
+		/// get kalman matrix R into ch params
+		virtual void kal_getParamsFromR();
 		/// send debug data
 		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value);
 		/// limit gas

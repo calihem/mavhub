@@ -18,8 +18,9 @@ enum debug_channel {
 	ALT_CORR_BASE = 12,
 	CH1_MEAN = 16,
 	CH1_VAR = 17,
-	CH1_VAR_E = 18
+	CH1_VAR_E = 18,
 	// next is 16 + numchan(5) * 3 = 31
+	DBG_USS_D = 31
 };
 
 // huch-FC/MK debugchannels

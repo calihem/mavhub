@@ -9,4 +9,5 @@ mavhub interal component IDs
 | ctrl_lateral_app       |   28 |
 | ctrl_logger_app        |   29 |
 | ctrl_logfileplayer_app |   30 |
+| ctrl_zrate_app |   31 |
 

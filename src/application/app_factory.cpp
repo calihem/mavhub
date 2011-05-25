@@ -7,6 +7,7 @@
 #include "module/fc_mpkg.h"
 #include "module/ctrl_hover.h"
 #include "module/ctrl_lateral.h"
+#include "module/ctrl_zrate.h"
 #include "module/ctrl_bump.h"
 #include "module/ctrl_logfileplayer.h"
 #include "module/ctrl_logger.h"
@@ -89,6 +90,9 @@ namespace mavhub {
 		} else if(lowercase_name == "ctrl_lateral_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Lateral(args);
+		} else if(lowercase_name == "ctrl_zrate_app") {
+			// pass only configuration map into constructor
+			return new Ctrl_Zrate(args);
 		} else if(lowercase_name == "ctrl_logfileplayer_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_LogfilePlayer(args);

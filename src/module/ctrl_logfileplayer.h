@@ -35,6 +35,8 @@ namespace mavhub {
 		int param_request_list;
 		/// parameters
 		std::map<std::string, double>	params;
+		/// set defaults config
+		virtual void conf_defaults();
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
 		/// open logfile

@@ -1,4 +1,11 @@
-// log mavlink data as csv/tsv text file
+// log data prior to controller as csv/tsv text file
+//  - FIXME: logfile type settable (atm it is QGC format only),
+//    options are raw mavlink (but that incompatible with the
+//    use of datacenter), and "one line per packet, with timestamp
+//    and type header"
+//  - FIXME: generic mechanism to add messages
+//  - FIXME: add raw debugout
+
 #include "ctrl_logger.h"
 
 #include <mavlink.h>
@@ -243,6 +250,9 @@ namespace mavhub {
 
 			logline_coda(35);
 
+			break;
+		case MAVLINK_MSG_ID_HUCH_VISUAL_NAVIGATION:
+			// FIXME: implement
 			break;
 		default:
 			break;

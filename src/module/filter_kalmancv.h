@@ -24,6 +24,8 @@ namespace mavhub {
 		virtual void eval();
 		/// update transition matrix
 		virtual void update_F_dt(double dt);
+		/// update transition matrix
+		//virtual void update_R(int row, int col, double val);
 
 		/// static cv matrix print function
 		static inline void cvPrintMat(CvMat* M, int rows, int cols, char* name) {
@@ -86,6 +88,12 @@ namespace mavhub {
 		inline void setMeasNoiseCovAt(int row, int col, double val) {
 			// FIXME: check bound violation
 			cvmSet(cvkal->measurement_noise_cov, row, col, val);
+		}
+
+		/// kalman measurement noise covariance getter
+		inline double getMeasNoiseCovAt(int row, int col) {
+			// FIXME: check bound violation
+			return cvmGet(cvkal->measurement_noise_cov, row, col);
 		}
 
 		// protected:

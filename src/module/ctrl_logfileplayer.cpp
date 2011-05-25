@@ -1,4 +1,5 @@
 // play back logfile and simulate kopter inputs
+
 #include "ctrl_logfileplayer.h"
 
 #include <mavlink.h>
@@ -23,16 +24,25 @@ namespace mavhub {
 		AppLayer("ctrl_logfileplayer")
 	{
 		char header[1024];
+		params["replay_mode"] = QGC;
+		//params["replay_mode"] = CH;
+		conf_defaults();
+
 		read_conf(args);
 		logfile_open(logfilename);
 		sd.getline(header, 1024);
 		param_request_list = 0;
-		// params["replay_mode"] = QGC;
-		params["replay_mode"] = CH;
 		Logger::log("Ctrl_LogfilePlayer::init with header", header, Logger::LOGLEVEL_INFO);
   }
 
   Ctrl_LogfilePlayer::~Ctrl_LogfilePlayer() {
+	}
+
+	void Ctrl_LogfilePlayer::conf_defaults() {
+		params["replay_mode"] = CH;
+		params["offset"] = 0.0;
+		params["timescale"] = 1.0;
+		params["play"] = 1.0;
 	}
 
 	void Ctrl_LogfilePlayer::read_conf(const map<string, string> args) {
@@ -42,6 +52,18 @@ namespace mavhub {
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
 			s >> component_id;
+		}
+
+		iter = args.find("replay_mode");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["replay_mode"];
+		}
+
+		iter = args.find("offset");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["offset"];
 		}
 
 		iter = args.find("logfilename");
@@ -151,12 +173,24 @@ namespace mavhub {
 				}
 			}
 
+			// start reading line by line
+			// i know it's more than ugly but wtf ...
 			if(sd.is_open()) {
 				if(!sd.eof()) {
 					//sd >> logline;
+					if(params["play"] < 1.0) {
+						usleep(10000);
+						continue;
+					}
+
 					getline(sd, logline);
 					linecount++;
-					Logger::log("Ctrl_LogfilePlayer: logfile_read", logline, Logger::LOGLEVEL_INFO);
+
+					// skip offset lines
+					if(linecount < (int)params["offset"])
+						continue;
+
+					Logger::log("Ctrl_LogfilePlayer: count, line", linecount, logline, Logger::LOGLEVEL_INFO);
 
 					typedef string::const_iterator ci;
 					//iter = logline.begin();
@@ -213,15 +247,15 @@ namespace mavhub {
 									else if(tabcount == tmp_offset+4) {
 										ch_raw.raw4 = d;
 										// struct finished, encode
-										// printf("ch_raw: %d, %d, %d, %d, %d\n",
-										// 			 ch_raw.raw0,
-										// 			 ch_raw.raw1,
-										// 			 ch_raw.raw2,
-										// 			 ch_raw.raw3,
-										// 			 ch_raw.raw4);
+										printf("ch_raw: %d, %d, %d, %d, %d\n",
+													 ch_raw.raw0,
+													 ch_raw.raw1,
+													 ch_raw.raw2,
+													 ch_raw.raw3,
+													 ch_raw.raw4);
 										mavlink_msg_huch_hc_raw_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ch_raw);
 										ready_to_send = 1;
-										break;
+										break; // terminate iteration over logline bytes
 									}
 								}
 								else if(in_range(tabcount, 7, 14)) {
@@ -342,10 +376,10 @@ namespace mavhub {
 									}
 									else if(tabcount == tmp_offset+5) {
 										fc_state.gas = atoi(tmp);
-										// printf("fc_state: %d, %d, %d, %d, %d, %d\n",
-										// 			 fc_state.rssi, fc_state.batt,
-										// 			 fc_state.nick, fc_state.roll, fc_state.yaw,
-										// 			 fc_state.gas);
+										printf("fc_state: %d, %d, %d, %d, %d, %d\n",
+													 fc_state.rssi, fc_state.batt,
+													 fc_state.nick, fc_state.roll, fc_state.yaw,
+													 fc_state.gas);
 										mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &fc_state);
 										ready_to_send = 1;
 										break;
@@ -370,20 +404,29 @@ namespace mavhub {
 					}
 
 					// printf("x data:'%s': '%s', %d, %d, %d, %d\n", dtype_s, tmp, t, tm1, dt, d);
-					//Logger::log("logfileplayer: dt: ", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
-					usleep(dt * 1000); // 100 Hz
+					Logger::log("logfileplayer: sleeping", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
+					if(dt < 0 || linecount == (int)params["offset"] || linecount == 1) // generic catch
+						dt = 1;
+					Logger::log("logfileplayer: sleeping", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
+					usleep(dt * 1000 * params["timescale"]); // 100 Hz
+
 					if(params["replay_mode"] == QGC && ready_to_send > 0) {
 						send(msg);
 						ready_to_send = 0;
 					}
-					else if(params["replay_mode"] == CH) {
+					else if(params["replay_mode"] == CH && ready_to_send > 0) {
 						//Logger::log("logfileplayer: preparing raw input simulation", Logger::LOGLEVEL_INFO);
 						// 1. mk_debugout zusammenbauen und verschicken
 						attitude2debugout(&huch_attitude, &debugout);
 						mk_fc_state2debugout(&fc_state, &debugout);
 						ch_raw2debugout(&ch_raw, &debugout);
+						mavlink_msg_mk_debugout_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &debugout);
+						send(msg);
 						// 2. DataCenter befummeln
-						ch_raw2datacenter(&ch_raw);
+						if(!strcmp(dtype_s, "ch_raw")) {
+							Logger::log("logfileplayer: ch_raw hit", Logger::LOGLEVEL_INFO);
+							ch_raw2datacenter(&ch_raw);
+						}
 					}
 					
 					// if(linecount > 10000)
@@ -425,17 +468,47 @@ namespace mavhub {
 
 	void Ctrl_LogfilePlayer::attitude2debugout(mavlink_huch_attitude_t* attitude, mavlink_mk_debugout_t* debugout) {
 		debugout_setval_s(debugout, ADval_accnick, attitude->xacc);
+		debugout_setval_s(debugout, ADval_accroll, attitude->yacc);
+		debugout_setval_s(debugout, ADval_acctop, attitude->zacc);
+		debugout_setval_s(debugout, ADval_acctopraw, attitude->zaccraw);
+		debugout_setval_s(debugout, ATTmeanaccnick, attitude->xaccmean);
+		debugout_setval_s(debugout, ATTmeanaccroll, attitude->yaccmean);
+		debugout_setval_s(debugout, ATTmeanacctop, attitude->zaccmean);
+		// watch out for the minus sign
+		debugout_setval_s(debugout, ADval_gyrroll, -attitude->xgyro);
+		debugout_setval_s(debugout, ADval_gyrnick, -attitude->ygyro);
+		debugout_setval_s(debugout, ADval_gyryaw, -attitude->zgyro);
+		debugout_setval_s32(debugout, ATTintrolll, ATTintrollh, -attitude->xgyroint);
+		debugout_setval_s32(debugout, ATTintnickl, ATTintnickh, -attitude->ygyroint);
+		debugout_setval_s32(debugout, ATTintyawl, ATTintyawh, -attitude->zgyroint);
+		// debugout->xmag = 0;
+		// debugout->ymag = 0;
+		// debugout->zmag = 0;
 	}
-	void Ctrl_LogfilePlayer::mk_fc_state2debugout(mavlink_mk_fc_status_t* attitude, mavlink_mk_debugout_t* debugout) {}
-	void Ctrl_LogfilePlayer::ch_raw2debugout(mavlink_huch_hc_raw_t* attitude, mavlink_mk_debugout_t* debugout) {}
-	void Ctrl_LogfilePlayer::ch_raw2datacenter(mavlink_huch_hc_raw_t* attitude) {}
+	void Ctrl_LogfilePlayer::mk_fc_state2debugout(mavlink_mk_fc_status_t* fc_status, mavlink_mk_debugout_t* debugout) {
+		debugout_setval_s(debugout, RC_rssi, fc_status->rssi);
+		debugout_setval_s(debugout, ADval_ubat, fc_status->batt);
+		debugout_setval_s(debugout, GASmixfrac2, fc_status->gas);
+		debugout_setval_s(debugout, StickNick, fc_status->nick);
+		debugout_setval_s(debugout, StickRoll, fc_status->roll);
+		debugout_setval_s(debugout, StickYaw, fc_status->yaw);
+		// Logger::log("Ctrl_LogfilePlayer: mk_fc_state2debugout", fc_status->rssi, Logger::LOGLEVEL_INFO);
+	}
+	void Ctrl_LogfilePlayer::ch_raw2debugout(mavlink_huch_hc_raw_t* ch_raw, mavlink_mk_debugout_t* debugout) {
+		debugout_setval_s(debugout, ATTabsh, ch_raw->raw1);
+		debugout_setval_u(debugout, USSvalue, ch_raw->raw0);
+	}
+	void Ctrl_LogfilePlayer::ch_raw2datacenter(mavlink_huch_hc_raw_t* ch_raw) {
+		// FIXME: chanmap
+		// DataCenter::set_sensor(5, (double)ch_raw->raw0);
+		DataCenter::set_sensor(1, (double)ch_raw->raw3);
+		DataCenter::set_sensor(2, (double)ch_raw->raw4);
+	}
 
   // set unsigned int in mk_debugout
 	void Ctrl_LogfilePlayer::debugout_setval_u(mavlink_mk_debugout_t* dbgout, int index, uint16_t val) {
 		int i;
 		i = 2 * index + 2; //mk_debugout_digital_offset;
-		// 	return (uint16_t)dbgout->debugout[i+1] << 8 |
-		// 		(uint8_t)dbgout->debugout[i];
 		dbgout->debugout[i+1] = (uint8_t)(val >> 8);
 		dbgout->debugout[i] = (uint8_t)val;
 	}
@@ -443,17 +516,23 @@ namespace mavhub {
 	void Ctrl_LogfilePlayer::debugout_setval_s(mavlink_mk_debugout_t* dbgout, int index, int16_t val) {
 		int i;
 		i = 2 * index + 2; // mk_debugout_digital_offset;
-	// 	return (uint16_t)dbgout->debugout[i+1] << 8 |
-	// 		(uint8_t)dbgout->debugout[i];
 		dbgout->debugout[i+1] = (int8_t)(val >> 8);
 		dbgout->debugout[i] = (uint8_t)val;
-		printf("debugout_setval_s: val: %d, dbgout: %d, %d\n", val, dbgout->debugout[i+1], dbgout->debugout[i]);
+		//printf("debugout_setval_s: val: %d, dbgout: %d, %d\n", val, dbgout->debugout[i+1], dbgout->debugout[i]);
 	}
   // set unsigned int in mk_debugout
 	void Ctrl_LogfilePlayer::debugout_setval_s32(mavlink_mk_debugout_t* dbgout, int indexl, int indexh, int32_t val) {
-	// 	int i;
-	// 	i = 2 * index + mk_debugout_digital_offset;
-	// 	return (uint16_t)dbgout->debugout[i+1] << 8 |
-	// 		(uint8_t)dbgout->debugout[i];
+		// FIXME: it's not correct
+		int il, ih;
+		il = 2 * indexl + 2;
+		ih = 2 * indexh + 2;
+		dbgout->debugout[ih+1] = (int8_t)(val >> 24);
+		dbgout->debugout[ih] = (uint8_t)(val >> 16);
+		dbgout->debugout[il+1] = (uint8_t)(val >> 8);
+		dbgout->debugout[il] = (uint8_t)(val);
+		// printf("setval_s32: %d, %d, %d, %d\n",
+		// 			 dbgout->debugout[ih+1], dbgout->debugout[ih],
+		// 			 dbgout->debugout[il+1], dbgout->debugout[il]
+		// 			 );
 	}
 }

@@ -1,4 +1,21 @@
 component_id = 30
+replay_mode = 1
+timescale = 1.0
+play = 1.0
 # logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-132403.csv
 # logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-132218.csv
-logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-120319.csv
+# logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-120319.csv
+# logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110514-203813.csv
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110516-173933-indoor.csv
+#offset = 19582
+# wiese ahof
+logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110520-100210.csv
+offset = 3600
+# foyer
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110520-144511.csv
+#offset = 0
+# zw-raum, sp 1000
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110523-124637.csv
+#offset = 2000
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110523-124846.csv
+#offset = 0

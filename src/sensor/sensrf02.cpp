@@ -157,7 +157,9 @@ namespace mavhub {
 				{ // begin of data mutex scope
 					cpp_pthread::Lock ri_lock(data_mutex);
 					//Logger::log("sensrf02 data locked", Logger::LOGLEVEL_INFO);
+					// use median filter
 					// sensor_data[0].distance = (int)filt_med.calc((double)get_range());
+					// use raw value
 					sensor_data[0].distance = get_range();
 					//Logger::log("sensrf02 data acquired", Logger::LOGLEVEL_INFO);
 					publish_data(start);
