@@ -25,4 +25,5 @@ libmodule_a_SOURCES = \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \
-	mhparam.cpp
+	mhparam.cpp \
+	ctrl_wifimeter.cpp
