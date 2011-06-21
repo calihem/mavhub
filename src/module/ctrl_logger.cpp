@@ -1,4 +1,11 @@
-// log mavlink data as csv/tsv text file
+// log data prior to controller as csv/tsv text file
+//  - FIXME: logfile type settable (atm it is QGC format only),
+//    options are raw mavlink (but that incompatible with the
+//    use of datacenter), and "one line per packet, with timestamp
+//    and type header"
+//  - FIXME: generic mechanism to add messages
+//  - FIXME: add raw debugout
+
 #include "ctrl_logger.h"
 
 #include <mavlink.h>
@@ -96,6 +103,15 @@ namespace mavhub {
 		datafields[34] = "fcs_yaw";
 		datafields[35] = "fcs_gas";
 
+		// visual navigation
+		datafields[36] = "vn_alt_velocity";
+		datafields[37] = "vn_psi_warping";
+		datafields[38] = "vn_psi_vc";
+		datafields[39] = "vn_beta";
+		datafields[40] = "vn_distance";
+		datafields[41] = "vn_home";
+		datafields[42] = "vn_outlier";
+
 		// sort(datafields.begin(), datafields.end());
 		// unix timestamp
 		
@@ -146,8 +162,8 @@ namespace mavhub {
   void Ctrl_Logger::handle_input(const mavlink_message_t &msg) {
 		char outstr[200];
 		// static int8_t param_id[15];
-		int field_index_start;
-		int field_index_end;
+		// int field_index_start;
+		// int field_index_end;
 		// time_t t;
 		// struct tm *tmp;
 		struct timeval tv;
@@ -242,6 +258,25 @@ namespace mavhub {
 			fwrite(outstr, strlen(outstr), 1, fd);
 
 			logline_coda(35);
+
+			break;
+		case MAVLINK_MSG_ID_HUCH_VISUAL_NAVIGATION:
+			// mavlink_huch_visual_navigation_t
+			// FIXME: implement
+			logline_preamble(36, usec);
+
+			sprintf(outstr, "%f\t%f\t%f\t%f\t%d\t%d\t%d\t",
+							mavlink_msg_huch_visual_navigation_get_alt_velocity(&msg),
+							mavlink_msg_huch_visual_navigation_get_psi_warping(&msg),
+							mavlink_msg_huch_visual_navigation_get_psi_vc(&msg),
+							mavlink_msg_huch_visual_navigation_get_beta(&msg),
+							mavlink_msg_huch_visual_navigation_get_distance(&msg),
+							mavlink_msg_huch_visual_navigation_get_home(&msg),
+							mavlink_msg_huch_visual_navigation_get_outlier(&msg)
+							);
+			fwrite(outstr, strlen(outstr), 1, fd);
+
+			logline_coda(42);
 
 			break;
 		default:

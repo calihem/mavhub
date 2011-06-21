@@ -28,10 +28,10 @@ namespace mavhub {
 		static int8_t param_id[15];
 		//Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
-		case MAVLINK_MSG_ID_HUCH_WARPING:
-			//Logger::log("Ctrl_Lateral: got warping msg", Logger::LOGLEVEL_INFO);
-			mavlink_msg_huch_warping_decode(&msg, (mavlink_huch_warping_t *)&huch_warping);
-			//Logger::log("psi_est:", huch_warping.psi_estimate, Logger::LOGLEVEL_INFO);
+		case MAVLINK_MSG_ID_HUCH_VISUAL_NAVIGATION:
+			//Logger::log("Ctrl_Lateral: got visual_navigation msg", Logger::LOGLEVEL_INFO);
+			mavlink_msg_huch_visual_navigation_decode(&msg, (mavlink_huch_visual_navigation_t *)&huch_visual_navigation);
+			//Logger::log("psi_est:", huch_visual_navigation.psi_estimate, Logger::LOGLEVEL_INFO);
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
@@ -123,9 +123,9 @@ namespace mavhub {
 				send(msg);
 			}
 
-			// // test huch_warping
-			// huch_warping.psi_estimate = 1.234;
-			// mavlink_msg_huch_warping_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_warping);
+			// // test huch_visual_navigation
+			// huch_visual_navigation.psi_estimate = 1.234;
+			// mavlink_msg_huch_visual_navigation_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_visual_navigation);
 			// send(msg);
 
 			if(prm_test_nick > 0) {
@@ -182,8 +182,8 @@ namespace mavhub {
 			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
 
 			// FIXME: optical compass
-			yaw = (int16_t)(prm_yaw_P * (0.0 + huch_warping.psi_estimate));
-			Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_warping.psi_estimate, yaw, Logger::LOGLEVEL_INFO);
+			yaw = (int16_t)(prm_yaw_P * (0.0 - huch_visual_navigation.psi_vc));
+			Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
 
 			DataCenter::set_extctrl_nick(nick);

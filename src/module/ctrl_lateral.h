@@ -26,7 +26,7 @@ namespace mavhub {
 		int16_t nick;
 		int16_t roll;
 		int16_t yaw;
-		mavlink_huch_warping_t huch_warping;
+		mavlink_huch_visual_navigation_t huch_visual_navigation;
 		
 
 		// params
