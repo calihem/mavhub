@@ -10,7 +10,7 @@ namespace mavhub
   {
     public:
       /// Constructor
-      Ctrl_Wifimeter(int pport, std::string ssource, double ffeq);
+      Ctrl_Wifimeter(const std::map<std::string, std::string> args);
       virtual ~Ctrl_Wifimeter();
       /// mavhub protocolstack input handler
       virtual void handle_input(const mavlink_message_t &msg);

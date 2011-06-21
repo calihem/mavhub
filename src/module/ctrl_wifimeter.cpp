@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <map>
 #include <iomanip>
 #include <sstream>
 #include <sys/types.h>
@@ -23,13 +24,27 @@
 namespace mavhub
 {
 
-Ctrl_Wifimeter::Ctrl_Wifimeter(int pport, std::string ssource, double ffreq):
+Ctrl_Wifimeter::Ctrl_Wifimeter(const std::map<std::string, std::string> args):
   AppLayer("ctrl_wifimeter"),
   component_id(1000)
 {
-  this->port = pport;
-  this->source = ssource;
-  this->freq = freq;
+  std::map<std::string, std::string>::const_iterator iter;
+
+  iter = args.find("port");
+  if( iter != args.end() ) {
+    std::istringstream s(iter->second);
+    s >> this->port;
+  }
+  iter = args.find("source");
+  if( iter != args.end() ) {
+    std::istringstream s(iter->second);
+    s >> this->source;
+  }
+  iter = args.find("freq");
+  if( iter != args.end() ) {
+    std::istringstream s(iter->second);
+    s >> this->freq;
+  }
 }
 
 Ctrl_Wifimeter::~Ctrl_Wifimeter()
