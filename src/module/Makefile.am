@@ -19,6 +19,7 @@ libmodule_a_SOURCES = \
 	ctrl_bump.cpp \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
+	ctrl_wifimeter.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	filter_median.cpp \
@@ -26,5 +27,4 @@ libmodule_a_SOURCES = \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \
-	mhparam.cpp \
-	ctrl_wifimeter.cpp
+	mhparam.cpp
