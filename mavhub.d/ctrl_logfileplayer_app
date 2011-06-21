@@ -19,3 +19,13 @@ offset = 3600
 #offset = 2000
 #logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110523-124846.csv
 #offset = 0
+# zwischenraum
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110520-171828-recording-zwischenraum.csv
+#offset = 1854
+# invalid file
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110615-101105-test-wiese-ahof-low-middle-high-up-down.csv
+#offset = 1000
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110615-110124-low-middle-high.csv
+#offset = 1000
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110615-110322-up-down.csv
+#offset = 1000

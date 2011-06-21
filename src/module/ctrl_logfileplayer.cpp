@@ -190,7 +190,7 @@ namespace mavhub {
 					if(linecount < (int)params["offset"])
 						continue;
 
-					Logger::log("Ctrl_LogfilePlayer: count, line", linecount, logline, Logger::LOGLEVEL_INFO);
+					//Logger::log("Ctrl_LogfilePlayer: count, line", linecount, logline, Logger::LOGLEVEL_INFO);
 
 					typedef string::const_iterator ci;
 					//iter = logline.begin();
@@ -284,10 +284,10 @@ namespace mavhub {
 									}
 									else if(tabcount == tmp_offset+7) {
 										ch_state.kal_s2 = atof(tmp);
-										// printf("ch_state: %f, %f, %f, %f, %f, %f, %f, %f\n",
-										// 			 ch_state.uss, ch_state.baro, ch_state.accz,
-										// 			 ch_state.ir1, ch_state.ir2, ch_state.kal_s0,
-										// 			 ch_state.kal_s1, ch_state.kal_s2);
+										printf("ch_state: %f, %f, %f, %f, %f, %f, %f, %f\n",
+													 ch_state.uss, ch_state.baro, ch_state.accz,
+													 ch_state.ir1, ch_state.ir2, ch_state.kal_s0,
+													 ch_state.kal_s1, ch_state.kal_s2);
 										mavlink_msg_huch_ctrl_hover_state_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ch_state);
 										ready_to_send = 1;
 										break;
@@ -343,14 +343,14 @@ namespace mavhub {
 									}
 									else if(tabcount == tmp_offset+15) {
 										huch_attitude.zmag = atoi(tmp);
-										// printf("huch_attitude: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
-										// 			 huch_attitude.xacc, huch_attitude.yacc, huch_attitude.zacc,
-										// 			 huch_attitude.zaccraw,
-										// 			 huch_attitude.xaccmean, huch_attitude.yaccmean, huch_attitude.zaccmean,
-										// 			 huch_attitude.xgyro, huch_attitude.ygyro, huch_attitude.zgyro,
-										// 			 huch_attitude.xgyroint, huch_attitude.ygyroint, huch_attitude.zgyroint,
-										// 			 huch_attitude.xmag, huch_attitude.ymag, huch_attitude.zmag
-										// 			 );
+										printf("huch_attitude: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+													 huch_attitude.xacc, huch_attitude.yacc, huch_attitude.zacc,
+													 huch_attitude.zaccraw,
+													 huch_attitude.xaccmean, huch_attitude.yaccmean, huch_attitude.zaccmean,
+													 huch_attitude.xgyro, huch_attitude.ygyro, huch_attitude.zgyro,
+													 huch_attitude.xgyroint, huch_attitude.ygyroint, huch_attitude.zgyroint,
+													 huch_attitude.xmag, huch_attitude.ymag, huch_attitude.zmag
+													 );
 										mavlink_msg_huch_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_attitude);
 										ready_to_send = 1;
 										break;
@@ -404,10 +404,10 @@ namespace mavhub {
 					}
 
 					// printf("x data:'%s': '%s', %d, %d, %d, %d\n", dtype_s, tmp, t, tm1, dt, d);
-					Logger::log("logfileplayer: sleeping", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
+					//Logger::log("logfileplayer: sleeping", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
 					if(dt < 0 || linecount == (int)params["offset"] || linecount == 1) // generic catch
 						dt = 1;
-					Logger::log("logfileplayer: sleeping", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
+					//Logger::log("logfileplayer: sleeping", dt * 1000, linecount, Logger::LOGLEVEL_INFO);
 					usleep(dt * 1000 * params["timescale"]); // 100 Hz
 
 					if(params["replay_mode"] == QGC && ready_to_send > 0) {

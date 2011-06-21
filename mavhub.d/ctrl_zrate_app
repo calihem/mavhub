@@ -1,2 +1,8 @@
 component_id = 31
-
+en_heartbeat = 1
+ctl_bias = 380
+ctl_Kc = 0.1
+ctl_Ti = 0
+ctl_Td = 0
+ctl_mingas = 10
+ctl_maxgas = 600

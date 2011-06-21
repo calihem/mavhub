@@ -6,6 +6,7 @@
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "core/protocollayer.h"
+#include "PID.h"
 
 namespace mavhub {
 	class Ctrl_Zrate : public AppLayer {
@@ -27,7 +28,7 @@ namespace mavhub {
 		/* int16_t roll; */
 		/* int16_t yaw; */
 		mavlink_huch_visual_navigation_t huch_visual_navigation;
-		
+		mavlink_manual_control_t manual_control;
 
 		// params
 		int param_request_list;
@@ -35,6 +36,16 @@ namespace mavhub {
 		// int prm_test_nick;
 		// double prm_yaw_P;
 		//int prm_ni
+		double zrate_sp;
+		double zrate_av;
+		double zrate_err;
+
+		/// PID instance (z-rate)
+		PID* pid_zrate;
+		/* int ctl_bias; */
+		/* double ctl_Kc; */
+		/* double ctl_Ti; */
+		/* double ctl_Td; */
 
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);

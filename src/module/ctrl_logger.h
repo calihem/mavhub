@@ -19,7 +19,7 @@ namespace mavhub {
 	private:
 		/// component id
 		uint16_t component_id;
-		/// logfile
+		/// logfile handle
 		FILE* fd;
 		/// logfile
 		std::string logfilename;

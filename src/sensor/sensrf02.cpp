@@ -166,7 +166,7 @@ namespace mavhub {
 					//Logger::log("sensrf02 data published", Logger::LOGLEVEL_INFO);
 				} // end of data mutex scope
 
-				Logger::log("sensrf02: read", sensor_data[0].distance, Logger::LOGLEVEL_INFO);
+				// Logger::log("sensrf02: read", sensor_data[0].distance, Logger::LOGLEVEL_INFO);
 
 				/* debug data */
 				if (debug) print_debug();

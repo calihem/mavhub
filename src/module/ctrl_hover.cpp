@@ -269,8 +269,8 @@ namespace mavhub {
 		FIR filt_valid_uss(5, tmp_d);
 		// FIR filt_valid_uss(11, tmp_c);
 		double tmp_c[] = {0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05};
-		FIR filt_valid_ir1(11, tmp_c);
-		FIR filt_valid_ir2(11, tmp_c);
+		FIR filt_valid_ir1(5, tmp_d);
+		FIR filt_valid_ir2(5, tmp_d);
 
 		// USS smoothing
 		// CvMat* fmu_src = cvCreateMat(1, 8, CV_32FC1);
@@ -287,6 +287,8 @@ namespace mavhub {
 		uint64_t frequency = wait_time;
 		uint64_t start = get_time_us();
 		uint64_t usec;
+
+		vector<double> covvec(2);
 
 		gettimeofday(&tk, NULL);
 		gettimeofday(&tkm1, NULL);
@@ -355,7 +357,21 @@ namespace mavhub {
 			//timediff(tdiff, tkm1, tk);
 			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			tkm1 = tk; // save current time
+
+			// send pixhawk std structs to groundstation
+			// FIXME: moved here 2011-05-25
+			// manual control
+			mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
+			send(msg);
+			if(params["gs_en"]) {
+				// attitude
+				mavlink_msg_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
+				send(msg);
+			}
 			
+			if(params["en_skipmain"] > 0.0)
+				continue;
+
 			// continue;
 
 			// 1. collect data
@@ -417,7 +433,7 @@ namespace mavhub {
 			// check max z velocity
 			d_uss = uss_win[uss_win_idx] - uss_win[uss_win_idx_m1];
 			uss_plaus = (fabs(d_uss) <= (params["uss_max_vz"] * dt * 1e-6));
-			send_debug(&msg, &dbg, 32, (params["uss_max_vz"] * dt * 1e-6));
+			send_debug(&msg, &dbg, DBG_USS_MAX_VZ, (params["uss_max_vz"] * dt * 1e-6));
 			send_debug(&msg, &dbg, DBG_USS_D, d_uss);
 
 			uss_win_sorted = uss_win;
@@ -450,42 +466,55 @@ namespace mavhub {
 			}
 				// }
 			// filter valid
-			pre[0].second = (filt_valid_uss.calc(tmp_valid) >= 0.99) ? 1 : 0;
+			precov[0] = filt_valid_uss.calc(tmp_valid);
+			pre[0].second = (precov[0] >= 0.99) ? 1 : 0;
 
 			////////////////////////////////////////////////////////////
 			// BARO: correct from accel-z
 			pre[1].first -= (0.05 * pre[2].first);
 			// BARO: disable below 30.0 cm
 			// FIXME
-			if(pre[3].first < 300.0 || stats[0]->get_mean() < 1500.0) {
-				pre[1].second = 0;
+			if((pre[3].first < 300.0 && pre[4].first < 600) || stats[0]->get_mean() < 1600.0) {
+				precov[1] = 0.0;
+				//pre[1].second = 0;
 			} else {
-				pre[1].second = 1;
+				precov[1] = 1.0;
+				//pre[1].second = 1;
 			}
+			pre[1].second = precov[1];
+
+			////////////////////////////////////////////////////////////
+			// ACCZ
+			precov[2] = 1.0;
+			pre[2].second = precov[2];
 
 			////////////////////////////////////////////////////////////
 			// IR1: 0 = uss, 4 = ir2
 			// FIXME: use IR1 own's measurement
 			// if(pre[0].first <= 300.0) //
 			//if(in_range(pre[3].first, 100.0, 200.0))
-			if(in_range(pre[3].first, 39.0, 300.0))
-				//&& pre[0].first < 500.0)
+			// 39, 300
+			if(in_range(pre[3].first, params["ir1_llim"], params["ir1_ulim"])
+				 && pre[4].first < 600.0) // carpet problem: ir1 freaks out on carpet FIXME
 				tmp_valid = 1.0;
 			else
 				tmp_valid = 0.0;
-			pre[3].second = (filt_valid_ir1.calc(tmp_valid) >= 0.99) ? 1 : 0;
+			precov[3] = filt_valid_ir1.calc(tmp_valid);
+			pre[3].second = (precov[3] >= 0.99) ? 1 : 0;
 
 			 ////////////////////////////////////////////////////////////
 			 // IR2
 			 // FIXME: use IR2 own's measurement
 			 // if(in_range(pre[0].first, 300.0, 700.0))
 			 // if(in_range(pre[4].first, 300.0, 560.0))
-			 if(in_range(pre[4].first, 300.0, 600.0) &&
+			// 300, 600
+			 if(in_range(pre[4].first, params["ir2_llim"], params["ir2_ulim"]) &&
 					pre[3].first > 300.0)
 				 tmp_valid = 1;
 			 else
 				 tmp_valid = 0;
-			 pre[4].second = (filt_valid_ir2.calc(tmp_valid) >= 0.99) ? 1 : 0;
+			 precov[4] = filt_valid_ir2.calc(tmp_valid);
+			 pre[4].second = (precov[4] >= 0.99) ? 1 : 0;
 
 			 // FIXME: pack this into preprocessing proper
 			 // enable / disable via parameter
@@ -517,7 +546,6 @@ namespace mavhub {
 
 			 // start cov
 			 // // 2.c set kalman measurement noise covariance matrix R
-			 vector<double> covvec(2);
 			 // for(int i = 0; i < numchan; i++) {
 			 // 	switch(typemap[i]) {
 			 // 	case ACC:
@@ -635,6 +663,10 @@ namespace mavhub {
 				params["ctl_setpoint"] = (int)(manual_control.thrust * 15.0);
 			}
 
+			// FIXME: christian gps-logging
+			//Logger::log("alt:", ctrl_hover_state.kal_s0, Logger::LOGLEVEL_INFO);
+			//cout << ctrl_hover_state.kal_s0 << endl;
+
 			pid_alt->setSp(params["ctl_setpoint"]);
 			gas = pid_alt->calc((double)dt * 1e-6, ctrl_hover_state.kal_s0);
 			// printf("gas 1: %f\n", gas);
@@ -739,15 +771,6 @@ namespace mavhub {
 			// huch ctrl_hover
 			mavlink_msg_huch_ctrl_hover_state_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
 			send(msg);
-			// send pixhawk std structs to groundstation
-			if(params["gs_en"]) {
-				// manual control
-				mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
-				send(msg);
-				// attitude
-				mavlink_msg_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
-				send(msg);
-			}
 
 			// send debug signals to groundstation
 			if(params["gs_en_dbg"]) {
@@ -767,6 +790,9 @@ namespace mavhub {
 				send_debug(&msg, &dbg, DBG_VALID_IR1, pre[3].second * 256);
 				// VALID IR2
 				send_debug(&msg, &dbg, DBG_VALID_IR2, pre[4].second * 256);
+			}
+			// timing
+			if(params["dbg_alt_dt_s"]) {
 				// dt
 				send_debug(&msg, &dbg, ALT_DT_S, dt * 1e-6);
 			}
@@ -781,6 +807,14 @@ namespace mavhub {
 					send_debug(&msg, &dbg, CH1_VAR_E + offs, calc_var_nonlin(stats[i]->get_var_e(), covvec[1], covvec[0]));
 					//stats[i]->get_var_e());
 				}
+			}
+
+			if(params["dbg_kal_vars"]) {
+				send_debug(&msg, &dbg, DBG_KAL_VAR0, ((1.0 - precov[0]) * 10.0 + 1) * params["kal_R0"]);
+				send_debug(&msg, &dbg, DBG_KAL_VAR1, ((1.0 - precov[1]) * 10.0 + 1) * params["kal_R1"]);
+				send_debug(&msg, &dbg, DBG_KAL_VAR2, ((1.0 - precov[2]) * 10.0 + 1)  * params["kal_R2"]);
+				send_debug(&msg, &dbg, DBG_KAL_VAR3, ((1.0 - precov[3]) * 10.0 + 1)  * params["kal_R3"]);
+				send_debug(&msg, &dbg, DBG_KAL_VAR4, ((1.0 - precov[4]) * 10.0 + 1) * params["kal_R4"]);
 			}
 
 			// XXX: does this make problems with time / qgc?
@@ -876,6 +910,10 @@ namespace mavhub {
 		params["kal_R3"] = 0.3;
 		params["kal_R4"] = 0.3;
 		params["physical"] = 1.0; // safe?
+		params["ir1_llim"] = 40.0;
+		params["ir1_ulim"] = 300.0;
+		params["ir2_llim"] = 300.0;
+		params["ir2_ulim"] = 600.0;
 	}
 
 	void Ctrl_Hover::kal_setRFromParams() {
@@ -1005,6 +1043,20 @@ namespace mavhub {
 			s >> params["gs_en_dbg"];
 		}
 
+		// mavlink to groundstation debug data enable
+		iter = args.find("dbg_alt_dt_s");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["dbg_alt_dt_s"];
+		}
+
+		// mavlink to groundstation debug data enable
+		iter = args.find("dbg_kal_vars");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["dbg_kal_vars"];
+		}
+
 		// mavlink to groundstation debug statistics data
 		iter = args.find("gs_en_stats");
 		if( iter != args.end() ) {
@@ -1056,6 +1108,7 @@ namespace mavhub {
 			s >> params["uss_max_vz"];
 		}
 
+		////////////////////////////////////////////////////////////
 		// kalman conf: meas cov
 		iter = args.find("kal_R0");
 		if( iter != args.end() ) {
@@ -1086,6 +1139,50 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> params["kal_R4"];
 		}
+		
+		// kalman conf: measurements via H or R
+		iter = args.find("kal_use_var");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["kal_use_var"];
+		}
+		
+		////////////////////////////////////////////////////////////
+
+
+		// skip main loop?
+		iter = args.find("en_skipmain");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["en_skipmain"];
+		}
+
+		// IR params
+		iter = args.find("ir1_llim");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ir1_llim"];
+		}
+		// IR params
+		iter = args.find("ir1_ulim");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ir1_ulim"];
+		}
+		// IR params
+		iter = args.find("ir2_llim");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ir2_llim"];
+		}
+		// IR params
+		iter = args.find("ir2_ulim");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ir2_ulim"];
+		}
+
+
 
 		// XXX
 		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);

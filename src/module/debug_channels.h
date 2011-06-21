@@ -20,7 +20,13 @@ enum debug_channel {
 	CH1_VAR = 17,
 	CH1_VAR_E = 18,
 	// next is 16 + numchan(5) * 3 = 31
-	DBG_USS_D = 31
+	DBG_USS_D = 31,
+	DBG_USS_MAX_VZ = 32,
+	DBG_KAL_VAR0 = 33,
+	DBG_KAL_VAR1 = 34,
+	DBG_KAL_VAR2 = 35,
+	DBG_KAL_VAR3 = 36,
+	DBG_KAL_VAR4 = 37
 };
 
 // huch-FC/MK debugchannels
