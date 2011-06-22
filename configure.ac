@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.67])
+AC_PREREQ([2.65])
 AC_INIT([mavhub], [0.1], [mavhub@calihem.de])
 
 AC_LANG([C++])
@@ -57,11 +57,13 @@ AC_CHECK_LIB([cv], [cvCreateKalman])
 AC_CHECK_LIB([opencv_core], [cvCreateMat])
 AC_CHECK_LIB([opencv_legacy], [cvCreateKalman])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
+AC_CHECK_LIB([gps], [gps_clear_fix])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
 AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_ERROR( [Please specify header directory for mavlink, e.g. configure CPPFLAGS="-I/home/user/mavlink/include/huch"] )])
 AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )], [-])
+AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

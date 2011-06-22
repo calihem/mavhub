@@ -104,8 +104,13 @@ namespace mavhub {
 			// pass only configuration map into constructor
 			return new Ctrl_Bump(args);
 		} else if(lowercase_name == "ctrl_wifimeter_app") {
+#ifdef HAVE_LIBGPSMM_H
 			// pass only configuration map into constructor
 			return new Ctrl_Wifimeter(args);
+#else
+			Logger::log("AppFactory: libgps ist not available", Logger::LOGLEVEL_INFO); 
+			return NULL;
+#endif // HAVE_LIBGPSMM_H
 		} else if(lowercase_name == "sim_crrcsim_app") {
 			// pass only configuration map into constructor
 			return new Sim_Crrcsimule(args);

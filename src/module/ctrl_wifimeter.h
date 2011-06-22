@@ -1,6 +1,12 @@
 #ifndef _CTRL_WIFIMETER_H_
 #define _CTRL_WIFIMETER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_LIBGPSMM_H
+
 #include <string>
 #include "core/protocollayer.h"
 
@@ -38,4 +44,6 @@ namespace mavhub
       double freq;
   };
 }
-#endif
+
+#endif // HAVE_GPSMM_H
+#endif // _CTRL_WIFIMETER_H_

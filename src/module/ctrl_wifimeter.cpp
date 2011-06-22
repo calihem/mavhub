@@ -1,6 +1,7 @@
 #ifndef _CTRL_WIFIMETER_CPP_
 #define _CTRL_WIFIMETER_CPP_
 
+#ifdef HAVE_LIBGPSMM_H
 #include "ctrl_wifimeter.h"
 
 #include <cstdio>
@@ -137,4 +138,5 @@ void Ctrl_Wifimeter::run()
 }
 
 }
-#endif
+#endif // HAVE_LIBGPSMM_H
+#endif // _CTRL_WIFIMETER_CPP_
