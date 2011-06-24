@@ -49,14 +49,14 @@ SenHmc5843::SenHmc5843(unsigned short _dev_id, unsigned short _func_id, string _
 
 		/* setup gain */
 		buffer[0] = CRB;
-		buffer[1] = gain;
+		buffer[1] = gain << 5;
 
 		i2c_write_bytes(fd, buffer, 2);
 
 		/* setup data rate */
 		buffer[0] = CRA;
 		/* in single conversion mode data rate should be 0,3,4,7 - why ever */
-		buffer[1] = (mode == SINGLE_CONVERSION_MODE)? DR100HZ: update_rate;
+		buffer[1] = (((mode == SINGLE_CONVERSION_MODE)? DR100HZ: update_rate) << 2);
 
 		i2c_write_bytes(fd, buffer, 2);
 		Logger::debug("done");

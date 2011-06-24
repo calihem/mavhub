@@ -11,6 +11,7 @@
 #include "module/ctrl_bump.h"
 #include "module/ctrl_logfileplayer.h"
 #include "module/ctrl_logger.h"
+#include "module/ctrl_wifimeter.h"
 #include "module/sim_crrcsim.h"
 #include "mk_app.h"
 #include "acc_calibration_app/acc_calibration_app.h"
@@ -102,6 +103,14 @@ namespace mavhub {
 		} else if(lowercase_name == "ctrl_bump_app") {
 			// pass only configuration map into constructor
 			return new Ctrl_Bump(args);
+		} else if(lowercase_name == "ctrl_wifimeter_app") {
+#ifdef HAVE_LIBGPSMM_H
+			// pass only configuration map into constructor
+			return new Ctrl_Wifimeter(args);
+#else
+			Logger::log("AppFactory: libgps ist not available", Logger::LOGLEVEL_INFO); 
+			return NULL;
+#endif // HAVE_LIBGPSMM_H
 		} else if(lowercase_name == "sim_crrcsim_app") {
 			// pass only configuration map into constructor
 			return new Sim_Crrcsimule(args);

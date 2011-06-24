@@ -33,6 +33,12 @@
 /* Define to 1 if you have the `cxcore' library (-lcxcore). */
 #undef HAVE_LIBCXCORE
 
+/* Define to 1 if you have the `gps' library (-lgps). */
+#undef HAVE_LIBGPS
+
+/* Define to 1 if you have the <libgpsmm.h> header file. */
+#undef HAVE_LIBGPSMM_H
+
 /* Define to 1 if you have the `ncurses' library (-lncurses). */
 #undef HAVE_LIBNCURSES
 

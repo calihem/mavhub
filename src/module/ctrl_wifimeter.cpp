@@ -1,11 +1,14 @@
 #ifndef _CTRL_WIFIMETER_CPP_
 #define _CTRL_WIFIMETER_CPP_
 
+#ifdef HAVE_LIBGPSMM_H
 #include "ctrl_wifimeter.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <map>
 #include <iomanip>
 #include <sstream>
 #include <sys/types.h>
@@ -21,34 +24,51 @@
 
 namespace mavhub
 {
-Ctrl_Wifimeter::CtrlWifimeter(int pport, string ssource, double ffreq)
+
+Ctrl_Wifimeter::Ctrl_Wifimeter(const std::map<std::string, std::string> args):
+  AppLayer("ctrl_wifimeter"),
   component_id(1000)
 {
-  this->port = pport;
-  this->source = ssource;
-  this->freq = freq;
+  std::map<std::string, std::string>::const_iterator iter;
+
+  iter = args.find("port");
+  if( iter != args.end() ) {
+    std::istringstream s(iter->second);
+    s >> this->port;
+  }
+  iter = args.find("source");
+  if( iter != args.end() ) {
+    std::istringstream s(iter->second);
+    s >> this->source;
+  }
+  iter = args.find("freq");
+  if( iter != args.end() ) {
+    std::istringstream s(iter->second);
+    s >> this->freq;
+  }
 }
 
-Ctrl_Wifimeter::~CtrlWifimeter()
+Ctrl_Wifimeter::~Ctrl_Wifimeter()
 {
+  // nothing
 }
 
-void Ctrl_Wifimeter::handle_input(const mavlink_message_t &msg);
+void Ctrl_Wifimeter::handle_input(const mavlink_message_t &msg)
 {
   if(msg.msgid == MAVLINK_MSG_ID_HUCH_CTRL_HOVER_STATE)
-	  this->altitude = mavlink_msg_huch_ctrl_hover_state_get_baro(&msg),
+	  this->altitude = mavlink_msg_huch_ctrl_hover_state_get_baro(&msg);
 }
 
 void Ctrl_Wifimeter::run()
 {
   //--- Initialize Socket ---//  
-  int sd, interval, nseq, test;
+  int sd, interval;
   struct sockaddr_in target, local;
   struct hostent *lp/*, *gethostbyname()*/;
   
   int enableBroadcast = 1;
   
-  lp = gethostbyname(this->source);
+  lp = gethostbyname(this->source.c_str());
   interval = (int) 1e6/this->freq;
 
   sd = socket (AF_INET,SOCK_DGRAM,0);
@@ -99,11 +119,11 @@ void Ctrl_Wifimeter::run()
     this->satUsed = data->satellites_used;
     this->satVis = data->satellites_visible;
 
-    stringstream out;
-    out << setprecision(7) << this->latitude << " ";
-    out << setprecision(7) << this->longitude << " ";
-    out << setprecision(7) << this->xdop << " ";
-    out << setprecision(7) << this->ydop << " ";
+    std::stringstream out;
+    out << std::setprecision(7) << this->latitude << " ";
+    out << std::setprecision(7) << this->longitude << " ";
+    out << std::setprecision(7) << this->xdop << " ";
+    out << std::setprecision(7) << this->ydop << " ";
     out << this->satUsed << " ";
     out << this->satVis << " ";
     out << this->altitude;
@@ -117,6 +137,6 @@ void Ctrl_Wifimeter::run()
   }
 }
 
-
-
-#endif
+}
+#endif // HAVE_LIBGPSMM_H
+#endif // _CTRL_WIFIMETER_CPP_

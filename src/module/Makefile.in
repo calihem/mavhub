@@ -58,10 +58,10 @@ am_libmodule_a_OBJECTS = pp.$(OBJEXT) pp_uss.$(OBJEXT) \
 	coremod.$(OBJEXT) fc_mpkg.$(OBJEXT) ctrl_hover.$(OBJEXT) \
 	ctrl_lateral.$(OBJEXT) ctrl_zrate.$(OBJEXT) \
 	ctrl_bump.$(OBJEXT) ctrl_logfileplayer.$(OBJEXT) \
-	ctrl_logger.$(OBJEXT) filter_kalmancv.$(OBJEXT) \
-	filter_fir.$(OBJEXT) filter_median.$(OBJEXT) PID.$(OBJEXT) \
-	sim_crrcsim.$(OBJEXT) testcore.$(OBJEXT) \
-	stat_meanvar.$(OBJEXT) mhparam.$(OBJEXT)
+	ctrl_logger.$(OBJEXT) ctrl_wifimeter.$(OBJEXT) \
+	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) \
+	filter_median.$(OBJEXT) PID.$(OBJEXT) sim_crrcsim.$(OBJEXT) \
+	testcore.$(OBJEXT) stat_meanvar.$(OBJEXT) mhparam.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -232,6 +232,7 @@ libmodule_a_SOURCES = \
 	ctrl_bump.cpp \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
+	ctrl_wifimeter.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	filter_median.cpp \
@@ -296,6 +297,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_lateral.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_logfileplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_logger.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_wifimeter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_zrate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fc_mpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_fir.Po@am__quote@

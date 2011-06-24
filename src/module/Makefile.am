@@ -19,11 +19,11 @@ libmodule_a_SOURCES = \
 	ctrl_bump.cpp \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
+	ctrl_wifimeter.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	filter_median.cpp \
 	PID.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
-	stat_meanvar.cpp \
-	mhparam.cpp 
+	stat_meanvar.cpp
