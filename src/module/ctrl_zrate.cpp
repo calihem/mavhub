@@ -80,7 +80,7 @@ namespace mavhub {
 		// timing
 		uint64_t dt = 0;
 		struct timeval tk, tkm1; // timevals
-		int update_rate = 10; // 100 Hz
+		int update_rate = 15; // 100 Hz
 		int wait_freq = update_rate? 1000000 / update_rate: 0;
 		int wait_time = wait_freq;
 		uint64_t frequency = wait_time;
@@ -175,7 +175,7 @@ namespace mavhub {
 			// Logger::log("Ctrl_Zrate (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
 
-			zrate_sp = (double)manual_control.thrust - 127;
+			zrate_sp = 0.0; // (double)manual_control.thrust - 127;
 			zrate_av = huch_visual_navigation.alt_velocity;
 			zrate_err = zrate_sp - zrate_av;
 
@@ -183,7 +183,12 @@ namespace mavhub {
 			// gas = params["ctl_bias"] + params["ctl_Kc"] * zrate_err;
 
 			pid_zrate->setSp(zrate_sp);
-			gas = pid_zrate->calc((double)dt * 1e-6, zrate_av);
+			gas = pid_zrate->calc((double)dt * 1e-6, -zrate_av);
+
+			if(gas > (manual_control.thrust * 4)) { // 4 <- stick_gain
+				pid_zrate->setIntegralM1();
+				gas = manual_control.thrust * 4;
+			}
 
 			// Logger::log("Ctrl_Zrate gas", params["ctl_bias"], params["ctl_P"], Logger::LOGLEVEL_INFO);
 			// Logger::log("Ctrl_Zrate gas", zrate_err, gas, Logger::LOGLEVEL_INFO);
@@ -201,9 +206,12 @@ namespace mavhub {
 			}
 
 			extctrl.gas = (int16_t)gas;
-			extctrl.nick = 0; //(int16_t)DataCenter::get_extctrl_nick();
-			extctrl.roll = 0; //(int16_t)DataCenter::get_extctrl_roll();
-			extctrl.yaw = 0; //(int16_t)DataCenter::get_extctrl_yaw();
+			// extctrl.nick = 0; //(int16_t)DataCenter::get_extctrl_nick();
+			// extctrl.roll = 0; //(int16_t)DataCenter::get_extctrl_roll();
+			// extctrl.yaw = 0; //(int16_t)DataCenter::get_extctrl_yaw();
+			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
+			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
+			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
 			
 			MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
 			send(msg_extctrl);
@@ -214,7 +222,7 @@ namespace mavhub {
 			// Logger::log("Ctrl_Zrate (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
 			dbg.ind = 0;
-			dbg.value = wait_time;
+			dbg.value = dt * 1e-6; //wait_time;
 			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
@@ -229,12 +237,12 @@ namespace mavhub {
 			send(msg);
 
 			dbg.ind = 3;
-			dbg.value = zrate_err;
+			dbg.value = manual_control.thrust; // zrate_err;
 			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 
 			dbg.ind = 4;
-			dbg.value = extctrl.gas;
+			dbg.value = gas; //extctrl.gas;
 			mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			send(msg);
 

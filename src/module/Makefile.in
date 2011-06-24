@@ -239,7 +239,7 @@ libmodule_a_SOURCES = \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \
-	mhparam.cpp
+	mhparam.cpp 
 
 all: all-am
 

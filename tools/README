@@ -1,0 +1,1 @@
+PYTHONPATH=../simctrl python tools/mhshell.py -H 192.168.1.2 -P 32000

@@ -6,6 +6,7 @@
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "core/protocollayer.h"
+#include "PID.h"
 
 namespace mavhub {
 	class Ctrl_Lateral : public AppLayer {
@@ -30,11 +31,22 @@ namespace mavhub {
 		
 
 		// params
+		// request
 		int param_request_list;
+		// container
+		std::map<std::string, double>	params;
 		int prm_test_nick;
 		double prm_yaw_P;
+		double prm_nick_P;
+		double prm_roll_P;
 		//int prm_ni
+		// controller instances
+		PID* pid_yaw;
+		PID* pid_nick;
+		PID* pid_roll;
 
+		/// set reasonable config defaults
+		virtual void default_conf();
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
 	};

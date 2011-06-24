@@ -19,6 +19,12 @@ namespace mavhub {
 		param_request_list = 0;
 		prm_test_nick = 0;
 		prm_yaw_P = 100.0;
+		pid_yaw = new PID(0, params["yaw_Kc"], params["yaw_Ti"],
+											params["yaw_Td"]);
+		pid_nick = new PID(0, params["nick_Kc"], params["nick_Ti"],
+											params["nick_Td"]);
+		pid_roll = new PID(0, params["roll_Kc"], params["roll_Ti"],
+											params["roll_Td"]);
 	}
 
 	Ctrl_Lateral::~Ctrl_Lateral() {
@@ -46,13 +52,23 @@ namespace mavhub {
 					Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
 					Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for param_id", param_id, Logger::LOGLEVEL_INFO);
-					if(!strcmp("prm_test_nick", (const char *)param_id)) {
-						prm_test_nick = (int)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_nick", prm_test_nick, Logger::LOGLEVEL_INFO);
-					}	else if(!strcmp("prm_yaw_P", (const char *)param_id)) {
-						prm_yaw_P = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for prm_yaw_P", prm_yaw_P, Logger::LOGLEVEL_INFO);
+
+					typedef map<string, double>::const_iterator ci;
+					for(ci p = params.begin(); p!=params.end(); ++p) {
+						// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+						if(!strcmp(p->first.data(), (const char *)param_id)) {
+							params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
+							Logger::log("x Ctrl_Lateral::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
+						}
 					}
+
+					// if(!strcmp("prm_test_nick", (const char *)param_id)) {
+					// 	prm_test_nick = (int)mavlink_msg_param_set_get_param_value(&msg);
+					// 	Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_nick", prm_test_nick, Logger::LOGLEVEL_INFO);
+					// }	else if(!strcmp("prm_yaw_P", (const char *)param_id)) {
+					// 	prm_yaw_P = (double)mavlink_msg_param_set_get_param_value(&msg);
+					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for prm_yaw_P", prm_yaw_P, Logger::LOGLEVEL_INFO);
+					// }
 				}
 			}
 			break;
@@ -117,10 +133,18 @@ namespace mavhub {
 			if(param_request_list) {
 				Logger::log("Ctrl_Lateral::run: param request", Logger::LOGLEVEL_INFO);
 				param_request_list = 0;
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_nick", prm_test_nick, 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_yaw_P", prm_yaw_P, 1, 0);
-				send(msg);
+
+				typedef map<string, double>::const_iterator ci;
+				for(ci p = params.begin(); p!=params.end(); ++p) {
+					// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+					mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					send(msg);
+				}
+
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_nick", prm_test_nick, 1, 0);
+				// send(msg);
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_yaw_P", prm_yaw_P, 1, 0);
+				// send(msg);
 			}
 
 			// // test huch_visual_navigation
@@ -182,9 +206,12 @@ namespace mavhub {
 			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
 
 			// FIXME: optical compass
-			yaw = (int16_t)(prm_yaw_P * (0.0 - huch_visual_navigation.psi_vc));
+			yaw = (int16_t)(params["yaw_Kc"] * (0.0 - huch_visual_navigation.psi_vc));
 			Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
+			// nick
+			nick = (int16_t)0;
+			// roll
 
 			DataCenter::set_extctrl_nick(nick);
 			DataCenter::set_extctrl_roll(roll);
@@ -195,6 +222,18 @@ namespace mavhub {
 		}
 	}
 
+	void Ctrl_Lateral::default_conf() {
+		params["yaw_Kc"] = 100.0;
+		params["yaw_Ti"] = 0.0;
+		params["yaw_Td"] = 0.0;
+		params["nick_Kc"] = 1.0;
+		params["nick_Ti"] = 0.0;
+		params["nick_Td"] = 0.0;
+		params["roll_Kc"] = 1.0;
+		params["roll_Ti"] = 0.0;
+		params["roll_Td"] = 0.0;
+	}
+
 	void Ctrl_Lateral::read_conf(const map<string, string> args) {
 		map<string,string>::const_iterator iter;
 
@@ -203,7 +242,66 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> component_id;
 		}
+		// controller params yaw
+		iter = args.find("yaw_Kc");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["yaw_Kc"];
+		}
+		iter = args.find("yaw_Ti");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["yaw_Ti"];
+		}
+		iter = args.find("yaw_Td");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["yaw_Td"];
+		}
+
+		// controller params nick
+		iter = args.find("nick_Kc");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["nick_Kc"];
+		}
+		iter = args.find("nick_Ti");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["nick_Ti"];
+		}
+		iter = args.find("nick_Td");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["nick_Td"];
+		}
+
+		// controller params roll
+		iter = args.find("roll_Kc");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["roll_Kc"];
+		}
+		iter = args.find("roll_Ti");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["roll_Ti"];
+		}
+		iter = args.find("roll_Td");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["roll_Td"];
+		}
 
 		Logger::log("ctrl_lateral::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: yaw_Kc", params["yaw_Kc"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: yaw_Ti", params["yaw_Ti"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: yaw_Td", params["yaw_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: nick_Kc", params["nick_Kc"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: nick_Ti", params["nick_Ti"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: nick_Td", params["nick_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: roll_Kc", params["roll_Kc"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: roll_Ti", params["roll_Ti"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: roll_Td", params["roll_Td"], Logger::LOGLEVEL_DEBUG);
 	}
 }
