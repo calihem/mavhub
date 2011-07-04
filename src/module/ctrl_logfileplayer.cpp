@@ -157,6 +157,7 @@ namespace mavhub {
 		bzero(&huch_attitude, sizeof(mavlink_huch_attitude_t));
 		bzero(&fc_state, sizeof(mavlink_mk_fc_status_t));
 		bzero(&debugout, sizeof(mavlink_mk_debugout_t));
+		bzero(&huch_vn, sizeof(mavlink_huch_visual_navigation_t));
 
 		while (status != 0) {
 

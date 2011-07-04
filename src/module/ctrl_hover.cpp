@@ -268,7 +268,7 @@ namespace mavhub {
 		double tmp_d[] = {0.125, 0.25, 0.25, 0.25, 0.125};
 		FIR filt_valid_uss(5, tmp_d);
 		// FIR filt_valid_uss(11, tmp_c);
-		double tmp_c[] = {0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05};
+		//double tmp_c[] = {0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05};
 		FIR filt_valid_ir1(5, tmp_d);
 		FIR filt_valid_ir2(5, tmp_d);
 

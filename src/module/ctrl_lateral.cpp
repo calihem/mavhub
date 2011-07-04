@@ -214,21 +214,21 @@ namespace mavhub {
 			// yaw = (int16_t)(prm_yaw_P * (0.0 + (comp/255.0) * 6.28));
 			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
 
-			// vn.beta
-			x = cosf(huch_visual_navigation.beta);
-			y = sinf(huch_visual_navigation.beta);
+			// vn.ego_beta
+			x = cosf(huch_visual_navigation.ego_beta);
+			y = sinf(huch_visual_navigation.ego_beta);
 			// vn.distance
 
 			// FIXME: optical compass
 			// yaw1 = (int16_t)(params["yaw_Kc"] * (0.0 - huch_visual_navigation.psi_vc));
 			pid_yaw->setSp(0.0);
-			yaw = pid_yaw->calc(dtf, (0.0 - huch_visual_navigation.psi_vc));
+			yaw = pid_yaw->calc(dtf, (0.0 - huch_visual_navigation.visual_compass));
 			//Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
 			// Logger::log("Ctrl_Lateral (psi_est, yaw1)", huch_visual_navigation.psi_vc, yaw1, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
 			// nick
 			pid_nick->setSp(0.0);
-			nick = pid_nick->calc(dtf, y * huch_visual_navigation.distance);
+			nick = pid_nick->calc(dtf, y * huch_visual_navigation.ego_speed);
 			// limit
 			if(nick > 100.0)
 				nick = 100.0;
@@ -236,7 +236,7 @@ namespace mavhub {
 				nick = -100.0;
 			// roll
 			pid_roll->setSp(0.0);
-			roll = pid_roll->calc(dtf, x * huch_visual_navigation.distance);
+			roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
 			if(roll > 100.0)
 				roll = 100.0;
 			if(roll < -100.0)
