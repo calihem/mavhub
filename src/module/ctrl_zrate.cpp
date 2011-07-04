@@ -212,9 +212,14 @@ namespace mavhub {
 			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
-			
-			MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-			send(msg_extctrl);
+
+			send_debug(&msg, &dbg, 103, DataCenter::get_extctrl_nick(), component_id);
+			send_debug(&msg, &dbg, 104, DataCenter::get_extctrl_roll(), component_id);
+
+			if(params["output_enable"] > 0) {
+				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
+				send(msg_extctrl);
+			}
 
 			// DataCenter::set_extctrl_nick(nick);
 			// DataCenter::set_extctrl_roll(roll);
@@ -302,6 +307,13 @@ namespace mavhub {
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
 			s >> params["ctl_maxgas"];
+		}
+
+		// output enable
+		iter = args.find("output_enable");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["output_enable"];
 		}
 
 		Logger::log("ctrl_zrate::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);

@@ -169,6 +169,16 @@ class AppLayer : public cpp_pthread::PThread {
 		 * \todo Move type specific methods to own class, e.g. MKApp
 		 */
 		void send(const MKPackage &msg) const;
+
+		/**
+		 * \brief Sends a mavlink debug message over protocol stack.
+ 		 * \param msg The mavlink message to send.
+ 		 * \param dbg The mavlink debug structure.
+ 		 * \param index The debug index.
+ 		 * \param value The debug value.
+		 * \todo None
+		 */
+		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value, uint16_t compid);
 };
 
 /**

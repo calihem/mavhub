@@ -23,9 +23,9 @@ mavlink_huch_ranger_t DataCenter::huch_ranger = {};
 mavlink_mk_fc_status_t DataCenter::mk_fc_status = {};
 mavlink_huch_exp_ctrl_rx_t DataCenter::exp_ctrl_rx_data = {};
 
-	int16_t DataCenter::extctrl_nick = 0;
-	int16_t DataCenter::extctrl_roll = 0;
-	int16_t DataCenter::extctrl_yaw = 0;
+	double DataCenter::extctrl_nick = 0;
+	double DataCenter::extctrl_roll = 0;
+	double DataCenter::extctrl_yaw = 0;
 
 	double DataCenter::sensors[DC_NUMSENS] = {};
 

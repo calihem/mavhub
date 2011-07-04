@@ -135,6 +135,7 @@ namespace mavhub {
 		mavlink_huch_attitude_t huch_attitude;
 		mavlink_mk_fc_status_t fc_state;
 		mavlink_mk_debugout_t debugout;
+		mavlink_huch_visual_navigation_t huch_vn;
 		mavlink_message_t msg;
 
 		int status = 1;
@@ -381,6 +382,51 @@ namespace mavhub {
 													 fc_state.nick, fc_state.roll, fc_state.yaw,
 													 fc_state.gas);
 										mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &fc_state);
+										ready_to_send = 1;
+										break;
+									}
+								}
+								else if(in_range(tabcount, 37, 46)) {
+									tmp_offset = 37;
+									sprintf(dtype_s, "huch_visual_navigation");
+									if(tabcount == tmp_offset) {
+										huch_vn.alt_velocity = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+1) {
+										huch_vn.alt_absolute = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+2) {
+										huch_vn.home_beta = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+3) {
+										huch_vn.home_distance = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+4) {
+										huch_vn.visual_compass = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+5) {
+										huch_vn.ego_beta = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+6) {
+										huch_vn.ego_speed = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+7) {
+										huch_vn.keypoints = atoi(tmp);
+									}
+									else if(tabcount == tmp_offset+8) {
+										huch_vn.error = atoi(tmp);
+									}
+									else if(tabcount == tmp_offset+9) {
+										huch_vn.debug = atof(tmp);
+										printf("%s: %f, %f, %f, %f, %f, %f, %f, %d, %d, %f\n",
+													 dtype_s,
+													 huch_vn.alt_velocity, huch_vn.alt_absolute,
+													 huch_vn.home_beta, huch_vn.home_distance,
+													 huch_vn.visual_compass,
+													 huch_vn.ego_beta, huch_vn.ego_speed,
+													 huch_vn.keypoints, huch_vn.error,
+													 huch_vn.debug);
+										mavlink_msg_huch_visual_navigation_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_vn);
 										ready_to_send = 1;
 										break;
 									}

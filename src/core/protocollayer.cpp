@@ -57,6 +57,16 @@ void AppLayer::send(const MKPackage &msg) const {
 	if(_owner) _owner->send(msg, this);
 }
 
+void AppLayer::send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value, uint16_t compid) {
+	dbg->ind = index;
+	dbg->value = value;
+	if(_owner) {
+		mavlink_msg_debug_encode(_owner->system_id(), static_cast<uint8_t>(compid), msg, dbg);
+		_owner->send(*msg, this);
+	}
+}
+
+
 // ----------------------------------------------------------------------------
 // UDPLayer
 // ----------------------------------------------------------------------------

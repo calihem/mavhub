@@ -105,12 +105,15 @@ namespace mavhub {
 
 		// visual navigation
 		datafields[36] = "vn_alt_velocity";
-		datafields[37] = "vn_psi_warping";
-		datafields[38] = "vn_psi_vc";
-		datafields[39] = "vn_beta";
-		datafields[40] = "vn_distance";
-		datafields[41] = "vn_home";
-		datafields[42] = "vn_outlier";
+		datafields[37] = "vn_alt_absolute";
+		datafields[38] = "vn_home_beta";
+		datafields[39] = "vn_home_distance";
+		datafields[40] = "vn_visual_compass";
+		datafields[41] = "vn_ego_beta";
+		datafields[42] = "vn_ego_speed";
+		datafields[43] = "vn_keypoints";
+		datafields[44] = "vn_error";
+		datafields[45] = "vn_debug";
 
 		// sort(datafields.begin(), datafields.end());
 		// unix timestamp
@@ -265,18 +268,21 @@ namespace mavhub {
 			// FIXME: implement
 			logline_preamble(36, usec);
 
-			sprintf(outstr, "%f\t%f\t%f\t%f\t%d\t%d\t%d\t",
+			sprintf(outstr, "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\t%f\t",
 							mavlink_msg_huch_visual_navigation_get_alt_velocity(&msg),
-							mavlink_msg_huch_visual_navigation_get_psi_warping(&msg),
-							mavlink_msg_huch_visual_navigation_get_psi_vc(&msg),
-							mavlink_msg_huch_visual_navigation_get_beta(&msg),
-							mavlink_msg_huch_visual_navigation_get_distance(&msg),
-							mavlink_msg_huch_visual_navigation_get_home(&msg),
-							mavlink_msg_huch_visual_navigation_get_outlier(&msg)
+							mavlink_msg_huch_visual_navigation_get_alt_absolute(&msg),
+							mavlink_msg_huch_visual_navigation_get_home_beta(&msg),
+							mavlink_msg_huch_visual_navigation_get_home_distance(&msg),
+							mavlink_msg_huch_visual_navigation_get_visual_compass(&msg),
+							mavlink_msg_huch_visual_navigation_get_ego_beta(&msg),
+							mavlink_msg_huch_visual_navigation_get_ego_speed(&msg),
+							mavlink_msg_huch_visual_navigation_get_keypoints(&msg),
+							mavlink_msg_huch_visual_navigation_get_error(&msg),
+							mavlink_msg_huch_visual_navigation_get_debug(&msg)
 							);
 			fwrite(outstr, strlen(outstr), 1, fd);
 
-			logline_coda(42);
+			logline_coda(45);
 
 			break;
 		default:

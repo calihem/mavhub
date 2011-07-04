@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <sstream>
 
+#include <math.h>
+
 #define RAND_MAX_TO_M1 1/(double)RAND_MAX
 
 using namespace std;
@@ -80,8 +82,10 @@ namespace mavhub {
   void Ctrl_Lateral::run() {
 		// generic
 		static mavlink_message_t msg;
+		static mavlink_debug_t dbg;
 		// timing
 		uint64_t dt = 0;
+		double dtf = 0.0;
 		struct timeval tk, tkm1; // timevals
 		int update_rate = 10; // 100 Hz
 		int wait_freq = update_rate? 1000000 / update_rate: 0;
@@ -92,15 +96,18 @@ namespace mavhub {
 
 		// body variables
 		double tmp;
-		int16_t nick, roll, yaw;
+		//int16_t nick, roll, yaw, yaw1;
+		double nick, roll, yaw, yaw1;
 		vector<int16_t> v(3);
 		int nick_test_dur, nick_test_delay;
 		int my_cnt;
+		// position
+		double x = 0.0, y = 0.0;
 
 		gettimeofday(&tk, NULL);
 		gettimeofday(&tkm1, NULL);
 
-		nick = roll = yaw = 0;
+		nick = roll = yaw = yaw1 = 0;
 		nick_test_dur = 0;
 		nick_test_delay = 10;
 		my_cnt = 0;
@@ -128,6 +135,8 @@ namespace mavhub {
 			//timediff(tdiff, tkm1, tk);
 			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			tkm1 = tk; // save current time
+			// dt fractional in seconds
+			dtf = (double)dt * 1e-6;
 
 			// param handling
 			if(param_request_list) {
@@ -205,17 +214,43 @@ namespace mavhub {
 			// yaw = (int16_t)(prm_yaw_P * (0.0 + (comp/255.0) * 6.28));
 			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
 
+			// vn.beta
+			x = cosf(huch_visual_navigation.beta);
+			y = sinf(huch_visual_navigation.beta);
+			// vn.distance
+
 			// FIXME: optical compass
-			yaw = (int16_t)(params["yaw_Kc"] * (0.0 - huch_visual_navigation.psi_vc));
-			Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
+			// yaw1 = (int16_t)(params["yaw_Kc"] * (0.0 - huch_visual_navigation.psi_vc));
+			pid_yaw->setSp(0.0);
+			yaw = pid_yaw->calc(dtf, (0.0 - huch_visual_navigation.psi_vc));
+			//Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
+			// Logger::log("Ctrl_Lateral (psi_est, yaw1)", huch_visual_navigation.psi_vc, yaw1, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
 			// nick
-			nick = (int16_t)0;
+			pid_nick->setSp(0.0);
+			nick = pid_nick->calc(dtf, y * huch_visual_navigation.distance);
+			// limit
+			if(nick > 100.0)
+				nick = 100.0;
+			if(nick < -100.0)
+				nick = -100.0;
 			// roll
+			pid_roll->setSp(0.0);
+			roll = pid_roll->calc(dtf, x * huch_visual_navigation.distance);
+			if(roll > 100.0)
+				roll = 100.0;
+			if(roll < -100.0)
+				roll = -100.0;
+
+			send_debug(&msg, &dbg, 100, x, component_id);
+			send_debug(&msg, &dbg, 101, y, component_id);
+			send_debug(&msg, &dbg, 105, nick, component_id);
+			send_debug(&msg, &dbg, 106, roll, component_id);
+			send_debug(&msg, &dbg, 107, atan2f(-nick, -roll), component_id);
 
 			DataCenter::set_extctrl_nick(nick);
 			DataCenter::set_extctrl_roll(roll);
-			DataCenter::set_extctrl_yaw(yaw);
+			DataCenter::set_extctrl_yaw(yaw*-1.0);
 			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
 			my_cnt++;

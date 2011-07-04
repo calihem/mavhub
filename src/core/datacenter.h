@@ -45,12 +45,12 @@ namespace mavhub {
 			static void set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger, int index);
 			static void set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status);
 			/// set FC legacy extctrl components
-			static void set_extctrl_nick(const int16_t nick);
-			static void set_extctrl_roll(const int16_t roll);
-			static void set_extctrl_yaw(const int16_t yaw);
-			static const int16_t get_extctrl_nick();
-			static const int16_t get_extctrl_roll();
-			static const int16_t get_extctrl_yaw();
+			static void set_extctrl_nick(const double nick);
+			static void set_extctrl_roll(const double roll);
+			static void set_extctrl_yaw(const double yaw);
+			static const double get_extctrl_nick();
+			static const double get_extctrl_roll();
+			static const double get_extctrl_yaw();
 
 			// unified sensor array read/write
 			static void set_sensor(const int id, const double val);
@@ -80,9 +80,12 @@ namespace mavhub {
 			static mavlink_huch_fc_altitude_t huch_altitude;
 			static mavlink_huch_ranger_t huch_ranger;
 			static mavlink_mk_fc_status_t mk_fc_status;
-			static int16_t extctrl_nick;
-			static int16_t extctrl_roll;
-			static int16_t extctrl_yaw;
+			static double extctrl_nick;
+			static double extctrl_roll;
+			static double extctrl_yaw;
+			/* static int16_t extctrl_nick; */
+			/* static int16_t extctrl_roll; */
+			/* static int16_t extctrl_yaw; */
 			static pthread_mutex_t extctrl_mutex;
 
 			// unified sensor array
@@ -248,19 +251,19 @@ namespace mavhub {
 	}
 
 	// extctrl component setters
-	inline void DataCenter::set_extctrl_nick(const int16_t nick) {
+	inline void DataCenter::set_extctrl_nick(const double nick) {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
 		extctrl_nick = nick;
 	}
-	inline void DataCenter::set_extctrl_roll(const int16_t roll) {
+	inline void DataCenter::set_extctrl_roll(const double roll) {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
 		extctrl_roll = roll;
 	}
-	inline void DataCenter::set_extctrl_yaw(const int16_t yaw) {
+	inline void DataCenter::set_extctrl_yaw(const double yaw) {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
@@ -268,19 +271,19 @@ namespace mavhub {
 	}
 	
 	// extctrl component getters
-	inline const int16_t DataCenter::get_extctrl_nick() {
+	inline const double DataCenter::get_extctrl_nick() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
 		return extctrl_nick;
 	}
-	inline const int16_t DataCenter::get_extctrl_roll() {
+	inline const double DataCenter::get_extctrl_roll() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
 		return extctrl_roll;
 	}
-	inline const int16_t DataCenter::get_extctrl_yaw() {
+	inline const double DataCenter::get_extctrl_yaw() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
