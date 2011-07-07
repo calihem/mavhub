@@ -23,10 +23,10 @@ namespace mavhub {
 		prm_yaw_P = 100.0;
 		pid_yaw = new PID(0, params["yaw_Kc"], params["yaw_Ti"],
 											params["yaw_Td"]);
-		pid_nick = new PID(0, params["nick_Kc"], params["nick_Ti"],
-											params["nick_Td"]);
-		pid_roll = new PID(0, params["roll_Kc"], params["roll_Ti"],
-											params["roll_Td"]);
+		pid_nick = new PID(params["nick_bias"], params["nick_Kc"],
+											 params["nick_Ti"], params["nick_Td"]);
+		pid_roll = new PID(params["nick_roll"], params["roll_Kc"],
+											 params["roll_Ti"], params["roll_Td"]);
 	}
 
 	Ctrl_Lateral::~Ctrl_Lateral() {
@@ -63,6 +63,10 @@ namespace mavhub {
 							Logger::log("x Ctrl_Lateral::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
 						}
 					}
+
+					// update PID controllers
+					pid_nick->setBias(params["nick_bias"]);
+					pid_roll->setBias(params["roll_bias"]);
 
 					// if(!strcmp("prm_test_nick", (const char *)param_id)) {
 					// 	prm_test_nick = (int)mavlink_msg_param_set_get_param_value(&msg);
@@ -230,17 +234,17 @@ namespace mavhub {
 			pid_nick->setSp(0.0);
 			nick = pid_nick->calc(dtf, y * huch_visual_navigation.ego_speed);
 			// limit
-			if(nick > 100.0)
-				nick = 100.0;
-			if(nick < -100.0)
-				nick = -100.0;
+			if(nick > params["nick_limit"])
+				nick = params["nick_limit"];
+			if(nick < -params["nick_limit"])
+				nick = -params["nick_limit"];
 			// roll
 			pid_roll->setSp(0.0);
 			roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
-			if(roll > 100.0)
-				roll = 100.0;
-			if(roll < -100.0)
-				roll = -100.0;
+			if(roll > params["roll_limit"])
+				roll = params["roll_limit"];
+			if(roll < -params["roll_limit"])
+				roll = -params["roll_limit"];
 
 			send_debug(&msg, &dbg, 100, x, component_id);
 			send_debug(&msg, &dbg, 101, y, component_id);
@@ -295,6 +299,11 @@ namespace mavhub {
 		}
 
 		// controller params nick
+		iter = args.find("nick_bias");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["nick_bias"];
+		}
 		iter = args.find("nick_Kc");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
@@ -310,8 +319,18 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> params["nick_Td"];
 		}
+		iter = args.find("nick_limit");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["nick_limit"];
+		}
 
 		// controller params roll
+		iter = args.find("roll_bias");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["roll_bias"];
+		}
 		iter = args.find("roll_Kc");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
@@ -327,16 +346,25 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> params["roll_Td"];
 		}
+		iter = args.find("roll_limit");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["roll_limit"];
+		}
 
 		Logger::log("ctrl_lateral::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: yaw_Kc", params["yaw_Kc"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: yaw_Ti", params["yaw_Ti"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: yaw_Td", params["yaw_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: nick_bias", params["nick_bias"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: nick_Kc", params["nick_Kc"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: nick_Ti", params["nick_Ti"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: nick_Td", params["nick_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: nick_limit", params["nick_limit"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: roll_bias", params["roll_bias"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: roll_Kc", params["roll_Kc"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: roll_Ti", params["roll_Ti"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: roll_Td", params["roll_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: roll_limit", params["roll_limit"], Logger::LOGLEVEL_DEBUG);
 	}
 }

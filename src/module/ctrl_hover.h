@@ -131,7 +131,7 @@ namespace mavhub {
 		/* double ctl_maxgas; */
 		/* int prm_rst_baro_en; */
 		// output
-		int output_enable;
+		// int output_enable;
 		// int gs_enable; // groundstation enable generic mavlink data
 		// int gs_en_dbg; // groundstation enable debug data
 		// int gs_en_stats; // groundstation enable debug data

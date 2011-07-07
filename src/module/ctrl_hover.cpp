@@ -1,4 +1,35 @@
+/****************************************************************************
+** Copyright 2011 Humboldt-Universitaet zu Berlin
+**
+** This file is part of MAVHUB.
+**
+** MAVHUB is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** MAVHUB is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with MAVHUB.  If not, see <http://www.gnu.org/licenses/>.
+**
+*****************************************************************************/
+/**
+ * \file ctrl_hover.cpp
+ * \date created at 2010/11/26
+ * \author Oswald Berthold
+ *
+ * \brief An altitude controller based on fusion of baro,
+ *        z-accel and distance measurements
+ *
+ * \sa ctrl_hover.h
+ */
+
 // talk to FC with mkpackage
+
 #include "ctrl_hover.h"
 
 #include <mavlink.h>
@@ -197,11 +228,11 @@ namespace mavhub {
 					// 	params["ctl_setpoint"] = (double)mavlink_msg_param_set_get_param_value(&msg);
 					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for ctl_setpoint", params["ctl_setpoint"], Logger::LOGLEVEL_INFO);
 					// }	else
-					if(!strcmp("output_enable", (const char *)param_id)) {
-						output_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", output_enable, Logger::LOGLEVEL_INFO);
-						// action requests
-					}	else if(!strcmp("set_neutral_rq", (const char *)param_id)) {
+					// if(!strcmp("output_enable", (const char *)param_id)) {
+					// 	output_enable = (double)mavlink_msg_param_set_get_param_value(&msg);
+					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for output_enable", output_enable, Logger::LOGLEVEL_INFO);
+					// 	// action requests
+					if(!strcmp("set_neutral_rq", (const char *)param_id)) {
 						set_neutral_rq = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for set_neutral_rq", set_neutral_rq, Logger::LOGLEVEL_INFO);
 						// enable groundstation talk
@@ -251,9 +282,9 @@ namespace mavhub {
 		static mavlink_debug_t dbg;
 		// strapdown matrix
 		CvMat* C;
-		CvMat *accel_b; // body accel vector
-		CvMat *accel_g; // global accel vector (derotated)
-		mavlink_local_position_t pos;
+		//CvMat *accel_b; // body accel vector
+		//CvMat *accel_g; // global accel vector (derotated)
+		//mavlink_local_position_t pos;
 		int run_cnt = 0;
 		int run_cnt_cyc = 0;
 		double gas;
@@ -312,15 +343,15 @@ namespace mavhub {
 		// init position stuff
 		C = cvCreateMat(3,3, CV_32FC1);
 		cvSetIdentity(C, cvRealScalar(1));
-		accel_b = cvCreateMat(3, 1, CV_32FC1);
-		accel_g = cvCreateMat(3,1, CV_32FC1);
-		pos.usec = 0; // get_time_us(); XXX: qgc bug
-		pos.x = 0.0;
-		pos.y = 0.0;
-		pos.z = 0.0;
-		pos.vx = 0.0;
-		pos.vy = 0.0;
-		pos.vz = 0.0;
+		// accel_b = cvCreateMat(3, 1, CV_32FC1);
+		// accel_g = cvCreateMat(3,1, CV_32FC1);
+		// pos.usec = 0; // get_time_us(); XXX: qgc bug
+		// pos.x = 0.0;
+		// pos.y = 0.0;
+		// pos.z = 0.0;
+		// pos.vx = 0.0;
+		// pos.vy = 0.0;
+		// pos.vz = 0.0;
 
 		Logger::log("Ctrl_Hover started:", name(), Logger::LOGLEVEL_INFO);
 		
@@ -693,6 +724,8 @@ namespace mavhub {
 			gas = limit_gas(gas);
 
 			extctrl.gas = (int16_t)gas;
+			// nick, roll, yaw are computed in a separate controller,
+			// fused here and sent to the flightctrl for execution
 			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
@@ -701,7 +734,7 @@ namespace mavhub {
 
 			// send control output to FC
 			// Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
-			if(output_enable > 0) {
+			if(params["output_enable"] > 0) {
 				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
 				send(msg_extctrl);
 			}
@@ -726,17 +759,17 @@ namespace mavhub {
 				// send(msg);
 				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", params["ctl_sticksp"], 1, 0);
 				// send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
-				send(msg);
+				//				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", paramsoutput_enable, 1, 0);
+				//send(msg);
 				// trigger setneutral
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
 				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
-				send(msg);
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
+				// send(msg);
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
+				// send(msg);
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
+				// send(msg);
 				// PID params
 				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
 				send(msg);
@@ -904,6 +937,7 @@ namespace mavhub {
 		set_neutral_rq = 0;
 		params["ctl_mingas"] = 5.0;
 		params["ctl_maxgas"] = 800;
+		params["output_enable"] = 1.0; // safe?
 		params["kal_R0"] = 0.3;
 		params["kal_R1"] = 2.0;
 		params["kal_R2"] = 0.01;
@@ -1026,7 +1060,7 @@ namespace mavhub {
 		iter = args.find("output_enable");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> output_enable;
+			s >> params["output_enable"];
 		}
 
 		// mavlink to groundstation enable
@@ -1198,7 +1232,7 @@ namespace mavhub {
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_sticksp\"]", params["ctl_sticksp"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_mingas\"]", params["ctl_mingas"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_maxgas\"]", params["ctl_maxgas"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: output_enable", output_enable, Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: output_enable", params["output_enable"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en", params["gs_en"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_DEBUG);
