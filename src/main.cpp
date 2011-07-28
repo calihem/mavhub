@@ -56,6 +56,8 @@ string cfg_filename("mavhub.d/mavhub.conf"); ///< \var name of configuration fil
  * \param argv The arguments given as a vector of strings.
  */
 int main(int argc, char **argv) {
+	Core::argc = &argc;
+	Core::argv = argv;
 
 	Logger::setLogLevel(Logger::LOGLEVEL_WARN);
 

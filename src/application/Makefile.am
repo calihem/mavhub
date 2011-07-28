@@ -11,4 +11,5 @@ libapp_a_SOURCES = \
 	app_store.cpp \
 	mavlink_mk_app.cpp \
 	mavlink_mkhuch_app.cpp \
-	mk_app.cpp
+	mk_app.cpp \
+	opengl_app.cpp

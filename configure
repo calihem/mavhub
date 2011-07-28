@@ -606,6 +606,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+COND_OPENGL_FALSE
+COND_OPENGL_TRUE
 EGREP
 GREP
 CXXCPP
@@ -7437,6 +7439,141 @@ _ACEOF
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for glutInit in -lglut" >&5
+$as_echo_n "checking for glutInit in -lglut... " >&6; }
+if ${ac_cv_lib_glut_glutInit+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lglut  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char glutInit ();
+int
+main ()
+{
+return glutInit ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_glut_glutInit=yes
+else
+  ac_cv_lib_glut_glutInit=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_glut_glutInit" >&5
+$as_echo "$ac_cv_lib_glut_glutInit" >&6; }
+if test "x$ac_cv_lib_glut_glutInit" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBGLUT 1
+_ACEOF
+
+  LIBS="-lglut $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for glBegin in -lGL" >&5
+$as_echo_n "checking for glBegin in -lGL... " >&6; }
+if ${ac_cv_lib_GL_glBegin+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lGL  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char glBegin ();
+int
+main ()
+{
+return glBegin ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_GL_glBegin=yes
+else
+  ac_cv_lib_GL_glBegin=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_GL_glBegin" >&5
+$as_echo "$ac_cv_lib_GL_glBegin" >&6; }
+if test "x$ac_cv_lib_GL_glBegin" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBGL 1
+_ACEOF
+
+  LIBS="-lGL $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gluPerspective in -lGLU" >&5
+$as_echo_n "checking for gluPerspective in -lGLU... " >&6; }
+if ${ac_cv_lib_GLU_gluPerspective+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lGLU  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char gluPerspective ();
+int
+main ()
+{
+return gluPerspective ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_GLU_gluPerspective=yes
+else
+  ac_cv_lib_GLU_gluPerspective=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_GLU_gluPerspective" >&5
+$as_echo "$ac_cv_lib_GLU_gluPerspective" >&6; }
+if test "x$ac_cv_lib_GLU_gluPerspective" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBGLU 1
+_ACEOF
+
+  LIBS="-lGLU $LIBS"
+
+fi
+
 
 # Checks for header files.
 ac_ext=cpp
@@ -7905,6 +8042,29 @@ fi
 
 done
 
+for ac_header in GL/glut.h GL/freeglut.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+  if true; then
+  COND_OPENGL_TRUE=
+  COND_OPENGL_FALSE='#'
+else
+  COND_OPENGL_TRUE='#'
+  COND_OPENGL_FALSE=
+fi
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenGL headers not found" >&5
+$as_echo "$as_me: WARNING: OpenGL headers not found" >&2;}
+fi
+
+done
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for stdbool.h that conforms to C99" >&5
@@ -8200,7 +8360,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/application/Makefile src/core/Makefile src/io/Makefile src/module/Makefile src/protocol/Makefile src/sensor/Makefile tests/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/application/Makefile src/core/Makefile src/io/Makefile src/lib/Makefile src/module/Makefile src/protocol/Makefile src/sensor/Makefile tests/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -8422,6 +8582,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_UNIT_TESTS_TRUE}" && test -z "${COND_UNIT_TESTS_FALSE}"; then
   as_fn_error $? "conditional \"COND_UNIT_TESTS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENGL_TRUE}" && test -z "${COND_OPENGL_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENGL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -9035,6 +9199,7 @@ do
     "src/application/Makefile") CONFIG_FILES="$CONFIG_FILES src/application/Makefile" ;;
     "src/core/Makefile") CONFIG_FILES="$CONFIG_FILES src/core/Makefile" ;;
     "src/io/Makefile") CONFIG_FILES="$CONFIG_FILES src/io/Makefile" ;;
+    "src/lib/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/Makefile" ;;
     "src/module/Makefile") CONFIG_FILES="$CONFIG_FILES src/module/Makefile" ;;
     "src/protocol/Makefile") CONFIG_FILES="$CONFIG_FILES src/protocol/Makefile" ;;
     "src/sensor/Makefile") CONFIG_FILES="$CONFIG_FILES src/sensor/Makefile" ;;

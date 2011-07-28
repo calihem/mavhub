@@ -12,7 +12,11 @@ class Core {
 		static const uint16_t system_id();
 		/// Set system ID
 		static const uint16_t system_id(const uint16_t system_id);
-		
+		/// Pointer to number of arguments given to main routine
+		static int *argc;
+		/// Argument vector given to main routine
+		static char** argv;
+
 	private:
 		static uint16_t _system_id; ///< \var System ID
 		static pthread_mutex_t system_id_mutex; ///< \var Mutex to protect _system_id

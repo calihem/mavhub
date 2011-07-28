@@ -58,6 +58,9 @@ AC_CHECK_LIB([opencv_core], [cvCreateMat])
 AC_CHECK_LIB([opencv_legacy], [cvCreateKalman])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([gps], [gps_clear_fix])
+AC_CHECK_LIB([glut], [glutInit])
+AC_CHECK_LIB([GL], [glBegin])
+AC_CHECK_LIB([GLU], [gluPerspective])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
@@ -65,6 +68,7 @@ AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_WARN( [Please specify header directory f
 AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )])
 AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory for mklink, e.g. configure CPPFLAGS="-I/home/user/mklink"] )])
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
+AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AC_MSG_WARN([OpenGL headers not found])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -88,6 +92,7 @@ AC_CONFIG_FILES([Makefile
                  src/application/Makefile
                  src/core/Makefile
                  src/io/Makefile
+                 src/lib/Makefile
                  src/module/Makefile
                  src/protocol/Makefile
                  src/sensor/Makefile

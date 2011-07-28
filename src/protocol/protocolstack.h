@@ -262,7 +262,7 @@ void ProtocolStack<T>::run() {
 	timeval timeout;
 
 	Logger::log(typeid(*this).name(), "entered run() with", link_list.size(), "interfaces", Logger::LOGLEVEL_DEBUG, loglevel());
-
+	
 	while( !interrupted() ) {
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
@@ -400,6 +400,7 @@ int ProtocolStack<T>::add_application(AppLayer<T> *app) {
 
 	app->owner(this);
 	app_list.push_back(app);
+	app->start();
 	Logger::log(typeid(*this).name(), "added application", app->name(), Logger::LOGLEVEL_DEBUG, loglevel());
 
 	return 0;

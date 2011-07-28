@@ -18,6 +18,7 @@
 #include "mk_app.h"
 #include "acc_calibration_app/acc_calibration_app.h"
 #include "attitude_filter_app/attitude_filter_app.h"
+#include "opengl_app.h"
 
 #include <iostream>
 #include <algorithm> //transform
@@ -148,6 +149,13 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_LIBGSMM_H
 		Logger::log("AppFactory: libgps ist not available", Logger::LOGLEVEL_INFO); 
 		return -1;
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "opengl_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GL_GLUT_H
+		OpenGLApp *gl_app = new OpenGLApp(loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(gl_app);
+#endif // HAVE_GL_GLUT_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "sim_crrcsim_app") {
 #ifdef HAVE_MAVLINK_H
