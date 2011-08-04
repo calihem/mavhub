@@ -1,8 +1,21 @@
 #ifndef _MAVHUB_CORE_H_
 #define _MAVHUB_CORE_H_
 
-#include <inttypes.h> // uint16_t
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include "core/thread.h"
+
+#include <inttypes.h> // uint16_t
+
+#ifdef HAVE_GSTREAMER
+namespace hub {
+namespace gstreamer {
+class VideoServer;
+} // namespace gstreamer
+} // namespace hub
+#endif // HAVE_GSTREAMER
 
 namespace mavhub {
 
@@ -15,7 +28,11 @@ class Core {
 		/// Pointer to number of arguments given to main routine
 		static int *argc;
 		/// Argument vector given to main routine
-		static char** argv;
+		static char **argv;
+#ifdef HAVE_GSTREAMER
+		/// Pointer to video_server. NULL if server is running.
+		static hub::gstreamer::VideoServer *video_server;
+#endif // HAVE_GSTREAMER
 
 	private:
 		static uint16_t _system_id; ///< \var System ID

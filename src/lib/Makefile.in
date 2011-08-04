@@ -37,6 +37,7 @@ host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/am/am_incl_common.am
+@COND_USE_GSTREAMER_TRUE@am__append_1 = $(GSTREAMER_CFLAGS) -Wno-variadic-macros -Wno-long-long
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
@@ -51,6 +52,12 @@ CONFIG_CLEAN_VPATH_FILES =
 LIBRARIES = $(noinst_LIBRARIES)
 AR = ar
 ARFLAGS = cru
+libgstreamer_a_AR = $(AR) $(ARFLAGS)
+libgstreamer_a_LIBADD =
+am__libgstreamer_a_SOURCES_DIST = gstreamer/video_server.cpp
+@COND_USE_GSTREAMER_TRUE@am_libgstreamer_a_OBJECTS =  \
+@COND_USE_GSTREAMER_TRUE@	video_server.$(OBJEXT)
+libgstreamer_a_OBJECTS = $(am_libgstreamer_a_OBJECTS)
 libopengl_a_AR = $(AR) $(ARFLAGS)
 libopengl_a_LIBADD =
 am__libopengl_a_SOURCES_DIST = opengl/map_2d.cpp
@@ -65,8 +72,9 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(libopengl_a_SOURCES)
-DIST_SOURCES = $(am__libopengl_a_SOURCES_DIST)
+SOURCES = $(libgstreamer_a_SOURCES) $(libopengl_a_SOURCES)
+DIST_SOURCES = $(am__libgstreamer_a_SOURCES_DIST) \
+	$(am__libopengl_a_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -121,6 +129,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+GSTREAMER_CFLAGS = @GSTREAMER_CFLAGS@
+GSTREAMER_LIBS = @GSTREAMER_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -141,6 +151,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -202,12 +215,18 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
+#AM_CPPFLAGS += -Wall -pedantic
+
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -Wall -pedantic -DSTDOUTLOG
+AM_CPPFLAGS = -D_REENTRANT -Wall -DSTDOUTLOG $(am__append_1)
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src
 @COND_OPENGL_TRUE@noinst_LIBRARIES = libopengl.a
+@COND_USE_GSTREAMER_TRUE@noinst_LIBRARIES = libgstreamer.a
+@COND_USE_GSTREAMER_TRUE@libgstreamer_a_SOURCES = \
+@COND_USE_GSTREAMER_TRUE@	gstreamer/video_server.cpp
+
 @COND_OPENGL_TRUE@libopengl_a_SOURCES = \
 @COND_OPENGL_TRUE@	opengl/map_2d.cpp
 
@@ -248,6 +267,10 @@ $(am__aclocal_m4_deps):
 
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+libgstreamer.a: $(libgstreamer_a_OBJECTS) $(libgstreamer_a_DEPENDENCIES) 
+	-rm -f libgstreamer.a
+	$(libgstreamer_a_AR) libgstreamer.a $(libgstreamer_a_OBJECTS) $(libgstreamer_a_LIBADD)
+	$(RANLIB) libgstreamer.a
 libopengl.a: $(libopengl_a_OBJECTS) $(libopengl_a_DEPENDENCIES) 
 	-rm -f libopengl.a
 	$(libopengl_a_AR) libopengl.a $(libopengl_a_OBJECTS) $(libopengl_a_LIBADD)
@@ -260,6 +283,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/map_2d.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/video_server.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -274,6 +298,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+video_server.o: gstreamer/video_server.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT video_server.o -MD -MP -MF $(DEPDIR)/video_server.Tpo -c -o video_server.o `test -f 'gstreamer/video_server.cpp' || echo '$(srcdir)/'`gstreamer/video_server.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/video_server.Tpo $(DEPDIR)/video_server.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='gstreamer/video_server.cpp' object='video_server.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o video_server.o `test -f 'gstreamer/video_server.cpp' || echo '$(srcdir)/'`gstreamer/video_server.cpp
+
+video_server.obj: gstreamer/video_server.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT video_server.obj -MD -MP -MF $(DEPDIR)/video_server.Tpo -c -o video_server.obj `if test -f 'gstreamer/video_server.cpp'; then $(CYGPATH_W) 'gstreamer/video_server.cpp'; else $(CYGPATH_W) '$(srcdir)/gstreamer/video_server.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/video_server.Tpo $(DEPDIR)/video_server.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='gstreamer/video_server.cpp' object='video_server.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o video_server.obj `if test -f 'gstreamer/video_server.cpp'; then $(CYGPATH_W) 'gstreamer/video_server.cpp'; else $(CYGPATH_W) '$(srcdir)/gstreamer/video_server.cpp'; fi`
 
 map_2d.o: opengl/map_2d.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT map_2d.o -MD -MP -MF $(DEPDIR)/map_2d.Tpo -c -o map_2d.o `test -f 'opengl/map_2d.cpp' || echo '$(srcdir)/'`opengl/map_2d.cpp

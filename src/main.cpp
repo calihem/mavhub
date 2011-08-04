@@ -37,6 +37,9 @@
 #include "core/mavshell.h"
 #include "application/app_store.h"
 #include "sensor/sensor_factory.h"
+#ifdef HAVE_GSTREAMER
+#include "lib/gstreamer/video_server.h"
+#endif // HAVE_GSTREAMER
 
 #include <iostream>     // cout
 #include <cstring>      // strcmp
@@ -150,6 +153,29 @@ void read_settings(Setting &settings) {
 	} else {
 		add_sensors(sensors_list, settings);
 	}
+
+#ifdef HAVE_GSTREAMER
+	//read video server
+	if(settings.begin_group("video_server") == 0) {  //video_server group available
+		list<string> pipeline_list;
+		if( settings.value("pipeline_description", pipeline_list) ) {
+			Logger::log("Pipeline description for video server missing in config file", Logger::LOGLEVEL_WARN);
+		} else {
+			string pipeline_description;
+			//convert string list to string
+			for(list<string>::iterator iter = pipeline_list.begin(); iter != pipeline_list.end(); ++iter) {
+				pipeline_description.append(*iter);
+			}
+			if(!Core::video_server)
+				Core::video_server = new hub::gstreamer::VideoServer(Core::argc, Core::argv, pipeline_description);
+			if(Core::video_server)
+				Core::video_server->start();
+			else
+				Logger::log("Can't create video server", Logger::LOGLEVEL_WARN);
+		}
+		settings.end_group();
+	}
+#endif // HAVE_GSTREAMER
 }
 
 void add_links(const list<string> link_list, Setting &settings) {
