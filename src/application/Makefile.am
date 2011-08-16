@@ -1,7 +1,7 @@
 include $(top_srcdir)/am/am_incl_common.am
 
 # additional include paths necessary to compile the C++ library
-# AM_CXXFLAGS += 
+AM_CXXFLAGS += $(GSTREAMER_CFLAGS)
 
 noinst_LIBRARIES = libapp.a
 

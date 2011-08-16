@@ -68,6 +68,7 @@ AC_CHECK_LIB([gps], [gps_clear_fix])
 AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
+AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])

@@ -8,6 +8,7 @@
 
 #include "lib/opengl/map_2d.h"
 
+
 using namespace cpp_pthread;
 using namespace hub::opengl;
 
@@ -16,10 +17,12 @@ namespace mavhub {
 OpenGLApp::OpenGLApp(const Logger::log_level_t loglevel) :
 	AppInterface("opengl_app", loglevel),
 	AppLayer<mavlink_message_t>("opengl_app", loglevel),
+#ifdef HAVE_GSTREAMER
+	hub::gstreamer::VideoClient(),
+#endif // HAVE_GSTREAMER
 	textures(1)
 	{
 	pthread_mutex_init(&tx_mav_mutex, NULL);
-
 }
 
 OpenGLApp::~OpenGLApp() {}
@@ -42,6 +45,19 @@ void OpenGLApp::handle_input(const mavlink_message_t &msg) {
 	}
 }
 
+#ifdef HAVE_GSTREAMER
+void OpenGLApp::handle_video_data(const unsigned char *data, const int width, const int height) {
+	if(!data) return;
+
+	OpenGLApp::width = width;
+	OpenGLApp::height = height;
+
+	{
+		Lock buf_lock(buf_mutex);
+		memcpy(buffer, data, width*height*3);
+	}
+}
+#endif // HAVE_GSTREAMER
 
 void OpenGLApp::print(std::ostream &os) const {
 	AppLayer<mavlink_message_t>::print(os);
@@ -53,10 +69,23 @@ void OpenGLApp::run() {
 	Map2D map(Core::argc, Core::argv);
 	Map2D::bind_textures(textures);
 
-	Map2D::load_texture(textures[0], std::string("texture.bmp"), 290, 290);
+#ifdef HAVE_GSTREAMER
+	if(Core::video_server) {
+		Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), "sink0");
+		log("OpenGLApp binded to appsink", Logger::LOGLEVEL_DEBUG);
+	} else {
+		log("video server not running", Logger::LOGLEVEL_WARN);
+	}
+#endif // HAVE_GSTREAMER
+
+// 	Map2D::load_texture(textures[0], std::string("texture.bmp"), 290, 290);
+// 	Map2D::load_texture(textures[0], buffer, 290, 290);
 
 	while( !interrupted() ) {
-// 		Map2D::load_texture(&textures[0], *capture_image);
+		{
+			Lock buf_lock(buf_mutex);
+			Map2D::load_texture(textures[0], buffer, width, height);
+		}
 		Map2D::display();
 		usleep(500);
 	}

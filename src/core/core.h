@@ -30,7 +30,7 @@ class Core {
 		/// Argument vector given to main routine
 		static char **argv;
 #ifdef HAVE_GSTREAMER
-		/// Pointer to video_server. NULL if server is running.
+		/// Pointer to video_server. NULL if server isn't running.
 		static hub::gstreamer::VideoServer *video_server;
 #endif // HAVE_GSTREAMER
 

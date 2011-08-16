@@ -7798,6 +7798,51 @@ _ACEOF
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gst_app_sink_pull_buffer in -lgstapp-0.10" >&5
+$as_echo_n "checking for gst_app_sink_pull_buffer in -lgstapp-0.10... " >&6; }
+if ${ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lgstapp-0.10  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char gst_app_sink_pull_buffer ();
+int
+main ()
+{
+return gst_app_sink_pull_buffer ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer=yes
+else
+  ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" >&5
+$as_echo "$ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" >&6; }
+if test "x$ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBGSTAPP_0_10 1
+_ACEOF
+
+  LIBS="-lgstapp-0.10 $LIBS"
+
+fi
+
 
 # Checks for header files.
 ac_ext=cpp

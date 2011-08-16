@@ -7,6 +7,11 @@
 
 #ifdef HAVE_GL_GLUT_H
 
+#ifdef HAVE_GSTREAMER
+#include "lib/gstreamer/video_server.h"
+#include "lib/gstreamer/video_client.h"
+#endif // HAVE_GSTREAMER
+
 #include "protocol/protocollayer.h"
 
 #include <inttypes.h> //uint8_t
@@ -14,7 +19,11 @@
 
 namespace mavhub {
 
-	class OpenGLApp : public AppLayer<mavlink_message_t> {
+	class OpenGLApp : public AppLayer<mavlink_message_t>
+#ifdef HAVE_GSTREAMER
+		, public hub::gstreamer::VideoClient
+#endif // HAVE_GSTREAMER
+	{
 		public:
 			static const int component_id = 27;
 
@@ -22,6 +31,9 @@ namespace mavhub {
 			virtual ~OpenGLApp();
 
 			virtual void handle_input(const mavlink_message_t &msg);
+#ifdef HAVE_GSTREAMER
+			virtual void handle_video_data(const unsigned char *data, const int width, const int height);
+#endif // HAVE_GSTREAMER
 
 		protected:
 			virtual void print(std::ostream &os) const;
@@ -36,7 +48,14 @@ namespace mavhub {
 			pthread_mutex_t tx_mav_mutex;
 			/// Vector of texture IDs
 			std::vector<unsigned int> textures;
+			unsigned int width;
+			unsigned int height;
+			char buffer[921600];
+			pthread_mutex_t buf_mutex;
 
+#ifdef HAVE_GSTREAMER
+			static void new_video_buffer_callback(GstElement *element, GstElement *data);
+#endif // HAVE_GSTREAMER
 			void send_heartbeat();
 	};
 

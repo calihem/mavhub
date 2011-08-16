@@ -21,7 +21,7 @@ class Map2D  {
 		static void bind_textures(std::vector<unsigned int> &ids);
 		static void camera_direction(const float roll, const float pitch, const float yaw, bool deg = true);
 		static void display();
-		static void load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned height) throw(const std::exception&); 
+		static void load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height) throw(const std::exception&); 
 		static void load_texture(const unsigned int id, const IplImage &image) throw(const std::exception&);
 		static void load_texture(const unsigned int id, const std::string &filename, const unsigned int width, const unsigned int height) throw(const std::exception&);
 		static int release_textures(const std::vector<unsigned int> &ids);

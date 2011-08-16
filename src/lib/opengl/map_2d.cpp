@@ -309,11 +309,14 @@ void Map2D::mouse_movement(int x, int y) {
 // 	display();
 }
 
-void Map2D::load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned height) throw(const std::exception&) {
+void Map2D::load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height) throw(const std::exception&) {
 	if(!image) throw std::domain_error("image argument is NULL pointer");
 
 	//select texture with given id
 	glBindTexture(GL_TEXTURE_2D, id);
+
+	//FIXME: use glTexSumImage2D instead
+//   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 
 	//build texture mipmaps
 	glTexImage2D(GL_TEXTURE_2D,	//target
