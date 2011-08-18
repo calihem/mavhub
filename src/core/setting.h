@@ -3,6 +3,7 @@
 
 #include "io/io.h"
 
+#include <sstream> //istringstream
 #include <map>
 
 namespace cpp_io {

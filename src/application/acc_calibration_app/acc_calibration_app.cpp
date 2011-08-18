@@ -15,7 +15,8 @@ const string AccCalibrationApp::mCalibrationBiasesPath = "app/acc_calibration_ap
 const string AccCalibrationApp::mCalibrationScaleFactorsPath = "app/acc_calibration_app/calibration_data/acc_calibration_scale_factors.xml";
 
 AccCalibrationApp::AccCalibrationApp(const Logger::log_level_t loglevel, int numberOfMeasurementsForDetermineMinMax, uint32_t usMeasurementTimeout) :
-		AppLayer("acc_calibration_app", loglevel) {
+		AppInterface("acc_calibration_app", loglevel),
+		AppLayer<mavlink_message_t>("acc_calibration_app", loglevel) {
 	// Transfer initialization parameters to class members
 	mUSMeasurementTimeout = usMeasurementTimeout;
 	mNumberOfMeasurementsForDetermineMinMax = numberOfMeasurementsForDetermineMinMax;

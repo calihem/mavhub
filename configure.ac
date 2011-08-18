@@ -50,6 +50,13 @@ AC_ARG_ENABLE(tests,
 	[tests=false])
 AM_CONDITIONAL(COND_UNIT_TESTS, test x$tests = xtrue)
 
+# checks for pkg-config and supported and modules
+PKG_PROG_PKG_CONFIG([0.25])
+PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10],
+	[AC_DEFINE(HAVE_GSTREAMER, [], [Use GStreamer]) gstreamer=true],
+	[gstreamer=false])
+AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
+
 # Checks for libraries.
 AC_CHECK_LIB([ncurses], [newwin])
 AC_CHECK_LIB([cxcore], [cvCreateMat])
@@ -58,12 +65,18 @@ AC_CHECK_LIB([opencv_core], [cvCreateMat])
 AC_CHECK_LIB([opencv_legacy], [cvCreateKalman])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([gps], [gps_clear_fix])
+AC_CHECK_LIB([glut], [glutInit])
+AC_CHECK_LIB([GL], [glBegin])
+AC_CHECK_LIB([GLU], [gluPerspective])
+AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
-AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_ERROR( [Please specify header directory for mavlink, e.g. configure CPPFLAGS="-I/home/user/mavlink/include/huch"] )])
-AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )], [-])
+AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_WARN( [Please specify header directory for mavlink, e.g. configure CPPFLAGS="-I/home/user/mavlink/include/huch"] )])
+AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )])
+AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory for mklink, e.g. configure CPPFLAGS="-I/home/user/mklink"] )])
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
+AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AM_CONDITIONAL(COND_OPENGL, false) AC_MSG_WARN([OpenGL headers not found])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -87,6 +100,7 @@ AC_CONFIG_FILES([Makefile
                  src/application/Makefile
                  src/core/Makefile
                  src/io/Makefile
+                 src/lib/Makefile
                  src/module/Makefile
                  src/protocol/Makefile
                  src/sensor/Makefile

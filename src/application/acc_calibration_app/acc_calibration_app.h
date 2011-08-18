@@ -1,7 +1,7 @@
 #ifndef _ACC_CALIBRATION_APP_H_
 #define _ACC_CALIBRATION_APP_H_
 
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 #include "core/thread.h"
 #include <opencv/cv.h>
 #include <vector>
@@ -29,7 +29,7 @@ namespace mavhub {
 	* 
 	* If the results are satisfying, you can save them.
 	*/
-	class AccCalibrationApp : public AppLayer {
+	class AccCalibrationApp : public AppLayer<mavlink_message_t> {
 		
 		friend class AccCalibrationAppTestThread;
 		

@@ -1,9 +1,13 @@
 #ifndef _LINK_FACTORY_H_
 #define _LINK_FACTORY_H_
 
+#include "io/network.h"
+#include "protocol/protocol.h"
+#include "protocol/protocollayer.h"
+
 #include <inttypes.h> //uint8_t
 #include <string>
-#include "core/protocolstack.h"
+#include <list>
 
 namespace mavhub {
 
@@ -13,7 +17,7 @@ class LinkFactory {
 		enum link_type_t {
 			SerialLink = 0,
 			UDPLink = 1,
-			UnsupportedLink = 255
+			UnknownLink = 255
 		};
 		friend std::ostream& operator <<(std::ostream &os, const link_type_t &link_type);
 		friend std::istream& operator >>(std::istream &is, link_type_t &link_type);
@@ -23,7 +27,7 @@ class LinkFactory {
 
 			/* generic */
 			link_type_t link_type;
-			ProtocolStack::packageformat_t package_format;
+			protocol_type_t protocol_type;
 			/* serial link */
 			std::string dev_name;
 			unsigned int baudrate;
@@ -33,7 +37,7 @@ class LinkFactory {
 		};
 
 		static cpp_io::IOInterface* build(const link_construction_plan_t &plan);
-		static cpp_io::IOInterface* build(const std::string& type, const std::string& devicename);
+// 		static cpp_io::IOInterface* build(const std::string& type, const std::string& devicename);
 };
 
 } // namespace mavhub

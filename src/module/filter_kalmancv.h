@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include "core/logger.h"
-#include "core/protocollayer.h"
 
 #include "opencv/cv.h" // opencv headers
 

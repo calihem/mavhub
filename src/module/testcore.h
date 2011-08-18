@@ -1,13 +1,13 @@
 #ifndef _TESTCORE_H_
 #define _TESTCORE_H_
 
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 
 #include <inttypes.h> //uint8_t
 
 namespace mavhub {
 
-	class TestCore : public AppLayer {
+	class TestCore : public AppLayer<mavlink_message_t> {
 		public:
 			TestCore();
 			virtual ~TestCore();

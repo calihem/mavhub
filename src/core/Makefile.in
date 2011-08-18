@@ -53,9 +53,8 @@ AR = ar
 ARFLAGS = cru
 libcore_a_AR = $(AR) $(ARFLAGS)
 libcore_a_LIBADD =
-am_libcore_a_OBJECTS = datacenter.$(OBJEXT) logger.$(OBJEXT) \
-	mavshell.$(OBJEXT) setting.$(OBJEXT) protocolstack.$(OBJEXT) \
-	protocollayer.$(OBJEXT)
+am_libcore_a_OBJECTS = core.$(OBJEXT) datacenter.$(OBJEXT) \
+	logger.$(OBJEXT) mavshell.$(OBJEXT) setting.$(OBJEXT)
 libcore_a_OBJECTS = $(am_libcore_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -122,6 +121,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+GSTREAMER_CFLAGS = @GSTREAMER_CFLAGS@
+GSTREAMER_LIBS = @GSTREAMER_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -142,6 +143,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -203,8 +207,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
+#AM_CPPFLAGS += -Wall -pedantic
+
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -Wall -pedantic -DSTDOUTLOG
+AM_CPPFLAGS = -D_REENTRANT -Wall -DSTDOUTLOG
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src
@@ -213,12 +219,11 @@ AM_CXXFLAGS = -I$(top_srcdir)/src
 # AM_CXXFLAGS += 
 noinst_LIBRARIES = libcore.a
 libcore_a_SOURCES = \
+	core.cpp \
 	datacenter.cpp \
 	logger.cpp \
 	mavshell.cpp \
-	setting.cpp \
-	protocolstack.cpp \
-	protocollayer.cpp
+	setting.cpp
 
 all: all-am
 
@@ -268,11 +273,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/datacenter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavshell.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocollayer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocolstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setting.Po@am__quote@
 
 .cpp.o:

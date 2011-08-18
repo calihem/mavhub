@@ -1,9 +1,11 @@
 include $(top_srcdir)/am/am_incl_common.am
 
-SUBDIRS = application core io module protocol sensor
+SUBDIRS = application core io lib module protocol sensor
 
 # additional include paths necessary to compile the C++ program
 # AM_CXXFLAGS = 
+
+AM_CPPFLAGS += $(GSTREAMER_CFLAGS) -Wno-variadic-macros -Wno-long-long
 
 bin_PROGRAMS = mavhub
 mavhub_SOURCES =  main.cpp
@@ -15,4 +17,6 @@ mavhub_LDADD = \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
+	$(top_builddir)/src/lib/*.a \
+	$(GSTREAMER_LIBS) \
 	$(AM_LDFLAGS)

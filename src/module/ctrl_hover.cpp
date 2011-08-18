@@ -41,7 +41,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
@@ -54,7 +54,9 @@ using namespace std;
 namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : 
-		AppLayer("ctrl_hover"), 
+		AppInterface("ctrl_hover"), 
+		AppLayer<mavlink_message_t>("ctrl_hover"),
+		AppLayer<mk_message_t>("ctrl_hover"),
 		uss_win(WINSIZE, 0.0),
 		uss_win_sorted(WINSIZE, 0.0),
 		uss_win_idx(0),
@@ -200,13 +202,13 @@ namespace mavhub {
 		// 	break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Hover::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
+			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
 				param_request_list = 1;
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if(mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id()) {
-				Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this system", (int)owner()->system_id(), Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+				Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
 				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
 					Logger::log("Ctrl_Hover::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
@@ -267,10 +269,12 @@ namespace mavhub {
 		default:
 			break;
 		}
-		if(msg.sysid == owner()->system_id() && msg.msgid == 0) {//FIXME: set right msgid
+		if(msg.sysid == system_id() && msg.msgid == 0) {//FIXME: set right msgid
 			//TODO
 		}
   }
+
+  void Ctrl_Hover::handle_input(const mk_message_t &msg) { }
 
   void Ctrl_Hover::run() {
 		int buf[1]; // to MK buffer
@@ -292,7 +296,7 @@ namespace mavhub {
 		// heartbeat
 		int system_type = MAV_QUADROTOR;
 		mavlink_message_t msg_hb;
-		mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
 
 		// XXX: infrared valid FIRs
 		//double tmp_d[] = {0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05};
@@ -357,9 +361,10 @@ namespace mavhub {
 		
 		// request debug msgs
 		buf[0] = 10;
-		MKPackage msg_debug_on(1, 'd', 1, buf, 1);
+		mk_message_t msg_debug_on;
+		mklink_msg_pack(&msg_debug_on, MK_FC_ADDRESS, MK_MSG_TYPE_POLL_DEBUG, buf, 1);
 		sleep(1);
-		send(msg_debug_on);
+		AppLayer<mk_message_t>::send(msg_debug_on);
 		Logger::log("Ctrl_Hover debug request sent to FC", Logger::LOGLEVEL_INFO);
 
 		while(true) {
@@ -392,12 +397,12 @@ namespace mavhub {
 			// send pixhawk std structs to groundstation
 			// FIXME: moved here 2011-05-25
 			// manual control
-			mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
-			send(msg);
+			mavlink_msg_manual_control_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
+			AppLayer<mavlink_message_t>::send(msg);
 			if(params["gs_en"]) {
 				// attitude
-				mavlink_msg_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
-				send(msg);
+				mavlink_msg_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
+				AppLayer<mavlink_message_t>::send(msg);
 			}
 			
 			if(params["en_skipmain"] > 0.0)
@@ -430,8 +435,8 @@ namespace mavhub {
 				ch_raw.raw4 = raw[4];
 					//}
 				// send
-				mavlink_msg_huch_hc_raw_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ch_raw);
-				send(msg);
+				mavlink_msg_huch_hc_raw_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ch_raw);
+				AppLayer<mavlink_message_t>::send(msg);
 			}
 
 			// o.str("");
@@ -735,8 +740,9 @@ namespace mavhub {
 			// send control output to FC
 			// Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
 			if(params["output_enable"] > 0) {
-				MKPackage msg_extctrl(1, 'b', (uint8_t *)&extctrl, sizeof(extctrl));
-				send(msg_extctrl);
+				mk_message_t msg_extctrl;
+				mklink_msg_pack(&msg_extctrl, MK_FC_ADDRESS, MK_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(extctrl));
+				AppLayer<mk_message_t>::send(msg_extctrl);
 			}
 
 			// send data to groundstation
@@ -751,59 +757,60 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
-					send(msg);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					AppLayer<mavlink_message_t>::send(msg);
 				}
 
 				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_value", ctl_sp, 1, 0);
 				// send(msg);
 				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"setpoint_stick", params["ctl_sticksp"], 1, 0);
 				// send(msg);
-				//				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"output_enable", paramsoutput_enable, 1, 0);
-				//send(msg);
+				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
+				// AppLayer<mavlink_message_t>::send(msg);
 				// trigger setneutral
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
-				send(msg);
-				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
-				// send(msg);
-				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
-				// send(msg);
-				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
-				// send(msg);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
+				AppLayer<mavlink_message_t>::send(msg);
+				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
+				// AppLayer<mavlink_message_t>::send(msg);
+				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
+				// AppLayer<mavlink_message_t>::send(msg);
+				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
+				// AppLayer<mavlink_message_t>::send(msg);
 				// PID params
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Kc", pid_alt->getKc(), 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Ti", pid_alt->getTi(), 1, 0);
-				send(msg);
-				mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
-				send(msg);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
+				AppLayer<mavlink_message_t>::send(msg);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Kc", pid_alt->getKc(), 1, 0);
+				AppLayer<mavlink_message_t>::send(msg);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Ti", pid_alt->getTi(), 1, 0);
+				AppLayer<mavlink_message_t>::send(msg);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
+				AppLayer<mavlink_message_t>::send(msg);
 			}
 
 			// set neutral?
 			if(set_neutral_rq > 0) {
 				Logger::log("Requesting setneutral from flightcontrol", Logger::LOGLEVEL_INFO);
-				MKPackage msg_setneutral(1, 'c');
-				send(msg_setneutral);
+				mk_message_t msg_setneutral;
+				mklink_msg_pack(&msg_setneutral, MK_FC_ADDRESS, MK_MSG_TYPE_SETNEUTRAL_REQ, NULL, 0);
+				AppLayer<mk_message_t>::send(msg_setneutral);
 				set_neutral_rq = 0;
 			}
 
 			// typed message forwarding
 
 			// // huch attitude
-			mavlink_msg_huch_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude);
-			send(msg);
+			mavlink_msg_huch_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &attitude);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			// huch_fc_altitude
-			// mavlink_msg_huch_fc_altitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
+			// mavlink_msg_huch_fc_altitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
 			// send(msg);
 			// mk_fc_status
-			mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
-			send(msg);
+			mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
+			AppLayer<mavlink_message_t>::send(msg);
 			// huch ctrl_hover
-			mavlink_msg_huch_ctrl_hover_state_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
-			send(msg);
+			mavlink_msg_huch_ctrl_hover_state_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
+			AppLayer<mavlink_message_t>::send(msg);
 
 			// send debug signals to groundstation
 			if(params["gs_en_dbg"]) {
@@ -853,7 +860,7 @@ namespace mavhub {
 			// XXX: does this make problems with time / qgc?
 			// XXX: see qgc/src/uas/UAS.cc -> attitude_control
 			// attitude_controller_output.thrust = extctrl.gas / 4 - 128;
-			// mavlink_msg_attitude_controller_output_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
+			// mavlink_msg_attitude_controller_output_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
 			// send(msg);
 			
 			// stats
@@ -861,7 +868,7 @@ namespace mavhub {
 			run_cnt_cyc = run_cnt % 10;
 			// send heartbeat
 			if(run_cnt_cyc == 0)
-				send(msg_hb);
+				AppLayer<mavlink_message_t>::send(msg_hb);
 			// XXX: usleep call takes ~5000 us?
 			//usleep(10000);
 		}
@@ -872,8 +879,8 @@ namespace mavhub {
 	void Ctrl_Hover::send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value) {
 		dbg->ind = index;
 		dbg->value = value;
-		mavlink_msg_debug_encode(owner()->system_id(), static_cast<uint8_t>(component_id), msg, dbg);
-		send(*msg);
+		mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), msg, dbg);
+		AppLayer<mavlink_message_t>::send(*msg);
 	}
 
 	void Ctrl_Hover::preproc() {
@@ -1369,7 +1376,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk attitude
 	void Ctrl_Hover::set_pxh_manual_control() {
-		manual_control.target = owner()->system_id();
+		manual_control.target = system_id();
 		manual_control.thrust = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
 	}
 

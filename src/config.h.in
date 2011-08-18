@@ -21,6 +21,15 @@
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
+/* Define to 1 if you have the <GL/freeglut.h> header file. */
+#undef HAVE_GL_FREEGLUT_H
+
+/* Define to 1 if you have the <GL/glut.h> header file. */
+#undef HAVE_GL_GLUT_H
+
+/* Use GStreamer */
+#undef HAVE_GSTREAMER
+
 /* Define to 1 if you have the `inet_ntoa' function. */
 #undef HAVE_INET_NTOA
 
@@ -33,11 +42,23 @@
 /* Define to 1 if you have the `cxcore' library (-lcxcore). */
 #undef HAVE_LIBCXCORE
 
+/* Define to 1 if you have the `GL' library (-lGL). */
+#undef HAVE_LIBGL
+
+/* Define to 1 if you have the `GLU' library (-lGLU). */
+#undef HAVE_LIBGLU
+
+/* Define to 1 if you have the `glut' library (-lglut). */
+#undef HAVE_LIBGLUT
+
 /* Define to 1 if you have the `gps' library (-lgps). */
 #undef HAVE_LIBGPS
 
 /* Define to 1 if you have the <libgpsmm.h> header file. */
 #undef HAVE_LIBGPSMM_H
+
+/* Define to 1 if you have the `gstapp-0.10' library (-lgstapp-0.10). */
+#undef HAVE_LIBGSTAPP_0_10
 
 /* Define to 1 if you have the `ncurses' library (-lncurses). */
 #undef HAVE_LIBNCURSES
@@ -59,6 +80,9 @@
 
 /* Define to 1 if you have the <mkhuchlink.h> header file. */
 #undef HAVE_MKHUCHLINK_H
+
+/* Define to 1 if you have the <mklink.h> header file. */
+#undef HAVE_MKLINK_H
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H

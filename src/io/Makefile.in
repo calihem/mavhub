@@ -53,8 +53,7 @@ AR = ar
 ARFLAGS = cru
 libio_a_AR = $(AR) $(ARFLAGS)
 libio_a_LIBADD =
-am_libio_a_OBJECTS = io.$(OBJEXT) link_factory.$(OBJEXT) \
-	uart.$(OBJEXT) network.$(OBJEXT)
+am_libio_a_OBJECTS = io.$(OBJEXT) uart.$(OBJEXT) network.$(OBJEXT)
 libio_a_OBJECTS = $(am_libio_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -121,6 +120,8 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
+GSTREAMER_CFLAGS = @GSTREAMER_CFLAGS@
+GSTREAMER_LIBS = @GSTREAMER_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -141,6 +142,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -202,8 +206,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
+#AM_CPPFLAGS += -Wall -pedantic
+
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -Wall -pedantic -DSTDOUTLOG
+AM_CPPFLAGS = -D_REENTRANT -Wall -DSTDOUTLOG
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src
@@ -213,7 +219,6 @@ AM_CXXFLAGS = -I$(top_srcdir)/src
 noinst_LIBRARIES = libio.a
 libio_a_SOURCES = \
 	io.cpp \
-	link_factory.cpp \
 	uart.cpp \
 	network.cpp
 
@@ -266,7 +271,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/link_factory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/network.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uart.Po@am__quote@
 

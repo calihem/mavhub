@@ -2,14 +2,14 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include <mavlink.h>
 
 #include <iostream> //cout
 using namespace std;
 
 namespace mavhub {
-Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) : AppLayer("crrcsim") {
+Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) : AppInterface("crrcsim"), AppLayer("crrcsim") {
 	// initialize module parameters from conf
 	read_conf(args);
 }
@@ -28,12 +28,12 @@ void Sim_Crrcsimule::run() {
 
 	int system_type = MAV_QUADROTOR;
 	mavlink_message_t msg_heartbeat;
-	mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_heartbeat, system_type, MAV_AUTOPILOT_GENERIC);
+	mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_heartbeat, system_type, MAV_AUTOPILOT_GENERIC);
 
 	Logger::log("Sim_Crrcsimule started", Logger::LOGLEVEL_INFO);
 
 	while(1) {
-		//Logger::log("sim_crrcsim: system_id", static_cast<int>(owner()->system_id()), Logger::LOGLEVEL_INFO);
+		//Logger::log("sim_crrcsim: system_id", static_cast<int>(system_id()), Logger::LOGLEVEL_INFO);
 		send(msg_heartbeat);
 		sleep(1);
 	}

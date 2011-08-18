@@ -1,6 +1,7 @@
 AM_CPPFLAGS = -D_REENTRANT
 
-AM_CPPFLAGS += -Wall -pedantic
+#AM_CPPFLAGS += -Wall -pedantic
+AM_CPPFLAGS += -Wall
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
 AM_CPPFLAGS  += -DSTDOUTLOG 

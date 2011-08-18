@@ -28,7 +28,7 @@
 #define _MAIN_H_
 
 #include "core/setting.h"
-#include "io/link_factory.h"
+#include "protocol/link_factory.h"
 
 #include <inttypes.h> //uint8_t
 #include <string>

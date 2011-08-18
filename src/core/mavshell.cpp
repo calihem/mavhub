@@ -30,9 +30,10 @@
 #include "mavshell.h"
 
 #include "core/logger.h"
-#include "core/protocolstack.h"
+#include "protocol/protocollayer.h"
+#include "protocol/protocolstack.h"
 #include "utility.h"
-#include "io/link_factory.h"
+#include "protocol/link_factory.h"
 
 #include <iterator>     //istream_iterator
 #include <cstdlib>      //exit
@@ -129,7 +130,8 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 				istringstream idstream( argv.at(i+1) );
 				int id;
 				idstream >> id;
-				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
+				cpp_io::IOInterface *link = NULL;
+// 				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
 				if(!link) {
 					send_stream << "No link with ID " << id << " available" << endl;
 					continue;
@@ -164,11 +166,11 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 				istringstream istream( argv.at(i) );
 				int id;
 				istream >> id;
-				if(ProtocolStack::instance().remove_link(id) != 0) {
+// 				if(ProtocolStack::instance().remove_link(id) != 0) {
 					send_stream << "Removing of link with ID " << id << " failed" << endl;
-				} else {
-					send_stream << "Removed link with ID " << id << endl;
-				}
+// 				} else {
+// 					send_stream << "Removed link with ID " << id << endl;
+// 				}
 			}
 			catch(std::out_of_range &e) {
 				send_stream << "ID argument is missing" << endl;
@@ -178,25 +180,27 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 				istringstream istream( argv.at(i+1) );
 				int id;
 				istream >> id;
-				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
+				cpp_io::IOInterface *link = NULL;
+// 				cpp_io::IOInterface *link = ProtocolStack::instance().link(id);
 				if(!link) {
 					send_stream << "No link with ID " << id << " available" << endl;
-					send_stream << ProtocolStack::instance().link_list();
+// 					send_stream << ProtocolStack::instance().link_list();
 				} else {
 					send_stream << *link;
 					i++;
 				}
 			}
 			catch(std::out_of_range &e) {
-				send_stream << ProtocolStack::instance().link_list();
+// 				send_stream << ProtocolStack::instance().link_list();
 			}
 		} else if(argv.at(i).compare("ifup") == 0) {
 			try {
-				cpp_io::IOInterface *link = LinkFactory::build( argv.at(i+1), argv.at(i+2) );
-				istringstream istream( argv.at(i+3) );
-				ProtocolStack::packageformat_t format;
-				istream >> format;
-				int add_failed = ProtocolStack::instance().add_link(link, format);
+// 				cpp_io::IOInterface *link = LinkFactory::build( argv.at(i+1), argv.at(i+2) );
+// 				istringstream istream( argv.at(i+3) );
+// 				ProtocolStack::packageformat_t format;
+// 				istream >> format;
+				int add_failed = 1;
+// 				int add_failed = ProtocolStack::instance().add_link(link, format);
 				if(add_failed) {
 					send_stream << "Bringing interface up failed" << endl;
 				}
@@ -210,10 +214,11 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 				istringstream istream( argv.at(i+1) );
 				int id;
 				istream >> id;
-				const AppLayer *app = ProtocolStack::instance().application(id);
+				const AppLayer<mavlink_message_t> *app = NULL;
+// 				const AppLayer *app = ProtocolStack::instance().application(id);
 				if(!app) {
 					send_stream << "No application with ID " << id << " available" << endl;
-					send_stream << ProtocolStack::instance().application_list();
+// 					send_stream << ProtocolStack::instance().application_list();
 
 				} else {
 					send_stream << *app;
@@ -221,7 +226,7 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 				}
 			}
 			catch(std::out_of_range &e) {
-				send_stream << ProtocolStack::instance().application_list();
+// 				send_stream << ProtocolStack::instance().application_list();
 			}
 		} else if(argv.at(i).compare("loglevel") == 0) {
 			try {
@@ -236,7 +241,7 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 				send_stream << "Loglevel is: " << Logger::loglevel() << endl;
 			}
 		} else if(argv.at(i).compare("print") == 0) {
-			send_stream << ProtocolStack::instance();
+// 			send_stream << ProtocolStack::instance();
 		} else if( (argv.at(i).compare("quit") == 0)
 			  || (argv.at(i).compare("shutdown") == 0) ) {
 			// exit whole process - the easy way

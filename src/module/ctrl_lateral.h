@@ -5,11 +5,11 @@
 
 #include "debug_channels.h"
 #include "core/logger.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 #include "PID.h"
 
 namespace mavhub {
-	class Ctrl_Lateral : public AppLayer {
+	class Ctrl_Lateral : public AppLayer<mavlink_message_t> {
 	public:
 		/// Ctor: lateral controller
 		Ctrl_Lateral(const std::map<std::string, std::string>);

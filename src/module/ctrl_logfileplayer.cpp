@@ -37,7 +37,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
-#include "core/protocolstack.h"
+#include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
@@ -52,7 +52,8 @@ using namespace std;
 
 namespace mavhub {
   Ctrl_LogfilePlayer::Ctrl_LogfilePlayer(const map<string, string> args) : 
-		AppLayer("ctrl_logfileplayer")
+		AppInterface("ctrl_logfileplayer"),
+		AppLayer<mavlink_message_t>("ctrl_logfileplayer")
 	{
 		char header[1024];
 		params["replay_mode"] = QGC;
@@ -117,13 +118,13 @@ namespace mavhub {
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Logfileplayer::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == owner()->system_id()) {
+			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
 				param_request_list = 1;
 			}
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if(mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id()) {
-				Logger::log("Ctrl_Logfileplayer::handle_input: PARAM_SET for this system", (int)owner()->system_id(), Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+				Logger::log("Ctrl_Logfileplayer::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
 				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
 					Logger::log("Ctrl_Logfileplayer::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
 					mavlink_msg_param_set_get_param_id(&msg, param_id);
@@ -174,9 +175,9 @@ namespace mavhub {
 		// heartbeat
 		int system_type = MAV_QUADROTOR;
 		mavlink_message_t msg_hb;
-		mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
 		// "check in"
-		send(msg_hb);
+		AppLayer<mavlink_message_t>::send(msg_hb);
 
 		t = tm1 = dt = dtm1 = 0;
 		linecount = 0;
@@ -201,8 +202,8 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
-					send(msg);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					AppLayer<mavlink_message_t>::send(msg);
 				}
 			}
 
@@ -286,7 +287,7 @@ namespace mavhub {
 													 ch_raw.raw2,
 													 ch_raw.raw3,
 													 ch_raw.raw4);
-										mavlink_msg_huch_hc_raw_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ch_raw);
+										mavlink_msg_huch_hc_raw_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ch_raw);
 										ready_to_send = 1;
 										break; // terminate iteration over logline bytes
 									}
@@ -321,7 +322,7 @@ namespace mavhub {
 													 ch_state.uss, ch_state.baro, ch_state.accz,
 													 ch_state.ir1, ch_state.ir2, ch_state.kal_s0,
 													 ch_state.kal_s1, ch_state.kal_s2);
-										mavlink_msg_huch_ctrl_hover_state_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ch_state);
+										mavlink_msg_huch_ctrl_hover_state_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ch_state);
 										ready_to_send = 1;
 										break;
 									}
@@ -384,7 +385,7 @@ namespace mavhub {
 													 huch_attitude.xgyroint, huch_attitude.ygyroint, huch_attitude.zgyroint,
 													 huch_attitude.xmag, huch_attitude.ymag, huch_attitude.zmag
 													 );
-										mavlink_msg_huch_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_attitude);
+										mavlink_msg_huch_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &huch_attitude);
 										ready_to_send = 1;
 										break;
 									}
@@ -413,7 +414,7 @@ namespace mavhub {
 													 fc_state.rssi, fc_state.batt,
 													 fc_state.nick, fc_state.roll, fc_state.yaw,
 													 fc_state.gas);
-										mavlink_msg_mk_fc_status_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &fc_state);
+										mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &fc_state);
 										ready_to_send = 1;
 										break;
 									}
@@ -458,7 +459,7 @@ namespace mavhub {
 													 huch_vn.ego_beta, huch_vn.ego_speed,
 													 huch_vn.keypoints, huch_vn.error,
 													 huch_vn.debug);
-										mavlink_msg_huch_visual_navigation_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_vn);
+										mavlink_msg_huch_visual_navigation_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &huch_vn);
 										ready_to_send = 1;
 										break;
 									}
@@ -489,7 +490,7 @@ namespace mavhub {
 					usleep(dt * 1000 * params["timescale"]); // 100 Hz
 
 					if(params["replay_mode"] == QGC && ready_to_send > 0) {
-						send(msg);
+						AppLayer<mavlink_message_t>::send(msg);
 						ready_to_send = 0;
 					}
 					else if(params["replay_mode"] == CH && ready_to_send > 0) {
@@ -498,8 +499,8 @@ namespace mavhub {
 						attitude2debugout(&huch_attitude, &debugout);
 						mk_fc_state2debugout(&fc_state, &debugout);
 						ch_raw2debugout(&ch_raw, &debugout);
-						mavlink_msg_mk_debugout_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &debugout);
-						send(msg);
+						mavlink_msg_mk_debugout_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &debugout);
+						AppLayer<mavlink_message_t>::send(msg);
 						// 2. DataCenter befummeln
 						if(!strcmp(dtype_s, "ch_raw")) {
 							Logger::log("logfileplayer: ch_raw hit", Logger::LOGLEVEL_INFO);

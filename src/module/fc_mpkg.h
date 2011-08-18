@@ -5,7 +5,7 @@
 
 #include "core/logger.h"
 // #include "thread.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 //#include "qk_datatypes.h"
 
 #define MKGYRO2RAD 1.52634e-05
@@ -13,13 +13,14 @@
 namespace mavhub {
   // class FC_Mpkg : public cpp_pthread::PThread {
 	/// FlightCtrl MKPackage Receiver
-  class FC_Mpkg : public AppLayer {
+  class FC_Mpkg : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
   public:
 		/// Constructor
 		FC_Mpkg(int component_id);
 		virtual ~FC_Mpkg();
 		/// mavhub protocolstack input handler
 		virtual void handle_input(const mavlink_message_t &msg);
+		virtual void handle_input(const mk_message_t &msg);
 
 		uint16_t component_id;
 

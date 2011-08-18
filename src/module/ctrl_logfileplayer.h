@@ -5,12 +5,12 @@
 
 #include "debug_channels.h"
 #include "core/logger.h"
-#include "core/protocollayer.h"
+#include "protocol/protocollayer.h"
 
 #include <fstream>
 
 namespace mavhub {
-	class Ctrl_LogfilePlayer : public AppLayer {
+	class Ctrl_LogfilePlayer : public AppLayer<mavlink_message_t> {
 	public:
 		Ctrl_LogfilePlayer(const std::map<std::string, std::string> args);
 		virtual ~Ctrl_LogfilePlayer();

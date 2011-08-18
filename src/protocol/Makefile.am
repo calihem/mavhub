@@ -6,4 +6,11 @@ include $(top_srcdir)/am/am_incl_common.am
 noinst_LIBRARIES = libprotocol.a
 
 libprotocol_a_SOURCES = \
+	protocol.cpp \
+	mavlink_protocol.cpp \
+	mkhuchlink_protocol.cpp \
+	mklink_protocol.cpp \
+	protocollayer.cpp \
+	protocolstack.cpp \
+	link_factory.cpp \
 	mkpackage.cpp

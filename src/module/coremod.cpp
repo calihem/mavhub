@@ -1,7 +1,6 @@
 #include "coremod.h"
 
 #include "core/logger.h"
-#include "core/protocolstack.h"
 #include "utility.h"
 
 #include <mavlink.h>
@@ -10,7 +9,9 @@
 using namespace std;
 
 namespace mavhub {
-CoreModule::CoreModule() : AppLayer("coremod") {
+CoreModule::CoreModule() : 
+	AppInterface("coremod"),
+	AppLayer<mavlink_message_t>("coremod") {
 }
 
 CoreModule::~CoreModule() {}
@@ -27,7 +28,7 @@ void CoreModule::run() {
 
 	int system_type = MAV_QUADROTOR;
 	mavlink_message_t msg;
-	mavlink_msg_heartbeat_pack(owner()->system_id(), 23, &msg, system_type, MAV_AUTOPILOT_HUCH);
+	mavlink_msg_heartbeat_pack(system_id(), 23, &msg, system_type, MAV_AUTOPILOT_HUCH);
 
 	Logger::log("CoreModule started with app_name", name(), Logger::LOGLEVEL_INFO);
 

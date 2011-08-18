@@ -3,7 +3,6 @@
 #ifdef HAVE_MKHUCHLINK_H
 
 #include "core/logger.h"
-#include "core/protocolstack.h"
 #include "core/datacenter.h"
 #include "utility.h"
 
@@ -122,24 +121,26 @@ const int8_t MKApp::parameter_ids[parameter_count][15] = {
 };
 
 
-MKApp::MKApp(const Logger::log_level_t loglevel, const std::string& serial_port, const unsigned int baudrate) :
-	AppLayer("mk_app", loglevel),
-	mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
-	message_time( get_time_us() ),
-	attitude_time( get_time_us() ),
-	parameter_request(255),
-	parameter_time(0) {
-
-	pthread_mutex_init(&tx_mav_mutex, NULL);
-	pthread_mutex_init(&tx_mk_mutex, NULL);
-	mkhuchlink_msg_init(&tx_mk_msg);
+MKApp::MKApp(const Logger::log_level_t loglevel) :
+	AppInterface("mk_app", loglevel),
+	AppLayer<mavlink_message_t>("mk_app", loglevel),
+	AppLayer<mkhuch_message_t>("mk_app", loglevel)
+// 	mk_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
+// 	message_time( get_time_us() ),
+// 	attitude_time( get_time_us() ),
+// 	parameter_request(255),
+// 	parameter_time(0) {
+	{
+// 	pthread_mutex_init(&tx_mav_mutex, NULL);
+// 	pthread_mutex_init(&tx_mk_mutex, NULL);
+// 	mkhuchlink_msg_init(&tx_mk_msg);
 }
 
 MKApp::~MKApp() {}
 
 void MKApp::handle_input(const mavlink_message_t &msg) {
 	log("MKApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
-
+/*
 	switch(msg.msgid) {
 		case MAVLINK_MSG_ID_PING: {
 			mavlink_ping_t ping;
@@ -226,12 +227,12 @@ void MKApp::handle_input(const mavlink_message_t &msg) {
 			break;
 		default:
 			break;
-	}
+	}*/
 }
 
 void MKApp::handle_input(const mkhuch_message_t& msg) {
 	log("MKApp got mkhuch_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
-
+/*
 	switch(msg.type) {
 		case MKHUCH_MSG_TYPE_MK_IMU: {
 			const mkhuch_mk_imu_t *mk_imu = reinterpret_cast<const mkhuch_mk_imu_t*>(msg.data);
@@ -372,17 +373,18 @@ void MKApp::handle_input(const mkhuch_message_t& msg) {
 		}
 		default:
 			break;
-	}
+	}*/
 }
 
 void MKApp::print(std::ostream &os) const {
-	AppLayer::print(os);
+// 	AppLayer<mavlink_message_t>::print(os);
 
-	os << "* device: " << mk_dev;
+// 	os << "* device: " << mk_dev;
 }
 
 void MKApp::run() {
-	fd_set read_fds;
+	log("MKApp running", Logger::LOGLEVEL_DEBUG);
+/*	fd_set read_fds;
 	int fds_ready;
 	timeval timeout;
 	uint8_t input;
@@ -431,53 +433,53 @@ void MKApp::run() {
 			}
 		}
 	}
-	log("MKApp stopped", Logger::LOGLEVEL_DEBUG);
+	log("MKApp stopped", Logger::LOGLEVEL_DEBUG);*/
 }
 
-size_t MKApp::send(const mkhuch_message_t& msg) {
-	size_t sent = 0;
+// size_t MKApp::send(const mkhuch_message_t& msg) {
+// 	size_t sent = 0;
 
-	sent += mk_dev.write(&(msg.sync), 3);
-	sent += mk_dev.write(msg.data, msg.len);
-	sent += mk_dev.write(&(msg.hash), 1);
+// 	sent += mk_dev.write(&(msg.sync), 3);
+// 	sent += mk_dev.write(msg.data, msg.len);
+// 	sent += mk_dev.write(&(msg.hash), 1);
 
-	return sent;
-}
+// 	return sent;
+// }
 
-size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t size) {
-	size_t sent = 0;
-	char buf = MKHUCH_MESSAGE_START;
-	Lock tx_lock(tx_mk_mutex);
+// size_t MKApp::send(const mkhuch_msg_type_t type, const void *data, const uint8_t size) {
+// 	size_t sent = 0;
+// 	char buf = MKHUCH_MESSAGE_START;
+// 	Lock tx_lock(tx_mk_mutex);
+// 
+// 	//send header and data
+// 	sent += mk_dev.write(&buf, 1);
+// 	sent += mk_dev.write(&type, 1);
+// 	sent += mk_dev.write(&size, 1);
+// 	sent += mk_dev.write(data, size);
+// 
+// 	//calc and send hash value
+// 	uint8_t hash;
+// 	mkhuchlink_hash_init(&hash);
+// 	hash = mkhuchlink_hash_update(type, hash);
+// 	hash = mkhuchlink_hash_update(size, hash);
+// 	const uint8_t *data_ptr = static_cast<const uint8_t*>(data);
+// 	for(uint8_t i=0; i<size; i++) {
+// 		hash = mkhuchlink_hash_update(*data_ptr++, hash);
+// 	}
+// 	hash = ~hash;
+// 	sent += mk_dev.write(&hash, 1);
 
-	//send header and data
-	sent += mk_dev.write(&buf, 1);
-	sent += mk_dev.write(&type, 1);
-	sent += mk_dev.write(&size, 1);
-	sent += mk_dev.write(data, size);
+// 	return sent;
+// }
 
-	//calc and send hash value
-	uint8_t hash;
-	mkhuchlink_hash_init(&hash);
-	hash = mkhuchlink_hash_update(type, hash);
-	hash = mkhuchlink_hash_update(size, hash);
-	const uint8_t *data_ptr = static_cast<const uint8_t*>(data);
-	for(uint8_t i=0; i<size; i++) {
-		hash = mkhuchlink_hash_update(*data_ptr++, hash);
-	}
-	hash = ~hash;
-	sent += mk_dev.write(&hash, 1);
-
-	return sent;
-}
-
-void MKApp::send_heartbeat() {
-	Lock tx_lock(tx_mav_mutex);
+// void MKApp::send_heartbeat() {
+/*	Lock tx_lock(tx_mav_mutex);
 	mavlink_msg_heartbeat_pack(owner()->system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
-	send(tx_mav_msg);
-}
+	send(tx_mav_msg);*/
+// }
 
-void MKApp::send_mavlink_param_value(const mk_param_type_t param_type) {
-	Lock tx_lock(tx_mav_mutex);
+// void MKApp::send_mavlink_param_value(const mk_param_type_t param_type) {
+/*	Lock tx_lock(tx_mav_mutex);
 
 	mavlink_msg_param_value_pack(owner()->system_id(),
 		component_id,
@@ -486,18 +488,18 @@ void MKApp::send_mavlink_param_value(const mk_param_type_t param_type) {
 		static_cast<float>( get_parameter(param_type) ),
 		parameter_count,
 		param_type);
-	send(tx_mav_msg);
-}
+	send(tx_mav_msg);*/
+// }
 
-const int MKApp::parameter_id_to_index(const int8_t *parameter_id) {
+// const int MKApp::parameter_id_to_index(const int8_t *parameter_id) {
 	//TODO: use efficient search algorithm
-	for(int i=0; i<parameter_count; i++) {
+/*	for(int i=0; i<parameter_count; i++) {
 		if(strncmp( (const char*)parameter_id, (const char*)parameter_ids[i], 15) == 0) {
 			return i;
 		}
-	}
-	return -1;
-}
+	}*/
+// 	return -1;
+// }
 
 } // namespace mavhub
 
