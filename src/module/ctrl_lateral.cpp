@@ -252,8 +252,8 @@ namespace mavhub {
 			send_debug(&msg, &dbg, 106, roll, component_id);
 			send_debug(&msg, &dbg, 107, atan2f(-nick, -roll), component_id);
 
-			DataCenter::set_extctrl_nick(nick);
-			DataCenter::set_extctrl_roll(roll);
+			//DataCenter::set_extctrl_nick(nick);
+			//DataCenter::set_extctrl_roll(roll);
 			DataCenter::set_extctrl_yaw(yaw*-1.0);
 			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
