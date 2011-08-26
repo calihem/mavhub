@@ -25,7 +25,7 @@ namespace gstreamer {
 using namespace std;
 
 GMainLoop *VideoServer::loop = NULL;
-std::map<VideoClient*, GstElement*> VideoServer::client_sink_map;
+std::multimap<VideoClient*, GstElement*> VideoServer::client_sink_map;
 
 VideoServer::VideoServer(int *argc, char **argv, const std::string &pipeline_description) : 
 	pipeline(NULL) {
@@ -34,7 +34,7 @@ VideoServer::VideoServer(int *argc, char **argv, const std::string &pipeline_des
 	
 	GError *error = NULL;
 	pipeline = gst_parse_launch(pipeline_description.c_str(), &error);
-	if(!pipeline) {
+	if(error) {
 		g_print("GStreamer parse error: %s\n", error->message);
 	}
 }
@@ -130,17 +130,59 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 		gst_buffer_unref(buffer);
 		return;
 	}
-	assert( GST_BUFFER_SIZE(buffer) == width*height*3);
+	
+	gint bpp;
+	if( !gst_structure_get_int(struc, "bpp", &bpp) ) {
+		assert(width != 0 && height != 0);
+		bpp = 8*GST_BUFFER_SIZE(buffer)/width/height;
+	} else {
+		assert(8*GST_BUFFER_SIZE(buffer) == width*height*bpp);
+	}
 
 	unsigned char *buf_data = GST_BUFFER_DATA(buffer);
 	std::map<VideoClient*, GstElement*>::iterator cli_sink_iter = client_sink_map.begin();
 	for( ; cli_sink_iter != client_sink_map.end(); ++cli_sink_iter) {
 		if(cli_sink_iter->second != element) continue;
 
-		cli_sink_iter->first->handle_video_data(buf_data, width, height);
+		cli_sink_iter->first->handle_video_data(buf_data, width, height, bpp);
 	}
 
 	gst_buffer_unref(buffer);
+}
+
+void VideoServer::print_elements() const {
+	GstIterator *iter = gst_bin_iterate_elements( GST_BIN(pipeline) );
+	gpointer item;
+
+	g_print ("Pipeline elements:\n");
+
+	bool done = false;
+	while (!done) {
+		switch (gst_iterator_next (iter, &item)) {
+			case GST_ITERATOR_OK:
+// 				... use/change item here...
+				gchar *name;
+				g_object_get( G_OBJECT(item), "name", &name, NULL);
+				g_print ("\t '%s'.\n", name);
+				g_free (name);
+				gst_object_unref (item);
+				break;
+			case GST_ITERATOR_RESYNC:
+// 				...rollback changes to items...
+				gst_iterator_resync (iter);
+				break;
+			case GST_ITERATOR_ERROR:
+// 				...wrong parameters were given...
+				done = true;
+				break;
+			case GST_ITERATOR_DONE:
+				done = true;
+				break;
+		}
+	}
+	gst_iterator_free (iter);
+
+	g_print("\n");
 }
 
 void VideoServer::release(const VideoClient *client) {

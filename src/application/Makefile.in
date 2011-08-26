@@ -56,7 +56,7 @@ libapp_a_LIBADD =
 am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
 	attitude_filter_app.$(OBJEXT) app_store.$(OBJEXT) \
 	mavlink_mk_app.$(OBJEXT) mavlink_mkhuch_app.$(OBJEXT) \
-	mk_app.$(OBJEXT) opengl_app.$(OBJEXT)
+	mk_app.$(OBJEXT) opengl_app.$(OBJEXT) slam_app.$(OBJEXT)
 libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -226,7 +226,8 @@ libapp_a_SOURCES = \
 	mavlink_mk_app.cpp \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
-	opengl_app.cpp
+	opengl_app.cpp \
+	slam_app.cpp
 
 all: all-am
 
@@ -283,6 +284,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mkhuch_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opengl_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slam_app.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

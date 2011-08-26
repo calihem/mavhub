@@ -19,6 +19,7 @@
 #include "acc_calibration_app/acc_calibration_app.h"
 #include "attitude_filter_app/attitude_filter_app.h"
 #include "opengl_app.h"
+#include "slam_app.h"
 
 #include <iostream>
 #include <algorithm> //transform
@@ -156,6 +157,13 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		OpenGLApp *gl_app = new OpenGLApp(loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(gl_app);
 #endif // HAVE_GL_GLUT_H
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "slam_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+		SLAMApp *slam_app = new SLAMApp(loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
+#endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "sim_crrcsim_app") {
 #ifdef HAVE_MAVLINK_H

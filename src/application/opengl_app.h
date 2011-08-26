@@ -32,7 +32,7 @@ namespace mavhub {
 
 			virtual void handle_input(const mavlink_message_t &msg);
 #ifdef HAVE_GSTREAMER
-			virtual void handle_video_data(const unsigned char *data, const int width, const int height);
+			virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
 #endif // HAVE_GSTREAMER
 
 		protected:

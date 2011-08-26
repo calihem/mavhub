@@ -14,9 +14,13 @@ class VideoClient {
 	public:
 		VideoClient() {};
 		/**
-		 * \brief Handle 3 channel video data.
+		 * \brief Handle video data.
+		 * \param data pointer to image data
+		 * \param width width of image
+		 * \param height height of image
+		 * \param bpp bits per pixel
 		 */
-		virtual void handle_video_data(const unsigned char *data, const int width, const int height) = 0;
+		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) = 0;
 
 	protected:
 		VideoServer *server;
