@@ -1,6 +1,8 @@
 #ifndef _SIM_CRRCSIM_H_
 #define _SIM_CRRCSIM_H_
 
+#include "PID.h"
+
 #include "Ivy/ivy.h"
 #include "Ivy/ivyloop.h"
 #include "Ivy/timer.h"
@@ -24,6 +26,7 @@ namespace mavhub {
 
 			double phi, theta, psi;
 			double x,y,z;
+			PID* pid_alt;
 
 			virtual void read_conf(const std::map<std::string, std::string> args);
 			//virtual void handle_timer (TimerId id, void *data, unsigned long delta);

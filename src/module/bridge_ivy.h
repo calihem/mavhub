@@ -31,6 +31,10 @@ namespace mavhub {
 			virtual void read_conf(const std::map<std::string, std::string> args);
 			//virtual void handle_timer (TimerId id, void *data, unsigned long delta);
 
+			// trying to use member functions as callbacks in libivy
+			//virtual void  afterSelect_cb(void* arg);
+			//void handle_timer (TimerId id, void *data, unsigned long delta);
+			
 	};
 	
 	// ----------------------------------------------------------------------------

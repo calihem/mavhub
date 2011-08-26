@@ -11,6 +11,7 @@ namespace mavhub {
 		virtual double calc(double dt);
 		virtual double calc(double dt, double meas);
 		virtual double calc(double dt, double meas, double setpoint);
+		virtual double calc2(double dt, double meas);
 		/// controller integral getter
 		virtual double getIntegral();
 		/// controller integral setter
