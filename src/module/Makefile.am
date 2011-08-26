@@ -26,4 +26,5 @@ libmodule_a_SOURCES = \
 	PID.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
-	stat_meanvar.cpp
+	stat_meanvar.cpp \
+	bridge_ivy.cpp

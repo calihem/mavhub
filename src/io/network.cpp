@@ -79,6 +79,14 @@ int Socket::open(const int type, const int protocol) {
 
 	//socket(int domain, int type, int protocol)
 	fd = socket(PF_INET, type, protocol);
+
+	// for use with ivy
+	// int one = 1;
+	// if (setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof (one)) < 0)
+	// 	{
+	// 		perror ("*** set socket option REUSEPORT ***");
+	// 	}
+
 	return fd;
 }
 
