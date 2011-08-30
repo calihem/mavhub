@@ -61,7 +61,8 @@ am_libmodule_a_OBJECTS = pp.$(OBJEXT) pp_uss.$(OBJEXT) \
 	ctrl_logger.$(OBJEXT) ctrl_wifimeter.$(OBJEXT) \
 	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) \
 	filter_median.$(OBJEXT) PID.$(OBJEXT) sim_crrcsim.$(OBJEXT) \
-	testcore.$(OBJEXT) stat_meanvar.$(OBJEXT) bridge_ivy.$(OBJEXT)
+	testcore.$(OBJEXT) stat_meanvar.$(OBJEXT) bridge_ivy.$(OBJEXT) \
+	exec_timing.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -247,7 +248,8 @@ libmodule_a_SOURCES = \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \
-	bridge_ivy.cpp
+	bridge_ivy.cpp \
+	exec_timing.cpp
 
 all: all-am
 
@@ -307,6 +309,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_logger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_wifimeter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_zrate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/exec_timing.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fc_mpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_fir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_kalmancv.Po@am__quote@

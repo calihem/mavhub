@@ -76,7 +76,9 @@ namespace mavhub {
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HEARTBEAT:
 			Logger::log("Bridge_Ivy got ml heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
-			IvySendMsg("%d ALIVE 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", msg.sysid);
+			//IvySendMsg("%d ALIVE 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", msg.sysid);
+			IvySendMsg("%d ALIVE 50,162,250,192,221,27,111,57,63,249,122,206,139,11,197,244", msg.sysid);
+
 			break;
 		case MAVLINK_MSG_ID_ATTITUDE:
 			// phi = mavlink_msg_attitude_get_roll(&msg);

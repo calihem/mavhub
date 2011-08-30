@@ -72,6 +72,7 @@ namespace mavhub {
 		numchan = params["numsens"];
 		kal = new Kalman_CV(); // FIXME: should be parameterised
 		kal_setRFromParams();
+		exec_tmr = new Exec_Timing(ctl_update_rate);
 		pid_alt = new PID(ctl_bias, ctl_Kc, ctl_Ti, ctl_Td);
 
 		typemap.reserve(numchan);
@@ -279,8 +280,6 @@ namespace mavhub {
   void Ctrl_Hover::run() {
 		int buf[1]; // to MK buffer
 		uint8_t flags = 0;
-		uint64_t dt = 0; // in microseconds
-		struct timeval tk, tkm1; // timevals
 		ostringstream o;
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
@@ -317,20 +316,24 @@ namespace mavhub {
 		// 100 Hz is too much at the moment, especially with more than one
 		// UDP interface
 		// int update_rate = 50; // 100 Hz
-		int wait_freq = ctl_update_rate? 1000000 / ctl_update_rate: 0;
-		int wait_time = wait_freq;
-		uint64_t frequency = wait_time;
-		uint64_t start = get_time_us();
-		uint64_t usec;
-
+		uint64_t dt = 0; // in microseconds
+		// using Exec_Timing class now
+		// struct timeval tk, tkm1; // timevals
+		// int wait_freq = ctl_update_rate? 1000000 / ctl_update_rate: 0;
+		int wait_time;
+		// uint64_t frequency = wait_time;
+		// uint64_t start = get_time_us();
+		// uint64_t usec;
+		// gettimeofday(&tk, NULL);
+		// gettimeofday(&tkm1, NULL);
+		
 		vector<double> covvec(2);
 
-		gettimeofday(&tk, NULL);
-		gettimeofday(&tkm1, NULL);
-		
-		// rel
+		////////////////////
+		// set autopilot flags for MK control
+		// relative
 		//flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_HEIGHT_CTRL1 );
-		// abs
+		// absolute
 		flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
 		extctrl.remote_buttons = 0;	/* for lcd menu */
 		extctrl.nick = 0; //nick;
@@ -338,8 +341,7 @@ namespace mavhub {
 		extctrl.yaw = 0; //yaw;
 		extctrl.gas = 0; //gas;	/* MotorGas = min(ExternControl.Gas, StickGas) */
 
-		//extctrl.height = 0; //height;
-		/* for autopilot */
+		// for autopilot
 		extctrl.AP_flags = flags;
 		extctrl.frame = 'E';	/* get ack from flightctrl */
 		extctrl.config = 0;	/* activate external control via serial iface in FlightCtrl */
@@ -368,34 +370,40 @@ namespace mavhub {
 		Logger::log("Ctrl_Hover debug request sent to FC", Logger::LOGLEVEL_INFO);
 
 		while(true) {
-			/* wait time */
-			usec = get_time_us();
-			uint64_t end = usec;
-			wait_time = wait_freq - (end - start);
-			// wait_time = (wait_time < 0)? 0: wait_time;
-			if(wait_time < 0) {
-				Logger::log("ALARM: time", Logger::LOGLEVEL_INFO);
-				wait_time = 0;
-			}
+
+			// /* wait time */
+			// usec = get_time_us();
+			// uint64_t end = usec;
+			// wait_time = wait_freq - (end - start);
+
+			// // FIXME: adaptive timing on demand?
+			// if(wait_time < 0) {
+			// 	Logger::log("ALARM: time", Logger::LOGLEVEL_INFO);
+			// 	wait_time = 0;
+			// }
+
+			wait_time = exec_tmr->calcSleeptime();
 		
 			/* wait */
 			usleep(wait_time);
 			//usleep(10);
 
-			/* calculate frequency */
-			end = get_time_us();
-			frequency = (15 * frequency + end - start) / 16;
-			start = end;
+			// /* calculate frequency */
+			// end = get_time_us();
+			// frequency = (15 * frequency + end - start) / 16;
+			// start = end;
 
-			// Logger::log("Ctrl_Hover slept for", wait_time, Logger::LOGLEVEL_INFO);
+			// // Logger::log("Ctrl_Hover slept for", wait_time, Logger::LOGLEVEL_INFO);
 
-			gettimeofday(&tk, NULL);
-			//timediff(tdiff, tkm1, tk);
-			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
-			tkm1 = tk; // save current time
+			// gettimeofday(&tk, NULL);
+			// //timediff(tdiff, tkm1, tk);
+			// dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
+			// tkm1 = tk; // save current time
 
-			// send pixhawk std structs to groundstation
-			// FIXME: moved here 2011-05-25
+			exec_tmr->updateExecStats();
+			
+			// FIXME: do timing
+
 			// manual control
 			mavlink_msg_manual_control_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
 			AppLayer<mavlink_message_t>::send(msg);

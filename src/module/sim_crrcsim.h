@@ -2,6 +2,7 @@
 #define _SIM_CRRCSIM_H_
 
 #include "PID.h"
+#include "exec_timing.h"
 
 #include "Ivy/ivy.h"
 #include "Ivy/ivyloop.h"
@@ -24,10 +25,24 @@ namespace mavhub {
 	private:
 			uint16_t component_id;
 
+			/// attitude variables
 			double phi, theta, psi;
+			/// position variables
 			double x,y,z;
+			/// PID altitude controller
 			PID* pid_alt;
+			/// parameter dict
+			std::map<std::string, double>	params;
+			/// params requested for transmission
+			int param_request_list;
+			/// execution timing
+			Exec_Timing* exec_tmr;
 
+			// methods
+
+			/// read data from config
+			virtual void conf_defaults();
+			/// ivy timer callback
 			virtual void read_conf(const std::map<std::string, std::string> args);
 			//virtual void handle_timer (TimerId id, void *data, unsigned long delta);
 

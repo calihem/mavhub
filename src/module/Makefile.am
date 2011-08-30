@@ -27,4 +27,5 @@ libmodule_a_SOURCES = \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \
-	bridge_ivy.cpp
+	bridge_ivy.cpp \
+	exec_timing.cpp

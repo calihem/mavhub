@@ -8,6 +8,7 @@
 #include "filter_kalmancv.h"
 #include "stat_meanvar.h"
 #include "PID.h"
+#include "exec_timing.h"
 #include "protocol/protocollayer.h"
 #include "qk_helper.h"
 #include "pp.h"
@@ -90,6 +91,8 @@ namespace mavhub {
 		Kalman_CV* kal;
 		/// PID instance (altitude)
 		PID* pid_alt;
+		/// execution timing
+		Exec_Timing* exec_tmr;
 		/// number of sensor inputs processed by the module
 		int numchan;
 		/// parameters

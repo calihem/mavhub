@@ -251,7 +251,7 @@ namespace mavhub {
 
 	int SenSrf02::get_range() {
 		int reading;
-		double reading_mm;
+		//double reading_mm;
 		uint8_t buffer[2];
 		buffer[0] = SRF02_REG_RD_ECHO_0; // command register
 		i2c_write_bytes(fd, (uint8_t *)buffer, 1);
@@ -259,7 +259,7 @@ namespace mavhub {
 		i2c_read_bytes(fd, (uint8_t *)buffer, 2);
 
 		reading = (int)(buffer[0] << 8) | buffer[1];
-		reading_mm = reading * 0.17;
+		//reading_mm = reading * 0.17;
 		return reading;
 	}
 
