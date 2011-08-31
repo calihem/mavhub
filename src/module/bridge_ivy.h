@@ -34,6 +34,7 @@ namespace mavhub {
 			// trying to use member functions as callbacks in libivy
 			//virtual void  afterSelect_cb(void* arg);
 			//void handle_timer (TimerId id, void *data, unsigned long delta);
+			//void DlSettingCallback (IvyClientPtr app, void *data, int argc, char **argv);
 			
 	};
 	

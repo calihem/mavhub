@@ -1,3 +1,33 @@
+/****************************************************************************
+** Copyright 2011 Humboldt-Universitaet zu Berlin
+**
+** This file is part of MAVHUB.
+**
+** MAVHUB is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** MAVHUB is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with MAVHUB.  If not, see <http://www.gnu.org/licenses/>.
+**
+*****************************************************************************/
+/**
+ * \file exec_timing.h
+ * \date created at 2011/08/30
+ * \author Oswald Berthold
+ *
+ * \brief Handle timing calculation for execution timing
+ *        of controller modules
+ *
+ * \sa exec_timing.cpp
+ */
+
 // Execution timing class
 
 #ifndef _EXEC_TIMING_H_

@@ -25,6 +25,20 @@ void ByeCallback (IvyClientPtr app, void *data, int argc, char **argv)
 	IvyStop ();
 }
 
+/* callback associated to "Hello" messages */
+void DlSettingCallback (IvyClientPtr app, void *data, int argc, char **argv)
+{                                  
+	//mavlink_message_t msg;
+	//const char* arg = (argc < 1) ? "" : argv[0];
+	//IvySendMsg ("Bonjour%s", arg);
+	if(argc == 4) {
+		printf("bridge_ivy/DlSettingCallback: %s, %s, %s, %s\n",
+					 argv[0], argv[1], argv[2], argv[3]);
+	}
+	// mavlink_msg_param_value_pack(atoi(argv[1]), 27, &msg, (const int8_t*) "ctl_mode", atoi(argv[3]), 1, 0);
+	// AppLayer<mavlink_message_t>::send(msg);
+}
+
 // typedef struct {
 // 	int a;
 // 	double b;
@@ -66,7 +80,7 @@ namespace mavhub {
 		IvyBindMsg (HelloCallback, 0, "^Hello(.*)");
 		/* binding of ByeCallback to 'Bye' */
 		IvyBindMsg (ByeCallback, 0, "^Bye$");
-
+		IvyBindMsg (DlSettingCallback, 0, "^(dl DL_SETTING) ([0-9]*) ([0-9]*) ([0-9]*.[0-9]*)");
 	}
 
 	Bridge_Ivy::~Bridge_Ivy() {}
@@ -78,7 +92,6 @@ namespace mavhub {
 			Logger::log("Bridge_Ivy got ml heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
 			//IvySendMsg("%d ALIVE 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", msg.sysid);
 			IvySendMsg("%d ALIVE 50,162,250,192,221,27,111,57,63,249,122,206,139,11,197,244", msg.sysid);
-
 			break;
 		case MAVLINK_MSG_ID_ATTITUDE:
 			// phi = mavlink_msg_attitude_get_roll(&msg);
@@ -90,7 +103,8 @@ namespace mavhub {
 			break;
 		case MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY:
 			mavlink_msg_huch_sensor_array_decode(&msg, &sa);
-			IvySendMsg("%d PRESSURE 0.0 0.0 %f %f", msg.sysid, sa.data[0], sa.data[1]);
+			//IvySendMsg("%d PRESSURE 0.0 0.0 %f %f", msg.sysid, sa.data[0], sa.data[1]);
+			IvySendMsg("%d HUCH_SENSOR_RAW %f %f", msg.sysid, sa.data[0], sa.data[1]);
 			break;
 		default:
 			break;

@@ -10,7 +10,9 @@
 using namespace std;
 
 namespace mavhub {
-	Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) : AppInterface("crrcsim"), AppLayer("crrcsim") {
+	Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) : 
+		AppInterface("crrcsim"), AppLayer("crrcsim"),
+		ctl_mode(0) {
 		// try and set reasonable defaults
 		conf_defaults();
 		// initialize module parameters from conf
@@ -82,7 +84,7 @@ namespace mavhub {
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Sim_Crrcsimule::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
 			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
-				param_request_list = 1;
+				param_request_list = true;
 			}
 			break;
 
@@ -100,20 +102,26 @@ namespace mavhub {
 						if(!strcmp(p->first.data(), (const char *)param_id)) {
 							params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
 							Logger::log("x Sim_Crrcsimule::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
-							pid_alt->setSp(params["ac_sp"]);
-							pid_alt->setBias(params["ac_pid_bias"]);
-							pid_alt->setKc(params["ac_pid_Kc"]);
-							pid_alt->setTi(params["ac_pid_Ki"]);
-							pid_alt->setTd(params["ac_pid_Kd"]);
-							pid_alt->setIntegral(0.0);
 						}
 					}
+					// update variables
+					pid_alt->setSp(params["ac_sp"]);
+					pid_alt->setBias(params["ac_pid_bias"]);
+					pid_alt->setKc(params["ac_pid_Kc"]);
+					pid_alt->setTi(params["ac_pid_Ki"]);
+					pid_alt->setTd(params["ac_pid_Kd"]);
+					pid_alt->setIntegral(0.0);
+					ctl_mode = static_cast<int>(params["ctl_mode"]);
 				}
 			}
 			break;
 
 		case MAVLINK_MSG_ID_DEBUG:
 			Logger::log("Sim_Crrcsimule::handle_input: received debug from", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+			break;
+
+		case MAVLINK_MSG_ID_HUCH_SIM_CTRL:
+			Logger::log("Sim_Crrcsimule::handle_input: received sim_ctrl from", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
 			break;
 		default:
 			break;
@@ -128,9 +136,6 @@ namespace mavhub {
 			return;
 		}
 
-		// int system_type = MAV_QUADROTOR;
-		// mavlink_message_t msg_heartbeat;
-		// mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_heartbeat, system_type, MAV_AUTOPILOT_HUCH);
 		mavlink_message_t msg;
 		mavlink_manual_control_t ctl;
 		int sleeptime;
@@ -138,65 +143,51 @@ namespace mavhub {
 
 		Logger::log("Sim_Crrcsimule started, sys_id", system_id(), Logger::LOGLEVEL_INFO);
 
-		// ivy_cb_t blub;
-		// blub.a = 1;
-		// blub.b = -3.14;
-		
-		//IvyAfterSelect
-		//IvySetAfterSelectHook((void *)afterSelect_cb, &blub);
-		//pt2Function = &afterSelect_cb;
-		//IvySetBeforeSelectHook(pt2Function, (void*)0);
-
-
-		//int delay = 1000;
-		//tid = TimerRepeatAfter (0, delay, handle_timer, 0);
-
-		//IvyMainLoop();
+		ctl.target = 0;
+		ctl.roll = 0.;
+		ctl.pitch = 0.;
+		ctl.yaw = 0.;
+		ctl.roll_manual = 0;
+		ctl.pitch_manual = 0;
+		ctl.yaw_manual = 0;
+		ctl.thrust_manual = 0;
 
 		while(1) {
 			//Logger::log("sim_crrcsim: system_id", static_cast<int>(system_id()), Logger::LOGLEVEL_INFO);
 			//AppLayer<mavlink_message_t>::send(msg_heartbeat);
 			//send(msg_heartbeat);
 			//IvySendMsg("%d MAVHUB_ALIVE %f", 155, 1.0);
-			ctl.target = 0;
-			ctl.roll = 0.;
-			ctl.pitch = 0.;
-			ctl.yaw = 0.;
-			ctl.roll_manual = 0;
-			ctl.pitch_manual = 0;
-			ctl.yaw_manual = 0;
-			ctl.thrust_manual = 0;
 
-			// FIXME: do_timing(), Timing als Klasse?
+			// run method exec timing stuff
 			sleeptime = exec_tmr->calcSleeptime();
 			//Logger::log("sim_crrcsim.cpp: sleeptime: ", sleeptime, Logger::LOGLEVEL_INFO);
 			usleep(sleeptime);
 			dt = exec_tmr->updateExecStats();
-			
-			if(param_request_list) {
-				Logger::log("Sim_Crrcsimule::run: param request", Logger::LOGLEVEL_INFO);
-				param_request_list = 0;
 
-				// update params from kal meas noise covmat
-				//kal_getParamsFromR();
+			// respond to parameter list request
+			param_request_respond(param_request_list);
 
-				typedef map<string, double>::const_iterator ci;
-				for(ci p = params.begin(); p!=params.end(); ++p) {
-					// Logger::log("sim_crrcsimule param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
-					AppLayer<mavlink_message_t>::send(msg);
-				}
+			switch(ctl_mode) {
+			case CTL_MODE_BUMP:
+				ctl.thrust = 0.41;
+				break;
+			case CTL_MODE_AC:
+				//ctl.thrust = 0.5;
+				//ctl.thrust = pid_alt->calc2(0.0025, z);
+				ctl.thrust = pid_alt->calc((double)dt * 1e-6, z);
+				break;
+			case CTL_MODE_NULL:
+			default:
+				ctl.thrust = 0.0;
+				break;
 			}
-
-			//ctl.thrust = 0.5;
-			//ctl.thrust = pid_alt->calc2(0.0025, z);
-			ctl.thrust = pid_alt->calc((double)dt * 1e-6, z);
 			//Logger::log("sim_crrcsimule: ctl.thust = ", ctl.thrust, Logger::LOGLEVEL_INFO);
 			mavlink_msg_manual_control_encode(42, 0, &msg, &ctl);
-			AppLayer<mavlink_message_t>::send(msg);
+			//AppLayer<mavlink_message_t>::send(msg);
 		}
 	}
 
+	// read config file
 	void Sim_Crrcsimule::read_conf(const map<string, string> args) {
 		map<string,string>::const_iterator iter;
 		Logger::log("Sim_Crrcsimule::read_conf", Logger::LOGLEVEL_INFO);
@@ -206,17 +197,35 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> component_id;
 		}
-		Logger::log("Sim_Crrcsimule::read_conf: component_id", component_id, Logger::LOGLEVEL_INFO);
+		Logger::log("Sim_Crrcsimule::read_conf: sysid, compid", system_id(), component_id, Logger::LOGLEVEL_INFO);
 	}
 
+	// set defaults
 	void Sim_Crrcsimule::conf_defaults() {
-		param_request_list = 0;
-		params["ac_pid_bias"] = 0.41;
+		param_request_list = false;
+		params["ac_pid_bias"] = 0.39;
 		params["ac_pid_Kc"] = 0.01;
-		params["ac_pid_Ki"] = 0.0;
-		params["ac_pid_Kd"] = 0.0;
+		params["ac_pid_Ki"] = 2.0;
+		params["ac_pid_Kd"] = 0.4;
 		params["ac_pid_scalef"] = 0.0;
 		params["ac_sp"] = 2.23;
+		params["ctl_mode"] = 0;
 		params["ctl_update_rate"] = 100; // Hz
 	}
+
+	// handle parameter list request
+	void Sim_Crrcsimule::param_request_respond(bool param_request) {
+		if(param_request) {
+			mavlink_message_t msg;
+			Logger::log("Sim_Crrcsimule::param_request_respond", Logger::LOGLEVEL_INFO);
+			param_request_list = false;
+			typedef map<string, double>::const_iterator ci;
+			for(ci p = params.begin(); p!=params.end(); ++p) {
+				// Logger::log("sim_crrcsimule param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+				AppLayer<mavlink_message_t>::send(msg);
+			}
+		}
+	}
+
 } // namespace mavhub
