@@ -22,11 +22,18 @@ namespace mavhub {
 			virtual ~Bridge_Ivy();
 			virtual void handle_input(const mavlink_message_t &msg);
 
+			virtual void send_mavlink_msg(mavlink_message_t* msg);
+
+			virtual bool doDlValue_();
+			virtual void _doDlValue(bool val);
+
 		protected:
 			virtual void run();
 
 	private:
 			uint16_t component_id;
+
+			bool doDlValue;
 
 			virtual void read_conf(const std::map<std::string, std::string> args);
 			//virtual void handle_timer (TimerId id, void *data, unsigned long delta);

@@ -24,6 +24,7 @@ libmodule_a_SOURCES = \
 	filter_fir.cpp \
 	filter_median.cpp \
 	PID.cpp \
+	Bumper.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \

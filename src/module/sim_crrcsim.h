@@ -2,6 +2,7 @@
 #define _SIM_CRRCSIM_H_
 
 #include "PID.h"
+#include "Bumper.h"
 #include "exec_timing.h"
 
 #include "Ivy/ivy.h"
@@ -37,6 +38,8 @@ namespace mavhub {
 			double phi, theta, psi;
 			/// position variables
 			double x,y,z;
+			/// position estimates
+			double x_hat, y_hat, z_hat;
 			/// controller mode
 			int ctl_mode;
 			/// PID altitude controller
@@ -47,6 +50,8 @@ namespace mavhub {
 			bool param_request_list;
 			/// execution timing
 			Exec_Timing* exec_tmr;
+			/// Bump controller module
+			Bumper* bump;
 
 			// methods
 

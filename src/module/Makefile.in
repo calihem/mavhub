@@ -60,8 +60,9 @@ am_libmodule_a_OBJECTS = pp.$(OBJEXT) pp_uss.$(OBJEXT) \
 	ctrl_bump.$(OBJEXT) ctrl_logfileplayer.$(OBJEXT) \
 	ctrl_logger.$(OBJEXT) ctrl_wifimeter.$(OBJEXT) \
 	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) \
-	filter_median.$(OBJEXT) PID.$(OBJEXT) sim_crrcsim.$(OBJEXT) \
-	testcore.$(OBJEXT) stat_meanvar.$(OBJEXT) bridge_ivy.$(OBJEXT) \
+	filter_median.$(OBJEXT) PID.$(OBJEXT) Bumper.$(OBJEXT) \
+	sim_crrcsim.$(OBJEXT) testcore.$(OBJEXT) \
+	stat_meanvar.$(OBJEXT) bridge_ivy.$(OBJEXT) \
 	exec_timing.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
@@ -245,6 +246,7 @@ libmodule_a_SOURCES = \
 	filter_fir.cpp \
 	filter_median.cpp \
 	PID.cpp \
+	Bumper.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
 	stat_meanvar.cpp \
@@ -299,6 +301,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Bumper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PID.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_ivy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coremod.Po@am__quote@

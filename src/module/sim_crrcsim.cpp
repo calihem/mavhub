@@ -34,9 +34,7 @@ namespace mavhub {
 		// ki="0.05339107055892655"
 		// kd="0.018905589636341851"
 		z = 0.0;
-		// double ctl_Kc = 0.066320932874519622;
-		// double ctl_Ti = 1.2421727487431193;
-		// double ctl_Td = 0.28506217896710773;
+		z_hat = 0.0;
 		// double scalef = 0.0;
 		// double ctl_Kc = 0.01;
 		// double ctl_Ti = 0.0;
@@ -49,6 +47,10 @@ namespace mavhub {
 											params["ac_pid_Ki"],
 											params["ac_pid_Kd"]);
 		pid_alt->setSp(params["ac_sp"]);
+		pid_alt->setPv_int_lim(params["ac_pid_int_lim"]);
+
+		// Bumper
+		bump = new Bumper(params["bump_thr_low"], params["bump_thr_high"]);
 	}
 
 	Sim_Crrcsimule::~Sim_Crrcsimule() {}
@@ -67,18 +69,17 @@ namespace mavhub {
 			phi = mavlink_msg_attitude_get_roll(&msg);
 			theta = mavlink_msg_attitude_get_pitch(&msg);
 			psi = mavlink_msg_attitude_get_yaw(&msg);
-			//Logger::log("Sim_Crrcsimule got ml attitude", phi, theta, Logger::LOGLEVEL_INFO);
-			//IvySendMsg("%d ATTITUDE %f %f %f", 155, phi, theta, psi);
+			break;
+
+		case MAVLINK_MSG_ID_LOCAL_POSITION:
+			x = mavlink_msg_local_position_get_x(&msg);
+			y = mavlink_msg_local_position_get_y(&msg);
+			z = mavlink_msg_local_position_get_z(&msg);
 			break;
 
 		case MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY:
-			//Logger::log("Sim_Crrcsimule got ml huch sensor array, (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_sensor_array_decode(&msg, &sa);
-			z = (sa.data[0] + sa.data[1]) * 0.5;
-			//Logger::log("Sim_Crrcsimule: z = ", z, Logger::LOGLEVEL_INFO);
-			// for(i = 0; i < MAVLINK_MSG_HUCH_SENSOR_ARRAY_FIELD_DATA_LEN; i++) {
-			// 	Logger::log("Sim_Crrcsimule:", i, sa.data[i], Logger::LOGLEVEL_INFO);
-			// }
+			z_hat = (sa.data[0] + sa.data[1]) * 0.5;
 			break;
 
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
@@ -110,8 +111,11 @@ namespace mavhub {
 					pid_alt->setKc(params["ac_pid_Kc"]);
 					pid_alt->setTi(params["ac_pid_Ki"]);
 					pid_alt->setTd(params["ac_pid_Kd"]);
-					pid_alt->setIntegral(0.0);
+					//pid_alt->setIntegral(0.0);
 					ctl_mode = static_cast<int>(params["ctl_mode"]);
+					//printf("ctl_mode: %d\n", ctl_mode);
+					bump->set_thr_low(params["bump_thr_low"]);
+					bump->set_thr_high(params["bump_thr_high"]);
 				}
 			}
 			break;
@@ -123,6 +127,20 @@ namespace mavhub {
 		case MAVLINK_MSG_ID_HUCH_SIM_CTRL:
 			Logger::log("Sim_Crrcsimule::handle_input: received sim_ctrl from", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
 			break;
+
+		case MAVLINK_MSG_ID_ACTION:
+			Logger::log("Sim_Crrcsimule::handle_input: received action request", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_action_get_target(&msg) == system_id()){
+				if(mavlink_msg_action_get_target_component(&msg) == component_id) {
+					switch(mavlink_msg_action_get_action(&msg)) {
+					case 0:
+						bump->bump(0.0);
+						break;
+					default:
+						break;
+					}
+				}
+			}
 		default:
 			break;
 
@@ -169,12 +187,29 @@ namespace mavhub {
 
 			switch(ctl_mode) {
 			case CTL_MODE_BUMP:
-				ctl.thrust = 0.41;
+				ctl.thrust = bump->calc((double)dt * 1e-6);
 				break;
 			case CTL_MODE_AC:
 				//ctl.thrust = 0.5;
 				//ctl.thrust = pid_alt->calc2(0.0025, z);
-				ctl.thrust = pid_alt->calc((double)dt * 1e-6, z);
+				ctl.thrust = pid_alt->calc((double)dt * 1e-6, z_hat);
+				//ctl.thrust = pid_alt->calc((double)dt * 1e-6, z);
+
+				if(ctl.thrust > params["thr_max"]) {
+					ctl.thrust = params["thr_max"];
+					pid_alt->setIntegralM1();
+				}
+
+				if(ctl.thrust <= params["thr_min"]) {
+					ctl.thrust = params["thr_min"];
+					pid_alt->setIntegralM1();
+				}
+
+				if(ctl.thrust <= params[""]) {
+					ctl.thrust = params["thr_min"];
+					pid_alt->setIntegralM1();
+				}
+
 				break;
 			case CTL_MODE_NULL:
 			default:
@@ -182,8 +217,8 @@ namespace mavhub {
 				break;
 			}
 			//Logger::log("sim_crrcsimule: ctl.thust = ", ctl.thrust, Logger::LOGLEVEL_INFO);
-			mavlink_msg_manual_control_encode(42, 0, &msg, &ctl);
-			//AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_manual_control_encode(43, 1, &msg, &ctl);
+			AppLayer<mavlink_message_t>::send(msg);
 		}
 	}
 
@@ -197,20 +232,55 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> component_id;
 		}
+
+		iter = args.find("bump_thr_low");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["bump_thr_low"];
+		}
+		iter = args.find("bump_thr_high");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["bump_thr_high"];
+		}
+
+		iter = args.find("ctl_update_rate");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ctl_update_rate"];
+		}
+
 		Logger::log("Sim_Crrcsimule::read_conf: sysid, compid", system_id(), component_id, Logger::LOGLEVEL_INFO);
 	}
 
 	// set defaults
 	void Sim_Crrcsimule::conf_defaults() {
 		param_request_list = false;
-		params["ac_pid_bias"] = 0.39;
-		params["ac_pid_Kc"] = 0.01;
-		params["ac_pid_Ki"] = 2.0;
-		params["ac_pid_Kd"] = 0.4;
+		// 0.147893587316 0.14 0.00928571428571
+		params["ac_pid_bias"] = 0.0;
+		// manually tuned
+		// params["ac_pid_Kc"] = 0.01;
+		// params["ac_pid_Ki"] = 2.0;
+		// params["ac_pid_Kd"] = 0.4;
+		// from tuning recipe, doesn't work
+		// params["ac_pid_Kc"] = 0.147893587316;
+		// params["ac_pid_Ki"] = 0.14;
+		// params["ac_pid_Kd"] = 0.00928571428571;
+		// from evolution, old controller
+		params["ac_pid_Kc"] = 0.066320932874519622;
+		params["ac_pid_Ki"] = 1.2421727487431193;
+		params["ac_pid_Kd"] = 0.28506217896710773;
+		// from ol: 0.10861511  2.93254908  0.02315
+		// from ol: 0.1, 2, 0.5
+		params["ac_pid_int_lim"] = 10.0;
 		params["ac_pid_scalef"] = 0.0;
 		params["ac_sp"] = 2.23;
 		params["ctl_mode"] = 0;
 		params["ctl_update_rate"] = 100; // Hz
+		params["bump_thr_low"] = 0.38;
+		params["bump_thr_high"] = 0.39;
+		params["thr_max"] = 0.6;
+		params["thr_min"] = 0.1;
 	}
 
 	// handle parameter list request
