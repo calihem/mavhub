@@ -392,8 +392,8 @@ namespace mavhub {
 			// send pixhawk std structs to groundstation
 			// FIXME: moved here 2011-05-25
 			// manual control
-			mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
-			send(msg);
+			// mavlink_msg_manual_control_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
+			// send(msg);
 			if(params["gs_en"]) {
 				// attitude
 				mavlink_msg_attitude_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
@@ -656,13 +656,13 @@ namespace mavhub {
 			 // send(msg);
 
 			 // set attitude
-			 ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
-			 ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
-			 ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
-			 ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;
-			 ml_attitude.rollspeed  = attitude.xgyro * MKGYRO2RAD;
-			 ml_attitude.pitchspeed = attitude.ygyro * MKGYRO2RAD;
-			 ml_attitude.yawspeed   = attitude.zgyro * MKGYRO2RAD;
+			 // ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
+			 // ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
+			 // ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
+			 // ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;
+			 // ml_attitude.rollspeed  = attitude.xgyro * MKGYRO2RAD;
+			 // ml_attitude.pitchspeed = attitude.ygyro * MKGYRO2RAD;
+			 // ml_attitude.yawspeed   = attitude.zgyro * MKGYRO2RAD;
 
 			 // 3. kalman filter
 			 // update timestep

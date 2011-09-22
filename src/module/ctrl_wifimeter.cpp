@@ -1,8 +1,13 @@
-#ifndef _CTRL_WIFIMETER_CPP_
-#define _CTRL_WIFIMETER_CPP_
+//#ifndef _CTRL_WIFIMETER_CPP_
+//#define _CTRL_WIFIMETER_CPP_
+
+#define HAVE_LIBGPSMM_H 1
 
 #ifdef HAVE_LIBGPSMM_H
 #include "ctrl_wifimeter.h"
+
+#include <mavlink.h>
+#include "core/logger.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -19,8 +24,6 @@
 #include <sys/time.h>
 #include <libgpsmm.h>
 
-#include <mavlink.h>
-#include "core/logger.h"
 
 namespace mavhub
 {
@@ -58,6 +61,7 @@ void Ctrl_Wifimeter::handle_input(const mavlink_message_t &msg)
   if(msg.msgid == MAVLINK_MSG_ID_HUCH_CTRL_HOVER_STATE)
 	  this->altitude = mavlink_msg_huch_ctrl_hover_state_get_baro(&msg);
 }
+
 
 void Ctrl_Wifimeter::run()
 {
@@ -139,4 +143,4 @@ void Ctrl_Wifimeter::run()
 
 }
 #endif // HAVE_LIBGPSMM_H
-#endif // _CTRL_WIFIMETER_CPP_
+//#endif // _CTRL_WIFIMETER_CPP_
