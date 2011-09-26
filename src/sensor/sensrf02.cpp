@@ -160,9 +160,9 @@ namespace mavhub {
 					// use median filter
 					// sensor_data[0].distance = (int)filt_med.calc((double)get_range());
 					// use raw value
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 					sensor_data[0].distance = get_range();
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 					//Logger::log("sensrf02 data acquired", Logger::LOGLEVEL_INFO);
 					publish_data(start);
 					//Logger::log("sensrf02 data published", Logger::LOGLEVEL_INFO);
@@ -198,22 +198,22 @@ namespace mavhub {
 
 	void SenSrf02::print_debug() {
 		ostringstream send_stream;
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 		//send_stream << "srf02;" << sensor_data[0] << ";" << kompass_data.data_y << ";" << kompass_data.data_z;
 		send_stream << "sensrf02;" << sensor_data[0].distance << ";";
 #else
 	send_stream << "sensrf02: mavlink missing";
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 		Logger::debug(send_stream.str());
 	}
 
 	void* SenSrf02::get_data_pointer(unsigned int id) throw(const char *) {
 		if (status == RUNNING) {
 			switch ((0xFFFF0000 & id) >> 16) {
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 			case KOMPASS_SENSOR: // kompass 
 				return &sensor_data;
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 			default: throw "sensor srf02 doesn't support this sensor type";
 			}
 		} throw "sensor srf02 isn't running";
@@ -273,12 +273,12 @@ namespace mavhub {
 
 	int SenSrf02::get_last_measurement() {
 		int reading;
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 		{ // begin of data mutex scope
 			cpp_pthread::Lock ri_lock(data_mutex);
 			reading = sensor_data[0].distance;
 		}
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 		return reading;
 	}
 
@@ -286,8 +286,8 @@ namespace mavhub {
 		//DataCenter::set_exp_ctrl(exp_ctrl_rx_data);
 		// FIXME: hardware specific mapping
 		//DataCenter::set_huch_ranger_at(huch_ranger, 1);
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 		DataCenter::set_sensor(chanmap[0], (double)sensor_data[0].distance);
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 	}
 } // namespace mavh

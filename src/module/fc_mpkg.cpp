@@ -2,6 +2,7 @@
 #include "fc_mpkg.h"
 
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
 
 #include <math.h> //pow
 #include <iostream> //cout
@@ -252,5 +253,6 @@ namespace mavhub {
 
 }
 
+#endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 

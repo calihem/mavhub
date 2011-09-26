@@ -92,10 +92,10 @@ namespace mavhub {
 			void publish_data(uint64_t time);
 			
 		private:
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 			/// array of distance sensor structures
 			mavlink_huch_distance_t sensor_data[SRF02_NUMCHAN];
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 			/// channel mapping: sensor channel to mavhub global logical channels
 			std::vector<int> chanmap;
 

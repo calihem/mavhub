@@ -55,11 +55,11 @@ namespace mavhub {
 			static float calc_altitude(const int p, const int p0);
 
 			calibration_data_t calibration_data;
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 			mavlink_huch_raw_pressure_t raw_pressure;
 			mavlink_huch_temperature_t temperature;
 			mavlink_huch_altitude_t altitude;
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 
 			unsigned short func_id1;
 			unsigned short func_id2;

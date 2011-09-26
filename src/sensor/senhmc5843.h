@@ -63,9 +63,9 @@ namespace mavhub {
 			virtual void* get_data_pointer(unsigned int id) throw(const char *);
 			
 		private:
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 			mavlink_huch_magnetic_kompass_t kompass_data;
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 
 			int gain;
 			int mode;

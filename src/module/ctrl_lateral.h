@@ -34,8 +34,9 @@ namespace mavhub {
 		int16_t nick;
 		int16_t roll;
 		int16_t yaw;
+#ifdef MAVLINK_ENABLED_HUCH
 		mavlink_huch_visual_navigation_t huch_visual_navigation;
-		
+#endif // MAVLINK_ENABLED_HUCH	
 
 		// params
 		// request

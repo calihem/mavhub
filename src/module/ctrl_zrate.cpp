@@ -3,6 +3,7 @@
 #include "ctrl_zrate.h"
 
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
 
 #include "core/datacenter.h"
 #include "protocol/protocolstack.h"
@@ -334,5 +335,6 @@ namespace mavhub {
 	}
 }
 
+#endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 

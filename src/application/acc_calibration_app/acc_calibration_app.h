@@ -5,6 +5,9 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #ifdef HAVE_OPENCV_CV_H
 #include <opencv/cv.h>
 
@@ -118,5 +121,7 @@ namespace mavhub {
 } // namespace mavhub
 
 #endif // HAVE_OPENCV_CV_H
+
+#endif // HAVE_MAVLINK_H
 
 #endif // _ACC_CALIBRATION_APP_H_

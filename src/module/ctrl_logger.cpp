@@ -126,7 +126,7 @@ namespace mavhub {
 		typedef map<int, string>::const_iterator ci;
 		for(ci p = datafields.begin(); p!=datafields.end(); ++p) {
 			Logger::log("ctrl_logger datafield test", p->first, p->second, Logger::LOGLEVEL_INFO);
-			sprintf(outstr, p->second.c_str());
+			sprintf(outstr, "%s", p->second.c_str());
 			fwrite(outstr, strlen(outstr), 1, fd);
 			sprintf(outstr, "\t");
 			fwrite(outstr, strlen(outstr), 1, fd);
@@ -181,6 +181,7 @@ namespace mavhub {
 
 		switch(msg.msgid) {
 			////////////////////// HUCH_HC_RAW
+#ifdef MAVLINK_ENABLED_HUCH
 		case MAVLINK_MSG_ID_HUCH_HC_RAW:
 			//Logger::log("Ctrl_Logger got huch_hc_raw msg [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_INFO);
 
@@ -285,7 +286,7 @@ namespace mavhub {
 			fwrite(outstr, strlen(outstr), 1, fd);
 
 			logline_coda(45);
-
+#endif // MAVLINK_ENABLED_HUCH
 			break;
 		default:
 			break;

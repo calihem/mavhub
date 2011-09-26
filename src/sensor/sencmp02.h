@@ -45,9 +45,9 @@ class SenCmp02 : public I2cSensor {
 	private:
 		// void i2c_set_adr(const int fd, const int adr); // throw error
 		// FIXME: Cmp02 measurement doesnt need to be a "distance", just a voltage
-#ifdef HAVE_MAVLINK_H
+#ifdef MAVLINK_ENABLED_HUCH
 		mavlink_huch_analog_t sensor_data[CMP02_NUMCHAN];
-#endif // HAVE_MAVLINK_H
+#endif // MAVLINK_ENABLED_HUCH
 		// std::vector<int> chanmap;
 		//mavlink_huch_exp_ctrl_t exp_ctrl_data;
 		//mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;

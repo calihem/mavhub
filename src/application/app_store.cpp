@@ -57,6 +57,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "acc_calibration_app") {
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_OPENCV_CV_H
 		std::string arg;
 		int number_of_measurements_for_determine_min_max(50);
 		find_iter = args.find("number_of_measurements_for_determine_min_max");
@@ -74,9 +75,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 			number_of_measurements_for_determine_min_max,
 			measurement_timeout_in_us);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(acc_calib_app);
+#endif // HAVE_OPENCV_CV_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "attitude_filter_app") {
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_OPENCV_CV_H
 		std::string arg;
 		int number_of_measurements_for_gyro_bias_mean(50);
 		find_iter = args.find("number_of_measurements_for_gyro_bias_mean");
@@ -94,9 +97,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 			measurement_timeout_in_us,
 			number_of_measurements_for_gyro_bias_mean);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(att_filter_app);
+#endif // HAVE_OPENCV_CV_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "fc_mpkg_app") {
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
 		int component_id = 0;
 		std::map<std::string,std::string>::const_iterator iter = args.find("component_id");
 		if( iter != args.end() ) {
@@ -105,12 +110,15 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		}
 		FC_Mpkg *fc_mpkg_app = new FC_Mpkg(component_id);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(fc_mpkg_app);
+#endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_hover_app") {
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
 		// pass only configuration map into constructor
 		Ctrl_Hover *ctrl_hover_app = new Ctrl_Hover(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_hover_app);
+#endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_lateral_app") {
 #ifdef HAVE_MAVLINK_H
@@ -120,9 +128,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_zrate_app") {
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
 		// pass only configuration map into constructor
 		Ctrl_Zrate *ctrl_zrate_app = new Ctrl_Zrate(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_zrate_app);
+#endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_logfileplayer_app") {
 #ifdef HAVE_MAVLINK_H
@@ -138,9 +148,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_bump_app") {
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
 		// pass only configuration map into constructor
 		Ctrl_Bump *ctrl_bump_app = new Ctrl_Bump(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_bump_app);
+#endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_wifimeter_app") {
 #ifdef HAVE_MAVLINK_H

@@ -10,6 +10,9 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
+#ifdef HAVE_MKLINK_H
+#include <mklink.h>
+
 #include "debug_channels.h"
 #include "core/logger.h"
 // #include "thread.h"
@@ -60,6 +63,8 @@ namespace mavhub {
 		virtual double gdt_eval(uint64_t dt);
   };
 }
+
+#endif // HAVE_MKLINK_H
 
 #endif // HAVE_MAVLINK_H
 

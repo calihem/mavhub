@@ -10,6 +10,9 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
+#ifdef HAVE_MKLINK_H
+#include <mklink.h>
+
 #include "core/logger.h"
 // #include "thread.h"
 #include "protocol/protocollayer.h"
@@ -106,6 +109,8 @@ namespace mavhub {
 		void set_pxh_manual_control();
   };
 }
+
+#endif // HAVE_MKLINK_H
 
 #endif // HAVE_MAVLINK_H
 

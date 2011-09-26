@@ -21,6 +21,14 @@ namespace mavhub {
 			// raw imu 
 			static const mavlink_raw_imu_t get_raw_imu();
 			static void set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu);
+			/**
+			 * Raw pressure
+			 */
+			static void set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure);
+			static const mavlink_raw_pressure_t get_raw_pressure();
+#ifdef MAVLINK_ENABLED_HUCH
+			/// Set ExpCtrl data
+			static void set_exp_ctrl(const mavlink_huch_exp_ctrl_rx_t &exp_ctrl_rx_data);
 			static const mavlink_huch_exp_ctrl_rx_t get_exp_ctrl();
 			/**
 			 * HUCH IMU raw adc
@@ -32,15 +40,6 @@ namespace mavhub {
 			 */
 			static void set_huch_mk_imu(const mavlink_huch_mk_imu_t &huch_mk_imu);
 			static const mavlink_huch_mk_imu_t get_huch_mk_imu();
-			/**
-			 * Raw pressure
-			 */
-			static void set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure);
-			static const mavlink_raw_pressure_t get_raw_pressure();
-
-			/// Set ExpCtrl data
-			static void set_exp_ctrl(const mavlink_huch_exp_ctrl_rx_t &exp_ctrl_rx_data);
-
 			// FlightCtrl legacy
 			/// get FC legacy data
 			static const mavlink_huch_attitude_t get_huch_attitude();
@@ -52,6 +51,7 @@ namespace mavhub {
 			static void set_huch_fc_altitude(const mavlink_huch_fc_altitude_t &huch_fc_altitude);
 			static void set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger, int index);
 			static void set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status);
+#endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
 			/// set FC legacy extctrl components
 			static void set_extctrl_nick(const double nick);
@@ -66,43 +66,42 @@ namespace mavhub {
 			static const double get_sensor(const int id);
 
 		private:
+			static double extctrl_nick;
+			static double extctrl_roll;
+			static double extctrl_yaw;
+			// unified sensor array
+			static double sensors[DC_NUMSENS];
+
+			static pthread_mutex_t sensors_mutex;
+			static pthread_mutex_t extctrl_mutex;
 #ifdef HAVE_MAVLINK_H
 			//data structs
 			static mavlink_raw_imu_t raw_imu;
+			static mavlink_raw_pressure_t raw_pressure;
+#ifdef MAVLINK_ENABLED_HUCH
 			static mavlink_huch_imu_raw_adc_t huch_imu_raw_adc;
 			static mavlink_huch_mk_imu_t huch_mk_imu;
-			static mavlink_raw_pressure_t raw_pressure;
-
-			//sync data
-			static pthread_mutex_t raw_imu_mutex;
-			static pthread_mutex_t exp_ctrl_mutex;
-			static pthread_mutex_t huch_imu_raw_adc_mutex;
-			static pthread_mutex_t huch_mk_imu_mutex;
-			static pthread_mutex_t raw_pressure_mutex;
-
-			/// ExpCtrl data structure
-			static mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
-
-			// FlightCtrl legacy
-			static pthread_mutex_t mk_fc_mutex;
-			static pthread_mutex_t huch_ranger_mutex;
 			static mavlink_huch_attitude_t huch_attitude;
 			static mavlink_huch_fc_altitude_t huch_altitude;
 			static mavlink_huch_ranger_t huch_ranger;
 			static mavlink_mk_fc_status_t mk_fc_status;
-#endif // HAVE_MAVLINK_H
-			static double extctrl_nick;
-			static double extctrl_roll;
-			static double extctrl_yaw;
-			/* static int16_t extctrl_nick; */
-			/* static int16_t extctrl_roll; */
-			/* static int16_t extctrl_yaw; */
-			static pthread_mutex_t extctrl_mutex;
+			/// ExpCtrl data structure
+			static mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
+#endif // MAVLINK_ENABLED_HUCH
 
-			// unified sensor array
-			static pthread_mutex_t sensors_mutex;
-			static double sensors[DC_NUMSENS];
-			
+			//sync data
+			static pthread_mutex_t raw_imu_mutex;
+			static pthread_mutex_t raw_pressure_mutex;
+#ifdef MAVLINK_ENABLED_HUCH
+			static pthread_mutex_t exp_ctrl_mutex;
+			static pthread_mutex_t huch_imu_raw_adc_mutex;
+			static pthread_mutex_t huch_mk_imu_mutex;
+			// FlightCtrl legacy
+			static pthread_mutex_t mk_fc_mutex;
+			static pthread_mutex_t huch_ranger_mutex;
+#endif // MAVLINK_ENABLED_HUCH
+#endif // HAVE_MAVLINK_H
+		
 			DataCenter();
 			DataCenter(const DataCenter &data);
 			~DataCenter();
@@ -126,8 +125,23 @@ namespace mavhub {
 		Lock ri_lock(raw_imu_mutex);
 		raw_imu = mavlink_raw_imu;
 	}
+	inline const mavlink_raw_pressure_t DataCenter::get_raw_pressure() {
+		using namespace cpp_pthread;
 
-		inline const mavlink_huch_exp_ctrl_rx_t DataCenter::get_exp_ctrl() {
+		Lock rp_lock(raw_pressure_mutex);
+		mavlink_raw_pressure_t raw_pressure_copy(raw_pressure);
+
+		return raw_pressure_copy;
+	}
+	inline void DataCenter::set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure) {
+		using namespace cpp_pthread;
+
+		Lock rp_lock(raw_pressure_mutex);
+		DataCenter::raw_pressure = raw_pressure;
+	
+	}
+#ifdef MAVLINK_ENABLED_HUCH
+	inline const mavlink_huch_exp_ctrl_rx_t DataCenter::get_exp_ctrl() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(exp_ctrl_mutex);
@@ -172,23 +186,7 @@ namespace mavhub {
 		DataCenter::huch_mk_imu = huch_mk_imu;
 	}
 
-	inline const mavlink_raw_pressure_t DataCenter::get_raw_pressure() {
-		using namespace cpp_pthread;
-
-		Lock rp_lock(raw_pressure_mutex);
-		mavlink_raw_pressure_t raw_pressure_copy(raw_pressure);
-
-		return raw_pressure_copy;
-	}
-	inline void DataCenter::set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure) {
-		using namespace cpp_pthread;
-
-		Lock rp_lock(raw_pressure_mutex);
-		DataCenter::raw_pressure = raw_pressure;
-	
-	}
-
-// FlightCtrl legacy functions
+	// FlightCtrl legacy functions
 	// attitude
 	inline const mavlink_huch_attitude_t DataCenter::get_huch_attitude() {
 		using namespace cpp_pthread;
@@ -261,6 +259,7 @@ namespace mavhub {
 		Lock ri_lock(mk_fc_mutex);
 		DataCenter::mk_fc_status = mk_fc_status_a;
 	}
+#endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
 
 	// extctrl component setters
