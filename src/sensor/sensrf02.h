@@ -1,9 +1,15 @@
 #ifndef _SENSRF02_H_
 #define _SENSRF02_H_
 
-#include <inttypes.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
+#endif // HAVE_MAVLINK_H
+
+#include <inttypes.h>
 
 #include "i2csensor.h"
 
@@ -86,8 +92,10 @@ namespace mavhub {
 			void publish_data(uint64_t time);
 			
 		private:
+#ifdef HAVE_MAVLINK_H
 			/// array of distance sensor structures
 			mavlink_huch_distance_t sensor_data[SRF02_NUMCHAN];
+#endif // HAVE_MAVLINK_H
 			/// channel mapping: sensor channel to mavhub global logical channels
 			std::vector<int> chanmap;
 

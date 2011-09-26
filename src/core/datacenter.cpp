@@ -2,6 +2,7 @@
 
 namespace mavhub {
 
+#ifdef HAVE_MAVLINK_H
 pthread_mutex_t DataCenter::raw_imu_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::mk_fc_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::huch_ranger_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -23,6 +24,8 @@ mavlink_huch_ranger_t DataCenter::huch_ranger = {};
 mavlink_mk_fc_status_t DataCenter::mk_fc_status = {};
 mavlink_huch_exp_ctrl_rx_t DataCenter::exp_ctrl_rx_data = {};
 
+#endif // HAVE_MAVLINK_H
+	
 	double DataCenter::extctrl_nick = 0;
 	double DataCenter::extctrl_roll = 0;
 	double DataCenter::extctrl_yaw = 0;

@@ -8,7 +8,8 @@
 
 #include "ctrl_logger.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
+
 #include <math.h> //pow
 #include <iostream> //cout
 #include <sys/time.h> //us
@@ -333,3 +334,6 @@ namespace mavhub {
 	}
 
 }
+
+#endif // HAVE_MAVLINK_H
+

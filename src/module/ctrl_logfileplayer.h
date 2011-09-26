@@ -3,6 +3,13 @@
 #ifndef _CTRL_LOGFILEPLAYER_H_
 #define _CTRL_LOGFILEPLAYER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
@@ -59,5 +66,7 @@ namespace mavhub {
 		void debugout_setval_s32(mavlink_mk_debugout_t* dbgout, int indexl, int indexh, int32_t val);
 	};
 }
+
+#endif // HAVE_MAVLINK_H
 
 #endif

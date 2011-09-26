@@ -2,7 +2,8 @@
 
 #include "ctrl_lateral.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
+
 #include "core/datacenter.h"
 #include "protocol/protocolstack.h"
 
@@ -379,3 +380,6 @@ namespace mavhub {
 		Logger::log("ctrl_lateral::read_conf: roll_limit", params["roll_limit"], Logger::LOGLEVEL_DEBUG);
 	}
 }
+
+#endif // HAVE_MAVLINK_H
+

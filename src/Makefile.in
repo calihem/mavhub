@@ -59,8 +59,7 @@ mavhub_DEPENDENCIES = $(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/sensor/libsensor.a \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
-	$(top_builddir)/src/io/libio.a $(top_builddir)/src/lib/*.a \
-	$(am__DEPENDENCIES_1)
+	$(top_builddir)/src/io/libio.a $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -270,7 +269,7 @@ mavhub_LDADD = \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
-	$(top_builddir)/src/lib/*.a \
+	$(EXTRA_SRC_LIBS) \
 	$(GSTREAMER_LIBS) \
 	$(AM_LDFLAGS)
 
@@ -702,6 +701,9 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
 	uninstall uninstall-am uninstall-binPROGRAMS
 
+
+@COND_USE_GSTREAMER_TRUE@	EXTRA_SCR_LIBS += src/lib/libgstreamer.a
+@COND_OPENGL_TRUE@	EXTRA_SCR_LIBS += src/lib/libopengl.a
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

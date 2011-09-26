@@ -22,6 +22,7 @@
 #include "slam_app.h"
 
 #include <iostream>
+#include <sstream> //istringstream
 #include <algorithm> //transform
 
 using namespace std;

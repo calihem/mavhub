@@ -3,6 +3,13 @@
 #ifndef _CTRL_LATERAL_H_
 #define _CTRL_LATERAL_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
@@ -51,5 +58,7 @@ namespace mavhub {
 		virtual void read_conf(const std::map<std::string, std::string> args);
 	};
 }
+
+#endif // HAVE_MAVLINK_H
 
 #endif

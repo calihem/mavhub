@@ -1,14 +1,17 @@
 #ifndef _ACC_CALIBRATION_APP_H_
 #define _ACC_CALIBRATION_APP_H_
 
-#include "protocol/protocollayer.h"
-#include "core/thread.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_OPENCV_CV_H
 #include <opencv/cv.h>
+
 #include <vector>
 
-using namespace std;
-//using namespace cv;
-using namespace cpp_pthread;
+#include "protocol/protocollayer.h"
+#include "core/thread.h"
 
 namespace mavhub {
 
@@ -104,7 +107,7 @@ namespace mavhub {
 	* This class realises a seperate thread of the AccCalibrationApp for roll and pitch angle computation and display.
 	* A seperate thread is used, so that the handle_input function of the AccCalibrationApp cannot be blocked.
 	*/
-	class AccCalibrationAppTestThread : public PThread {
+	class AccCalibrationAppTestThread : public cpp_pthread::PThread {
 		public:
 			AccCalibrationAppTestThread(AccCalibrationApp* accCalibrationApp);
 		protected:
@@ -114,4 +117,6 @@ namespace mavhub {
 
 } // namespace mavhub
 
-#endif
+#endif // HAVE_OPENCV_CV_H
+
+#endif // _ACC_CALIBRATION_APP_H_

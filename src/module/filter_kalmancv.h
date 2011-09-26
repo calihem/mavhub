@@ -3,11 +3,17 @@
 #ifndef _FILTER_KALMANCV_H_
 #define _FILTER_KALMANCV_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_OPENCV_CV_H
+#include "opencv/cv.h" // opencv headers
+
 #include <sstream>
 
 #include "core/logger.h"
 
-#include "opencv/cv.h" // opencv headers
 
 namespace mavhub {
 	/// Kalman filter class: hover (altitude)
@@ -101,5 +107,7 @@ namespace mavhub {
 		CvMat* meas;
   };
 }
+
+#endif //  HAVE_OPENCV_CV_H
 
 #endif

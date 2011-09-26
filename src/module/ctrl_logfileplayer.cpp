@@ -33,11 +33,12 @@
 
 #include "ctrl_logfileplayer.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
 
 #include "core/logger.h"
 #include "utility.h"
 #include "protocol/protocolstack.h"
+//FIXME: remove mkpackage.h
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
@@ -615,3 +616,6 @@ namespace mavhub {
 		// 			 );
 	}
 }
+
+#endif // HAVE_MAVLINK_H
+

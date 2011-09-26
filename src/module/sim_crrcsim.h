@@ -1,6 +1,13 @@
 #ifndef _SIM_CRRCSIM_H_
 #define _SIM_CRRCSIM_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include <inttypes.h> //uint8_t
 #include "protocol/protocollayer.h"
 
@@ -27,5 +34,7 @@ namespace mavhub {
 
 
 } // namespace mavhub
+
+#endif // HAVE_MAVLINK_H
 
 #endif

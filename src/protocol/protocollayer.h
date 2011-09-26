@@ -42,7 +42,6 @@
 #include <string>
 #include <list>
 #include <errno.h>
-#include <mavlink.h>
 
 namespace mavhub {
 

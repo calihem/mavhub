@@ -47,11 +47,13 @@ SenBmp085::SenBmp085(unsigned short _dev_id, unsigned short _func_id, unsigned s
 		/* wait */
 		usleep(WAITTEMP);		
 
+#ifdef HAVE_MAVLINK_H
 		/* get temperature data */
 		int uncomp_temp = get_temp_data(fd);		
 		/* compute temperature data */
 		int b5;
 		temperature.temperature = calc_temp(uncomp_temp, b5, calibration_data);
+#endif // HAVE_MAVLINK_H
 		/* request pressure data with maximum oversampling */
 		oversampling = 3;
 		request_pres_data(fd, oversampling);
@@ -59,12 +61,14 @@ SenBmp085::SenBmp085(unsigned short _dev_id, unsigned short _func_id, unsigned s
 		/* wait */
 		usleep(wait_oversampling[oversampling]);
 
+#ifdef HAVE_MAVLINK_H
 		/* get pressure data */
 		int uncomp_pres = get_pres_data(fd, oversampling);
 
 		/* compute pressure at current altitude */
 		raw_pressure.pressure = calc_pres(b5, oversampling, uncomp_pres, calibration_data);
 		pressure_0 = raw_pressure.pressure;
+#endif // HAVE_MAVLINK_H
 
 		/* calculate oversampling from update rate */
 		//TODO 
@@ -113,11 +117,13 @@ void SenBmp085::run() {
 				countTemp = update_rate_temp;
 
 				/* compute temperature data */
+#ifdef HAVE_MAVLINK_H
 				{ // begin of data mutex scope
 					cpp_pthread::Lock ri_lock(data_mutex);
 					temperature.temperature = calc_temp(uncomp_temp, b5, calibration_data);
 					temperature.usec = get_time_us();
 				} // end of data mutex scope
+#endif // HAVE_MAVLINK_H
 			}
 
 			/* request pressure data */
@@ -133,11 +139,12 @@ void SenBmp085::run() {
 			int uncomp_pres = get_pres_data(fd, oversampling);
 			i2c_end_conversion(fd);
 
+#ifdef HAVE_MAVLINK_H
 			/* compute pressure data */
 			int _pres = calc_pres(b5, oversampling, uncomp_pres, calibration_data);
+
 			/* compute altitude */
 			float _alt = calc_altitude(_pres, pressure_0);	
-
 			{ // begin of data mutex scope
 				cpp_pthread::Lock ri_lock(data_mutex);
 				raw_pressure.pressure = _pres;
@@ -145,6 +152,7 @@ void SenBmp085::run() {
 				altitude.altitude = _alt;
 				altitude.usec = usec;
 			} // end of data mutex scope
+#endif // HAVE_MAVLINK_H
 
 			if (debug) print_debug();
 		
@@ -273,20 +281,27 @@ float SenBmp085::calc_altitude(const int p, const int p0) {
 }
 
 void SenBmp085::print_debug() {
+	//FIXME: remove variable send_stream (no extra allocation for debug messages)
 	ostringstream send_stream;
+#ifdef HAVE_MAVLINK_H
 	send_stream << "bmp085;" << temperature.temperature << ";" << raw_pressure.pressure << ";" << altitude.altitude;
+#else
+	send_stream << "bmp085: mavlink missing";
+#endif // HAVE_MAVLINK_H
 	Logger::debug(send_stream.str());
 }
 
 void* SenBmp085::get_data_pointer(unsigned int id) throw(const char *) {
 	if (status == RUNNING) {
 		switch ((0xFFFF0000 & id) >> 16) {
+#ifdef HAVE_MAVLINK_H
 			case ALTITUDE_SENSOR: // altitude 
 				return &altitude;
 			case TEMPERATURE_SENSOR: // temperature
 				return &temperature;
 			case PRESSURE_SENSOR: // raw pressure
 				return &raw_pressure;
+#endif // HAVE_MAVLINK_H
 			default: throw "sensor bmp085 doesn't support this sensor type";
 		}
 	} throw "sensor bmp085 isn't running";

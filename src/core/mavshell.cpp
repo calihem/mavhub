@@ -211,6 +211,8 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 			}
 		} else if(argv.at(i).compare("applist") == 0) {
 			try {
+				send_stream << "TODO";
+/*
 				istringstream istream( argv.at(i+1) );
 				int id;
 				istream >> id;
@@ -224,6 +226,7 @@ void MAVShell::execute_cmd(const std::vector<std::string> &argv) {
 					send_stream << *app;
 					i++;
 				}
+*/
 			}
 			catch(std::out_of_range &e) {
 // 				send_stream << ProtocolStack::instance().application_list();

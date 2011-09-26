@@ -32,6 +32,8 @@
 
 #include "ctrl_hover.h"
 
+#ifdef HAVE_MAVLINK_H
+
 #include <mavlink.h>
 #include <math.h> //pow
 #include <iostream> //cout
@@ -1411,3 +1413,6 @@ namespace mavhub {
 	}
 
 }
+
+#endif // HAVE_MAVLINK_H
+

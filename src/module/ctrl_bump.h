@@ -3,6 +3,13 @@
 #ifndef _CTRL_BUMP_H_
 #define _CTRL_BUMP_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include "debug_channels.h"
 #include "core/logger.h"
 // #include "thread.h"
@@ -53,5 +60,7 @@ namespace mavhub {
 		virtual double gdt_eval(uint64_t dt);
   };
 }
+
+#endif // HAVE_MAVLINK_H
 
 #endif

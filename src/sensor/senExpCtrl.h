@@ -1,9 +1,15 @@
 #ifndef _SENEXPCTRL_H_
 #define _SENEXPCTRL_H_
 
-#include <mavlink.h>
-#include "i2csensor.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+#endif // HAVE_MAVLINK_H
+
+#include "i2csensor.h"
 
 #include <inttypes.h>
 /* #include <linux/i2c.h> */
@@ -37,6 +43,7 @@ class SenExpCtrl : public I2cSensor {
 		virtual void* get_data_pointer(unsigned int id) throw(const char *);
 
 	private:
+#ifdef HAVE_MAVLINK_H
 		// void i2c_set_adr(const int fd, const int adr); // throw error
 		// FIXME: ExpCtrl measurement doesnt need to be a "distance", just a voltage
 		mavlink_huch_analog_t sensor_data[EXPCTRL_NUMCHAN];
@@ -44,6 +51,7 @@ class SenExpCtrl : public I2cSensor {
 		//mavlink_huch_exp_ctrl_t exp_ctrl_data;
 		mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
 		mavlink_huch_ranger_t huch_ranger;
+#endif // HAVE_MAVLINK_H
 
 		std::vector<int> chanmap;
 };

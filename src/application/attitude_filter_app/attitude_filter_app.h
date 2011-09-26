@@ -1,9 +1,15 @@
 #ifndef _ATTITUDE_FILTER_APP_H_
 #define _ATTITUDE_FILTER_APP_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_OPENCV_CV_H
+#include <opencv/cv.h>
+
 #include "protocol/protocollayer.h"
 #include "core/thread.h"
-#include <opencv/cv.h>
 
 namespace mavhub {
 
@@ -54,4 +60,7 @@ namespace mavhub {
 
 }
 
-#endif
+#endif // HAVE_OPENCV_CV_H
+
+#endif // _ATTITUDE_FILTER_APP_H_
+

@@ -1,9 +1,9 @@
 #include "coremod.h"
 
+#ifdef HAVE_MAVLINK_H
+
 #include "core/logger.h"
 #include "utility.h"
-
-#include <mavlink.h>
 
 #include <iostream> //cout
 using namespace std;
@@ -39,5 +39,8 @@ void CoreModule::run() {
 	}
 }
 
-
 } // namespace mavhub
+
+#endif // HAVE_MAVLINK_H
+
+

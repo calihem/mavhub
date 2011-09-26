@@ -1,8 +1,15 @@
 #ifndef _DATACENTER_H_
 #define _DATACENTER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include "core/thread.h"
+
+#ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
+#endif // HAVE_MAVLINK_H
 
 #define DC_NUMSENS 10 // FIXME: get from config
 
@@ -10,6 +17,7 @@ namespace mavhub {
 
 	class DataCenter {
 		public:
+#ifdef HAVE_MAVLINK_H
 			// raw imu 
 			static const mavlink_raw_imu_t get_raw_imu();
 			static void set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu);
@@ -44,6 +52,7 @@ namespace mavhub {
 			static void set_huch_fc_altitude(const mavlink_huch_fc_altitude_t &huch_fc_altitude);
 			static void set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger, int index);
 			static void set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status);
+#endif // HAVE_MAVLINK_H
 			/// set FC legacy extctrl components
 			static void set_extctrl_nick(const double nick);
 			static void set_extctrl_roll(const double roll);
@@ -57,6 +66,7 @@ namespace mavhub {
 			static const double get_sensor(const int id);
 
 		private:
+#ifdef HAVE_MAVLINK_H
 			//data structs
 			static mavlink_raw_imu_t raw_imu;
 			static mavlink_huch_imu_raw_adc_t huch_imu_raw_adc;
@@ -80,6 +90,7 @@ namespace mavhub {
 			static mavlink_huch_fc_altitude_t huch_altitude;
 			static mavlink_huch_ranger_t huch_ranger;
 			static mavlink_mk_fc_status_t mk_fc_status;
+#endif // HAVE_MAVLINK_H
 			static double extctrl_nick;
 			static double extctrl_roll;
 			static double extctrl_yaw;
@@ -100,6 +111,7 @@ namespace mavhub {
 	// ----------------------------------------------------------------------------
 	// DataCenter
 	// ----------------------------------------------------------------------------
+#ifdef HAVE_MAVLINK_H
 	inline const mavlink_raw_imu_t DataCenter::get_raw_imu() {
 		using namespace cpp_pthread;
 
@@ -249,6 +261,7 @@ namespace mavhub {
 		Lock ri_lock(mk_fc_mutex);
 		DataCenter::mk_fc_status = mk_fc_status_a;
 	}
+#endif // HAVE_MAVLINK_H
 
 	// extctrl component setters
 	inline void DataCenter::set_extctrl_nick(const double nick) {

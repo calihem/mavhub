@@ -112,12 +112,16 @@ void SenExpCtrl::run() {
 			i2c_read_bytes(fd, (uint8_t*)buffer, 9);
 
 			// get version
+#ifdef HAVE_MAVLINK_H
 			exp_ctrl_rx_data.version = *buffer;
-			
+#endif // HAVE_MAVLINK_H
+
 			i2c_end_conversion(fd);
 
+#ifdef HAVE_MAVLINK_H
 			// get values
 			memcpy(&exprx_value[0], buffer+1, 8);
+#endif // HAVE_MAVLINK_H
 
 			// FIXME: smart++
 			// exp_ctrl_rx_data.value0 = exprx_value[0];
@@ -134,6 +138,7 @@ void SenExpCtrl::run() {
 			// huch_ranger.ranger2 = exprx_value[0];
 			// huch_ranger.ranger3 = exprx_value[1];
 
+#ifdef HAVE_MAVLINK_H
 			/* assign buffer to data */
 			{ // begin of data mutex scope
 				int i;
@@ -144,6 +149,7 @@ void SenExpCtrl::run() {
 					//Logger::log("ExpCtrl sensor:", i, sensor_data[i].analog, Logger::LOGLEVEL_INFO);
 				}
 			} // end of data mutex scope
+#endif // HAVE_MAVLINK_H
 
 			// FIXME: if(publish) else poll or whatever
 			publish_data(start);
@@ -181,24 +187,32 @@ void SenExpCtrl::run() {
 
 void SenExpCtrl::print_debug() {
 	ostringstream send_stream;
+#ifdef HAVE_MAVLINK_H
 	send_stream << "ExpCtrl version: " << (int)exp_ctrl_rx_data.version << ", v0:" << exp_ctrl_rx_data.value0 << ", v1:" << exp_ctrl_rx_data.value1 << ", v2:" << exp_ctrl_rx_data.value2 << ", v3:" << exp_ctrl_rx_data.value3;
+#else
+	send_stream << "SenExpCtrl: mavlink missing";
+#endif // HAVE_MAVLINK_H
 	Logger::debug(send_stream.str());
 }
 
 void SenExpCtrl::publish_data(uint64_t time) {
+#ifdef HAVE_MAVLINK_H
 	int i;
 	for(i=0; i < EXPCTRL_NUMCHAN; i++) {
 		DataCenter::set_sensor(chanmap[i], (double)sensor_data[i].analog);
 	}
+#endif // HAVE_MAVLINK_H
 }
 
 void* SenExpCtrl::get_data_pointer(unsigned int id) throw(const char *) {
 	if (status == RUNNING) {
 		switch ((0xFFFF0000 & id) >> 16) {
+#ifdef HAVE_MAVLINK_H
 			case (DISTANCE_SENSOR): // sensor 0
 				return &sensor_data[0];
 			case (DISTANCE_SENSOR | 0x1000): // sensor 1
 				return &sensor_data[1];
+#endif // HAVE_MAVLINK_H
 			default: throw "sensor exp_ctrl doesn't support this sensor type";
 		}
 	} throw "sensor exp_ctrl isn't running";
