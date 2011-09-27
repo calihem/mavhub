@@ -5,10 +5,13 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #ifdef HAVE_MKHUCHLINK_H
+#include <mkhuchlink.h>
 
 #include "protocol/protocollayer.h"
-#include <mkhuchlink.h>
 
 #include <inttypes.h> //uint8_t
 #include <bitset>
@@ -81,4 +84,5 @@ namespace mavhub {
 } // namespace mavhub
 
 #endif // HAVE_MKHUCHLINK_H
+#endif // HAVE_MAVLINK_H
 #endif // _MK_APP_H_

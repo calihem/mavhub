@@ -108,6 +108,6 @@ namespace mavhub {
   };
 }
 
-#endif //  HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV_CV_H
 
 #endif

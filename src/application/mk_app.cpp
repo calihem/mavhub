@@ -1,5 +1,6 @@
 #include "mk_app.h"
 
+#ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MKHUCHLINK_H
 
 #include "core/logger.h"
@@ -504,3 +505,5 @@ void MKApp::run() {
 } // namespace mavhub
 
 #endif // HAVE_MKHUCHLINK_H
+#endif // HAVE_MAVLINK_H
+

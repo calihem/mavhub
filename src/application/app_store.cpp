@@ -115,9 +115,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "ctrl_hover_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MKLINK_H
+#ifdef HAVE_OPENCV_CV_H
 		// pass only configuration map into constructor
 		Ctrl_Hover *ctrl_hover_app = new Ctrl_Hover(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_hover_app);
+#endif // HAVE_OPENCV_CV_H
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_lateral_app") {

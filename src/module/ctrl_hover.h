@@ -13,6 +13,8 @@
 #ifdef HAVE_MKLINK_H
 #include <mklink.h>
 
+#ifdef HAVE_OPENCV_CV_H
+
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "filter_kalmancv.h"
@@ -228,6 +230,8 @@ namespace mavhub {
 		return tmp + (expf(tmp * 7.0) - 1.0);
 	}
 }
+
+#endif // HAVE_OPENCV_CV_H
 
 #endif // HAVE_MKLINK_H
 
