@@ -4,8 +4,6 @@
 #include <fstream>	//ifstream
 #include <stdexcept>
 
-#include <opencv/cv.h> 
-
 #include <GL/glut.h>
 #include <GL/freeglut_ext.h>	//glutMainLoopEvent
 

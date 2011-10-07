@@ -19,6 +19,9 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_RANLIB
 
+# Checks for SSE support
+AX_EXT
+
 # doxygen support
 DX_HTML_FEATURE(ON)
 DX_CHM_FEATURE(OFF)
@@ -75,6 +78,7 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h 
 AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_WARN( [Please specify header directory for mavlink, e.g. configure CPPFLAGS="-I/home/user/mavlink/include/huch"] )])
 AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )])
 AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory for mklink, e.g. configure CPPFLAGS="-I/home/user/mklink"] )])
+AC_CHECK_HEADERS([opencv/cv.h], AM_CONDITIONAL(COND_OPENCV, true) , [AM_CONDITIONAL(COND_OPENCV, false) AC_MSG_WARN([OpenCV headers not found])])
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
 AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AM_CONDITIONAL(COND_OPENGL, false) AC_MSG_WARN([OpenGL headers not found])])
 
@@ -104,6 +108,7 @@ AC_CONFIG_FILES([Makefile
                  src/module/Makefile
                  src/protocol/Makefile
                  src/sensor/Makefile
+                 thirdparty/Makefile
                  tests/Makefile])
 
 AC_OUTPUT

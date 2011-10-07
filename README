@@ -11,7 +11,6 @@ Dependencies
 
 Required
 --------
-* mavlink
 
 Optional
 --------
@@ -24,6 +23,8 @@ Optional
   - http://www.doxygen.org
 * GStreamer
   - http://gstreamer.freedesktop.org/
+* mavlink
+  - http://pixhawk.ethz.ch/wiki/mavlink/
 * mkhuchlink
 * OpenGL
 

@@ -98,8 +98,8 @@ namespace mavhub {
 			CvPoint3D32f mMeasuredValuesForTesting;
 			
 			// Paths for saving calibration results
-			static const string mCalibrationBiasesPath;
-			static const string mCalibrationScaleFactorsPath;
+			static const std::string mCalibrationBiasesPath;
+			static const std::string mCalibrationScaleFactorsPath;
 	};
 		
 	/*

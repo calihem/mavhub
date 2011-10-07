@@ -37,7 +37,10 @@ host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/am/am_incl_common.am
-subdir = src/application
+
+# AM_CPPFLAGS += $(SIMD_FLAGS)
+@COND_OPENCV_TRUE@am__append_1 = libbrisk.a
+subdir = thirdparty
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
 	$(top_srcdir)/m4/ax_boost_unit_test_framework.m4 \
@@ -55,13 +58,11 @@ CONFIG_CLEAN_VPATH_FILES =
 LIBRARIES = $(noinst_LIBRARIES)
 AR = ar
 ARFLAGS = cru
-libapp_a_AR = $(AR) $(ARFLAGS)
-libapp_a_LIBADD =
-am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
-	attitude_filter_app.$(OBJEXT) app_store.$(OBJEXT) \
-	mavlink_mk_app.$(OBJEXT) mavlink_mkhuch_app.$(OBJEXT) \
-	mk_app.$(OBJEXT) opengl_app.$(OBJEXT) slam_app.$(OBJEXT)
-libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
+libbrisk_a_AR = $(AR) $(ARFLAGS)
+libbrisk_a_LIBADD =
+am__libbrisk_a_SOURCES_DIST = brisk/brisk.cpp
+@COND_OPENCV_TRUE@am_libbrisk_a_OBJECTS = brisk.$(OBJEXT)
+libbrisk_a_OBJECTS = $(am_libbrisk_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -71,8 +72,8 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(libapp_a_SOURCES)
-DIST_SOURCES = $(libapp_a_SOURCES)
+SOURCES = $(libbrisk_a_SOURCES)
+DIST_SOURCES = $(am__libbrisk_a_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -220,20 +221,10 @@ top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
-
-# additional include paths necessary to compile the C++ library
-AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty \
-	$(GSTREAMER_CFLAGS)
-noinst_LIBRARIES = libapp.a
-libapp_a_SOURCES = \
-	acc_calibration_app/acc_calibration_app.cpp \
-	attitude_filter_app/attitude_filter_app.cpp \
-	app_store.cpp \
-	mavlink_mk_app.cpp \
-	mavlink_mkhuch_app.cpp \
-	mk_app.cpp \
-	opengl_app.cpp \
-	slam_app.cpp
+AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
+noinst_LIBRARIES = $(am__append_1)
+@COND_OPENCV_TRUE@libbrisk_a_SOURCES = \
+@COND_OPENCV_TRUE@	brisk/brisk.cpp
 
 all: all-am
 
@@ -248,9 +239,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/am/am_incl_common.am
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/application/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu thirdparty/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/application/Makefile
+	  $(AUTOMAKE) --gnu thirdparty/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -272,10 +263,10 @@ $(am__aclocal_m4_deps):
 
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libapp.a: $(libapp_a_OBJECTS) $(libapp_a_DEPENDENCIES) 
-	-rm -f libapp.a
-	$(libapp_a_AR) libapp.a $(libapp_a_OBJECTS) $(libapp_a_LIBADD)
-	$(RANLIB) libapp.a
+libbrisk.a: $(libbrisk_a_OBJECTS) $(libbrisk_a_DEPENDENCIES) 
+	-rm -f libbrisk.a
+	$(libbrisk_a_AR) libbrisk.a $(libbrisk_a_OBJECTS) $(libbrisk_a_LIBADD)
+	$(RANLIB) libbrisk.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -283,14 +274,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acc_calibration_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/app_store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attitude_filter_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mk_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mkhuch_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opengl_app.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slam_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/brisk.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -306,33 +290,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-acc_calibration_app.o: acc_calibration_app/acc_calibration_app.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT acc_calibration_app.o -MD -MP -MF $(DEPDIR)/acc_calibration_app.Tpo -c -o acc_calibration_app.o `test -f 'acc_calibration_app/acc_calibration_app.cpp' || echo '$(srcdir)/'`acc_calibration_app/acc_calibration_app.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/acc_calibration_app.Tpo $(DEPDIR)/acc_calibration_app.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='acc_calibration_app/acc_calibration_app.cpp' object='acc_calibration_app.o' libtool=no @AMDEPBACKSLASH@
+brisk.o: brisk/brisk.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT brisk.o -MD -MP -MF $(DEPDIR)/brisk.Tpo -c -o brisk.o `test -f 'brisk/brisk.cpp' || echo '$(srcdir)/'`brisk/brisk.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/brisk.Tpo $(DEPDIR)/brisk.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='brisk/brisk.cpp' object='brisk.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o acc_calibration_app.o `test -f 'acc_calibration_app/acc_calibration_app.cpp' || echo '$(srcdir)/'`acc_calibration_app/acc_calibration_app.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o brisk.o `test -f 'brisk/brisk.cpp' || echo '$(srcdir)/'`brisk/brisk.cpp
 
-acc_calibration_app.obj: acc_calibration_app/acc_calibration_app.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT acc_calibration_app.obj -MD -MP -MF $(DEPDIR)/acc_calibration_app.Tpo -c -o acc_calibration_app.obj `if test -f 'acc_calibration_app/acc_calibration_app.cpp'; then $(CYGPATH_W) 'acc_calibration_app/acc_calibration_app.cpp'; else $(CYGPATH_W) '$(srcdir)/acc_calibration_app/acc_calibration_app.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/acc_calibration_app.Tpo $(DEPDIR)/acc_calibration_app.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='acc_calibration_app/acc_calibration_app.cpp' object='acc_calibration_app.obj' libtool=no @AMDEPBACKSLASH@
+brisk.obj: brisk/brisk.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT brisk.obj -MD -MP -MF $(DEPDIR)/brisk.Tpo -c -o brisk.obj `if test -f 'brisk/brisk.cpp'; then $(CYGPATH_W) 'brisk/brisk.cpp'; else $(CYGPATH_W) '$(srcdir)/brisk/brisk.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/brisk.Tpo $(DEPDIR)/brisk.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='brisk/brisk.cpp' object='brisk.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o acc_calibration_app.obj `if test -f 'acc_calibration_app/acc_calibration_app.cpp'; then $(CYGPATH_W) 'acc_calibration_app/acc_calibration_app.cpp'; else $(CYGPATH_W) '$(srcdir)/acc_calibration_app/acc_calibration_app.cpp'; fi`
-
-attitude_filter_app.o: attitude_filter_app/attitude_filter_app.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT attitude_filter_app.o -MD -MP -MF $(DEPDIR)/attitude_filter_app.Tpo -c -o attitude_filter_app.o `test -f 'attitude_filter_app/attitude_filter_app.cpp' || echo '$(srcdir)/'`attitude_filter_app/attitude_filter_app.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/attitude_filter_app.Tpo $(DEPDIR)/attitude_filter_app.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='attitude_filter_app/attitude_filter_app.cpp' object='attitude_filter_app.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o attitude_filter_app.o `test -f 'attitude_filter_app/attitude_filter_app.cpp' || echo '$(srcdir)/'`attitude_filter_app/attitude_filter_app.cpp
-
-attitude_filter_app.obj: attitude_filter_app/attitude_filter_app.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT attitude_filter_app.obj -MD -MP -MF $(DEPDIR)/attitude_filter_app.Tpo -c -o attitude_filter_app.obj `if test -f 'attitude_filter_app/attitude_filter_app.cpp'; then $(CYGPATH_W) 'attitude_filter_app/attitude_filter_app.cpp'; else $(CYGPATH_W) '$(srcdir)/attitude_filter_app/attitude_filter_app.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/attitude_filter_app.Tpo $(DEPDIR)/attitude_filter_app.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='attitude_filter_app/attitude_filter_app.cpp' object='attitude_filter_app.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o attitude_filter_app.obj `if test -f 'attitude_filter_app/attitude_filter_app.cpp'; then $(CYGPATH_W) 'attitude_filter_app/attitude_filter_app.cpp'; else $(CYGPATH_W) '$(srcdir)/attitude_filter_app/attitude_filter_app.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o brisk.obj `if test -f 'brisk/brisk.cpp'; then $(CYGPATH_W) 'brisk/brisk.cpp'; else $(CYGPATH_W) '$(srcdir)/brisk/brisk.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

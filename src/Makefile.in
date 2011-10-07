@@ -37,11 +37,19 @@ host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(top_srcdir)/am/am_incl_common.am
+@COND_USE_GSTREAMER_TRUE@am__append_1 = $(top_builddir)/src/lib/libgstreamer.a
+@COND_OPENGL_TRUE@am__append_2 = $(top_builddir)/src/lib/libopengl.a
+@COND_OPENCV_TRUE@am__append_3 = $(top_builddir)/src/lib/libslam.a
+@COND_OPENCV_TRUE@am__append_4 = $(top_builddir)/thirdparty/libbrisk.a
 bin_PROGRAMS = mavhub$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
 	$(top_srcdir)/m4/ax_boost_unit_test_framework.m4 \
+	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/m4/ax_check_compiler_flags.m4 \
+	$(top_srcdir)/m4/ax_ext.m4 \
+	$(top_srcdir)/m4/ax_gcc_x86_cpuid.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -59,7 +67,8 @@ mavhub_DEPENDENCIES = $(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/sensor/libsensor.a \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
-	$(top_builddir)/src/io/libio.a $(am__DEPENDENCIES_1)
+	$(top_builddir)/src/io/libio.a $(SRC_EXTRA_LIBS) \
+	$(THIRDPARTY_EXTRA_LIBS) $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -191,6 +200,7 @@ PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SIMD_FLAGS = @SIMD_FLAGS@
 STRIP = @STRIP@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
@@ -255,12 +265,14 @@ top_srcdir = @top_srcdir@
 
 # additional include paths necessary to compile the C++ program
 # AM_CXXFLAGS = 
-AM_CPPFLAGS = -D_REENTRANT -Wall -DSTDOUTLOG $(GSTREAMER_CFLAGS) \
-	-Wno-variadic-macros -Wno-long-long
+AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG \
+	$(GSTREAMER_CFLAGS) -Wno-variadic-macros -Wno-long-long
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
-AM_CXXFLAGS = -I$(top_srcdir)/src
-SUBDIRS = application core io lib module protocol sensor
+AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
+SUBDIRS = application core io lib module protocol sensor ../thirdparty
+SRC_EXTRA_LIBS = $(am__append_1) $(am__append_2) $(am__append_3)
+THIRDPARTY_EXTRA_LIBS = $(am__append_4)
 mavhub_SOURCES = main.cpp
 mavhub_LDADD = \
 	$(top_builddir)/src/application/libapp.a \
@@ -269,7 +281,8 @@ mavhub_LDADD = \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
-	$(EXTRA_SRC_LIBS) \
+	$(SRC_EXTRA_LIBS) \
+	$(THIRDPARTY_EXTRA_LIBS) \
 	$(GSTREAMER_LIBS) \
 	$(AM_LDFLAGS)
 
@@ -701,9 +714,6 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
 	uninstall uninstall-am uninstall-binPROGRAMS
 
-
-@COND_USE_GSTREAMER_TRUE@	EXTRA_SCR_LIBS += src/lib/libgstreamer.a
-@COND_OPENGL_TRUE@	EXTRA_SCR_LIBS += src/lib/libopengl.a
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

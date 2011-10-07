@@ -1,11 +1,11 @@
 AM_CPPFLAGS = -D_REENTRANT
 
 #AM_CPPFLAGS += -Wall -pedantic
-AM_CPPFLAGS += -Wall
+AM_CPPFLAGS += -Wall $(SIMD_FLAGS)
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
 AM_CPPFLAGS  += -DSTDOUTLOG 
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 
-AM_CXXFLAGS = -I$(top_srcdir)/src
+AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty

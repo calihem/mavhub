@@ -1111,4 +1111,8 @@ AC_SUBST([am__untar])
 
 m4_include([m4/ax_boost_base.m4])
 m4_include([m4/ax_boost_unit_test_framework.m4])
+m4_include([m4/ax_check_compile_flag.m4])
+m4_include([m4/ax_check_compiler_flags.m4])
+m4_include([m4/ax_ext.m4])
+m4_include([m4/ax_gcc_x86_cpuid.m4])
 m4_include([m4/ax_prog_doxygen.m4])

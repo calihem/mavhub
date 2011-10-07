@@ -38,10 +38,17 @@ target_triplet = @target@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/am/am_incl_common.am
 @COND_USE_GSTREAMER_TRUE@am__append_1 = $(GSTREAMER_CFLAGS) -Wno-variadic-macros -Wno-long-long
+@COND_USE_GSTREAMER_TRUE@am__append_2 = libgstreamer.a
+@COND_OPENGL_TRUE@am__append_3 = libopengl.a
+@COND_OPENCV_TRUE@am__append_4 = libslam.a
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
 	$(top_srcdir)/m4/ax_boost_unit_test_framework.m4 \
+	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/m4/ax_check_compiler_flags.m4 \
+	$(top_srcdir)/m4/ax_ext.m4 \
+	$(top_srcdir)/m4/ax_gcc_x86_cpuid.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -63,6 +70,11 @@ libopengl_a_LIBADD =
 am__libopengl_a_SOURCES_DIST = opengl/map_2d.cpp
 @COND_OPENGL_TRUE@am_libopengl_a_OBJECTS = map_2d.$(OBJEXT)
 libopengl_a_OBJECTS = $(am_libopengl_a_OBJECTS)
+libslam_a_AR = $(AR) $(ARFLAGS)
+libslam_a_LIBADD =
+am__libslam_a_SOURCES_DIST = slam/features.cpp
+@COND_OPENCV_TRUE@am_libslam_a_OBJECTS = features.$(OBJEXT)
+libslam_a_OBJECTS = $(am_libslam_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -72,9 +84,10 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(libgstreamer_a_SOURCES) $(libopengl_a_SOURCES)
+SOURCES = $(libgstreamer_a_SOURCES) $(libopengl_a_SOURCES) \
+	$(libslam_a_SOURCES)
 DIST_SOURCES = $(am__libgstreamer_a_SOURCES_DIST) \
-	$(am__libopengl_a_SOURCES_DIST)
+	$(am__libopengl_a_SOURCES_DIST) $(am__libslam_a_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -157,6 +170,7 @@ PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SIMD_FLAGS = @SIMD_FLAGS@
 STRIP = @STRIP@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
@@ -218,17 +232,20 @@ top_srcdir = @top_srcdir@
 #AM_CPPFLAGS += -Wall -pedantic
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -Wall -DSTDOUTLOG $(am__append_1)
+AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG \
+	$(am__append_1)
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
-AM_CXXFLAGS = -I$(top_srcdir)/src
-@COND_OPENGL_TRUE@noinst_LIBRARIES = libopengl.a
-@COND_USE_GSTREAMER_TRUE@noinst_LIBRARIES = libgstreamer.a
+AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
+noinst_LIBRARIES = $(am__append_2) $(am__append_3) $(am__append_4)
 @COND_USE_GSTREAMER_TRUE@libgstreamer_a_SOURCES = \
 @COND_USE_GSTREAMER_TRUE@	gstreamer/video_server.cpp
 
 @COND_OPENGL_TRUE@libopengl_a_SOURCES = \
 @COND_OPENGL_TRUE@	opengl/map_2d.cpp
+
+@COND_OPENCV_TRUE@libslam_a_SOURCES = \
+@COND_OPENCV_TRUE@	slam/features.cpp
 
 all: all-am
 
@@ -275,6 +292,10 @@ libopengl.a: $(libopengl_a_OBJECTS) $(libopengl_a_DEPENDENCIES)
 	-rm -f libopengl.a
 	$(libopengl_a_AR) libopengl.a $(libopengl_a_OBJECTS) $(libopengl_a_LIBADD)
 	$(RANLIB) libopengl.a
+libslam.a: $(libslam_a_OBJECTS) $(libslam_a_DEPENDENCIES) 
+	-rm -f libslam.a
+	$(libslam_a_AR) libslam.a $(libslam_a_OBJECTS) $(libslam_a_LIBADD)
+	$(RANLIB) libslam.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -282,6 +303,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/features.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/map_2d.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/video_server.Po@am__quote@
 
@@ -326,6 +348,20 @@ map_2d.obj: opengl/map_2d.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='opengl/map_2d.cpp' object='map_2d.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o map_2d.obj `if test -f 'opengl/map_2d.cpp'; then $(CYGPATH_W) 'opengl/map_2d.cpp'; else $(CYGPATH_W) '$(srcdir)/opengl/map_2d.cpp'; fi`
+
+features.o: slam/features.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT features.o -MD -MP -MF $(DEPDIR)/features.Tpo -c -o features.o `test -f 'slam/features.cpp' || echo '$(srcdir)/'`slam/features.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/features.Tpo $(DEPDIR)/features.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='slam/features.cpp' object='features.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o features.o `test -f 'slam/features.cpp' || echo '$(srcdir)/'`slam/features.cpp
+
+features.obj: slam/features.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT features.obj -MD -MP -MF $(DEPDIR)/features.Tpo -c -o features.obj `if test -f 'slam/features.cpp'; then $(CYGPATH_W) 'slam/features.cpp'; else $(CYGPATH_W) '$(srcdir)/slam/features.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/features.Tpo $(DEPDIR)/features.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='slam/features.cpp' object='features.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o features.obj `if test -f 'slam/features.cpp'; then $(CYGPATH_W) 'slam/features.cpp'; else $(CYGPATH_W) '$(srcdir)/slam/features.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

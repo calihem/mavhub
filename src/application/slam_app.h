@@ -21,7 +21,7 @@ namespace mavhub {
 		public:
 			static const int component_id = 28;
 
-			SLAMApp(const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+			SLAMApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 			virtual ~SLAMApp();
 
 			virtual void handle_input(const mavlink_message_t &msg);
@@ -32,6 +32,7 @@ namespace mavhub {
 			virtual void run();
 
 		private:
+			std::string sink_name;
 			static void new_video_buffer_callback(GstElement *element, GstElement *data);
 	};
 
