@@ -1,5 +1,7 @@
 #include "opengl_app.h"
 
+#ifdef HAVE_MAVLINK_H
+
 #ifdef HAVE_GL_GLUT_H
 
 #include "core/logger.h"
@@ -146,3 +148,4 @@ void OpenGLApp::send_heartbeat() {
 } // namespace mavhub
 
 #endif // HAVE_GL_GLUT_H
+#endif // HAVE_MAVLINK_H

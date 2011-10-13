@@ -5,11 +5,13 @@ include $(top_srcdir)/am/am_incl_common.am
 
 bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
+	brisk_test.cpp \
 	mavhub_test.cpp \
 	utility_test.cpp \
 	application/acc_calibration_app_test.cpp
 
 test_mavhub_LDADD = \
+	$(top_builddir)/thirdparty/libbrisk.a \
 	$(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \

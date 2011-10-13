@@ -5,6 +5,8 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
+
 #ifdef HAVE_GL_GLUT_H
 
 #ifdef HAVE_GSTREAMER
@@ -62,4 +64,5 @@ namespace mavhub {
 } // namespace mavhub
 
 #endif // HAVE_GL_GLUT_H
+#endif // HAVE_MAVLINK_H
 #endif // _OPENGL_APP_H_

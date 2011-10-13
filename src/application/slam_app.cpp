@@ -1,5 +1,7 @@
 #include "slam_app.h"
 
+#ifdef HAVE_MAVLINK_H
+
 #ifdef HAVE_GSTREAMER
 
 #include "core/logger.h"
@@ -73,3 +75,5 @@ void SLAMApp::run() {
 } // namespace mavhub
 
 #endif // HAVE_GSTREAMER
+
+#endif // HAVE_MAVLINK_H

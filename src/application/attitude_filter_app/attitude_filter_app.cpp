@@ -1,5 +1,8 @@
 #include "attitude_filter_app.h"
 
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #ifdef HAVE_OPENCV_CV_H
 #include <opencv/cv.h>
 
@@ -240,3 +243,4 @@ void AttitudeFilterApp::getIMURawADCData() {
 
 #endif // HAVE_OPENCV_CV_H
 
+#endif // HAVE_MAVLINK_H

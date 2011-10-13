@@ -5,6 +5,8 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
+
 #ifdef HAVE_GSTREAMER
 #include "lib/gstreamer/video_server.h"
 #include "lib/gstreamer/video_client.h"
@@ -39,5 +41,7 @@ namespace mavhub {
 } // namespace mavhub
 
 #endif // HAVE_GSTREAMER
+
+#endif // HAVE_MAVLINK_H
 
 #endif // _OPENGL_APP_H_
