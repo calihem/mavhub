@@ -66,6 +66,16 @@
 /* Define to 1 if you have the `opencv_core' library (-lopencv_core). */
 #undef HAVE_LIBOPENCV_CORE
 
+/* Define to 1 if you have the `opencv_features2d' library
+   (-lopencv_features2d). */
+#undef HAVE_LIBOPENCV_FEATURES2D
+
+/* Define to 1 if you have the `opencv_highgui' library (-lopencv_highgui). */
+#undef HAVE_LIBOPENCV_HIGHGUI
+
+/* Define to 1 if you have the `opencv_imgproc' library (-lopencv_imgproc). */
+#undef HAVE_LIBOPENCV_IMGPROC
+
 /* Define to 1 if you have the `opencv_legacy' library (-lopencv_legacy). */
 #undef HAVE_LIBOPENCV_LEGACY
 

@@ -24,6 +24,10 @@
     along with BRISK.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <brisk/brisk.h>
@@ -35,8 +39,9 @@
 #include <agast/agast7_12s.h>
 #include <agast/agast5_8.h>
 #include <stdlib.h>
+#ifdef HAVE_SSSE3
 #include <tmmintrin.h>
-
+#endif // HAVE_SSSE3
 
 using namespace cv;
 
@@ -1828,6 +1833,7 @@ __inline__ uint8_t BriskLayer::value(const cv::Mat& mat, float xf, float yf, flo
 
 // half sampling
 inline void BriskLayer::halfsample(const cv::Mat& srcimg, cv::Mat& dstimg){
+#ifdef HAVE_MMX
 	const unsigned short leftoverCols = ((srcimg.cols%16)/2);// take care with border...
 	const bool noleftover = (srcimg.cols%16)==0; // note: leftoverCols can be zero but this still false...
 
@@ -1959,9 +1965,13 @@ inline void BriskLayer::halfsample(const cv::Mat& srcimg, cv::Mat& dstimg){
 			p2=(__m128i*)(srcimg.data+(2*row+1)*srcimg.cols);
 		}
 	}
+#else
+	cv::resize(srcimg, dstimg, dstimg.size());
+#endif // HAVE_MMX
 }
 
 inline void BriskLayer::twothirdsample(const cv::Mat& srcimg, cv::Mat& dstimg){
+#ifdef HAVE_MMX
 	const unsigned short leftoverCols = ((srcimg.cols/3)*3)%15;// take care with border...
 
 	// make sure the destination image is of the right size:
@@ -2052,4 +2062,7 @@ inline void BriskLayer::twothirdsample(const cv::Mat& srcimg, cv::Mat& dstimg){
 		p_dest1 = dstimg.data+row_dest*dstimg.cols;
 		p_dest2 = p_dest1+dstimg.cols;
 	}
+#else
+	cv::resize(srcimg, dstimg, dstimg.size());
+#endif // HAVE_MMX
 }

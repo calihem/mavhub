@@ -27,12 +27,18 @@
 #ifndef _BRISK_H_
 #define _BRISK_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <agast/oast9_16.h>
 #include <agast/agast7_12s.h>
 #include <agast/agast5_8.h>
+#ifdef HAVE_MMX
 #include <emmintrin.h>
+#endif // HAVE_MMX
 
 #ifndef M_PI
 	#define M_PI 3.141592653589793
@@ -138,6 +144,7 @@ struct BriskLongPair{
 		static const float basicSize_;
 	};
 
+#ifdef HAVE_SSSE3
 	/// Faster Hamming distance functor - uses sse
 	/// bit count of A exclusive XOR'ed with B
 	class CV_EXPORTS HammingSse
@@ -164,6 +171,7 @@ struct BriskLongPair{
 				size/16);
 	    }
 	};
+#endif // HAVE_SSSE3
 
 	// a layer in the Brisk detector pyramid
 	class CV_EXPORTS BriskLayer

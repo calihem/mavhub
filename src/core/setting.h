@@ -75,8 +75,20 @@ inline int Setting::value(const std::string &key, T& value) {
 	seekg(group_pos);
 
 	string line;
+	string::reverse_iterator rev_it;
 	while(std::getline(*this, line)) { //read line by line
 		if(line.empty()) continue;
+
+		// check for multi-line strings (ending on backslash)
+		rev_it = line.rbegin();
+		while(*rev_it++ == 92 && *rev_it != 92) { // is last char a \ without escape character?
+			string next_line;
+			if(!std::getline(*this, next_line)) break;
+			//append next line without backslash
+			line.replace(line.end()-1, line.end(), next_line);
+			rev_it = line.rbegin();
+		}
+
 		string::size_type start = line.find_first_not_of(" \t\n");
 		//skip comment lines
 		if(start != string::npos && line[start] == '#') 

@@ -8084,6 +8084,141 @@ _ACEOF
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvIntegral in -lopencv_imgproc" >&5
+$as_echo_n "checking for cvIntegral in -lopencv_imgproc... " >&6; }
+if ${ac_cv_lib_opencv_imgproc_cvIntegral+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lopencv_imgproc  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cvIntegral ();
+int
+main ()
+{
+return cvIntegral ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_opencv_imgproc_cvIntegral=yes
+else
+  ac_cv_lib_opencv_imgproc_cvIntegral=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_imgproc_cvIntegral" >&5
+$as_echo "$ac_cv_lib_opencv_imgproc_cvIntegral" >&6; }
+if test "x$ac_cv_lib_opencv_imgproc_cvIntegral" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBOPENCV_IMGPROC 1
+_ACEOF
+
+  LIBS="-lopencv_imgproc $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCalcPCA in -lopencv_features2d" >&5
+$as_echo_n "checking for cvCalcPCA in -lopencv_features2d... " >&6; }
+if ${ac_cv_lib_opencv_features2d_cvCalcPCA+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lopencv_features2d  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cvCalcPCA ();
+int
+main ()
+{
+return cvCalcPCA ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_opencv_features2d_cvCalcPCA=yes
+else
+  ac_cv_lib_opencv_features2d_cvCalcPCA=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_features2d_cvCalcPCA" >&5
+$as_echo "$ac_cv_lib_opencv_features2d_cvCalcPCA" >&6; }
+if test "x$ac_cv_lib_opencv_features2d_cvCalcPCA" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBOPENCV_FEATURES2D 1
+_ACEOF
+
+  LIBS="-lopencv_features2d $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvShowImage in -lopencv_highgui" >&5
+$as_echo_n "checking for cvShowImage in -lopencv_highgui... " >&6; }
+if ${ac_cv_lib_opencv_highgui_cvShowImage+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lopencv_highgui  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cvShowImage ();
+int
+main ()
+{
+return cvShowImage ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_opencv_highgui_cvShowImage=yes
+else
+  ac_cv_lib_opencv_highgui_cvShowImage=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_highgui_cvShowImage" >&5
+$as_echo "$ac_cv_lib_opencv_highgui_cvShowImage" >&6; }
+if test "x$ac_cv_lib_opencv_highgui_cvShowImage" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBOPENCV_HIGHGUI 1
+_ACEOF
+
+  LIBS="-lopencv_highgui $LIBS"
+
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_mutex_lock in -lpthread" >&5
 $as_echo_n "checking for pthread_mutex_lock in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_pthread_mutex_lock+:} false; then :

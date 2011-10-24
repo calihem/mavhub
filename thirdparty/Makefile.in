@@ -39,7 +39,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/am/am_incl_common.am
 
 # AM_CPPFLAGS += $(SIMD_FLAGS)
-@COND_OPENCV_TRUE@am__append_1 = libbrisk.a
+@COND_OPENCV_TRUE@am__append_1 = libagast.a libbrisk.a
 subdir = thirdparty
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
@@ -58,6 +58,21 @@ CONFIG_CLEAN_VPATH_FILES =
 LIBRARIES = $(noinst_LIBRARIES)
 AR = ar
 ARFLAGS = cru
+libagast_a_AR = $(AR) $(ARFLAGS)
+libagast_a_LIBADD =
+am__libagast_a_SOURCES_DIST = agast/agast5_8.cc agast/agast5_8_nms.cc \
+	agast/agast7_12d.cc agast/agast7_12d_nms.cc \
+	agast/agast7_12s.cc agast/agast7_12s_nms.cc \
+	agast/nonMaximumSuppression.cc agast/oast9_16.cc \
+	agast/oast9_16_nms.cc
+@COND_OPENCV_TRUE@am_libagast_a_OBJECTS = agast5_8.$(OBJEXT) \
+@COND_OPENCV_TRUE@	agast5_8_nms.$(OBJEXT) agast7_12d.$(OBJEXT) \
+@COND_OPENCV_TRUE@	agast7_12d_nms.$(OBJEXT) \
+@COND_OPENCV_TRUE@	agast7_12s.$(OBJEXT) \
+@COND_OPENCV_TRUE@	agast7_12s_nms.$(OBJEXT) \
+@COND_OPENCV_TRUE@	nonMaximumSuppression.$(OBJEXT) \
+@COND_OPENCV_TRUE@	oast9_16.$(OBJEXT) oast9_16_nms.$(OBJEXT)
+libagast_a_OBJECTS = $(am_libagast_a_OBJECTS)
 libbrisk_a_AR = $(AR) $(ARFLAGS)
 libbrisk_a_LIBADD =
 am__libbrisk_a_SOURCES_DIST = brisk/brisk.cpp
@@ -72,8 +87,9 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(libbrisk_a_SOURCES)
-DIST_SOURCES = $(am__libbrisk_a_SOURCES_DIST)
+SOURCES = $(libagast_a_SOURCES) $(libbrisk_a_SOURCES)
+DIST_SOURCES = $(am__libagast_a_SOURCES_DIST) \
+	$(am__libbrisk_a_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -223,13 +239,24 @@ AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
 noinst_LIBRARIES = $(am__append_1)
+@COND_OPENCV_TRUE@libagast_a_SOURCES = \
+@COND_OPENCV_TRUE@	agast/agast5_8.cc \
+@COND_OPENCV_TRUE@	agast/agast5_8_nms.cc \
+@COND_OPENCV_TRUE@	agast/agast7_12d.cc \
+@COND_OPENCV_TRUE@	agast/agast7_12d_nms.cc \
+@COND_OPENCV_TRUE@	agast/agast7_12s.cc \
+@COND_OPENCV_TRUE@	agast/agast7_12s_nms.cc \
+@COND_OPENCV_TRUE@	agast/nonMaximumSuppression.cc \
+@COND_OPENCV_TRUE@	agast/oast9_16.cc \
+@COND_OPENCV_TRUE@	agast/oast9_16_nms.cc
+
 @COND_OPENCV_TRUE@libbrisk_a_SOURCES = \
 @COND_OPENCV_TRUE@	brisk/brisk.cpp
 
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cpp .o .obj
+.SUFFIXES: .cc .cpp .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/am/am_incl_common.am $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -263,6 +290,10 @@ $(am__aclocal_m4_deps):
 
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+libagast.a: $(libagast_a_OBJECTS) $(libagast_a_DEPENDENCIES) 
+	-rm -f libagast.a
+	$(libagast_a_AR) libagast.a $(libagast_a_OBJECTS) $(libagast_a_LIBADD)
+	$(RANLIB) libagast.a
 libbrisk.a: $(libbrisk_a_OBJECTS) $(libbrisk_a_DEPENDENCIES) 
 	-rm -f libbrisk.a
 	$(libbrisk_a_AR) libbrisk.a $(libbrisk_a_OBJECTS) $(libbrisk_a_LIBADD)
@@ -274,21 +305,156 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agast5_8.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agast5_8_nms.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agast7_12d.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agast7_12d_nms.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agast7_12s.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agast7_12s_nms.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/brisk.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nonMaximumSuppression.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oast9_16.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oast9_16_nms.Po@am__quote@
 
-.cpp.o:
+.cc.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
 
-.cpp.obj:
+.cc.obj:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+agast5_8.o: agast/agast5_8.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast5_8.o -MD -MP -MF $(DEPDIR)/agast5_8.Tpo -c -o agast5_8.o `test -f 'agast/agast5_8.cc' || echo '$(srcdir)/'`agast/agast5_8.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast5_8.Tpo $(DEPDIR)/agast5_8.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast5_8.cc' object='agast5_8.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast5_8.o `test -f 'agast/agast5_8.cc' || echo '$(srcdir)/'`agast/agast5_8.cc
+
+agast5_8.obj: agast/agast5_8.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast5_8.obj -MD -MP -MF $(DEPDIR)/agast5_8.Tpo -c -o agast5_8.obj `if test -f 'agast/agast5_8.cc'; then $(CYGPATH_W) 'agast/agast5_8.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast5_8.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast5_8.Tpo $(DEPDIR)/agast5_8.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast5_8.cc' object='agast5_8.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast5_8.obj `if test -f 'agast/agast5_8.cc'; then $(CYGPATH_W) 'agast/agast5_8.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast5_8.cc'; fi`
+
+agast5_8_nms.o: agast/agast5_8_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast5_8_nms.o -MD -MP -MF $(DEPDIR)/agast5_8_nms.Tpo -c -o agast5_8_nms.o `test -f 'agast/agast5_8_nms.cc' || echo '$(srcdir)/'`agast/agast5_8_nms.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast5_8_nms.Tpo $(DEPDIR)/agast5_8_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast5_8_nms.cc' object='agast5_8_nms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast5_8_nms.o `test -f 'agast/agast5_8_nms.cc' || echo '$(srcdir)/'`agast/agast5_8_nms.cc
+
+agast5_8_nms.obj: agast/agast5_8_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast5_8_nms.obj -MD -MP -MF $(DEPDIR)/agast5_8_nms.Tpo -c -o agast5_8_nms.obj `if test -f 'agast/agast5_8_nms.cc'; then $(CYGPATH_W) 'agast/agast5_8_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast5_8_nms.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast5_8_nms.Tpo $(DEPDIR)/agast5_8_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast5_8_nms.cc' object='agast5_8_nms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast5_8_nms.obj `if test -f 'agast/agast5_8_nms.cc'; then $(CYGPATH_W) 'agast/agast5_8_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast5_8_nms.cc'; fi`
+
+agast7_12d.o: agast/agast7_12d.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12d.o -MD -MP -MF $(DEPDIR)/agast7_12d.Tpo -c -o agast7_12d.o `test -f 'agast/agast7_12d.cc' || echo '$(srcdir)/'`agast/agast7_12d.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12d.Tpo $(DEPDIR)/agast7_12d.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12d.cc' object='agast7_12d.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12d.o `test -f 'agast/agast7_12d.cc' || echo '$(srcdir)/'`agast/agast7_12d.cc
+
+agast7_12d.obj: agast/agast7_12d.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12d.obj -MD -MP -MF $(DEPDIR)/agast7_12d.Tpo -c -o agast7_12d.obj `if test -f 'agast/agast7_12d.cc'; then $(CYGPATH_W) 'agast/agast7_12d.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12d.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12d.Tpo $(DEPDIR)/agast7_12d.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12d.cc' object='agast7_12d.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12d.obj `if test -f 'agast/agast7_12d.cc'; then $(CYGPATH_W) 'agast/agast7_12d.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12d.cc'; fi`
+
+agast7_12d_nms.o: agast/agast7_12d_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12d_nms.o -MD -MP -MF $(DEPDIR)/agast7_12d_nms.Tpo -c -o agast7_12d_nms.o `test -f 'agast/agast7_12d_nms.cc' || echo '$(srcdir)/'`agast/agast7_12d_nms.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12d_nms.Tpo $(DEPDIR)/agast7_12d_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12d_nms.cc' object='agast7_12d_nms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12d_nms.o `test -f 'agast/agast7_12d_nms.cc' || echo '$(srcdir)/'`agast/agast7_12d_nms.cc
+
+agast7_12d_nms.obj: agast/agast7_12d_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12d_nms.obj -MD -MP -MF $(DEPDIR)/agast7_12d_nms.Tpo -c -o agast7_12d_nms.obj `if test -f 'agast/agast7_12d_nms.cc'; then $(CYGPATH_W) 'agast/agast7_12d_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12d_nms.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12d_nms.Tpo $(DEPDIR)/agast7_12d_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12d_nms.cc' object='agast7_12d_nms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12d_nms.obj `if test -f 'agast/agast7_12d_nms.cc'; then $(CYGPATH_W) 'agast/agast7_12d_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12d_nms.cc'; fi`
+
+agast7_12s.o: agast/agast7_12s.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12s.o -MD -MP -MF $(DEPDIR)/agast7_12s.Tpo -c -o agast7_12s.o `test -f 'agast/agast7_12s.cc' || echo '$(srcdir)/'`agast/agast7_12s.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12s.Tpo $(DEPDIR)/agast7_12s.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12s.cc' object='agast7_12s.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12s.o `test -f 'agast/agast7_12s.cc' || echo '$(srcdir)/'`agast/agast7_12s.cc
+
+agast7_12s.obj: agast/agast7_12s.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12s.obj -MD -MP -MF $(DEPDIR)/agast7_12s.Tpo -c -o agast7_12s.obj `if test -f 'agast/agast7_12s.cc'; then $(CYGPATH_W) 'agast/agast7_12s.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12s.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12s.Tpo $(DEPDIR)/agast7_12s.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12s.cc' object='agast7_12s.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12s.obj `if test -f 'agast/agast7_12s.cc'; then $(CYGPATH_W) 'agast/agast7_12s.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12s.cc'; fi`
+
+agast7_12s_nms.o: agast/agast7_12s_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12s_nms.o -MD -MP -MF $(DEPDIR)/agast7_12s_nms.Tpo -c -o agast7_12s_nms.o `test -f 'agast/agast7_12s_nms.cc' || echo '$(srcdir)/'`agast/agast7_12s_nms.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12s_nms.Tpo $(DEPDIR)/agast7_12s_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12s_nms.cc' object='agast7_12s_nms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12s_nms.o `test -f 'agast/agast7_12s_nms.cc' || echo '$(srcdir)/'`agast/agast7_12s_nms.cc
+
+agast7_12s_nms.obj: agast/agast7_12s_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT agast7_12s_nms.obj -MD -MP -MF $(DEPDIR)/agast7_12s_nms.Tpo -c -o agast7_12s_nms.obj `if test -f 'agast/agast7_12s_nms.cc'; then $(CYGPATH_W) 'agast/agast7_12s_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12s_nms.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/agast7_12s_nms.Tpo $(DEPDIR)/agast7_12s_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/agast7_12s_nms.cc' object='agast7_12s_nms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o agast7_12s_nms.obj `if test -f 'agast/agast7_12s_nms.cc'; then $(CYGPATH_W) 'agast/agast7_12s_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/agast7_12s_nms.cc'; fi`
+
+nonMaximumSuppression.o: agast/nonMaximumSuppression.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT nonMaximumSuppression.o -MD -MP -MF $(DEPDIR)/nonMaximumSuppression.Tpo -c -o nonMaximumSuppression.o `test -f 'agast/nonMaximumSuppression.cc' || echo '$(srcdir)/'`agast/nonMaximumSuppression.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/nonMaximumSuppression.Tpo $(DEPDIR)/nonMaximumSuppression.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/nonMaximumSuppression.cc' object='nonMaximumSuppression.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o nonMaximumSuppression.o `test -f 'agast/nonMaximumSuppression.cc' || echo '$(srcdir)/'`agast/nonMaximumSuppression.cc
+
+nonMaximumSuppression.obj: agast/nonMaximumSuppression.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT nonMaximumSuppression.obj -MD -MP -MF $(DEPDIR)/nonMaximumSuppression.Tpo -c -o nonMaximumSuppression.obj `if test -f 'agast/nonMaximumSuppression.cc'; then $(CYGPATH_W) 'agast/nonMaximumSuppression.cc'; else $(CYGPATH_W) '$(srcdir)/agast/nonMaximumSuppression.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/nonMaximumSuppression.Tpo $(DEPDIR)/nonMaximumSuppression.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/nonMaximumSuppression.cc' object='nonMaximumSuppression.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o nonMaximumSuppression.obj `if test -f 'agast/nonMaximumSuppression.cc'; then $(CYGPATH_W) 'agast/nonMaximumSuppression.cc'; else $(CYGPATH_W) '$(srcdir)/agast/nonMaximumSuppression.cc'; fi`
+
+oast9_16.o: agast/oast9_16.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT oast9_16.o -MD -MP -MF $(DEPDIR)/oast9_16.Tpo -c -o oast9_16.o `test -f 'agast/oast9_16.cc' || echo '$(srcdir)/'`agast/oast9_16.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/oast9_16.Tpo $(DEPDIR)/oast9_16.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/oast9_16.cc' object='oast9_16.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o oast9_16.o `test -f 'agast/oast9_16.cc' || echo '$(srcdir)/'`agast/oast9_16.cc
+
+oast9_16.obj: agast/oast9_16.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT oast9_16.obj -MD -MP -MF $(DEPDIR)/oast9_16.Tpo -c -o oast9_16.obj `if test -f 'agast/oast9_16.cc'; then $(CYGPATH_W) 'agast/oast9_16.cc'; else $(CYGPATH_W) '$(srcdir)/agast/oast9_16.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/oast9_16.Tpo $(DEPDIR)/oast9_16.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/oast9_16.cc' object='oast9_16.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o oast9_16.obj `if test -f 'agast/oast9_16.cc'; then $(CYGPATH_W) 'agast/oast9_16.cc'; else $(CYGPATH_W) '$(srcdir)/agast/oast9_16.cc'; fi`
+
+oast9_16_nms.o: agast/oast9_16_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT oast9_16_nms.o -MD -MP -MF $(DEPDIR)/oast9_16_nms.Tpo -c -o oast9_16_nms.o `test -f 'agast/oast9_16_nms.cc' || echo '$(srcdir)/'`agast/oast9_16_nms.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/oast9_16_nms.Tpo $(DEPDIR)/oast9_16_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/oast9_16_nms.cc' object='oast9_16_nms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o oast9_16_nms.o `test -f 'agast/oast9_16_nms.cc' || echo '$(srcdir)/'`agast/oast9_16_nms.cc
+
+oast9_16_nms.obj: agast/oast9_16_nms.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT oast9_16_nms.obj -MD -MP -MF $(DEPDIR)/oast9_16_nms.Tpo -c -o oast9_16_nms.obj `if test -f 'agast/oast9_16_nms.cc'; then $(CYGPATH_W) 'agast/oast9_16_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/oast9_16_nms.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/oast9_16_nms.Tpo $(DEPDIR)/oast9_16_nms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='agast/oast9_16_nms.cc' object='oast9_16_nms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o oast9_16_nms.obj `if test -f 'agast/oast9_16_nms.cc'; then $(CYGPATH_W) 'agast/oast9_16_nms.cc'; else $(CYGPATH_W) '$(srcdir)/agast/oast9_16_nms.cc'; fi`
 
 brisk.o: brisk/brisk.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT brisk.o -MD -MP -MF $(DEPDIR)/brisk.Tpo -c -o brisk.o `test -f 'brisk/brisk.cpp' || echo '$(srcdir)/'`brisk/brisk.cpp
@@ -303,6 +469,20 @@ brisk.obj: brisk/brisk.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='brisk/brisk.cpp' object='brisk.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o brisk.obj `if test -f 'brisk/brisk.cpp'; then $(CYGPATH_W) 'brisk/brisk.cpp'; else $(CYGPATH_W) '$(srcdir)/brisk/brisk.cpp'; fi`
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

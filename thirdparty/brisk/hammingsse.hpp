@@ -27,15 +27,26 @@
 #ifndef HAMMINGSSE_HPP_
 #define HAMMINGSSE_HPP_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MMX
 #include <emmintrin.h>
+#endif // HAVE_MMX
+
+#ifdef HAVE_SSSE3
 #include <tmmintrin.h>
+#endif // HAVE_SSSE3
 
 namespace cv{
 
 #ifdef __GNUC__
 static const char __attribute__((aligned(16))) MASK_4bit[16] = {0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf};
 static const uint8_t __attribute__((aligned(16))) POPCOUNT_4bit[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+#ifdef HAVE_SSSE3
 static const __m128i shiftval = _mm_set_epi32 (0,0,0,4);
+#endif // HAVE_SSSE3
 #endif
 #ifdef _MSC_VER
 __declspec(align(16)) static const char MASK_4bit[16] = {0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf};
@@ -43,6 +54,7 @@ __declspec(align(16)) static const uint8_t POPCOUNT_4bit[16] = { 0, 1, 1, 2, 1, 
 static const __m128i shiftval = _mm_set_epi32 (0,0,0,4);
 #endif
 
+#ifdef HAVE_SSSE3
 __inline__ // - SSSE3 - better alorithm, minimized psadbw usage - adapted from http://wm.ite.pl/articles/sse-popcount.html
 uint32_t HammingSse::ssse3_popcntofXORed(const __m128i* signature1, const __m128i* signature2, const int numberOf128BitWords) {
 
@@ -124,6 +136,7 @@ uint32_t HammingSse::ssse3_popcntofXORed(const __m128i* signature1, const __m128
 //	);
 	return result;
 }
+#endif // HAVE_SSSE3
 
 }
 #endif /* HAMMINGSSE_HPP_ */

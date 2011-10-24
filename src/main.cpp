@@ -26,10 +26,6 @@
 
 #include "main.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif // HAVE_CONFIG_H
-
 #include "core/core.h"
 #include "core/logger.h"
 #include "protocol/protocolstack.h"
@@ -142,21 +138,10 @@ void read_settings(Setting &settings) {
 	//read video server
 	if(settings.begin_group("video_server") == 0) {  //video_server group available
 		list<string> pipeline_list;
-		if( settings.value("pipeline_description", pipeline_list) ) {
-			Logger::log("Pipeline description for video server missing in config file", Logger::LOGLEVEL_WARN);
+		if( settings.value("pipelines", pipeline_list) ) {
+			Logger::log("Pipelines for video server missing in config file", Logger::LOGLEVEL_WARN);
 		} else {
-			string pipeline_description;
-			//convert string list to string
-			for(list<string>::iterator iter = pipeline_list.begin(); iter != pipeline_list.end(); ++iter) {
-				pipeline_description.append(*iter);
-				pipeline_description.append(" ");
-			}
-			if(!Core::video_server)
-				Core::video_server = new hub::gstreamer::VideoServer(Core::argc, Core::argv, pipeline_description);
-			if(Core::video_server)
-				Core::video_server->start();
-			else
-				Logger::log("Can't create video server", Logger::LOGLEVEL_WARN);
+			add_video_pipelines(pipeline_list, settings);
 		}
 		settings.end_group();
 	}
@@ -237,6 +222,34 @@ void read_link_configuration(LinkFactory::link_construction_plan_t &link_plan, S
 	settings.value("protocol", link_plan.protocol_type);
 	settings.value("members", link_plan.groupmember_list);
 }
+
+#ifdef HAVE_GSTREAMER
+void add_video_pipelines(const std::list<std::string> pipeline_list, cpp_io::Setting &settings) {
+	list<string> description_list;
+	for(list<string>::const_iterator pipe_iter = pipeline_list.begin(); pipe_iter != pipeline_list.end(); ++pipe_iter) {
+		list<string> single_description_list;
+		if( settings.value(*pipe_iter, single_description_list) ) {
+			Logger::log("Description for pipeline", *pipe_iter, "is missing in config file", Logger::LOGLEVEL_WARN);
+		} else {
+			string pipeline_description;
+			//convert string list to string
+			for(list<string>::iterator iter = single_description_list.begin(); iter != single_description_list.end(); ++iter) {
+				pipeline_description.append(*iter);
+				pipeline_description.append(" ");
+			}
+			description_list.push_back(pipeline_description);
+		}
+	}
+	if( description_list.empty() ) return;
+
+	if(!Core::video_server)
+		Core::video_server = new hub::gstreamer::VideoServer(Core::argc, Core::argv, description_list);
+	if(Core::video_server)
+		Core::video_server->start();
+	else
+		Logger::log("Can't create video server", Logger::LOGLEVEL_WARN);
+}
+#endif // HAVE_GSTREAMER
 
 void add_apps(const std::list<std::string> &app_list, Setting &settings) {
 

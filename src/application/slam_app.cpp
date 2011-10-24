@@ -4,11 +4,15 @@
 
 #ifdef HAVE_GSTREAMER
 
+#ifdef HAVE_OPENCV_CV_H
+
 #include "core/logger.h"
 #include "core/datacenter.h"
 #include "utility.h"
 
 #include "lib/slam/features.h"
+
+#include <sstream> //istringstream
 
 using namespace cpp_pthread;
 
@@ -17,7 +21,9 @@ namespace mavhub {
 SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
 	AppInterface("slam_app", loglevel),
 	AppLayer<mavlink_message_t>("slam_app", loglevel),
-	hub::gstreamer::VideoClient()
+	hub::gstreamer::VideoClient(),
+	with_out_stream(false),
+	feature_detector(60, 3) //threshold, octaves
 	{
 
 	// 	pthread_mutex_init(&tx_mav_mutex, NULL);
@@ -31,6 +37,15 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 		sink_name.assign("sink0");
 	}
 
+	iter = args.find("out_stream");
+	if( iter != args.end() ) {
+		std::istringstream istream(iter->second);
+		istream >> with_out_stream;
+	} else {
+		log("SLAMApp: out_stream argument missing", Logger::LOGLEVEL_DEBUG);
+	}
+
+	//TODO: pipe_in, pipe_out
 }
 
 SLAMApp::~SLAMApp() {}
@@ -43,11 +58,68 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 void SLAMApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
 	if(!data) return;
 
-	if(bpp == 24) { // assume new image
-		log("SLAMApp: got new image", Logger::LOGLEVEL_DEBUG);
-	} else { // assume new features
-		log("SLAMApp: got", width, "features", Logger::LOGLEVEL_DEBUG);
+	Logger::log("SLAMApp: got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG);
+	if(bpp != 8) {
+		log("SLAMApp: unsupported video data with bpp =", bpp, Logger::LOGLEVEL_WARN);
+		return;
 	}
+
+	// make a matrix header for captured data
+	unsigned char *image_data = const_cast<unsigned char*>(data);
+	cv::Mat video_data(height, width, CV_8UC1, image_data);
+
+	//FIXME: Move video analysis to context of application thread. ATM the analysis is running
+	// in the context of the video server (to avoid copying of video data) and thatswhy blocking
+	// video IO.
+
+	//TODO: BRISK
+	uint64_t start_time = get_time_ms();
+
+	feature_detector.detect(video_data, new_features);
+	log("SLAMApp: found", new_features.size(), "features", Logger::LOGLEVEL_DEBUG);
+
+	//TODO: filter features (shi-tomasi)
+	//TODO: check for empty features
+
+	descriptor_extractor.compute(video_data, new_features, new_descriptors);
+
+	if( old_descriptors.empty() ) { //first run(?)
+		// save current image, features and descriptors for later use
+		video_data.copyTo(old_image);
+		old_features = new_features;
+		new_descriptors.copyTo(old_descriptors);
+		return;
+	}
+
+	// match descriptors
+	std::vector<std::vector<cv::DMatch> > matches;
+	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
+
+	//TODO: check for ambigous matches
+
+	if(with_out_stream && Core::video_server) {
+// 		cv::Mat old_color_image, new_color_image;
+// 		cv::cvtColor(old_image, old_color_image, CV_GRAY2BGR);
+// 		cv::cvtColor(video_data, new_color_image, CV_GRAY2BGR);
+		cv::Mat match_img;
+		cv::drawMatches(old_image, old_features,
+			video_data, new_features,
+			matches,
+			match_img,
+			cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
+			std::vector<std::vector<char> >(),
+			cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS
+		);
+		//FIXME:
+		GstAppSrc *appsrc = GST_APP_SRC( Core::video_server->element("source", -1) );
+		if(appsrc)
+			Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
+// 			Core::video_server->push(appsrc, new_color_image.data, new_color_image.cols, new_color_image.rows, 24);
+		else
+			log("SLAMApp: no appsrc found", Logger::LOGLEVEL_DEBUG);
+	}
+	uint64_t stop_time = get_time_ms();
+	log("SLAMApp: needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 }
 
 void SLAMApp::print(std::ostream &os) const {
@@ -69,10 +141,14 @@ void SLAMApp::run() {
 		usleep(500);
 	}
 
+	//unbind from video server
+	Core::video_server->release( dynamic_cast<VideoClient*>(this) );
 	log("SLAMApp stop running", Logger::LOGLEVEL_DEBUG);
 }
 
 } // namespace mavhub
+
+#endif // HAVE_OPENCV_CV_H
 
 #endif // HAVE_GSTREAMER
 

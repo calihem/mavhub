@@ -11,6 +11,9 @@
 #include "lib/gstreamer/video_server.h"
 #include "lib/gstreamer/video_client.h"
 
+#ifdef HAVE_OPENCV_CV_H
+#include <brisk/brisk.h>
+
 #include "protocol/protocollayer.h"
 
 #include <inttypes.h> //uint8_t
@@ -34,11 +37,26 @@ namespace mavhub {
 			virtual void run();
 
 		private:
+			bool with_out_stream;
+			//FIXME: replace old_* by database of these informations
 			std::string sink_name;
-			static void new_video_buffer_callback(GstElement *element, GstElement *data);
+			std::vector<cv::KeyPoint> old_features;
+			std::vector<cv::KeyPoint> new_features;
+			cv::BriskFeatureDetector feature_detector;
+			cv::Mat old_descriptors;
+			cv::Mat new_descriptors;
+			cv::BriskDescriptorExtractor descriptor_extractor;
+			cv::Mat old_image;
+#ifdef HAVE_SSSE3
+			cv::BruteForceMatcher<cv::HammingSse> matcher;
+#else
+			cv::BruteForceMatcher<cv::Hamming> matcher;
+#endif
 	};
 
 } // namespace mavhub
+
+#endif // HAVE_OPENCV_CV_H
 
 #endif // HAVE_GSTREAMER
 

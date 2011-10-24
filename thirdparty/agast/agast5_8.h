@@ -32,13 +32,13 @@ class AgastDetector5_8 : public AstDetector
 	public:
 		AgastDetector5_8():AstDetector(){;}
 		AgastDetector5_8(int width, int height, int thr):AstDetector(width, height, thr){init_pattern();};
-		~AgastDetector5_8(){}
-		void detect(const unsigned char* im,
+		virtual ~AgastDetector5_8(){}
+		virtual void detect(const unsigned char* im,
 				std::vector<CvPoint>& keypoints);
 		void nms(const unsigned char* im,
 				const std::vector<CvPoint>& keypoints, std::vector<CvPoint>& keypoints_nms);
-		int get_borderWidth(){return borderWidth;}
-		int cornerScore(const unsigned char* p);
+		virtual int get_borderWidth(){return borderWidth;}
+		virtual int cornerScore(const unsigned char* p);
 
 	private:
 		static const int borderWidth=1;
@@ -51,7 +51,7 @@ class AgastDetector5_8 : public AstDetector
 		int_fast16_t s_offset6;
 		int_fast16_t s_offset7;
 
-		void init_pattern()
+		virtual void init_pattern()
 		{
 			s_offset0=(-1)+(0)*xsize;
 			s_offset1=(-1)+(-1)*xsize;

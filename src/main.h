@@ -27,6 +27,10 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include "core/setting.h"
 #include "protocol/link_factory.h"
 
@@ -57,6 +61,15 @@ void add_links(const std::list<std::string> link_list, cpp_io::Setting &settings
  * \sa LinkFactory
  */
 void read_link_configuration(mavhub::LinkFactory::link_construction_plan_t &link_plan, cpp_io::Setting &settings);
+
+#ifdef HAVE_GSTREAMER
+/**
+ * \brief Reads pipeline settings from configuration file.
+ * \param pipeline_list The list of pipelines for which settings should be read.
+ * \param settings The file to read from. 
+ */
+void add_video_pipelines(const std::list<std::string> pipeline_list, cpp_io::Setting &settings);
+#endif // HAVE_GSTREAMER
 
 /**
  * \brief Reads multiple application settings from configuration file.

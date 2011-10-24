@@ -111,6 +111,12 @@ template<class T>
 std::ostream& operator <<(std::ostream &os, const std::vector<T> &value_vector);
 
 /**
+ * \brief Get the system time in milliseconds. 
+ * \return Milliseconds since 1970/1/1.
+ */
+static uint64_t get_time_ms();
+
+/**
  * \brief Get the system time in microseconds. 
  * \return Microseconds since 1970/1/1.
  */
@@ -246,6 +252,12 @@ std::ostream& operator <<(std::ostream &os, const std::vector<T> &value_vector) 
 		os << std::setw(6) << std::setfill(' ') << *it;
 	}
 	return os;
+}
+
+inline uint64_t get_time_ms() {
+	struct timeval tp;
+	gettimeofday( &tp, NULL );
+	return (tp.tv_sec * 1E6 + tp.tv_usec) / 1000;
 }
 
 inline uint64_t get_time_us() {

@@ -22,7 +22,8 @@ endif
 
 THIRDPARTY_EXTRA_LIBS =
 if COND_OPENCV
-THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/libbrisk.a
+THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/libbrisk.a \
+	$(top_builddir)/thirdparty/libagast.a
 endif
 
 bin_PROGRAMS = mavhub

@@ -40,7 +40,9 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @COND_USE_GSTREAMER_TRUE@am__append_1 = $(top_builddir)/src/lib/libgstreamer.a
 @COND_OPENGL_TRUE@am__append_2 = $(top_builddir)/src/lib/libopengl.a
 @COND_OPENCV_TRUE@am__append_3 = $(top_builddir)/src/lib/libslam.a
-@COND_OPENCV_TRUE@am__append_4 = $(top_builddir)/thirdparty/libbrisk.a
+@COND_OPENCV_TRUE@am__append_4 = $(top_builddir)/thirdparty/libbrisk.a \
+@COND_OPENCV_TRUE@	$(top_builddir)/thirdparty/libagast.a
+
 bin_PROGRAMS = mavhub$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
