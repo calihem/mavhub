@@ -38,20 +38,31 @@ namespace mavhub {
 
 		private:
 			bool with_out_stream;
+			uint8_t take_new_image;
+			bool new_video_data;
+			/// tx buffer for mavlink messages
+			mavlink_message_t tx_mav_msg;
+			/// Mutex to protect tx_mav_msg
+			pthread_mutex_t tx_mav_mutex;
+			/// Mutex to sync between application thread and input calls
+			pthread_mutex_t sync_mutex;
+
 			//FIXME: replace old_* by database of these informations
 			std::string sink_name;
+			cv::Mat old_image;
+			cv::Mat new_image;
 			std::vector<cv::KeyPoint> old_features;
 			std::vector<cv::KeyPoint> new_features;
 			cv::BriskFeatureDetector feature_detector;
 			cv::Mat old_descriptors;
 			cv::Mat new_descriptors;
 			cv::BriskDescriptorExtractor descriptor_extractor;
-			cv::Mat old_image;
 #ifdef HAVE_SSSE3
 			cv::BruteForceMatcher<cv::HammingSse> matcher;
 #else
 			cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif
+			void extract_features();
 	};
 
 } // namespace mavhub

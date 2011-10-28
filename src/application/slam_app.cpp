@@ -23,10 +23,12 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	AppLayer<mavlink_message_t>("slam_app", loglevel),
 	hub::gstreamer::VideoClient(),
 	with_out_stream(false),
+	take_new_image(1),
 	feature_detector(60, 3) //threshold, octaves
 	{
 
-	// 	pthread_mutex_init(&tx_mav_mutex, NULL);
+	pthread_mutex_init(&tx_mav_mutex, NULL);
+	pthread_mutex_init(&sync_mutex, NULL);
 
 	// set sink name
 	std::map<std::string,std::string>::const_iterator iter = args.find("sink");
@@ -50,45 +52,37 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 
 SLAMApp::~SLAMApp() {}
 
-void SLAMApp::handle_input(const mavlink_message_t &msg) {
-// 	log("SLAMApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
-}
-
-
-void SLAMApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
-	if(!data) return;
-
-	Logger::log("SLAMApp: got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG);
-	if(bpp != 8) {
-		log("SLAMApp: unsupported video data with bpp =", bpp, Logger::LOGLEVEL_WARN);
-		return;
-	}
-
-	// make a matrix header for captured data
-	unsigned char *image_data = const_cast<unsigned char*>(data);
-	cv::Mat video_data(height, width, CV_8UC1, image_data);
-
-	//FIXME: Move video analysis to context of application thread. ATM the analysis is running
-	// in the context of the video server (to avoid copying of video data) and thatswhy blocking
-	// video IO.
-
-	//TODO: BRISK
+void SLAMApp::extract_features() {
+	//FIXME: remove benchmark
 	uint64_t start_time = get_time_ms();
 
-	feature_detector.detect(video_data, new_features);
-	log("SLAMApp: found", new_features.size(), "features", Logger::LOGLEVEL_DEBUG);
+	//FIXME: remove doubled code
+	if( old_features.empty() ) {
+		feature_detector.detect(old_image, old_features);
+		log("SLAMApp: found", old_features.size(), "(old) features", Logger::LOGLEVEL_DEBUG);
+		
+		if( old_features.empty() ) {
+			log("SLAMApp: didn't found features in snapshot image", Logger::LOGLEVEL_WARN);
+			return;
+		}
 
-	//TODO: filter features (shi-tomasi)
-	//TODO: check for empty features
+		//TODO: filter features (shi-tomasi)
 
-	descriptor_extractor.compute(video_data, new_features, new_descriptors);
+		descriptor_extractor.compute(old_image, old_features, old_descriptors);
+		if( new_descriptors.empty() )
+			return;
+	} else {
+		feature_detector.detect(new_image, new_features);
+		log("SLAMApp: found", new_features.size(), "(new) features", Logger::LOGLEVEL_DEBUG);
+		
+		if( new_features.empty() ) {
+			log("SLAMApp: didn't found features in current image", Logger::LOGLEVEL_WARN);
+			return;
+		}
 
-	if( old_descriptors.empty() ) { //first run(?)
-		// save current image, features and descriptors for later use
-		video_data.copyTo(old_image);
-		old_features = new_features;
-		new_descriptors.copyTo(old_descriptors);
-		return;
+		//TODO: filter features (shi-tomasi)
+
+		descriptor_extractor.compute(new_image, new_features, new_descriptors);
 	}
 
 	// match descriptors
@@ -98,12 +92,9 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 	//TODO: check for ambigous matches
 
 	if(with_out_stream && Core::video_server) {
-// 		cv::Mat old_color_image, new_color_image;
-// 		cv::cvtColor(old_image, old_color_image, CV_GRAY2BGR);
-// 		cv::cvtColor(video_data, new_color_image, CV_GRAY2BGR);
 		cv::Mat match_img;
 		cv::drawMatches(old_image, old_features,
-			video_data, new_features,
+			new_image, new_features,
 			matches,
 			match_img,
 			cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
@@ -114,12 +105,69 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 		GstAppSrc *appsrc = GST_APP_SRC( Core::video_server->element("source", -1) );
 		if(appsrc)
 			Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
-// 			Core::video_server->push(appsrc, new_color_image.data, new_color_image.cols, new_color_image.rows, 24);
 		else
 			log("SLAMApp: no appsrc found", Logger::LOGLEVEL_DEBUG);
 	}
 	uint64_t stop_time = get_time_ms();
 	log("SLAMApp: needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
+}
+
+void SLAMApp::handle_input(const mavlink_message_t &msg) {
+// 	log("SLAMApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
+	//FIXME
+	Logger::log("SLAMApp got mavlink_message", static_cast<int>(msg.msgid),
+		"for target", static_cast<int>(mavlink_msg_action_get_target(&msg)),
+		"and component", static_cast<int>(mavlink_msg_action_get_target_component(&msg)),
+		Logger::LOGLEVEL_WARN, _loglevel);
+
+	switch(msg.msgid) {
+		case MAVLINK_MSG_ID_ACTION:
+			if( (mavlink_msg_action_get_target(&msg) == system_id()) ) {
+// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
+				uint8_t action_id = mavlink_msg_action_get_action(&msg);
+				if(action_id == MAV_ACTION_GET_IMAGE) {
+					Lock sync_lock(sync_mutex);
+					// new image with ACK
+					take_new_image = 3;
+				}
+			}
+			break;
+		default: break;
+	}
+}
+
+
+void SLAMApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
+	if(!data) return;
+
+	Logger::log("SLAMApp: got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG, _loglevel);
+	if(bpp != 8) {
+		log("SLAMApp: unsupported video data with bpp =", bpp, Logger::LOGLEVEL_WARN);
+		return;
+	}
+
+	// make a matrix header for captured data
+	unsigned char *image_data = const_cast<unsigned char*>(data);
+	cv::Mat video_data(height, width, CV_8UC1, image_data);
+
+	Lock sync_lock(sync_mutex);
+	if(take_new_image) {
+		// make a new reference image
+		video_data.copyTo(old_image);
+		old_features.clear();
+// 		old_descriptors.clear();
+		if(take_new_image & (1 << 1)) {
+			//TODO: send ACK
+		}
+		take_new_image = 0;
+		//FIXME
+		log("SLAMApp took new image", Logger::LOGLEVEL_WARN);
+	} else {
+		video_data.copyTo(new_image);
+		new_features.clear();
+// 		new_descriptors.clear();
+	}
+	new_video_data = true;
 }
 
 void SLAMApp::print(std::ostream &os) const {
@@ -135,10 +183,16 @@ void SLAMApp::run() {
 		log("SLAMApp binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG);
 	} else {
 		log("video server not running", Logger::LOGLEVEL_WARN);
+		return;
 	}
 
 	while( !interrupted() ) {
-		usleep(500);
+		Lock sync_lock(sync_mutex);
+		if(new_video_data)
+			extract_features();
+		new_video_data = false;
+		//FIXME: remove usleep
+		usleep(50);
 	}
 
 	//unbind from video server
