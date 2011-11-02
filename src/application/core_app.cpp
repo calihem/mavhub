@@ -49,17 +49,17 @@ void CoreApp::handle_input(const mavlink_message_t &msg) {
 
 void CoreApp::run() {
 	if(!owner()) {
-		Logger::log("Owner of CoreApp not set", Logger::LOGLEVEL_WARN);
+		log("Owner of CoreApp not set", Logger::LOGLEVEL_WARN);
 		return;
 	}
 
 	mavlink_message_t heartbeat_msg;
 	mavlink_msg_heartbeat_pack(system_id(), component_id, &heartbeat_msg, mav_type, autopilot);
 
-	Logger::log("CoreApp started", Logger::LOGLEVEL_DEBUG);
+	log("CoreApp started", Logger::LOGLEVEL_DEBUG);
 
 	while( !interrupted() ) {
-		Logger::log("CoreApp entered loop", Logger::LOGLEVEL_DEBUG);
+		log("CoreApp entered loop", Logger::LOGLEVEL_DEBUG);
 		send(heartbeat_msg);
 		usleep(900000);
 	}

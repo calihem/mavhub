@@ -113,12 +113,10 @@ void SLAMApp::extract_features() {
 }
 
 void SLAMApp::handle_input(const mavlink_message_t &msg) {
-// 	log("SLAMApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
-	//FIXME
 	Logger::log("SLAMApp got mavlink_message", static_cast<int>(msg.msgid),
 		"for target", static_cast<int>(mavlink_msg_action_get_target(&msg)),
 		"and component", static_cast<int>(mavlink_msg_action_get_target_component(&msg)),
-		Logger::LOGLEVEL_WARN, _loglevel);
+		Logger::LOGLEVEL_DEBUG, _loglevel);
 
 	switch(msg.msgid) {
 		case MAVLINK_MSG_ID_ACTION:
@@ -160,8 +158,7 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 			//TODO: send ACK
 		}
 		take_new_image = 0;
-		//FIXME
-		log("SLAMApp took new image", Logger::LOGLEVEL_WARN);
+		log("SLAMApp took new image", Logger::LOGLEVEL_DEBUG);
 	} else {
 		video_data.copyTo(new_image);
 		new_features.clear();
