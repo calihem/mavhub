@@ -32,7 +32,37 @@
 
 #include <sstream>
 
+using namespace cpp_pthread;
+
 namespace mavhub {
+
+#ifdef HAVE_MAVLINK_H
+MavlinkAppLayer::MavlinkAppLayer(const std::string &name, const Logger::log_level_t loglevel) :
+	AppInterface(name, loglevel),
+	AppLayer<mavlink_message_t>(name, loglevel),
+	component_id(0) {
+
+	pthread_mutex_init(&tx_mav_mutex, NULL);
+}
+
+void MavlinkAppLayer::request_data_stream(const unsigned int target_system,
+	const unsigned int target_component,
+	const unsigned int stream_id,
+	const unsigned int rate) const {
+
+	Lock tx_lock(tx_mav_mutex);
+	mavlink_msg_request_data_stream_pack(system_id(),
+		component_id,
+		&tx_mav_msg,
+		target_system,
+		target_component,
+		stream_id,
+		rate,
+		rate > 0 ? 1 : 0);
+	send(tx_mav_msg);
+}
+
+#endif
 
 // ----------------------------------------------------------------------------
 // UDPLayer

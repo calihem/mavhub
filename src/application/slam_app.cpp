@@ -20,14 +20,16 @@ namespace mavhub {
 
 SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
 	AppInterface("slam_app", loglevel),
-	AppLayer<mavlink_message_t>("slam_app", loglevel),
+	MavlinkAppLayer("slam_app", loglevel),
 	hub::gstreamer::VideoClient(),
 	with_out_stream(false),
 	take_new_image(1),
+	target_system(7),
+	target_component(1),
+	imu_rate(10),
 	feature_detector(60, 3) //threshold, octaves
 	{
 
-	pthread_mutex_init(&tx_mav_mutex, NULL);
 	pthread_mutex_init(&sync_mutex, NULL);
 
 	// set sink name
@@ -35,19 +37,17 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	if( iter != args.end() ) {
 		sink_name.assign(iter->second);
 	} else {
-		log("SLAMApp: sink argument missing", Logger::LOGLEVEL_DEBUG);
+		log(name(), ": sink argument missing", Logger::LOGLEVEL_DEBUG);
 		sink_name.assign("sink0");
 	}
 
-	iter = args.find("out_stream");
-	if( iter != args.end() ) {
-		std::istringstream istream(iter->second);
-		istream >> with_out_stream;
-	} else {
-		log("SLAMApp: out_stream argument missing", Logger::LOGLEVEL_DEBUG);
-	}
+	get_value_from_args("out_stream", with_out_stream);
 
 	//TODO: pipe_in, pipe_out
+
+	assign_variable_from_args(target_system);
+	assign_variable_from_args(target_component);
+	assign_variable_from_args(imu_rate);
 }
 
 SLAMApp::~SLAMApp() {}
@@ -59,10 +59,10 @@ void SLAMApp::extract_features() {
 	//FIXME: remove doubled code
 	if( old_features.empty() ) {
 		feature_detector.detect(old_image, old_features);
-		log("SLAMApp: found", old_features.size(), "(old) features", Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), ": found", old_features.size(), "(old) features", Logger::LOGLEVEL_DEBUG, _loglevel);
 		
 		if( old_features.empty() ) {
-			log("SLAMApp: didn't found features in snapshot image", Logger::LOGLEVEL_WARN);
+			log(name(), ": didn't found features in snapshot image", Logger::LOGLEVEL_WARN);
 			return;
 		}
 
@@ -73,10 +73,10 @@ void SLAMApp::extract_features() {
 			return;
 	} else {
 		feature_detector.detect(new_image, new_features);
-		log("SLAMApp: found", new_features.size(), "(new) features", Logger::LOGLEVEL_DEBUG);
-		
+		Logger::log(name(), ": found", new_features.size(), "(new) features", Logger::LOGLEVEL_DEBUG, _loglevel);
+
 		if( new_features.empty() ) {
-			log("SLAMApp: didn't found features in current image", Logger::LOGLEVEL_WARN);
+			log(name(), ": didn't found features in current image", Logger::LOGLEVEL_WARN);
 			return;
 		}
 
@@ -106,16 +106,16 @@ void SLAMApp::extract_features() {
 		if(appsrc)
 			Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
 		else
-			log("SLAMApp: no appsrc found", Logger::LOGLEVEL_DEBUG);
+			log(name(), ": no appsrc found", Logger::LOGLEVEL_DEBUG);
 	}
 	uint64_t stop_time = get_time_ms();
-	log("SLAMApp: needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
+	Logger::log(name(), ": needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
 }
 
 void SLAMApp::handle_input(const mavlink_message_t &msg) {
-	Logger::log("SLAMApp got mavlink_message", static_cast<int>(msg.msgid),
-		"for target", static_cast<int>(mavlink_msg_action_get_target(&msg)),
-		"and component", static_cast<int>(mavlink_msg_action_get_target_component(&msg)),
+	Logger::log(name(), "got mavlink_message", static_cast<int>(msg.msgid),
+		"for", static_cast<int>(mavlink_msg_action_get_target(&msg)),
+		static_cast<int>(mavlink_msg_action_get_target_component(&msg)),
 		Logger::LOGLEVEL_DEBUG, _loglevel);
 
 	switch(msg.msgid) {
@@ -138,9 +138,9 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 void SLAMApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
 	if(!data) return;
 
-	Logger::log("SLAMApp: got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG, _loglevel);
+	Logger::log(name(), ": got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG, _loglevel);
 	if(bpp != 8) {
-		log("SLAMApp: unsupported video data with bpp =", bpp, Logger::LOGLEVEL_WARN);
+		log(name(), ": unsupported video data with bpp =", bpp, Logger::LOGLEVEL_WARN);
 		return;
 	}
 
@@ -158,7 +158,7 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 			//TODO: send ACK
 		}
 		take_new_image = 0;
-		log("SLAMApp took new image", Logger::LOGLEVEL_DEBUG);
+		log(name(), ": took new image", Logger::LOGLEVEL_DEBUG);
 	} else {
 		video_data.copyTo(new_image);
 		new_features.clear();
@@ -172,16 +172,24 @@ void SLAMApp::print(std::ostream &os) const {
 }
 
 void SLAMApp::run() {
-	log("SLAMApp running", Logger::LOGLEVEL_DEBUG);
+	log(name(), ": running", Logger::LOGLEVEL_DEBUG);
 
 
 	if(Core::video_server) {
 		int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str());
-		log("SLAMApp binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG);
+		log(name(), ": binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG);
 	} else {
-		log("video server not running", Logger::LOGLEVEL_WARN);
+		log(name(), ": video server not running", Logger::LOGLEVEL_WARN);
 		return;
 	}
+
+	Logger::log(name(), ": request data stream extra1 from",
+		target_system, ":", target_component,
+		Logger::LOGLEVEL_DEBUG, _loglevel);
+	request_data_stream(target_system,
+		target_component,
+		MAV_DATA_STREAM_EXTRA1,
+		imu_rate);
 
 	while( !interrupted() ) {
 		Lock sync_lock(sync_mutex);
@@ -194,7 +202,7 @@ void SLAMApp::run() {
 
 	//unbind from video server
 	Core::video_server->release( dynamic_cast<VideoClient*>(this) );
-	log("SLAMApp stop running", Logger::LOGLEVEL_DEBUG);
+	log(name(), ": stop running", Logger::LOGLEVEL_DEBUG);
 }
 
 } // namespace mavhub

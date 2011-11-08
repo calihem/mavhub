@@ -20,12 +20,10 @@
 
 namespace mavhub {
 
-	class SLAMApp : public AppLayer<mavlink_message_t>
+	class SLAMApp : public MavlinkAppLayer
 		, public hub::gstreamer::VideoClient
 	{
 		public:
-			static const int component_id = 28;
-
 			SLAMApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 			virtual ~SLAMApp();
 
@@ -40,12 +38,11 @@ namespace mavhub {
 			bool with_out_stream;
 			uint8_t take_new_image;
 			bool new_video_data;
-			/// tx buffer for mavlink messages
-			mavlink_message_t tx_mav_msg;
-			/// Mutex to protect tx_mav_msg
-			pthread_mutex_t tx_mav_mutex;
 			/// Mutex to sync between application thread and input calls
 			pthread_mutex_t sync_mutex;
+			unsigned int target_system;
+			unsigned int target_component;
+			unsigned int imu_rate;
 
 			//FIXME: replace old_* by database of these informations
 			std::string sink_name;

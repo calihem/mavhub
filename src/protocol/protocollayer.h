@@ -30,6 +30,10 @@
 #ifndef _PROTOCOLLAYER_H_
 #define _PROTOCOLLAYER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include "core/core.h"
 #include "core/thread.h"
 #include "core/logger.h"
@@ -42,6 +46,17 @@
 #include <string>
 #include <list>
 #include <errno.h>
+
+#define get_value_from_args(key, variable) { \
+	std::map<std::string,std::string>::const_iterator iter = args.find(key); \
+	if( iter != args.end() ) { \
+		std::istringstream istream(iter->second); \
+		istream >> (variable); \
+	} else { \
+		Logger::log(name(), ": "  key " argument missing", Logger::LOGLEVEL_DEBUG, _loglevel); \
+	} \
+}
+#define assign_variable_from_args( variable) get_value_from_args(# variable, variable)
 
 namespace mavhub {
 
@@ -196,6 +211,28 @@ class AppLayer : virtual public AppInterface {
 		void send(const T &msg) const;
 };
 
+#ifdef HAVE_MAVLINK_H
+class MavlinkAppLayer : public AppLayer<mavlink_message_t> {
+public:
+	MavlinkAppLayer(const std::string &name, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+	virtual ~MavlinkAppLayer() { };
+	virtual void handle_input(const mavlink_message_t &msg) = 0;
+
+protected:
+	unsigned int component_id;
+	/// tx buffer for mavlink messages
+	mutable mavlink_message_t tx_mav_msg;
+	/// Mutex to protect tx_mav_msg
+	mutable pthread_mutex_t tx_mav_mutex;
+
+	virtual void run() = 0;
+	void request_data_stream(const unsigned int target_system,
+		const unsigned int target_component,
+		const unsigned int stream_id,
+		const unsigned int rate) const;
+};
+#endif
+
 /**
  * \class UDPLayer
  * \brief UDP socket class which sends datagrams to a predefined group.
@@ -308,7 +345,7 @@ inline const uint16_t AppInterface::system_id() {
 // AppLayer
 // ----------------------------------------------------------------------------
 template <class T>
-AppLayer<T>::AppLayer(const std::string &name, const Logger::log_level_t loglevel) :
+inline AppLayer<T>::AppLayer(const std::string &name, const Logger::log_level_t loglevel) :
 	AppInterface(name, loglevel) { }
 
 template <class T>
