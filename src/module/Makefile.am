@@ -20,6 +20,7 @@ libmodule_a_SOURCES = \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
 	ctrl_wifimeter.cpp \
+	n_ff.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	filter_median.cpp \

@@ -55,7 +55,8 @@ PKG_PROG_PKG_CONFIG([0.25])
 PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10],
 	[AC_DEFINE(HAVE_GSTREAMER, [], [Use GStreamer]) gstreamer=true],
 	[gstreamer=false])
-AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
+#AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
+AM_CONDITIONAL(COND_USE_GSTREAMER, false)
 
 # Checks for libraries.
 AC_CHECK_LIB([ncurses], [newwin])
@@ -68,7 +69,7 @@ AC_CHECK_LIB([gps], [gps_clear_fix])
 AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
-AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
+#AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
 AC_CHECK_LIB([ivy], [IvyInit])
 
 # Checks for header files.

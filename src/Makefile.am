@@ -17,6 +17,8 @@ mavhub_LDADD = \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
-	$(top_builddir)/src/lib/*.a \
 	$(GSTREAMER_LIBS) \
 	$(AM_LDFLAGS)
+
+#	$(top_builddir)/src/lib/*.a
+

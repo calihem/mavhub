@@ -11,7 +11,7 @@
 using namespace std;
 
 namespace mavhub {
-TestCore::TestCore() : AppInterface("testcore"), AppLayer("testcore") {
+	TestCore::TestCore() : AppInterface("testcore"), AppLayer<mavlink_message_t>("testcore") {
 }
 
 TestCore::~TestCore() {}

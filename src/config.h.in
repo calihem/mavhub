@@ -60,9 +60,6 @@
 /* Define to 1 if you have the <libgpsmm.h> header file. */
 #undef HAVE_LIBGPSMM_H
 
-/* Define to 1 if you have the `gstapp-0.10' library (-lgstapp-0.10). */
-#undef HAVE_LIBGSTAPP_0_10
-
 /* Define to 1 if you have the `ivy' library (-livy). */
 #undef HAVE_LIBIVY
 

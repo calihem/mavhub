@@ -4,18 +4,19 @@
 #define _CTRL_HOVER_H_
 
 #include "debug_channels.h"
-#include "core/logger.h"
 #include "filter_kalmancv.h"
 #include "stat_meanvar.h"
 #include "PID.h"
 #include "exec_timing.h"
-#include "protocol/protocollayer.h"
 #include "qk_helper.h"
 #include "pp.h"
 #include "pp_uss.h"
 #include "pp_acc.h"
 #include "pp_baro.h"
 #include "pp_ir.h"
+
+#include "protocol/protocollayer.h"
+#include "core/logger.h"
 
 #include <math.h>
 

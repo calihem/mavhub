@@ -87,6 +87,12 @@ void cb_DlSetting (IvyClientPtr app, void *data, int argc, char **argv)
 			// FIXME
 			mavlink_msg_param_set_encode(43, 27, &msg, &param_set);
 			break;			
+		case 46: // ac pid Td
+			strncpy((char*)param_set.param_id, "ac_sp", 6);
+			param_set.param_value = atof(argv[3]);
+			// FIXME
+			mavlink_msg_param_set_encode(43, 27, &msg, &param_set);
+			break;			
 		default:
 			//param_set.param_id = "none";
 			param_set.param_value = 0.0;
@@ -141,8 +147,13 @@ void cb_DlValue (TimerId id, void *data, unsigned long delta) {
 	if(!bi->doDlValue_())
 		return;
 	else {
-		IvySendMsg("%d DL_VALUE %d %f", 42, 38, 2.0);
-		IvySendMsg("%d DL_VALUE %d %f", 42, 39, 0.0);
+		// send param_list_request
+		// mavlink_param_request_list_t param_list
+		mavlink_message_t msg;
+		mavlink_msg_param_request_list_pack(
+																				bi->system_id(), 1, &msg,
+																				43, 27);
+		bi->send_mavlink_msg(&msg);
 		bi->_doDlValue(false);
 	}
 }
@@ -184,7 +195,7 @@ namespace mavhub {
 		mavlink_huch_sensor_array_t sa;
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HEARTBEAT:
-			Logger::log("Bridge_Ivy got ml heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
+			//Logger::log("Bridge_Ivy got ml heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
 			//IvySendMsg("%d ALIVE 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", msg.sysid);
 			IvySendMsg("%d ALIVE 50,162,250,192,221,27,111,57,63,249,122,206,139,11,197,244", msg.sysid);
 			break;
@@ -204,6 +215,50 @@ namespace mavhub {
 								 sa.data[4], sa.data[5]
 								 );
 			break;
+		case MAVLINK_MSG_ID_PARAM_VALUE:
+			Logger::log("Bridge_Ivy got ml param value: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
+			static int8_t param_id[15];
+			float param_value;
+			int setting_id;
+			mavlink_msg_param_value_get_param_id(&msg, param_id);
+			param_value = mavlink_msg_param_value_get_param_value(&msg);
+			Logger::log("Bridge_Ivy got ml param value: (param_id, param_value)", (char*)param_id, param_value, Logger::LOGLEVEL_INFO);
+			if(!strcmp((char*)param_id, (const char*)"ctl_mode")) {
+				setting_id = 38;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"ctl_bump")) {
+				setting_id = 39;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"bump_thr_low")) {
+				setting_id = 40;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"bump_thr_high")) {
+				setting_id = 41;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"ac_pid_bias")) {
+				setting_id = 42;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"ac_pid_Kc")) {
+				setting_id = 43;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"ac_pid_Ki")) {
+				setting_id = 44;
+			}
+			else if(!strcmp((char*)param_id, (const char*)"ac_pid_Kd")) {
+				setting_id = 45;
+			}
+			else
+				setting_id = -1;
+			if(setting_id >= 0) {
+			IvySendMsg("%d DL_VALUE %d %f",
+								 system_id(),
+								 setting_id,
+								 param_value);
+			}
+			// 					 , 38, 2.0);
+			// IvySendMsg("%d DL_VALUE %d %f", 42, 39, 0.0);
+			break;
+
 		default:
 			break;
 		}

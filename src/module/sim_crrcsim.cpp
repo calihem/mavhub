@@ -5,14 +5,20 @@
 #include "protocol/protocolstack.h"
 #include <mavlink.h>
 
+//#include "opencv2/opencv.hpp"
+
 #include <iostream> //cout
 #include <stdlib.h>
 using namespace std;
+//using namespace cv;
 
 namespace mavhub {
 	Sim_Crrcsimule::Sim_Crrcsimule(const map<string, string> args) : 
-		AppInterface("crrcsim"), AppLayer("crrcsim"),
-		ctl_mode(0) {
+		AppInterface("crrcsim"),
+		AppLayer<mavlink_message_t>("crrcsim"),
+		ctl_mode(0),
+		thrust(0.0)
+	{
 		// try and set reasonable defaults
 		conf_defaults();
 		// initialize module parameters from conf
@@ -35,6 +41,8 @@ namespace mavhub {
 		// kd="0.018905589636341851"
 		z = 0.0;
 		z_hat = 0.0;
+		m1 = 0.0;
+		m2 = 0.0;
 		// double scalef = 0.0;
 		// double ctl_Kc = 0.01;
 		// double ctl_Ti = 0.0;
@@ -51,6 +59,8 @@ namespace mavhub {
 
 		// Bumper
 		bump = new Bumper(params["bump_thr_low"], params["bump_thr_high"]);
+		// ffnet
+		//ffnet = new N_FF();
 	}
 
 	Sim_Crrcsimule::~Sim_Crrcsimule() {}
@@ -79,6 +89,8 @@ namespace mavhub {
 
 		case MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY:
 			mavlink_msg_huch_sensor_array_decode(&msg, &sa);
+			m1 = sa.data[0];
+			m2 = sa.data[1];
 			z_hat = (sa.data[0] + sa.data[1]) * 0.5;
 			break;
 
@@ -116,12 +128,25 @@ namespace mavhub {
 					//printf("ctl_mode: %d\n", ctl_mode);
 					bump->set_thr_low(params["bump_thr_low"]);
 					bump->set_thr_high(params["bump_thr_high"]);
+					pid_alt->setPv_int_lim(params["ac_pid_int_lim"]);
 				}
 			}
 			break;
 
 		case MAVLINK_MSG_ID_DEBUG:
-			Logger::log("Sim_Crrcsimule::handle_input: received debug from", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+			//Logger::log("Sim_Crrcsimule::handle_input: received debug from", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+			if(msg.sysid == system_id()) {
+				if(msg.compid == component_id) {
+					// Logger::log("Sim_Crrcsimule::handle_input: received debug from", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+					Logger::log("Sim_Crrcsimule::handle_input: received debug from",
+											(int)mavlink_msg_debug_get_ind(&msg),
+											mavlink_msg_debug_get_value(&msg),
+											Logger::LOGLEVEL_INFO);
+					if((int)mavlink_msg_debug_get_ind(&msg) == 1) {
+						thrust = mavlink_msg_debug_get_value(&msg);
+					}
+				}
+			}
 			break;
 
 		case MAVLINK_MSG_ID_HUCH_SIM_CTRL:
@@ -156,8 +181,12 @@ namespace mavhub {
 
 		mavlink_message_t msg;
 		mavlink_manual_control_t ctl;
+		mavlink_debug_t dbg;
 		int sleeptime;
 		uint64_t dt;
+
+		//Vec<double, 5> v;
+		vector<double> v(5);
 
 		Logger::log("Sim_Crrcsimule started, sys_id", system_id(), Logger::LOGLEVEL_INFO);
 
@@ -169,6 +198,14 @@ namespace mavhub {
 		ctl.pitch_manual = 0;
 		ctl.yaw_manual = 0;
 		ctl.thrust_manual = 0;
+
+		v[0] = 1.0;
+		v[1] = 0;
+		v[2] = 0;
+		v[3] = 0;
+		v[4] = 0;
+
+		//cout << "v[0] = " << v[0] << endl;
 
 		while(1) {
 			//Logger::log("sim_crrcsim: system_id", static_cast<int>(system_id()), Logger::LOGLEVEL_INFO);
@@ -185,6 +222,11 @@ namespace mavhub {
 			// respond to parameter list request
 			param_request_respond(param_request_list);
 
+			v[0] = m1;
+			v[1] = m2;
+
+			//ffnet->eval(v);
+
 			switch(ctl_mode) {
 			case CTL_MODE_BUMP:
 				ctl.thrust = bump->calc((double)dt * 1e-6);
@@ -192,6 +234,8 @@ namespace mavhub {
 			case CTL_MODE_AC:
 				//ctl.thrust = 0.5;
 				//ctl.thrust = pid_alt->calc2(0.0025, z);
+				send_debug(&msg, &dbg, 0, pid_alt->getPv_int());
+				//send_debug();
 				ctl.thrust = pid_alt->calc((double)dt * 1e-6, z_hat);
 				//ctl.thrust = pid_alt->calc((double)dt * 1e-6, z);
 
@@ -210,6 +254,10 @@ namespace mavhub {
 					pid_alt->setIntegralM1();
 				}
 
+				break;
+			case CTL_MODE_DIRECT:
+				//Logger::log("blub", Logger::LOGLEVEL_INFO);
+				ctl.thrust = thrust;
 				break;
 			case CTL_MODE_NULL:
 			default:
@@ -297,5 +345,16 @@ namespace mavhub {
 			}
 		}
 	}
+
+	// send debug
+	void Sim_Crrcsimule::send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value) {
+		dbg->ind = index;
+		dbg->value = value;
+		mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), msg, dbg);
+		//Logger::log("crrcsim: sending debug", Logger::LOGLEVEL_INFO);
+		AppLayer<mavlink_message_t>::send(*msg);
+	}
+
+
 
 } // namespace mavhub

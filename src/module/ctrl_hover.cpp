@@ -405,13 +405,13 @@ namespace mavhub {
 			// FIXME: do timing
 
 			// manual control
-			mavlink_msg_manual_control_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
-			AppLayer<mavlink_message_t>::send(msg);
-			if(params["gs_en"]) {
+			// mavlink_msg_manual_control_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
+			// AppLayer<mavlink_message_t>::send(msg);
+			//if(params["gs_en"]) {
 				// attitude
 				mavlink_msg_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
 				AppLayer<mavlink_message_t>::send(msg);
-			}
+				//}
 			
 			if(params["en_skipmain"] > 0.0)
 				continue;
@@ -477,8 +477,8 @@ namespace mavhub {
 			// check max z velocity
 			d_uss = uss_win[uss_win_idx] - uss_win[uss_win_idx_m1];
 			uss_plaus = (fabs(d_uss) <= (params["uss_max_vz"] * dt * 1e-6));
-			send_debug(&msg, &dbg, DBG_USS_MAX_VZ, (params["uss_max_vz"] * dt * 1e-6));
-			send_debug(&msg, &dbg, DBG_USS_D, d_uss);
+			//send_debug(&msg, &dbg, DBG_USS_MAX_VZ, (params["uss_max_vz"] * dt * 1e-6));
+			//send_debug(&msg, &dbg, DBG_USS_D, d_uss);
 
 			uss_win_sorted = uss_win;
 			sort(uss_win_sorted.begin(), uss_win_sorted.end());
@@ -518,7 +518,8 @@ namespace mavhub {
 			pre[1].first -= (0.05 * pre[2].first);
 			// BARO: disable below 30.0 cm
 			// FIXME
-			if((pre[3].first < 300.0 && pre[4].first < 600) || stats[0]->get_mean() < 1600.0) {
+			// if((pre[3].first < 300.0 && pre[4].first < 600) || stats[0]->get_mean() < 1600.0) {
+			if(pre[3].first < 300.0 && pre[4].first < 600) {
 				precov[1] = 0.0;
 				//pre[1].second = 0;
 			} else {
@@ -807,8 +808,8 @@ namespace mavhub {
 			// typed message forwarding
 
 			// // huch attitude
-			mavlink_msg_huch_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &attitude);
-			AppLayer<mavlink_message_t>::send(msg);
+			// mavlink_msg_huch_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &attitude);
+			// AppLayer<mavlink_message_t>::send(msg);
 
 			// huch_fc_altitude
 			// mavlink_msg_huch_fc_altitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
