@@ -176,8 +176,10 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "slam_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
+#ifdef HAVE_OPENCV_CV_H
 		SLAMApp *slam_app = new SLAMApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
+#endif // HAVE_OPENCV_CV_H
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "sim_crrcsim_app") {
