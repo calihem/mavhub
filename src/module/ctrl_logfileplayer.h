@@ -3,6 +3,13 @@
 #ifndef _CTRL_LOGFILEPLAYER_H_
 #define _CTRL_LOGFILEPLAYER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
@@ -43,6 +50,7 @@ namespace mavhub {
 		virtual int logfile_open(const std::string logfile);
 		/// close logfile
 		virtual void logfile_close();
+#ifdef MAVLINK_ENABLED_HUCH
 		/// copy attitude to debugout structure
 		virtual void attitude2debugout(mavlink_huch_attitude_t* attitude, mavlink_mk_debugout_t* debugout);
 		/// copy fc state to debugout structure
@@ -57,7 +65,10 @@ namespace mavhub {
 		void debugout_setval_s(mavlink_mk_debugout_t* dbgout, int index, int16_t val);
 		/// setval_s32
 		void debugout_setval_s32(mavlink_mk_debugout_t* dbgout, int indexl, int indexh, int32_t val);
+#endif // MAVLINK_ENABLED_HUCH
 	};
 }
+
+#endif // HAVE_MAVLINK_H
 
 #endif

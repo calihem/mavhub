@@ -1,7 +1,9 @@
 // talk to FC with mkpackage
 #include "ctrl_bump.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
+
 #include <math.h> //pow
 #include <iostream> //cout
 #include <sys/time.h> //us
@@ -308,3 +310,7 @@ namespace mavhub {
 		return;
 	}
 }
+
+#endif // HAVE_MKLINK_H
+#endif // HAVE_MAVLINK_H
+

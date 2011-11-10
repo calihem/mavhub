@@ -1,5 +1,6 @@
 #include "mavlink_mkhuch_app.h"
 
+#ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MKHUCHLINK_H
 
 #include "core/logger.h"
@@ -495,3 +496,5 @@ void MAVLinkMKHUCHApp::send_heartbeat() {
 } // namespace mavhub
 
 #endif // HAVE_MKHUCHLINK_H
+#endif // HAVE_MAVLINK_H
+

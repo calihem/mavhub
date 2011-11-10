@@ -2,7 +2,8 @@
 
 #include "ctrl_lateral.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
+
 #include "core/datacenter.h"
 #include "protocol/protocolstack.h"
 
@@ -38,11 +39,13 @@ namespace mavhub {
 		static int8_t param_id[15];
 		//Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
+#ifdef MAVLINK_ENABLED_HUCH
 		case MAVLINK_MSG_ID_HUCH_VISUAL_NAVIGATION:
 			//Logger::log("Ctrl_Lateral: got visual_navigation msg", Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_visual_navigation_decode(&msg, (mavlink_huch_visual_navigation_t *)&huch_visual_navigation);
 			//Logger::log("psi_est:", huch_visual_navigation.psi_estimate, Logger::LOGLEVEL_INFO);
 			break;
+#endif // MAVLINK_ENABLED_HUCH	
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
 			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
@@ -219,7 +222,7 @@ namespace mavhub {
 			// //comp = (/255.0) * 6.28;
 			// yaw = (int16_t)(prm_yaw_P * (0.0 + (comp/255.0) * 6.28));
 			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
-
+#ifdef MAVLINK_ENABLED_HUCH
 			// vn.ego_beta
 			x = cosf(huch_visual_navigation.ego_beta);
 			y = sinf(huch_visual_navigation.ego_beta);
@@ -247,7 +250,7 @@ namespace mavhub {
 				roll = params["roll_limit"];
 			if(roll < -params["roll_limit"])
 				roll = -params["roll_limit"];
-
+#endif // MAVLINK_ENABLED_HUCH	
 			mavlink_msg_debug_pack(system_id(), component_id, &msg, 100, x);
 			AppLayer<mavlink_message_t>::send(msg);
 			mavlink_msg_debug_pack(system_id(), component_id, &msg, 101, y);
@@ -381,3 +384,6 @@ namespace mavhub {
 		Logger::log("ctrl_lateral::read_conf: roll_limit", params["roll_limit"], Logger::LOGLEVEL_DEBUG);
 	}
 }
+
+#endif // HAVE_MAVLINK_H
+

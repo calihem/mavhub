@@ -22,7 +22,10 @@ Optional
   - http://www.boost.org/doc/libs/1_45_0/libs/test/doc/html/index.html
 * doxygen
   - http://www.doxygen.org
+* GStreamer
+  - http://gstreamer.freedesktop.org/
 * mkhuchlink
+* OpenGL
 
 Configuration
 =============
@@ -58,7 +61,7 @@ Examples
 	CPPFLAGS="-I/home/user/git/mavlink/include/huch \
 	-I/home/user/git/mkhuchlink"
 
-2) For a typical beagleboard a gumstix configuration run
+2) For a typical beagleboard or gumstix configuration run
  mkdir build-arm
  cd build-arm
  ../configure --build=`../auxdir/config.guess` \
@@ -72,6 +75,23 @@ Compilation
 After configuration, just type
  make
 and you will find the binary under src/mavhub.
+
+Execute
+=======
+TODO: daemonize
+
+Settings
+--------
+Settings can be stored in an ini-like file. Examples can be found in the mavhub.d directory.
+To start, just enter
+ ./src/mavhub -c ../mavhub.d/mavhub.conf
+
+GStreamer plugins
+-----------------
+To use own gstreamer plugins or plugins which aren't installed in the GStreamer search path, you
+have to set the GST_PLUGIN_PATH to the directory containing the plugins, e.g.
+ export GST_PLUGIN_PATH=/home/user/git/mavhub/lib/gstreamer/
+ ./src/mavhub -c ../mavhub.d/mavhub.conf
 
 Documenation
 ============

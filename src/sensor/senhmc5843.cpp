@@ -127,6 +127,7 @@ void SenHmc5843::run() {
 			i2c_start_conversion(fd, HMC5843_ADR);
 			i2c_read_bytes(fd, buffer, 6);
 
+#ifdef MAVNLINK_ENABLED_HUCH
 			/* assign buffer to data */
 			{ // begin of data mutex scope
 				cpp_pthread::Lock ri_lock(data_mutex);
@@ -138,6 +139,7 @@ void SenHmc5843::run() {
 				kompass_data.data_z /= gainFactor[gain];
 				kompass_data.usec = usec;
 			} // end of data mutex scope
+#endif // MAVNLINK_ENABLED_HUCH
 
 			/* debug data */
 			if (debug) print_debug();
@@ -166,16 +168,24 @@ void SenHmc5843::run() {
 }
 
 void SenHmc5843::print_debug() {
+	//FIXME: remove variable send_stream (no extra allocation for debug messages)
 	ostringstream send_stream;
+#ifdef MAVNLINK_ENABLED_HUCH
 	send_stream << "hmc5843;" << kompass_data.data_x << ";" << kompass_data.data_y << ";" << kompass_data.data_z;
+#else
+	send_stream << "hmc5843: mavlink missing";
+#endif // MAVNLINK_ENABLED_HUCH
+
 	Logger::debug(send_stream.str());
 }
 
 void* SenHmc5843::get_data_pointer(unsigned int id) throw(const char *) {
 	if (status == RUNNING) {
 		switch ((0xFFFF0000 & id) >> 16) {
+#ifdef MAVNLINK_ENABLED_HUCH
 			case KOMPASS_SENSOR: // kompass 
 				return &kompass_data;
+#endif // MAVNLINK_ENABLED_HUCH
 			default: throw "sensor hmc5843 doesn't support this sensor type";
 		}
 	} throw "sensor hmc5843 isn't running";

@@ -608,6 +608,8 @@ LTLIBOBJS
 LIBOBJS
 COND_OPENGL_FALSE
 COND_OPENGL_TRUE
+COND_OPENCV_FALSE
+COND_OPENCV_TRUE
 EGREP
 GREP
 CXXCPP
@@ -8298,6 +8300,35 @@ fi
 
 done
 
+for ac_header in opencv/cv.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "opencv/cv.h" "ac_cv_header_opencv_cv_h" "$ac_includes_default"
+if test "x$ac_cv_header_opencv_cv_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_OPENCV_CV_H 1
+_ACEOF
+  if true; then
+  COND_OPENCV_TRUE=
+  COND_OPENCV_FALSE='#'
+else
+  COND_OPENCV_TRUE='#'
+  COND_OPENCV_FALSE=
+fi
+
+else
+   if false; then
+  COND_OPENCV_TRUE=
+  COND_OPENCV_FALSE='#'
+else
+  COND_OPENCV_TRUE='#'
+  COND_OPENCV_FALSE=
+fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenCV headers not found" >&5
+$as_echo "$as_me: WARNING: OpenCV headers not found" >&2;}
+fi
+
+done
+
 for ac_header in libgpsmm.h
 do :
   ac_fn_cxx_check_header_mongrel "$LINENO" "libgpsmm.h" "ac_cv_header_libgpsmm_h" "$ac_includes_default"
@@ -8879,6 +8910,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_USE_GSTREAMER_TRUE}" && test -z "${COND_USE_GSTREAMER_FALSE}"; then
   as_fn_error $? "conditional \"COND_USE_GSTREAMER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV_TRUE}" && test -z "${COND_OPENCV_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV_TRUE}" && test -z "${COND_OPENCV_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_OPENGL_TRUE}" && test -z "${COND_OPENGL_FALSE}"; then

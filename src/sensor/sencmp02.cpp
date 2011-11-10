@@ -1,5 +1,6 @@
 #include "sencmp02.h"
 
+#include <cstring> //memcpy
 #include <math.h> //pow
 #include <iostream> //cout
 #include <sys/time.h> //gettime
@@ -147,6 +148,7 @@ void SenCmp02::run() {
 			// huch_ranger.ranger3 = cmp_value[1];
 
 			/* assign buffer to data */
+#ifdef MAVLINK_ENABLED_HUCH
 			{ // begin of data mutex scope
 				int i;
 				cpp_pthread::Lock ri_lock(data_mutex);
@@ -156,7 +158,8 @@ void SenCmp02::run() {
 					//Logger::log("Cmp02 sensor:", i, sensor_data[i].analog, Logger::LOGLEVEL_INFO);
 				}
 			} // end of data mutex scope
-
+#endif // MAVLINK_ENABLED_HUCH
+	
 			// FIXME: if(publish) else poll or whatever
 			publish_data(start);
 
@@ -198,10 +201,12 @@ void SenCmp02::print_debug() {
 }
 
 void SenCmp02::publish_data(uint64_t time) {
+#ifdef MAVLINK_ENABLED_HUCH
 	int i;
 	for(i=0; i < CMP02_NUMCHAN; i++) {
 		DataCenter::set_sensor(chanmap[i], (double)sensor_data[i].analog);
 	}
+#endif // MAVLINK_ENABLED_HUCH
 }
 
 void* SenCmp02::get_data_pointer(unsigned int id) throw(const char *) {
@@ -214,7 +219,11 @@ void* SenCmp02::get_data_pointer(unsigned int id) throw(const char *) {
 	// 		default: throw "sensor Cmp02 doesn't support this sensor type";
 	// 	}
 	// } throw "sensor exp_ctrl isn't running";
+#ifdef MAVLINK_ENABLED_HUCH
 	return &sensor_data[0];
+#else
+	throw "SenCmp02: mavlink missing";
+#endif // MAVLINK_ENABLED_HUCH
 }
 
 

@@ -3,6 +3,16 @@
 #ifndef _FC_MPKG_H_
 #define _FC_MPKG_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
+#ifdef HAVE_MKLINK_H
+#include <mklink.h>
+
 #include "core/logger.h"
 // #include "thread.h"
 #include "protocol/protocollayer.h"
@@ -99,5 +109,9 @@ namespace mavhub {
 		void set_pxh_manual_control();
   };
 }
+
+#endif // HAVE_MKLINK_H
+
+#endif // HAVE_MAVLINK_H
 
 #endif

@@ -33,11 +33,12 @@
 
 #include "ctrl_logfileplayer.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
 
 #include "core/logger.h"
 #include "utility.h"
 #include "protocol/protocolstack.h"
+//FIXME: remove mkpackage.h
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
@@ -161,13 +162,15 @@ namespace mavhub {
 		int d; //, dtype; // data and datatype
 		char dtype_s[64];
 		uint8_t ready_to_send = 0;
-		
+
+#ifdef MAVLINK_ENABLED_HUCH
 		mavlink_huch_hc_raw_t ch_raw;
 		mavlink_huch_ctrl_hover_state_t ch_state;
 		mavlink_huch_attitude_t huch_attitude;
 		mavlink_mk_fc_status_t fc_state;
 		mavlink_mk_debugout_t debugout;
 		mavlink_huch_visual_navigation_t huch_vn;
+#endif // MAVLINK_ENABLED_HUCH
 		mavlink_message_t msg;
 
 		int status = 1;
@@ -184,13 +187,15 @@ namespace mavhub {
 		d = 0;
 
 		// initialize struct
+#ifdef MAVLINK_ENABLED_HUCH
 		bzero(&ch_raw, sizeof(mavlink_huch_hc_raw_t));
 		bzero(&ch_state, sizeof(mavlink_huch_ctrl_hover_state_t));
 		bzero(&huch_attitude, sizeof(mavlink_huch_attitude_t));
 		bzero(&fc_state, sizeof(mavlink_mk_fc_status_t));
 		bzero(&debugout, sizeof(mavlink_mk_debugout_t));
 		bzero(&huch_vn, sizeof(mavlink_huch_visual_navigation_t));
-
+#endif // MAVLINK_ENABLED_HUCH
+	
 		while (status != 0) {
 
 			// send data to groundstation
@@ -263,6 +268,7 @@ namespace mavhub {
 								d = atoi(tmp);
 								//printf("x1.1 tmp:'%s'\n", tmp);
 								if(in_range(tabcount, 2, 6)) {
+#ifdef MAVLINK_ENABLED_HUCH
 									tmp_offset = 2;
 									sprintf(dtype_s, "ch_raw");
 									if(tabcount == tmp_offset) {
@@ -291,8 +297,10 @@ namespace mavhub {
 										ready_to_send = 1;
 										break; // terminate iteration over logline bytes
 									}
+#endif // MAVLINK_ENABLED_HUCH
 								}
 								else if(in_range(tabcount, 7, 14)) {
+#ifdef MAVLINK_ENABLED_HUCH
 									tmp_offset = 7;
 									sprintf(dtype_s, "ch_state");
 									if(tabcount == tmp_offset) {
@@ -326,8 +334,10 @@ namespace mavhub {
 										ready_to_send = 1;
 										break;
 									}
+#endif // MAVLINK_ENABLED_HUCH
 								}
 								else if(in_range(tabcount, 15, 30)) {
+#ifdef MAVLINK_ENABLED_HUCH
 									tmp_offset = 15;
 									sprintf(dtype_s, "huch_attitude");
 									if(tabcount == tmp_offset) {
@@ -389,8 +399,10 @@ namespace mavhub {
 										ready_to_send = 1;
 										break;
 									}
+#endif // MAVLINK_ENABLED_HUCH
 								}
 								else if(in_range(tabcount, 31, 36)) {
+#ifdef MAVLINK_ENABLED_HUCH
 									tmp_offset = 31;
 									sprintf(dtype_s, "fc_state");
 									if(tabcount == tmp_offset) {
@@ -418,8 +430,10 @@ namespace mavhub {
 										ready_to_send = 1;
 										break;
 									}
+#endif // MAVLINK_ENABLED_HUCH
 								}
 								else if(in_range(tabcount, 37, 46)) {
+#ifdef MAVLINK_ENABLED_HUCH
 									tmp_offset = 37;
 									sprintf(dtype_s, "huch_visual_navigation");
 									if(tabcount == tmp_offset) {
@@ -463,6 +477,7 @@ namespace mavhub {
 										ready_to_send = 1;
 										break;
 									}
+#endif // MAVLINK_ENABLED_HUCH
 								}
 								else
 									sprintf(dtype_s, "blub");
@@ -495,6 +510,7 @@ namespace mavhub {
 					}
 					else if(params["replay_mode"] == CH && ready_to_send > 0) {
 						//Logger::log("logfileplayer: preparing raw input simulation", Logger::LOGLEVEL_INFO);
+#ifdef MAVLINK_ENABLED_HUCH
 						// 1. mk_debugout zusammenbauen und verschicken
 						attitude2debugout(&huch_attitude, &debugout);
 						mk_fc_state2debugout(&fc_state, &debugout);
@@ -506,6 +522,7 @@ namespace mavhub {
 							Logger::log("logfileplayer: ch_raw hit", Logger::LOGLEVEL_INFO);
 							ch_raw2datacenter(&ch_raw);
 						}
+#endif // MAVLINK_ENABLED_HUCH
 					}
 					
 					// if(linecount > 10000)
@@ -544,7 +561,7 @@ namespace mavhub {
 		// 	fclose(fd);
 		sd.close();
 	}
-
+#ifdef MAVLINK_ENABLED_HUCH
 	void Ctrl_LogfilePlayer::attitude2debugout(mavlink_huch_attitude_t* attitude, mavlink_mk_debugout_t* debugout) {
 		debugout_setval_s(debugout, ADval_accnick, attitude->xacc);
 		debugout_setval_s(debugout, ADval_accroll, attitude->yacc);
@@ -614,4 +631,8 @@ namespace mavhub {
 		// 			 dbgout->debugout[il+1], dbgout->debugout[il]
 		// 			 );
 	}
+#endif // MAVLINK_ENABLED_HUCH
 }
+
+#endif // HAVE_MAVLINK_H
+

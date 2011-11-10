@@ -1,9 +1,10 @@
 #include "sim_crrcsim.h"
 
+#ifdef HAVE_MAVLINK_H
+
 #include "core/logger.h"
 #include "utility.h"
 #include "protocol/protocolstack.h"
-#include <mavlink.h>
 
 //#include "opencv2/opencv.hpp"
 
@@ -358,3 +359,6 @@ namespace mavhub {
 
 
 } // namespace mavhub
+
+#endif // HAVE_MAVLINK_H
+

@@ -1,9 +1,10 @@
 #include "acc_calibration_app.h"
 
+#ifdef HAVE_OPENCV_CV_H
+
 #include <iostream>
 #include <iomanip>
 #include <string>
-#include <opencv/cv.h>
 #include <cmath>
 using namespace std;
 using namespace cpp_pthread;
@@ -491,3 +492,5 @@ CvPoint3D32f AccCalibrationApp::readInSavedCalibrationScaleFactors() {
 }
 
 } // namespace mavhub
+
+#endif // HAVE_OPENCV_CV_H

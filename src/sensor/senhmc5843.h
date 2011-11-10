@@ -1,9 +1,15 @@
 #ifndef _SENHMC5843_H_
 #define _SENHMC5843_H_
 
-#include <inttypes.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
+#endif // HAVE_MAVLINK_H
+
+#include <inttypes.h>
 
 #include "i2csensor.h"
 
@@ -57,7 +63,9 @@ namespace mavhub {
 			virtual void* get_data_pointer(unsigned int id) throw(const char *);
 			
 		private:
+#ifdef MAVLINK_ENABLED_HUCH
 			mavlink_huch_magnetic_kompass_t kompass_data;
+#endif // MAVLINK_ENABLED_HUCH
 
 			int gain;
 			int mode;

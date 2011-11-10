@@ -39,6 +39,8 @@ class VideoServer : public cpp_pthread::PThread {
 		 */
 		GstElement* element(const std::string &name) const;
 
+		void print_elements() const;
+
 	protected:
 		/**
 		 * \copydoc cpp_pthread::PThread::run()
@@ -50,7 +52,7 @@ class VideoServer : public cpp_pthread::PThread {
 	private:
 		static GMainLoop *loop;
 		GstElement *pipeline;
-		static std::map<VideoClient*, GstElement*> client_sink_map;
+		static std::multimap<VideoClient*, GstElement*> client_sink_map;
 		
 		static gboolean bus_call(GstBus *bus, GstMessage *msg, void *user_data);
 		static void new_video_buffer_callback(GstElement *element, GstElement *data);

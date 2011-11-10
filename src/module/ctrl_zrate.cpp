@@ -2,7 +2,9 @@
 
 #include "ctrl_zrate.h"
 
-#include <mavlink.h>
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKLINK_H
+
 #include "core/datacenter.h"
 #include "protocol/protocolstack.h"
 #include "qk_helper.h"
@@ -332,3 +334,7 @@ namespace mavhub {
 		Logger::log("ctrl_zrate::read_conf: en_heartbeat", params["en_heartbeat"], Logger::LOGLEVEL_DEBUG);
 	}
 }
+
+#endif // HAVE_MKLINK_H
+#endif // HAVE_MAVLINK_H
+

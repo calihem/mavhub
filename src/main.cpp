@@ -206,8 +206,8 @@ void add_links(const list<string> link_list, Setting &settings) {
 			continue;
 		}
 		switch(link_construction_plan.protocol_type) {
-			case MAVLINK:
 #ifdef HAVE_MAVLINK_H
+			case MAVLINK:
 				ProtocolStack<mavlink_message_t>::instance().add_link(layer);
 				break;
 #endif // HAVE_MAVLINK_H

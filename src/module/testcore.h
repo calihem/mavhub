@@ -1,6 +1,13 @@
 #ifndef _TESTCORE_H_
 #define _TESTCORE_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include "protocol/protocollayer.h"
 
 #include <inttypes.h> //uint8_t
@@ -24,5 +31,7 @@ namespace mavhub {
 
 
 } // namespace mavhub
+
+#endif // HAVE_MAVLINK_H
 
 #endif

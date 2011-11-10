@@ -1,9 +1,15 @@
 #ifndef _SENBMP085_H_
 #define _SENBMP085_H_
 
-#include <inttypes.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
+#endif // HAVE_MAVLINK_H
+
+#include <inttypes.h>
 
 #include "i2csensor.h"
 
@@ -49,9 +55,11 @@ namespace mavhub {
 			static float calc_altitude(const int p, const int p0);
 
 			calibration_data_t calibration_data;
+#ifdef MAVLINK_ENABLED_HUCH
 			mavlink_huch_raw_pressure_t raw_pressure;
 			mavlink_huch_temperature_t temperature;
 			mavlink_huch_altitude_t altitude;
+#endif // MAVLINK_ENABLED_HUCH
 
 			unsigned short func_id1;
 			unsigned short func_id2;

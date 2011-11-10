@@ -1,9 +1,10 @@
 #include "testcore.h"
 
+#ifdef HAVE_MAVLINK_H
+
 #include "core/logger.h"
 #include "utility.h"
 #include "protocol/protocolstack.h"
-#include <mavlink.h>
 
 #include <iostream> //cout
 
@@ -21,6 +22,7 @@ void TestCore::handle_input(const mavlink_message_t &msg) {
 }
 
 void TestCore::run() {
+#ifdef MAVLINK_ENABLED_HUCH
 	mavlink_huch_altitude_t altitude;
 	mavlink_huch_magnetic_kompass_t kompass;
 	int count = 0;
@@ -34,7 +36,7 @@ void TestCore::run() {
 	mavlink_message_t msg;
 	mavlink_msg_heartbeat_pack(100, 200, &msg, system_type, MAV_AUTOPILOT_GENERIC);
 
-	while(1) {
+	while( !interrupted() ) {
 		send(msg);
 		sleep(1);
 		try {
@@ -84,7 +86,10 @@ void TestCore::run() {
 				break;
 		}
 	}
+#endif // MAVLINK_ENABLED_HUCH
 }
 
-
 } // namespace mavhub
+
+#endif // HAVE_MAVLINK_H
+

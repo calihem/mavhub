@@ -1,10 +1,12 @@
 #include "attitude_filter_app.h"
 
+#ifdef HAVE_OPENCV_CV_H
+#include <opencv/cv.h>
+
 #include "core/datacenter.h"
 #include "application/acc_calibration_app/acc_calibration_app.h"
 
 #include <iostream>
-#include <opencv/cv.h>
 #include <cmath>
 
 using namespace std;
@@ -235,3 +237,6 @@ void AttitudeFilterApp::getIMURawADCData() {
 }
 
 } // namespace mavhub
+
+#endif // HAVE_OPENCV_CV_H
+
