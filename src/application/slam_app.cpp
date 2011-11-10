@@ -31,6 +31,8 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	{
 
 	pthread_mutex_init(&sync_mutex, NULL);
+	// invalidate attitude
+	attitude.usec = 0;
 
 	// set sink name
 	std::map<std::string,std::string>::const_iterator iter = args.find("sink");
@@ -85,6 +87,16 @@ void SLAMApp::extract_features() {
 		descriptor_extractor.compute(new_image, new_features, new_descriptors);
 	}
 
+	mavlink_attitude_t attitude_change;
+	attitude_change.roll = new_attitude.roll - old_attitude.roll;
+	attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
+	attitude_change.yaw = new_attitude.yaw - old_attitude.yaw;
+	Logger::log(name(), "Changed attitude:",
+		rad2deg(attitude_change.roll),
+		rad2deg(attitude_change.pitch),
+		rad2deg(attitude_change.yaw),
+		Logger::LOGLEVEL_DEBUG, _loglevel);
+
 	// match descriptors
 	std::vector<std::vector<cv::DMatch> > matches;
 	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
@@ -114,8 +126,8 @@ void SLAMApp::extract_features() {
 
 void SLAMApp::handle_input(const mavlink_message_t &msg) {
 	Logger::log(name(), "got mavlink_message", static_cast<int>(msg.msgid),
-		"for", static_cast<int>(mavlink_msg_action_get_target(&msg)),
-		static_cast<int>(mavlink_msg_action_get_target_component(&msg)),
+		"from", static_cast<int>(msg.sysid),
+		static_cast<int>(msg.compid),
 		Logger::LOGLEVEL_DEBUG, _loglevel);
 
 	switch(msg.msgid) {
@@ -128,6 +140,14 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 					// new image with ACK
 					take_new_image = 3;
 				}
+			}
+			break;
+		case MAVLINK_MSG_ID_ATTITUDE:
+			if( (msg.sysid == system_id()) ) {
+				Lock sync_lock(sync_mutex);
+				mavlink_msg_attitude_decode(&msg, &attitude);
+				// take system time for attitude
+				attitude.usec = get_time_us();
 			}
 			break;
 		default: break;
@@ -153,7 +173,7 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 		// make a new reference image
 		video_data.copyTo(old_image);
 		old_features.clear();
-// 		old_descriptors.clear();
+		memcpy(&old_attitude, &attitude, sizeof(mavlink_attitude_t));
 		if(take_new_image & (1 << 1)) {
 			//TODO: send ACK
 		}
@@ -162,7 +182,12 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 	} else {
 		video_data.copyTo(new_image);
 		new_features.clear();
-// 		new_descriptors.clear();
+		memcpy(&new_attitude, &attitude, sizeof(mavlink_attitude_t));
+		Logger::log(name(), "attitude of new image",
+			rad2deg(new_attitude.roll),
+			rad2deg(new_attitude.pitch),
+			rad2deg(new_attitude.yaw),
+			Logger::LOGLEVEL_DEBUG, _loglevel);
 	}
 	new_video_data = true;
 }
@@ -177,7 +202,7 @@ void SLAMApp::run() {
 
 	if(Core::video_server) {
 		int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str());
-		log(name(), ": binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), ": binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG, _loglevel);
 	} else {
 		log(name(), ": video server not running", Logger::LOGLEVEL_WARN);
 		return;
@@ -192,12 +217,14 @@ void SLAMApp::run() {
 		imu_rate);
 
 	while( !interrupted() ) {
-		Lock sync_lock(sync_mutex);
-		if(new_video_data)
-			extract_features();
-		new_video_data = false;
+		log(name(), "enter main loop", Logger::LOGLEVEL_DEBUG);
+		{ Lock sync_lock(sync_mutex);
+			if(new_video_data)
+				extract_features();
+			new_video_data = false;
+		}
 		//FIXME: remove usleep
-		usleep(50);
+		usleep(5000);
 	}
 
 	//unbind from video server

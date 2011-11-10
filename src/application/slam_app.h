@@ -43,11 +43,15 @@ namespace mavhub {
 			unsigned int target_system;
 			unsigned int target_component;
 			unsigned int imu_rate;
+			/// Current attitude of system
+			mavlink_attitude_t attitude;
 
 			//FIXME: replace old_* by database of these informations
 			std::string sink_name;
 			cv::Mat old_image;
 			cv::Mat new_image;
+			mavlink_attitude_t old_attitude;
+			mavlink_attitude_t new_attitude;
 			std::vector<cv::KeyPoint> old_features;
 			std::vector<cv::KeyPoint> new_features;
 			cv::BriskFeatureDetector feature_detector;
