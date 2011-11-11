@@ -87,6 +87,8 @@ void SLAMApp::extract_features() {
 		descriptor_extractor.compute(new_image, new_features, new_descriptors);
 	}
 
+	// get change of attitude
+	//TODO: time check of attitude
 	mavlink_attitude_t attitude_change;
 	attitude_change.roll = new_attitude.roll - old_attitude.roll;
 	attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
@@ -96,17 +98,38 @@ void SLAMApp::extract_features() {
 		rad2deg(attitude_change.pitch),
 		rad2deg(attitude_change.yaw),
 		Logger::LOGLEVEL_DEBUG, _loglevel);
+	
+	// calculate transformation matrix
+	double distance = 1.0; //FIXME: use altitude information
+	double factor = 300.0;
+	double delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
+	double delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
+	// rotate image
+	cv::Point center(new_image.cols/2, new_image.rows/2);
+	cv::Mat rotation_matrix = getRotationMatrix2D(center, -rad2deg(attitude_change.yaw), 1.0);
+	cv::Mat rotated_image;
+	//FIXME: warp features (not image)
+	cv::warpAffine(new_image, rotated_image, rotation_matrix, new_image.size());
+	// shift image
+	double m[2][3] = {{1, 0, -delta_x}, {0, 1, -delta_y}};
+	cv::Mat transform_matrix(2, 3, CV_64F, m);
+	cv::Mat transformed_image;
+	cv::warpAffine(rotated_image, transformed_image, transform_matrix, rotated_image.size());
 
 	// match descriptors
 	std::vector<std::vector<cv::DMatch> > matches;
 	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
+
+	//FIXME:
+	new_features.clear();
+	matches.clear();
 
 	//TODO: check for ambigous matches
 
 	if(with_out_stream && Core::video_server) {
 		cv::Mat match_img;
 		cv::drawMatches(old_image, old_features,
-			new_image, new_features,
+			transformed_image, new_features,
 			matches,
 			match_img,
 			cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
