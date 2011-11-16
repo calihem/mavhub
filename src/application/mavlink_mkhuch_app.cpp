@@ -140,101 +140,129 @@ MAVLinkMKHUCHApp::~MAVLinkMKHUCHApp() {}
 
 void MAVLinkMKHUCHApp::handle_input(const mavlink_message_t &msg) {
 	log("MAVLinkMKHUCHApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
-/*
+	
 	switch(msg.msgid) {
-		case MAVLINK_MSG_ID_PING: {
-			mavlink_ping_t ping;
-			mavlink_msg_ping_decode(&msg, &ping);
-			if(ping.target_system == 0) { //ping request
-				if(ping.target_component != 0
-				&& ping.target_component != component_id) break;
+		// case MAVLINK_MSG_ID_PING: {
+		// 	mavlink_ping_t ping;
+		// 	mavlink_msg_ping_decode(&msg, &ping);
+		// 	if(ping.target_system == 0) { //ping request
+		// 		if(ping.target_component != 0
+		// 		&& ping.target_component != component_id) break;
 
-				//FIXME: put sending in run-loop
-				Lock tx_lock(tx_mav_mutex);
-				mavlink_msg_ping_pack(owner()->system_id(),
-					component_id,
-					&tx_mav_msg,
-					mavlink_msg_ping_get_seq(&msg),
-					msg.sysid,
-					msg.compid,
-					ping.time);
-				send(tx_mav_msg);
-			} else if(ping.target_system == owner()->system_id()) { //ping answer
-				if(ping.target_component != component_id) break;
-				//TODO: react on answer
-			}
-			break;
-		}
-		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-			if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner()->system_id())
-			&& (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
-				//ask for first parameter value
-				mk_param_type_t param_type= REVISION;
-				send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
-				parameter_request = REVISION;
-				parameter_time = get_time_us();
-			}
-			break;
-		case MAVLINK_MSG_ID_PARAM_SET:
-			if( (mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id())
-			&& (mavlink_msg_param_set_get_target_component(&msg) == component_id) ) {
-				int8_t parameter_id[15];
-				mavlink_msg_param_set_get_param_id(&msg, parameter_id);
-				uint16_t index = parameter_id_to_index(parameter_id);
+		// 		//FIXME: put sending in run-loop
+		// 		Lock tx_lock(tx_mav_mutex);
+		// 		mavlink_msg_ping_pack(owner()->system_id(),
+		// 			component_id,
+		// 			&tx_mav_msg,
+		// 			mavlink_msg_ping_get_seq(&msg),
+		// 			msg.sysid,
+		// 			msg.compid,
+		// 			ping.time);
+		// 		send(tx_mav_msg);
+		// 	} else if(ping.target_system == owner()->system_id()) { //ping answer
+		// 		if(ping.target_component != component_id) break;
+		// 		//TODO: react on answer
+		// 	}
+		// 	break;
+		// }
 
-				if(index >= 0) {
-					//send parameter to MK
-					mkhuch_param_t parameter;
-					parameter.index = index;
-					float value = mavlink_msg_param_set_get_param_value(&msg);
-					parameter.value = static_cast<uint8_t>(value);
-					send(MKHUCH_MSG_TYPE_PARAM_VALUE, &parameter, sizeof(mkhuch_param_t));
-				}
-			}
-			break;
-		case MAVLINK_MSG_ID_MANUAL_CONTROL:
-			if( (mavlink_msg_param_request_read_get_target_system(&msg) == owner()->system_id()) ) {
-				mkhuch_extern_control_t extern_control;
-				//set values
-				extern_control.roll = static_cast<int16_t>( mavlink_msg_manual_control_get_roll(&msg) );
-				extern_control.pitch = static_cast<int16_t>( mavlink_msg_manual_control_get_pitch(&msg) );
-				extern_control.yaw = static_cast<int16_t>( mavlink_msg_manual_control_get_yaw(&msg) );
-				extern_control.thrust = static_cast<uint16_t>( mavlink_msg_manual_control_get_thrust(&msg) );
-				//set mask
-                                extern_control.mask = 0;
-				if( mavlink_msg_manual_control_get_roll_manual(&msg) ) {
-					extern_control.mask |= (1 << ROLL_MANUAL_MASK);
-				}
-				if( mavlink_msg_manual_control_get_pitch_manual(&msg) ) {
-					extern_control.mask |= (1 << PITCH_MANUAL_MASK);
-				}
-				if( mavlink_msg_manual_control_get_yaw_manual(&msg) ) {
-					extern_control.mask |= (1 << YAW_MANUAL_MASK);
-				}
-				if( mavlink_msg_manual_control_get_thrust_manual(&msg) ) {
-					extern_control.mask |= (1 << THRUST_MANUAL_MASK);
-				}
-				send(MKHUCH_MSG_TYPE_EXT_CTRL, &extern_control, sizeof(mkhuch_extern_control_t));
-			}
-			break;
+		// case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+		// 	if( (mavlink_msg_param_request_list_get_target_system(&msg) == owner()->system_id())
+		// 	&& (mavlink_msg_param_request_list_get_target_component(&msg) == component_id) ) {
+		// 		//ask for first parameter value
+		// 		mk_param_type_t param_type= REVISION;
+		// 		send(MKHUCH_MSG_TYPE_PARAM_REQUEST, &param_type, sizeof(mk_param_type_t));
+		// 		parameter_request = REVISION;
+		// 		parameter_time = get_time_us();
+		// 	}
+		// 	break;
+
+		// case MAVLINK_MSG_ID_PARAM_SET:
+		// 	if( (mavlink_msg_param_set_get_target_system(&msg) == owner()->system_id())
+		// 	&& (mavlink_msg_param_set_get_target_component(&msg) == component_id) ) {
+		// 		int8_t parameter_id[15];
+		// 		mavlink_msg_param_set_get_param_id(&msg, parameter_id);
+		// 		uint16_t index = parameter_id_to_index(parameter_id);
+
+		// 		if(index >= 0) {
+		// 			//send parameter to MK
+		// 			mkhuch_param_t parameter;
+		// 			parameter.index = index;
+		// 			float value = mavlink_msg_param_set_get_param_value(&msg);
+		// 			parameter.value = static_cast<uint8_t>(value);
+		// 			send(MKHUCH_MSG_TYPE_PARAM_VALUE, &parameter, sizeof(mkhuch_param_t));
+		// 		}
+		// 	}
+		// 	break;
+
+		// case MAVLINK_MSG_ID_MANUAL_CONTROL:
+		// 	if( (mavlink_msg_param_request_read_get_target_system(&msg) == owner()->system_id()) ) {
+		// 		mkhuch_extern_control_t extern_control;
+		// 		//set values
+		// 		extern_control.roll = static_cast<int16_t>( mavlink_msg_manual_control_get_roll(&msg) );
+		// 		extern_control.pitch = static_cast<int16_t>( mavlink_msg_manual_control_get_pitch(&msg) );
+		// 		extern_control.yaw = static_cast<int16_t>( mavlink_msg_manual_control_get_yaw(&msg) );
+		// 		extern_control.thrust = static_cast<uint16_t>( mavlink_msg_manual_control_get_thrust(&msg) );
+		// 		//set mask
+    //                             extern_control.mask = 0;
+		// 		if( mavlink_msg_manual_control_get_roll_manual(&msg) ) {
+		// 			extern_control.mask |= (1 << ROLL_MANUAL_MASK);
+		// 		}
+		// 		if( mavlink_msg_manual_control_get_pitch_manual(&msg) ) {
+		// 			extern_control.mask |= (1 << PITCH_MANUAL_MASK);
+		// 		}
+		// 		if( mavlink_msg_manual_control_get_yaw_manual(&msg) ) {
+		// 			extern_control.mask |= (1 << YAW_MANUAL_MASK);
+		// 		}
+		// 		if( mavlink_msg_manual_control_get_thrust_manual(&msg) ) {
+		// 			extern_control.mask |= (1 << THRUST_MANUAL_MASK);
+		// 		}
+		// 		send(MKHUCH_MSG_TYPE_EXT_CTRL, &extern_control, sizeof(mkhuch_extern_control_t));
+		// 	}
+		// 	break;
+
 		case MAVLINK_MSG_ID_ACTION:
-			if( (mavlink_msg_action_get_target(&msg) == owner()->system_id())
-			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
-				mkhuch_action_t action;
-				action.id = mavlink_msg_action_get_action(&msg);
-				send(MKHUCH_MSG_TYPE_ACTION, &action, sizeof(mkhuch_action_t));
+			log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_ACTION", Logger::LOGLEVEL_DEBUG);
+			// if( (mavlink_msg_action_get_target(&msg) == owner()->system_id())
+			// && (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
+			// 	mkhuch_action_t action;
+			// 	action.id = mavlink_msg_action_get_action(&msg);
+			// 	send(MKHUCH_MSG_TYPE_ACTION, &action, sizeof(mkhuch_action_t));
+			// }
+			break;
+
+		case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
+			if(mavlink_msg_request_data_stream_get_target_system(&msg) == system_id()) {
+				log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_REQUEST_DATA_STREAM for sys:comp", system_id(), Logger::LOGLEVEL_DEBUG);
+				log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_REQUEST_DATA_STREAM stream_id",
+						(int)mavlink_msg_request_data_stream_get_req_stream_id (&msg),
+						Logger::LOGLEVEL_DEBUG);
+				log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_REQUEST_DATA_STREAM stream_rate",
+						(int)mavlink_msg_request_data_stream_get_req_message_rate (&msg),
+						Logger::LOGLEVEL_DEBUG);
+				log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_REQUEST_DATA_STREAM stream_start_stop",
+						(int)mavlink_msg_request_data_stream_get_start_stop (&msg),
+						Logger::LOGLEVEL_DEBUG);
+
+				mkhuch_request_stream_t request_stream;
+				request_stream.id = mavlink_msg_request_data_stream_get_req_stream_id (&msg);
+				request_stream.rate = mavlink_msg_request_data_stream_get_req_message_rate (&msg);
+				Lock tx_lock(tx_mkhuch_mutex); // lock msg buf
+				mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_REQUEST_STREAM, &request_stream, sizeof(mkhuch_request_stream_t));
+				AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
 			}
 			break;
+
 		default:
 			break;
-	}*/
+	}
 }
 
 void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 	uint64_t last_mkhuch_msg_time = mkhuch_msg_time;
 	mkhuch_msg_time = get_time_us();
 
-	log("MAVLinkMKHUCHApp got mkhuch_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
+	//log("MAVLinkMKHUCHApp got mkhuch_message", static_cast<int>(msg.type), Logger::LOGLEVEL_DEBUG);
 
 	//send heartbeat approx. after 1s
 	heartbeat_time += mkhuch_msg_time - last_mkhuch_msg_time;
@@ -325,10 +353,10 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 			send(tx_mav_msg);
 			break;
 		}*/
-/*		case MKHUCH_MSG_TYPE_SYSTEM_STATUS: {
+		case MKHUCH_MSG_TYPE_SYSTEM_STATUS: {
 			const mkhuch_system_status_t *sys_status = reinterpret_cast<const mkhuch_system_status_t*>(msg.data);
 			Lock tx_lock(tx_mav_mutex);
-			mavlink_msg_sys_status_pack(owner()->system_id(),
+			mavlink_msg_sys_status_pack(system_id(),
 				component_id,
 				&tx_mav_msg,
 				sys_status->mode,
@@ -338,9 +366,9 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 				sys_status->vbat*100, //convert dV to mV
 				0,//motor block (unsupported)
 				sys_status->packet_drop);
-			send(tx_mav_msg);
+			AppLayer<mavlink_message_t>::send(tx_mav_msg);
 			break;
-		}*/
+		}
 /*		case MKHUCH_MSG_TYPE_BOOT:
 			//TODO
 			break;*/
