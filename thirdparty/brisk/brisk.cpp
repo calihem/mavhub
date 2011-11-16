@@ -1971,7 +1971,7 @@ inline void BriskLayer::halfsample(const cv::Mat& srcimg, cv::Mat& dstimg){
 }
 
 inline void BriskLayer::twothirdsample(const cv::Mat& srcimg, cv::Mat& dstimg){
-#ifdef HAVE_MMX
+#if (defined HAVE_MMX && defined HAVE_SSSE3)
 	const unsigned short leftoverCols = ((srcimg.cols/3)*3)%15;// take care with border...
 
 	// make sure the destination image is of the right size:
