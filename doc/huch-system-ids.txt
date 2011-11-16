@@ -4,8 +4,9 @@ HUCH system IDs
 
 | *SysID* | *hostname*                     | *description*                                |
 |---------+--------------------------------+----------------------------------------------|
-|      43 | delta (opt)                    | GS opt                                       |
 |      39 | root@huch-01-01 (horst/verdex) | Gumstix Verdex on Kopter Horst (schwarz/rot) |
 |      40 | root@qk01 (beagle/opt)         | Beagle on Homekopter opt                     |
 |      41 | root@huch-01-02 (horst/beagle) | Beagle-xM on Kopter Horst (schwarz/rot)      |
+|      42 | crrcsim robot 1                |                                              |
+|      43 | delta (opt)                    | GS opt                                       |
 

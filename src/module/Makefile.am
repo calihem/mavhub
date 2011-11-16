@@ -20,10 +20,14 @@ libmodule_a_SOURCES = \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
 	ctrl_wifimeter.cpp \
+	n_ff.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	filter_median.cpp \
 	PID.cpp \
+	Bumper.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
-	stat_meanvar.cpp
+	stat_meanvar.cpp \
+	bridge_ivy.cpp \
+	exec_timing.cpp

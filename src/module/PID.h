@@ -11,6 +11,7 @@ namespace mavhub {
 		virtual double calc(double dt);
 		virtual double calc(double dt, double meas);
 		virtual double calc(double dt, double meas, double setpoint);
+		virtual double calc2(double dt, double meas);
 		/// controller integral getter
 		virtual double getIntegral();
 		/// controller integral setter
@@ -41,6 +42,8 @@ namespace mavhub {
 		double getPv_int();
 		/// get pv_int_m1
 		double getPv_int_m1();
+		/// get pv_int_lim
+		double getPv_int_lim();
 
 		/// get controller bias
 		double getBias();
@@ -58,6 +61,8 @@ namespace mavhub {
 		void setTi(double ti);
 		/// set controller gain
 		void setTd(double td);
+		/// set controller gain
+		void setPv_int_lim(double lim);
 
 	private:
 		double bias; //!< controller bias
@@ -75,6 +80,8 @@ namespace mavhub {
 		double dpart; //!< D-part
 		double pv_int; //!< \f$ \int_{t_0}^{t_k} e(t) dt \f$
 		double pv_int_m1; //!< \f$ \int_{t_0}^{t_{k-1}} e(t) dt \f$
+
+		double pv_int_lim;
 	};
 
 	/// set setpoint
@@ -95,6 +102,8 @@ namespace mavhub {
 	inline void PID::setTi(double ti_) { Ti = ti_; }
 	/// set controller gain
 	inline void PID::setTd(double td_) { Td = td_; }
+	/// set integral limit
+	inline void PID::setPv_int_lim(double lim_) { pv_int_lim = lim_; }
 	
 	/// get controller bias
 	inline double PID::getBias() {return bias;}
@@ -122,6 +131,8 @@ namespace mavhub {
 	inline double PID::getPv_int() {return pv_int;}
 	/// get pv_int_m1
 	inline double PID::getPv_int_m1() {return pv_int_m1;}
+	/// get pv_int_m1
+	inline double PID::getPv_int_lim() {return pv_int_lim;}
 }
 
 #endif

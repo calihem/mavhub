@@ -1,1 +1,5 @@
 component_id = 27
+loglevel = info
+bump_thr_low = 0.37
+bump_thr_low = 0.38
+ctl_update_rate = 10

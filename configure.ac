@@ -58,23 +58,26 @@ PKG_PROG_PKG_CONFIG([0.25])
 PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10],
 	[AC_DEFINE(HAVE_GSTREAMER, [], [Use GStreamer]) gstreamer=true],
 	[gstreamer=false])
-AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
+#AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
+AM_CONDITIONAL(COND_USE_GSTREAMER, false)
 
 # Checks for libraries.
 AC_CHECK_LIB([ncurses], [newwin])
 AC_CHECK_LIB([cxcore], [cvCreateMat])
 AC_CHECK_LIB([cv], [cvCreateKalman])
 AC_CHECK_LIB([opencv_core], [cvCreateMat])
-AC_CHECK_LIB([opencv_legacy], [cvCreateKalman])
+AC_CHECK_LIB([opencv_video], [cvCreateKalman])
 AC_CHECK_LIB([opencv_imgproc], [cvIntegral])
 AC_CHECK_LIB([opencv_features2d], [cvCalcPCA])
 AC_CHECK_LIB([opencv_highgui], [cvShowImage])
+AC_CHECK_LIB([opencv_legacy], [cvRand])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([gps], [gps_clear_fix])
 AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
-AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
+#AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
+AC_CHECK_LIB([ivy], [IvyInit])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
@@ -84,6 +87,7 @@ AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory fo
 AC_CHECK_HEADERS([opencv/cv.h], AM_CONDITIONAL(COND_OPENCV, true) , [AM_CONDITIONAL(COND_OPENCV, false) AC_MSG_WARN([OpenCV headers not found])])
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
 AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AM_CONDITIONAL(COND_OPENGL, false) AC_MSG_WARN([OpenGL headers not found])])
+AC_CHECK_HEADERS([Ivy/ivy.h], , [AC_MSG_WARN( [Please specify header directory for ivy, e.g. configure CPPFLAGS="-I/home/user/ivy-c"] )])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

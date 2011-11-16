@@ -7849,7 +7849,8 @@ $as_echo "yes" >&6; }
 $as_echo "#define HAVE_GSTREAMER /**/" >>confdefs.h
  gstreamer=true
 fi
- if test x$gstreamer = xtrue; then
+#AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
+ if false; then
   COND_USE_GSTREAMER_TRUE=
   COND_USE_GSTREAMER_FALSE='#'
 else
@@ -8039,13 +8040,13 @@ _ACEOF
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateKalman in -lopencv_legacy" >&5
-$as_echo_n "checking for cvCreateKalman in -lopencv_legacy... " >&6; }
-if ${ac_cv_lib_opencv_legacy_cvCreateKalman+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateKalman in -lopencv_video" >&5
+$as_echo_n "checking for cvCreateKalman in -lopencv_video... " >&6; }
+if ${ac_cv_lib_opencv_video_cvCreateKalman+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_legacy  $LIBS"
+LIBS="-lopencv_video  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -8065,22 +8066,22 @@ return cvCreateKalman ();
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_legacy_cvCreateKalman=yes
+  ac_cv_lib_opencv_video_cvCreateKalman=yes
 else
-  ac_cv_lib_opencv_legacy_cvCreateKalman=no
+  ac_cv_lib_opencv_video_cvCreateKalman=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_legacy_cvCreateKalman" >&5
-$as_echo "$ac_cv_lib_opencv_legacy_cvCreateKalman" >&6; }
-if test "x$ac_cv_lib_opencv_legacy_cvCreateKalman" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_video_cvCreateKalman" >&5
+$as_echo "$ac_cv_lib_opencv_video_cvCreateKalman" >&6; }
+if test "x$ac_cv_lib_opencv_video_cvCreateKalman" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_LEGACY 1
+#define HAVE_LIBOPENCV_VIDEO 1
 _ACEOF
 
-  LIBS="-lopencv_legacy $LIBS"
+  LIBS="-lopencv_video $LIBS"
 
 fi
 
@@ -8444,13 +8445,14 @@ _ACEOF
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gst_app_sink_pull_buffer in -lgstapp-0.10" >&5
-$as_echo_n "checking for gst_app_sink_pull_buffer in -lgstapp-0.10... " >&6; }
-if ${ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer+:} false; then :
+#AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for IvyInit in -livy" >&5
+$as_echo_n "checking for IvyInit in -livy... " >&6; }
+if ${ac_cv_lib_ivy_IvyInit+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgstapp-0.10  $LIBS"
+LIBS="-livy  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -8460,32 +8462,32 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char gst_app_sink_pull_buffer ();
+char IvyInit ();
 int
 main ()
 {
-return gst_app_sink_pull_buffer ();
+return IvyInit ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer=yes
+  ac_cv_lib_ivy_IvyInit=yes
 else
-  ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer=no
+  ac_cv_lib_ivy_IvyInit=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" >&5
-$as_echo "$ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" >&6; }
-if test "x$ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ivy_IvyInit" >&5
+$as_echo "$ac_cv_lib_ivy_IvyInit" >&6; }
+if test "x$ac_cv_lib_ivy_IvyInit" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBGSTAPP_0_10 1
+#define HAVE_LIBIVY 1
 _ACEOF
 
-  LIBS="-lgstapp-0.10 $LIBS"
+  LIBS="-livy $LIBS"
 
 fi
 
@@ -9012,6 +9014,21 @@ else
 fi
  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenGL headers not found" >&5
 $as_echo "$as_me: WARNING: OpenGL headers not found" >&2;}
+fi
+
+done
+
+for ac_header in Ivy/ivy.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "Ivy/ivy.h" "ac_cv_header_Ivy_ivy_h" "$ac_includes_default"
+if test "x$ac_cv_header_Ivy_ivy_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_IVY_IVY_H 1
+_ACEOF
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please specify header directory for ivy, e.g. configure CPPFLAGS=\"-I/home/user/ivy-c\" " >&5
+$as_echo "$as_me: WARNING: Please specify header directory for ivy, e.g. configure CPPFLAGS=\"-I/home/user/ivy-c\" " >&2;}
 fi
 
 done

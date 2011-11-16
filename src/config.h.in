@@ -36,6 +36,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the <Ivy/ivy.h> header file. */
+#undef HAVE_IVY_IVY_H
+
 /* Define to 1 if you have the `cv' library (-lcv). */
 #undef HAVE_LIBCV
 
@@ -57,8 +60,8 @@
 /* Define to 1 if you have the <libgpsmm.h> header file. */
 #undef HAVE_LIBGPSMM_H
 
-/* Define to 1 if you have the `gstapp-0.10' library (-lgstapp-0.10). */
-#undef HAVE_LIBGSTAPP_0_10
+/* Define to 1 if you have the `ivy' library (-livy). */
+#undef HAVE_LIBIVY
 
 /* Define to 1 if you have the `ncurses' library (-lncurses). */
 #undef HAVE_LIBNCURSES
@@ -78,6 +81,9 @@
 
 /* Define to 1 if you have the `opencv_legacy' library (-lopencv_legacy). */
 #undef HAVE_LIBOPENCV_LEGACY
+
+/* Define to 1 if you have the `opencv_video' library (-lopencv_video). */
+#undef HAVE_LIBOPENCV_VIDEO
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD

@@ -40,3 +40,6 @@ mavhub_LDADD = \
 	$(THIRDPARTY_EXTRA_LIBS) \
 	$(GSTREAMER_LIBS) \
 	$(AM_LDFLAGS)
+
+#	$(top_builddir)/src/lib/*.a
+
