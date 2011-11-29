@@ -13,7 +13,7 @@
 
 #ifdef HAVE_OPENCV_CV_H
 #include <brisk/brisk.h>
-
+#include "lib/slam/features.h"
 #include "protocol/protocollayer.h"
 
 #include <inttypes.h> //uint8_t

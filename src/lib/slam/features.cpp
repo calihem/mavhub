@@ -5,6 +5,8 @@
 
 #define min_eigenval(dxx, dxy, dyy) 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ))
 
+#ifdef HAVE_OPENCV_CV_H
+
 template <typename T>
 T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box_radius) {
 	//TODO: optional range check
@@ -34,3 +36,18 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	int num_pixels = (2*box_radius+1)*(2*box_radius+1);
 	return min_lambda / (4.0*num_pixels);
 }
+
+cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix) {
+	if(transform_matrix.rows != 2 || transform_matrix.cols != 3)
+		return point;
+
+	cv::Point2f transformed;
+	
+	const double *matrix_data = reinterpret_cast<const double*>(transform_matrix.data);
+	transformed.x = matrix_data[0]*point.x + matrix_data[1]*point.y + matrix_data[2];
+	transformed.y = matrix_data[3]*point.x + matrix_data[4]*point.y + matrix_data[5];
+	
+	return transformed;
+}
+
+#endif // HAVE_OPENCV_CV_H
