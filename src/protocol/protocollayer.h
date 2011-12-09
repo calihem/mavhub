@@ -309,15 +309,15 @@ inline std::ostream& operator <<(std::ostream &os, const AppInterface &app) {
 
 template<typename T1>
 inline void AppInterface::log(const T1 &message, const Logger::log_level_t loglevel) const {
-	Logger::log(message, loglevel, AppInterface::_loglevel);
+	Logger::log(name(), message, loglevel, AppInterface::_loglevel);
 }
 template<typename T1, typename T2>
 inline void AppInterface::log(const T1 &msg1, const T2 &msg2, const Logger::log_level_t loglevel) const {
-	Logger::log(msg1, msg2, loglevel, AppInterface::_loglevel);
+	Logger::log(name(), msg1, msg2, loglevel, AppInterface::_loglevel);
 }
 template<typename T1, typename T2, typename T3>
 inline void AppInterface::log(const T1 &msg1, const T2 &msg2, const T3 &msg3, const Logger::log_level_t loglevel) const {
-	Logger::log(msg1, msg2, msg3, loglevel, AppInterface::_loglevel);
+	Logger::log(name(), msg1, msg2, msg3, loglevel, AppInterface::_loglevel);
 }
 
 inline const std::string& AppInterface::name() const {

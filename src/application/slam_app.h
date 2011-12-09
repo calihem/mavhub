@@ -48,12 +48,15 @@ namespace mavhub {
 
 			//FIXME: replace old_* by database of these informations
 			std::string sink_name;
+			cv::Mat cam_matrix;
+			cv::Mat dist_coeffs;
 			cv::Mat old_image;
 			cv::Mat new_image;
 			mavlink_attitude_t old_attitude;
 			mavlink_attitude_t new_attitude;
 			std::vector<cv::KeyPoint> old_features;
 			std::vector<cv::KeyPoint> new_features;
+			std::vector<cv::Point3f> old_object_points;
 			cv::BriskFeatureDetector feature_detector;
 			cv::Mat old_descriptors;
 			cv::Mat new_descriptors;
@@ -64,6 +67,7 @@ namespace mavhub {
 			cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif
 			void extract_features();
+			void load_calibration_data(const std::string &filename);
 	};
 
 } // namespace mavhub

@@ -10,6 +10,14 @@
 #include <opencv/cv.h>	//cv::Mat
 #include <opencv2/features2d/features2d.hpp>	//DescriptorMatcher
 
+void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<std::vector<cv::DMatch> >& matches,
+	cv::Mat &camera_matrix,
+	cv::Mat &distortion_coefficients,
+	cv::Mat &rotation_vector,
+	cv::Mat &translation_vector);
+
 /**
  * \brief Calculate the Shi-Tomasi score.
  *
@@ -39,6 +47,17 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const float delta_x, const float delta_y,
 	std::vector<uint8_t>& filter,
 	Distance distance_metric = Distance() );
+
+cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<std::vector<cv::DMatch> >& matches,
+	int method=0,
+	double ransac_reproj_threshold=3);
+
+void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
+	const cv::Mat& camera_matrix,
+	const float distance,
+	std::vector<cv::Point3f>& objectpoints);
 
 template <class DescriptorDistance, class RadiusDistance>
 class RadiusMatcher : public cv::DescriptorMatcher {
