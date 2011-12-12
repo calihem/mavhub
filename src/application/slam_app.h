@@ -11,7 +11,7 @@
 #include "lib/gstreamer/video_server.h"
 #include "lib/gstreamer/video_client.h"
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV2
 #include <brisk/brisk.h>
 #include "lib/slam/features.h"
 #include "protocol/protocollayer.h"

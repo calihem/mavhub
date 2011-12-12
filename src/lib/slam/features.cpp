@@ -1,7 +1,6 @@
 #include "features.h"
 
-#ifdef HAVE_OPENCV2
-#if (CV_MINOR_VERSION > 1)
+#if defined HAVE_OPENCV2 && CV_MINOR_VERSION >= 2
 
 #include <iostream>     // cout
 #include <iomanip>	//setprecision
@@ -148,6 +147,5 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 // 	cv::Mat object_matrix = inv_cam_matrix*point_matrix;
 }
 
-#endif // CV_MINOR_VERSION > 1
-#endif // HAVE_OPENCV2
+#endif // defined HAVE_OPENCV2 && CV_MINOR_VERSION >= 2
 

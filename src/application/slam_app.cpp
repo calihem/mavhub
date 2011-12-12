@@ -4,7 +4,7 @@
 
 #ifdef HAVE_GSTREAMER
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV2
 
 #include "core/logger.h"
 #include "core/datacenter.h"
@@ -167,8 +167,19 @@ void SLAMApp::extract_features() {
 		rotation_vector,
 		translation_vector);
 // 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
-	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
-
+//	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
+	{
+	Lock tx_lock(tx_mav_mutex);
+	mavlink_msg_attitude_pack(system_id(),
+		component_id,
+		&tx_mav_msg,
+		get_time_us(),
+		rotation_vector.at<double>(0, 0),
+		rotation_vector.at<double>(0, 1),
+		rotation_vector.at<double>(0, 2),
+		0, 0, 0);
+	AppLayer<mavlink_message_t>::send(tx_mav_msg);
+	}
 	//FIXME:
 // 	new_features.clear();
 // 	matches.clear();
