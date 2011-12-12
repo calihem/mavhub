@@ -40,7 +40,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @COND_USE_GSTREAMER_TRUE@am__append_1 = $(GSTREAMER_CFLAGS) -Wno-variadic-macros -Wno-long-long
 @COND_USE_GSTREAMER_TRUE@am__append_2 = libgstreamer.a
 @COND_OPENGL_TRUE@am__append_3 = libopengl.a
-@COND_OPENCV_TRUE@am__append_4 = libslam.a
+@COND_OPENCV2_TRUE@am__append_4 = libslam.a
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
@@ -73,7 +73,7 @@ libopengl_a_OBJECTS = $(am_libopengl_a_OBJECTS)
 libslam_a_AR = $(AR) $(ARFLAGS)
 libslam_a_LIBADD =
 am__libslam_a_SOURCES_DIST = slam/features.cpp
-@COND_OPENCV_TRUE@am_libslam_a_OBJECTS = features.$(OBJEXT)
+@COND_OPENCV2_TRUE@am_libslam_a_OBJECTS = features.$(OBJEXT)
 libslam_a_OBJECTS = $(am_libslam_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -156,6 +156,10 @@ LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 OBJEXT = @OBJEXT@
+OPENCV1_CFLAGS = @OPENCV1_CFLAGS@
+OPENCV1_LIBS = @OPENCV1_LIBS@
+OPENCV2_CFLAGS = @OPENCV2_CFLAGS@
+OPENCV2_LIBS = @OPENCV2_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -244,8 +248,8 @@ noinst_LIBRARIES = $(am__append_2) $(am__append_3) $(am__append_4)
 @COND_OPENGL_TRUE@libopengl_a_SOURCES = \
 @COND_OPENGL_TRUE@	opengl/map_2d.cpp
 
-@COND_OPENCV_TRUE@libslam_a_SOURCES = \
-@COND_OPENCV_TRUE@	slam/features.cpp
+@COND_OPENCV2_TRUE@libslam_a_SOURCES = \
+@COND_OPENCV2_TRUE@	slam/features.cpp
 
 all: all-am
 

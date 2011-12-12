@@ -39,12 +39,6 @@
 /* Define to 1 if you have the <Ivy/ivy.h> header file. */
 #undef HAVE_IVY_IVY_H
 
-/* Define to 1 if you have the `cv' library (-lcv). */
-#undef HAVE_LIBCV
-
-/* Define to 1 if you have the `cxcore' library (-lcxcore). */
-#undef HAVE_LIBCXCORE
-
 /* Define to 1 if you have the `GL' library (-lGL). */
 #undef HAVE_LIBGL
 
@@ -65,25 +59,6 @@
 
 /* Define to 1 if you have the `ncurses' library (-lncurses). */
 #undef HAVE_LIBNCURSES
-
-/* Define to 1 if you have the `opencv_core' library (-lopencv_core). */
-#undef HAVE_LIBOPENCV_CORE
-
-/* Define to 1 if you have the `opencv_features2d' library
-   (-lopencv_features2d). */
-#undef HAVE_LIBOPENCV_FEATURES2D
-
-/* Define to 1 if you have the `opencv_highgui' library (-lopencv_highgui). */
-#undef HAVE_LIBOPENCV_HIGHGUI
-
-/* Define to 1 if you have the `opencv_imgproc' library (-lopencv_imgproc). */
-#undef HAVE_LIBOPENCV_IMGPROC
-
-/* Define to 1 if you have the `opencv_legacy' library (-lopencv_legacy). */
-#undef HAVE_LIBOPENCV_LEGACY
-
-/* Define to 1 if you have the `opencv_video' library (-lopencv_video). */
-#undef HAVE_LIBOPENCV_VIDEO
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
@@ -109,8 +84,14 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
-/* Define to 1 if you have the <opencv/cv.h> header file. */
-#undef HAVE_OPENCV_CV_H
+/* Use OpenCV */
+#undef HAVE_OPENCV
+
+/* Use OpenCV1 */
+#undef HAVE_OPENCV1
+
+/* Use OpenCV2 */
+#undef HAVE_OPENCV2
 
 /* Define to 1 if you have the `pow' function. */
 #undef HAVE_POW

@@ -48,6 +48,19 @@ Cross compilation
 To cross compile for an arm platform with the angstrom SDK run
  ./configure --build=`config.guess` --host arm-angstrom-linux-gnueabi 
 
+Two variables for pkg-config need to be set for proper operation. The paths
+given below are for the older oe directory layout. In recent versions this
+has to be changed to
+
+"build/tmp-angstrom_2008_1/sysroots/armv7a-angstrom-linux-gnueabi"
+
+for e.g. the beagle-board.
+
+PKG_CONFIG_PATH=PATH_TO_OEROOT/tmp/staging/armv5te-angstrom-linux-gnueabi/usr/lib/pkgconfig
+
+PKG_CONFIG_SYSROOT_DIR=PATH_TO_OEROOT/tmp/staging/armv5te-angstrom-linux-gnueabi
+
+
 Unit tests
 ----------
 To compile the test program in the tests directory, enable test support via

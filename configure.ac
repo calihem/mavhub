@@ -53,30 +53,34 @@ AC_ARG_ENABLE(tests,
 	[tests=false])
 AM_CONDITIONAL(COND_UNIT_TESTS, test x$tests = xtrue)
 
-# checks for pkg-config and supported and modules
+# Checks for pkg-config
 PKG_PROG_PKG_CONFIG([0.25])
-PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10],
+
+# Checks for OpenCV
+PKG_CHECK_MODULES([OPENCV1], [opencv >= 1.0 opencv < 2.0],
+	[AC_DEFINE(HAVE_OPENCV1, [], [Use OpenCV1]) AM_CONDITIONAL(COND_OPENCV1, true) AC_DEFINE(HAVE_OPENCV, [], [Use OpenCV])],
+	[AM_CONDITIONAL(COND_OPENCV1, false)])
+AC_SUBST([OPENCV1_CFLAGS])
+AC_SUBST([OPENCV1_LIBS])
+PKG_CHECK_MODULES([OPENCV2], [opencv >= 2.0],
+	[AC_DEFINE(HAVE_OPENCV2, [], [Use OpenCV2]) AM_CONDITIONAL(COND_OPENCV2, true) AC_DEFINE(HAVE_OPENCV, [], [Use OpenCV])],
+	[AM_CONDITIONAL(COND_OPENCV2, false)])
+AC_SUBST([OPENCV2_CFLAGS])
+AC_SUBST([OPENCV2_LIBS])
+
+# Checks for GStreamer
+PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10 gstreamer-app-0.10],
 	[AC_DEFINE(HAVE_GSTREAMER, [], [Use GStreamer]) gstreamer=true],
 	[gstreamer=false])
-#AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
-AM_CONDITIONAL(COND_USE_GSTREAMER, false)
+AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
 
 # Checks for libraries.
 AC_CHECK_LIB([ncurses], [newwin])
-AC_CHECK_LIB([cxcore], [cvCreateMat])
-AC_CHECK_LIB([cv], [cvCreateKalman])
-AC_CHECK_LIB([opencv_core], [cvCreateMat])
-AC_CHECK_LIB([opencv_video], [cvCreateKalman])
-AC_CHECK_LIB([opencv_imgproc], [cvIntegral])
-AC_CHECK_LIB([opencv_features2d], [cvCalcPCA])
-AC_CHECK_LIB([opencv_highgui], [cvShowImage])
-AC_CHECK_LIB([opencv_legacy], [cvRand])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([gps], [gps_clear_fix])
 AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
-#AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
 AC_CHECK_LIB([ivy], [IvyInit])
 
 # Checks for header files.
@@ -84,7 +88,6 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h 
 AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_WARN( [Please specify header directory for mavlink, e.g. configure CPPFLAGS="-I/home/user/mavlink/include/huch"] )])
 AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )])
 AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory for mklink, e.g. configure CPPFLAGS="-I/home/user/mklink"] )])
-AC_CHECK_HEADERS([opencv/cv.h], AM_CONDITIONAL(COND_OPENCV, true) , [AM_CONDITIONAL(COND_OPENCV, false) AC_MSG_WARN([OpenCV headers not found])])
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
 AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AM_CONDITIONAL(COND_OPENGL, false) AC_MSG_WARN([OpenGL headers not found])])
 AC_CHECK_HEADERS([Ivy/ivy.h], , [AC_MSG_WARN( [Please specify header directory for ivy, e.g. configure CPPFLAGS="-I/home/user/ivy-c"] )])
@@ -123,7 +126,7 @@ AC_OUTPUT
 echo "
   ($PACKAGE_NAME) version $PACKAGE_VERSION
   Prefix.........: $prefix
-  C++ Compiler...: $CXX $CXXFLAGS $CPPFLAGS
-  Linker.........: $LD $LDFLAGS $LIBS
+  C++ Compiler...: $CXX $CXXFLAGS $CPPFLAGS $OPENCV1_CFLAGS $OPENCV2_CFLAGS
+  Linker.........: $LD $LDFLAGS $GSTREAMER_LIBS $OPENCV1_LIBS $OPENCV2_LIBS $LIBS
   Unit tests.....: $tests
 "

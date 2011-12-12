@@ -1,5 +1,8 @@
 #include "features.h"
 
+#ifdef HAVE_OPENCV2
+#if (CV_MINOR_VERSION > 1)
+
 #include <iostream>     // cout
 #include <iomanip>	//setprecision
 
@@ -34,3 +37,6 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	int num_pixels = (2*box_radius+1)*(2*box_radius+1);
 	return min_lambda / (4.0*num_pixels);
 }
+
+#endif // CV_MINOR_VERSION > 1
+#endif // HAVE_OPENCV2

@@ -1,7 +1,15 @@
 #ifndef _HUB_FEATURES_H_
 #define _HUB_FEATURES_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_OPENCV2
+
 #include <opencv/cv.h>	//cv::Mat
+
+#if (CV_MINOR_VERSION > 1)
 
 /**
  * \brief Calculate the Shi-Tomasi score.
@@ -21,4 +29,6 @@
 template <typename T>
 T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box_radius);
 
-#endif
+#endif // CV_MINOR_VERSION > 1
+#endif // HAVE_OPENCV2
+#endif // HUB_FEATURES

@@ -222,7 +222,7 @@ void MAVLinkMKHUCHApp::handle_input(const mavlink_message_t &msg) {
 		// 	break;
 
 		case MAVLINK_MSG_ID_ACTION:
-			log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_ACTION", Logger::LOGLEVEL_DEBUG);
+			//log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_ACTION", Logger::LOGLEVEL_DEBUG);
 			// if( (mavlink_msg_action_get_target(&msg) == owner()->system_id())
 			// && (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
 			// 	mkhuch_action_t action;
@@ -477,56 +477,56 @@ void MAVLinkMKHUCHApp::run() {
 	// the block below is for testing control of a mkhuchlink
 	// enabled FlightCtrl. provisional.
 
-	// mkhuch_extern_control_t extctrl;
-	// int cnt = 0;
-	// int pitch, roll, yaw, thrust;
+	mkhuch_extern_control_t extctrl;
+	int cnt = 0;
+	int pitch, roll, yaw, thrust;
 
-	// while(!interrupted()) {
-	// 	// insert motor code here
+	while(!interrupted()) {
+		// insert motor code here
 
-	// 	if(cnt % 40 == 0 || cnt % 40 == 1) {
-	// 		pitch = 10;
-	// 		roll = 0;
-	// 		yaw = 10;
-	// 		thrust = 10;
-	// 	} else if (cnt % 40 == 10 || cnt % 40 == 11) {
-	// 		pitch = -10;
-	// 		roll = 0;
-	// 		yaw = -10;
-	// 		thrust = 20;
-	// 	} else if (cnt % 40 == 20 || cnt % 40 == 21) {
-	// 		roll = 10;
-	// 		pitch = 0;
-	// 		yaw = 10;
-	// 		thrust = 30;
-	// 	} else if (cnt % 40 == 30 || cnt % 40 == 31) {
-	// 		roll = -10;
-	// 		pitch = 0;
-	// 		yaw = -10;
-	// 		thrust = 20;
-	// 	}
-	// 	else {
-	// 		pitch = 0;
-	// 		roll = 0;
-	// 		yaw = 0;
-	// 		thrust = 0;
-	// 	}
+		if(cnt % 40 == 0 || cnt % 40 == 1) {
+			pitch = 10;
+			roll = 0;
+			yaw = 10;
+			thrust = 10;
+		} else if (cnt % 40 == 10 || cnt % 40 == 11) {
+			pitch = -10;
+			roll = 0;
+			yaw = -10;
+			thrust = 20;
+		} else if (cnt % 40 == 20 || cnt % 40 == 21) {
+			roll = 10;
+			pitch = 0;
+			yaw = 10;
+			thrust = 30;
+		} else if (cnt % 40 == 30 || cnt % 40 == 31) {
+			roll = -10;
+			pitch = 0;
+			yaw = -10;
+			thrust = 20;
+		}
+		else {
+			pitch = 0;
+			roll = 0;
+			yaw = 0;
+			thrust = 0;
+		}
 
-	// 	extctrl.roll = 0; //roll * 15;
-	// 	extctrl.pitch = 0; //pitch * 15;
-	// 	extctrl.yaw = 0; //yaw;
-	// 	extctrl.thrust = thrust;
-	// 	//extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK;
-	// 	//extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK | YAW_MANUAL_MASK | THRUST_MANUAL_MASK;
-	// 	//extctrl.mask = THRUST_MANUAL_MASK;
-	// 	extctrl.mask = 0;
+		extctrl.roll = 0; //roll * 15;
+		extctrl.pitch = 0; //pitch * 15;
+		extctrl.yaw = 0; //yaw;
+		extctrl.thrust = thrust;
+		//extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK;
+		//extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK | YAW_MANUAL_MASK | THRUST_MANUAL_MASK;
+		//extctrl.mask = THRUST_MANUAL_MASK;
+		extctrl.mask = 0;
 
-	// 	mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
-	// 	AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
-	// 	//log("MAVLinkMKHUCHApp running", Logger::LOGLEVEL_DEBUG);
-	// 	cnt++;
-	// 	usleep(100000);
-	// }
+		mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
+		AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
+		//log("MAVLinkMKHUCHApp running", Logger::LOGLEVEL_DEBUG);
+		cnt++;
+		usleep(100000);
+	}
 
 
 /*	fd_set read_fds;
