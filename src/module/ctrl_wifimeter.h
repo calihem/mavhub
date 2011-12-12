@@ -7,12 +7,12 @@
 
 #ifdef HAVE_LIBGPSMM_H
 
+#include "protocol/protocollayer.h"
 #include <string>
-#include "core/protocollayer.h"
 
 namespace mavhub
 {
-  class Ctrl_Wifimeter : public AppLayer
+  class Ctrl_Wifimeter : public AppLayer<mavlink_message_t>
   {
     public:
       /// Constructor

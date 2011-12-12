@@ -31,6 +31,8 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)
+
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <agast/oast9_16.h>
@@ -304,3 +306,4 @@ struct BriskLongPair{
 #include "hammingsse.hpp"
 
 #endif //_BRISK_H_
+#endif // #if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)

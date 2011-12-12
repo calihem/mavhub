@@ -2,8 +2,9 @@ include $(top_srcdir)/am/am_incl_common.am
 
 noinst_LIBRARIES =
 
-if COND_OPENCV
+if COND_OPENCV2
 # AM_CPPFLAGS += $(SIMD_FLAGS)
+AM_CPPFLAGS += $(OPENCV2_CFLAGS)
 
 noinst_LIBRARIES += libagast.a
 

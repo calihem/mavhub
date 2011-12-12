@@ -28,6 +28,8 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)
+
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <brisk/brisk.h>
@@ -1971,7 +1973,7 @@ inline void BriskLayer::halfsample(const cv::Mat& srcimg, cv::Mat& dstimg){
 }
 
 inline void BriskLayer::twothirdsample(const cv::Mat& srcimg, cv::Mat& dstimg){
-#ifdef HAVE_MMX
+#if (defined HAVE_MMX && defined HAVE_SSSE3)
 	const unsigned short leftoverCols = ((srcimg.cols/3)*3)%15;// take care with border...
 
 	// make sure the destination image is of the right size:
@@ -2066,3 +2068,5 @@ inline void BriskLayer::twothirdsample(const cv::Mat& srcimg, cv::Mat& dstimg){
 	cv::resize(srcimg, dstimg, dstimg.size());
 #endif // HAVE_MMX
 }
+
+#endif // #if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)

@@ -1,11 +1,12 @@
 #include "features.h"
 
+#ifdef HAVE_OPENCV2
+#if (CV_MINOR_VERSION > 1)
+
 #include <iostream>     // cout
 #include <iomanip>	//setprecision
 
 #define min_eigenval(dxx, dxy, dyy) 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ))
-
-#ifdef HAVE_OPENCV_CV_H
 
 void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
@@ -147,4 +148,6 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 // 	cv::Mat object_matrix = inv_cam_matrix*point_matrix;
 }
 
-#endif // HAVE_OPENCV_CV_H
+#endif // CV_MINOR_VERSION > 1
+#endif // HAVE_OPENCV2
+

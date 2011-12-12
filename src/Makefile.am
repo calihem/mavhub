@@ -16,12 +16,12 @@ if COND_OPENGL
 SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libopengl.a
 endif
 
-if COND_OPENCV
+if COND_OPENCV2
 SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libslam.a
 endif
 
 THIRDPARTY_EXTRA_LIBS =
-if COND_OPENCV
+if COND_OPENCV2
 THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/libbrisk.a \
 	$(top_builddir)/thirdparty/libagast.a
 endif
@@ -39,4 +39,9 @@ mavhub_LDADD = \
 	$(SRC_EXTRA_LIBS) \
 	$(THIRDPARTY_EXTRA_LIBS) \
 	$(GSTREAMER_LIBS) \
+	$(OPENCV1_LIBS) \
+	$(OPENCV2_LIBS) \
 	$(AM_LDFLAGS)
+
+#	$(top_builddir)/src/lib/*.a
+

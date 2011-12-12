@@ -608,8 +608,6 @@ LTLIBOBJS
 LIBOBJS
 COND_OPENGL_FALSE
 COND_OPENGL_TRUE
-COND_OPENCV_FALSE
-COND_OPENCV_TRUE
 EGREP
 GREP
 CXXCPP
@@ -617,6 +615,14 @@ COND_USE_GSTREAMER_FALSE
 COND_USE_GSTREAMER_TRUE
 GSTREAMER_LIBS
 GSTREAMER_CFLAGS
+COND_OPENCV2_FALSE
+COND_OPENCV2_TRUE
+OPENCV2_LIBS
+OPENCV2_CFLAGS
+COND_OPENCV1_FALSE
+COND_OPENCV1_TRUE
+OPENCV1_LIBS
+OPENCV1_CFLAGS
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
@@ -804,6 +810,10 @@ DOXYGEN_PAPER_SIZE
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
+OPENCV1_CFLAGS
+OPENCV1_LIBS
+OPENCV2_CFLAGS
+OPENCV2_LIBS
 GSTREAMER_CFLAGS
 GSTREAMER_LIBS
 CXXCPP'
@@ -1479,6 +1489,14 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  OPENCV1_CFLAGS
+              C compiler flags for OPENCV1, overriding pkg-config
+  OPENCV1_LIBS
+              linker flags for OPENCV1, overriding pkg-config
+  OPENCV2_CFLAGS
+              C compiler flags for OPENCV2, overriding pkg-config
+  OPENCV2_LIBS
+              linker flags for OPENCV2, overriding pkg-config
   GSTREAMER_CFLAGS
               C compiler flags for GSTREAMER, overriding pkg-config
   GSTREAMER_LIBS
@@ -7655,7 +7673,7 @@ else
 fi
 
 
-# checks for pkg-config and supported and modules
+# Checks for pkg-config
 
 
 
@@ -7777,20 +7795,22 @@ $as_echo "no" >&6; }
 	fi
 fi
 
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSTREAMER" >&5
-$as_echo_n "checking for GSTREAMER... " >&6; }
+# Checks for OpenCV
 
-if test -n "$GSTREAMER_CFLAGS"; then
-    pkg_cv_GSTREAMER_CFLAGS="$GSTREAMER_CFLAGS"
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OPENCV1" >&5
+$as_echo_n "checking for OPENCV1... " >&6; }
+
+if test -n "$OPENCV1_CFLAGS"; then
+    pkg_cv_OPENCV1_CFLAGS="$OPENCV1_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gstreamer-0.10\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "gstreamer-0.10") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"opencv >= 1.0 opencv < 2.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "opencv >= 1.0 opencv < 2.0") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_GSTREAMER_CFLAGS=`$PKG_CONFIG --cflags "gstreamer-0.10" 2>/dev/null`
+  pkg_cv_OPENCV1_CFLAGS=`$PKG_CONFIG --cflags "opencv >= 1.0 opencv < 2.0" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -7798,16 +7818,16 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$GSTREAMER_LIBS"; then
-    pkg_cv_GSTREAMER_LIBS="$GSTREAMER_LIBS"
+if test -n "$OPENCV1_LIBS"; then
+    pkg_cv_OPENCV1_LIBS="$OPENCV1_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gstreamer-0.10\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "gstreamer-0.10") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"opencv >= 1.0 opencv < 2.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "opencv >= 1.0 opencv < 2.0") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_GSTREAMER_LIBS=`$PKG_CONFIG --libs "gstreamer-0.10" 2>/dev/null`
+  pkg_cv_OPENCV1_LIBS=`$PKG_CONFIG --libs "opencv >= 1.0 opencv < 2.0" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -7828,9 +7848,207 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        GSTREAMER_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "gstreamer-0.10" 2>&1`
+	        OPENCV1_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "opencv >= 1.0 opencv < 2.0" 2>&1`
         else
-	        GSTREAMER_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "gstreamer-0.10" 2>&1`
+	        OPENCV1_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "opencv >= 1.0 opencv < 2.0" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$OPENCV1_PKG_ERRORS" >&5
+
+	 if false; then
+  COND_OPENCV1_TRUE=
+  COND_OPENCV1_FALSE='#'
+else
+  COND_OPENCV1_TRUE='#'
+  COND_OPENCV1_FALSE=
+fi
+
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	 if false; then
+  COND_OPENCV1_TRUE=
+  COND_OPENCV1_FALSE='#'
+else
+  COND_OPENCV1_TRUE='#'
+  COND_OPENCV1_FALSE=
+fi
+
+else
+	OPENCV1_CFLAGS=$pkg_cv_OPENCV1_CFLAGS
+	OPENCV1_LIBS=$pkg_cv_OPENCV1_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_OPENCV1 /**/" >>confdefs.h
+  if true; then
+  COND_OPENCV1_TRUE=
+  COND_OPENCV1_FALSE='#'
+else
+  COND_OPENCV1_TRUE='#'
+  COND_OPENCV1_FALSE=
+fi
+
+$as_echo "#define HAVE_OPENCV /**/" >>confdefs.h
+
+fi
+
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OPENCV2" >&5
+$as_echo_n "checking for OPENCV2... " >&6; }
+
+if test -n "$OPENCV2_CFLAGS"; then
+    pkg_cv_OPENCV2_CFLAGS="$OPENCV2_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"opencv >= 2.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "opencv >= 2.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_OPENCV2_CFLAGS=`$PKG_CONFIG --cflags "opencv >= 2.0" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$OPENCV2_LIBS"; then
+    pkg_cv_OPENCV2_LIBS="$OPENCV2_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"opencv >= 2.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "opencv >= 2.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_OPENCV2_LIBS=`$PKG_CONFIG --libs "opencv >= 2.0" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        OPENCV2_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "opencv >= 2.0" 2>&1`
+        else
+	        OPENCV2_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "opencv >= 2.0" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$OPENCV2_PKG_ERRORS" >&5
+
+	 if false; then
+  COND_OPENCV2_TRUE=
+  COND_OPENCV2_FALSE='#'
+else
+  COND_OPENCV2_TRUE='#'
+  COND_OPENCV2_FALSE=
+fi
+
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	 if false; then
+  COND_OPENCV2_TRUE=
+  COND_OPENCV2_FALSE='#'
+else
+  COND_OPENCV2_TRUE='#'
+  COND_OPENCV2_FALSE=
+fi
+
+else
+	OPENCV2_CFLAGS=$pkg_cv_OPENCV2_CFLAGS
+	OPENCV2_LIBS=$pkg_cv_OPENCV2_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_OPENCV2 /**/" >>confdefs.h
+  if true; then
+  COND_OPENCV2_TRUE=
+  COND_OPENCV2_FALSE='#'
+else
+  COND_OPENCV2_TRUE='#'
+  COND_OPENCV2_FALSE=
+fi
+
+$as_echo "#define HAVE_OPENCV /**/" >>confdefs.h
+
+fi
+
+
+
+# Checks for GStreamer
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSTREAMER" >&5
+$as_echo_n "checking for GSTREAMER... " >&6; }
+
+if test -n "$GSTREAMER_CFLAGS"; then
+    pkg_cv_GSTREAMER_CFLAGS="$GSTREAMER_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gstreamer-0.10 gstreamer-app-0.10\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gstreamer-0.10 gstreamer-app-0.10") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSTREAMER_CFLAGS=`$PKG_CONFIG --cflags "gstreamer-0.10 gstreamer-app-0.10" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$GSTREAMER_LIBS"; then
+    pkg_cv_GSTREAMER_LIBS="$GSTREAMER_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gstreamer-0.10 gstreamer-app-0.10\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gstreamer-0.10 gstreamer-app-0.10") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_GSTREAMER_LIBS=`$PKG_CONFIG --libs "gstreamer-0.10 gstreamer-app-0.10" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        GSTREAMER_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "gstreamer-0.10 gstreamer-app-0.10" 2>&1`
+        else
+	        GSTREAMER_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "gstreamer-0.10 gstreamer-app-0.10" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$GSTREAMER_PKG_ERRORS" >&5
@@ -7901,366 +8119,6 @@ if test "x$ac_cv_lib_ncurses_newwin" = xyes; then :
 _ACEOF
 
   LIBS="-lncurses $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateMat in -lcxcore" >&5
-$as_echo_n "checking for cvCreateMat in -lcxcore... " >&6; }
-if ${ac_cv_lib_cxcore_cvCreateMat+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcxcore  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvCreateMat ();
-int
-main ()
-{
-return cvCreateMat ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_cxcore_cvCreateMat=yes
-else
-  ac_cv_lib_cxcore_cvCreateMat=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cxcore_cvCreateMat" >&5
-$as_echo "$ac_cv_lib_cxcore_cvCreateMat" >&6; }
-if test "x$ac_cv_lib_cxcore_cvCreateMat" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBCXCORE 1
-_ACEOF
-
-  LIBS="-lcxcore $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateKalman in -lcv" >&5
-$as_echo_n "checking for cvCreateKalman in -lcv... " >&6; }
-if ${ac_cv_lib_cv_cvCreateKalman+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcv  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvCreateKalman ();
-int
-main ()
-{
-return cvCreateKalman ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_cv_cvCreateKalman=yes
-else
-  ac_cv_lib_cv_cvCreateKalman=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cv_cvCreateKalman" >&5
-$as_echo "$ac_cv_lib_cv_cvCreateKalman" >&6; }
-if test "x$ac_cv_lib_cv_cvCreateKalman" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBCV 1
-_ACEOF
-
-  LIBS="-lcv $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateMat in -lopencv_core" >&5
-$as_echo_n "checking for cvCreateMat in -lopencv_core... " >&6; }
-if ${ac_cv_lib_opencv_core_cvCreateMat+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_core  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvCreateMat ();
-int
-main ()
-{
-return cvCreateMat ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_core_cvCreateMat=yes
-else
-  ac_cv_lib_opencv_core_cvCreateMat=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_core_cvCreateMat" >&5
-$as_echo "$ac_cv_lib_opencv_core_cvCreateMat" >&6; }
-if test "x$ac_cv_lib_opencv_core_cvCreateMat" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_CORE 1
-_ACEOF
-
-  LIBS="-lopencv_core $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCreateKalman in -lopencv_legacy" >&5
-$as_echo_n "checking for cvCreateKalman in -lopencv_legacy... " >&6; }
-if ${ac_cv_lib_opencv_legacy_cvCreateKalman+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_legacy  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvCreateKalman ();
-int
-main ()
-{
-return cvCreateKalman ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_legacy_cvCreateKalman=yes
-else
-  ac_cv_lib_opencv_legacy_cvCreateKalman=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_legacy_cvCreateKalman" >&5
-$as_echo "$ac_cv_lib_opencv_legacy_cvCreateKalman" >&6; }
-if test "x$ac_cv_lib_opencv_legacy_cvCreateKalman" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_LEGACY 1
-_ACEOF
-
-  LIBS="-lopencv_legacy $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvIntegral in -lopencv_imgproc" >&5
-$as_echo_n "checking for cvIntegral in -lopencv_imgproc... " >&6; }
-if ${ac_cv_lib_opencv_imgproc_cvIntegral+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_imgproc  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvIntegral ();
-int
-main ()
-{
-return cvIntegral ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_imgproc_cvIntegral=yes
-else
-  ac_cv_lib_opencv_imgproc_cvIntegral=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_imgproc_cvIntegral" >&5
-$as_echo "$ac_cv_lib_opencv_imgproc_cvIntegral" >&6; }
-if test "x$ac_cv_lib_opencv_imgproc_cvIntegral" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_IMGPROC 1
-_ACEOF
-
-  LIBS="-lopencv_imgproc $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvCalcPCA in -lopencv_features2d" >&5
-$as_echo_n "checking for cvCalcPCA in -lopencv_features2d... " >&6; }
-if ${ac_cv_lib_opencv_features2d_cvCalcPCA+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_features2d  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvCalcPCA ();
-int
-main ()
-{
-return cvCalcPCA ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_features2d_cvCalcPCA=yes
-else
-  ac_cv_lib_opencv_features2d_cvCalcPCA=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_features2d_cvCalcPCA" >&5
-$as_echo "$ac_cv_lib_opencv_features2d_cvCalcPCA" >&6; }
-if test "x$ac_cv_lib_opencv_features2d_cvCalcPCA" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_FEATURES2D 1
-_ACEOF
-
-  LIBS="-lopencv_features2d $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvFindHomography in -lopencv_calib3d" >&5
-$as_echo_n "checking for cvFindHomography in -lopencv_calib3d... " >&6; }
-if ${ac_cv_lib_opencv_calib3d_cvFindHomography+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_calib3d  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvFindHomography ();
-int
-main ()
-{
-return cvFindHomography ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_calib3d_cvFindHomography=yes
-else
-  ac_cv_lib_opencv_calib3d_cvFindHomography=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_calib3d_cvFindHomography" >&5
-$as_echo "$ac_cv_lib_opencv_calib3d_cvFindHomography" >&6; }
-if test "x$ac_cv_lib_opencv_calib3d_cvFindHomography" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_CALIB3D 1
-_ACEOF
-
-  LIBS="-lopencv_calib3d $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cvShowImage in -lopencv_highgui" >&5
-$as_echo_n "checking for cvShowImage in -lopencv_highgui... " >&6; }
-if ${ac_cv_lib_opencv_highgui_cvShowImage+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopencv_highgui  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cvShowImage ();
-int
-main ()
-{
-return cvShowImage ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_opencv_highgui_cvShowImage=yes
-else
-  ac_cv_lib_opencv_highgui_cvShowImage=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_opencv_highgui_cvShowImage" >&5
-$as_echo "$ac_cv_lib_opencv_highgui_cvShowImage" >&6; }
-if test "x$ac_cv_lib_opencv_highgui_cvShowImage" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBOPENCV_HIGHGUI 1
-_ACEOF
-
-  LIBS="-lopencv_highgui $LIBS"
 
 fi
 
@@ -8489,13 +8347,13 @@ _ACEOF
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gst_app_sink_pull_buffer in -lgstapp-0.10" >&5
-$as_echo_n "checking for gst_app_sink_pull_buffer in -lgstapp-0.10... " >&6; }
-if ${ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for IvyInit in -livy" >&5
+$as_echo_n "checking for IvyInit in -livy... " >&6; }
+if ${ac_cv_lib_ivy_IvyInit+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgstapp-0.10  $LIBS"
+LIBS="-livy  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -8505,32 +8363,32 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char gst_app_sink_pull_buffer ();
+char IvyInit ();
 int
 main ()
 {
-return gst_app_sink_pull_buffer ();
+return IvyInit ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer=yes
+  ac_cv_lib_ivy_IvyInit=yes
 else
-  ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer=no
+  ac_cv_lib_ivy_IvyInit=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" >&5
-$as_echo "$ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" >&6; }
-if test "x$ac_cv_lib_gstapp_0_10_gst_app_sink_pull_buffer" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ivy_IvyInit" >&5
+$as_echo "$ac_cv_lib_ivy_IvyInit" >&6; }
+if test "x$ac_cv_lib_ivy_IvyInit" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBGSTAPP_0_10 1
+#define HAVE_LIBIVY 1
 _ACEOF
 
-  LIBS="-lgstapp-0.10 $LIBS"
+  LIBS="-livy $LIBS"
 
 fi
 
@@ -8987,35 +8845,6 @@ fi
 
 done
 
-for ac_header in opencv/cv.h
-do :
-  ac_fn_cxx_check_header_mongrel "$LINENO" "opencv/cv.h" "ac_cv_header_opencv_cv_h" "$ac_includes_default"
-if test "x$ac_cv_header_opencv_cv_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_OPENCV_CV_H 1
-_ACEOF
-  if true; then
-  COND_OPENCV_TRUE=
-  COND_OPENCV_FALSE='#'
-else
-  COND_OPENCV_TRUE='#'
-  COND_OPENCV_FALSE=
-fi
-
-else
-   if false; then
-  COND_OPENCV_TRUE=
-  COND_OPENCV_FALSE='#'
-else
-  COND_OPENCV_TRUE='#'
-  COND_OPENCV_FALSE=
-fi
- { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenCV headers not found" >&5
-$as_echo "$as_me: WARNING: OpenCV headers not found" >&2;}
-fi
-
-done
-
 for ac_header in libgpsmm.h
 do :
   ac_fn_cxx_check_header_mongrel "$LINENO" "libgpsmm.h" "ac_cv_header_libgpsmm_h" "$ac_includes_default"
@@ -9057,6 +8886,21 @@ else
 fi
  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OpenGL headers not found" >&5
 $as_echo "$as_me: WARNING: OpenGL headers not found" >&2;}
+fi
+
+done
+
+for ac_header in Ivy/ivy.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "Ivy/ivy.h" "ac_cv_header_Ivy_ivy_h" "$ac_includes_default"
+if test "x$ac_cv_header_Ivy_ivy_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_IVY_IVY_H 1
+_ACEOF
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please specify header directory for ivy, e.g. configure CPPFLAGS=\"-I/home/user/ivy-c\" " >&5
+$as_echo "$as_me: WARNING: Please specify header directory for ivy, e.g. configure CPPFLAGS=\"-I/home/user/ivy-c\" " >&2;}
 fi
 
 done
@@ -9580,16 +9424,32 @@ if test -z "${COND_UNIT_TESTS_TRUE}" && test -z "${COND_UNIT_TESTS_FALSE}"; then
   as_fn_error $? "conditional \"COND_UNIT_TESTS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${COND_OPENCV1_TRUE}" && test -z "${COND_OPENCV1_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV1\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV1_TRUE}" && test -z "${COND_OPENCV1_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV1\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV1_TRUE}" && test -z "${COND_OPENCV1_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV1\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV2_TRUE}" && test -z "${COND_OPENCV2_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV2_TRUE}" && test -z "${COND_OPENCV2_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_OPENCV2_TRUE}" && test -z "${COND_OPENCV2_FALSE}"; then
+  as_fn_error $? "conditional \"COND_OPENCV2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${COND_USE_GSTREAMER_TRUE}" && test -z "${COND_USE_GSTREAMER_FALSE}"; then
   as_fn_error $? "conditional \"COND_USE_GSTREAMER\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COND_OPENCV_TRUE}" && test -z "${COND_OPENCV_FALSE}"; then
-  as_fn_error $? "conditional \"COND_OPENCV\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${COND_OPENCV_TRUE}" && test -z "${COND_OPENCV_FALSE}"; then
-  as_fn_error $? "conditional \"COND_OPENCV\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_OPENGL_TRUE}" && test -z "${COND_OPENGL_FALSE}"; then
@@ -10949,7 +10809,7 @@ fi
 echo "
   ($PACKAGE_NAME) version $PACKAGE_VERSION
   Prefix.........: $prefix
-  C++ Compiler...: $CXX $CXXFLAGS $CPPFLAGS
-  Linker.........: $LD $LDFLAGS $LIBS
+  C++ Compiler...: $CXX $CXXFLAGS $CPPFLAGS $OPENCV1_CFLAGS $OPENCV2_CFLAGS
+  Linker.........: $LD $LDFLAGS $GSTREAMER_LIBS $OPENCV1_LIBS $OPENCV2_LIBS $LIBS
   Unit tests.....: $tests
 "

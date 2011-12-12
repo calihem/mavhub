@@ -39,7 +39,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/am/am_incl_common.am
 
 # AM_CPPFLAGS += $(SIMD_FLAGS)
-@COND_OPENCV_TRUE@am__append_1 = libagast.a libbrisk.a
+@COND_OPENCV2_TRUE@am__append_1 = $(OPENCV2_CFLAGS)
+@COND_OPENCV2_TRUE@am__append_2 = libagast.a libbrisk.a
 subdir = thirdparty
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
@@ -65,18 +66,18 @@ am__libagast_a_SOURCES_DIST = agast/agast5_8.cc agast/agast5_8_nms.cc \
 	agast/agast7_12s.cc agast/agast7_12s_nms.cc \
 	agast/nonMaximumSuppression.cc agast/oast9_16.cc \
 	agast/oast9_16_nms.cc
-@COND_OPENCV_TRUE@am_libagast_a_OBJECTS = agast5_8.$(OBJEXT) \
-@COND_OPENCV_TRUE@	agast5_8_nms.$(OBJEXT) agast7_12d.$(OBJEXT) \
-@COND_OPENCV_TRUE@	agast7_12d_nms.$(OBJEXT) \
-@COND_OPENCV_TRUE@	agast7_12s.$(OBJEXT) \
-@COND_OPENCV_TRUE@	agast7_12s_nms.$(OBJEXT) \
-@COND_OPENCV_TRUE@	nonMaximumSuppression.$(OBJEXT) \
-@COND_OPENCV_TRUE@	oast9_16.$(OBJEXT) oast9_16_nms.$(OBJEXT)
+@COND_OPENCV2_TRUE@am_libagast_a_OBJECTS = agast5_8.$(OBJEXT) \
+@COND_OPENCV2_TRUE@	agast5_8_nms.$(OBJEXT) agast7_12d.$(OBJEXT) \
+@COND_OPENCV2_TRUE@	agast7_12d_nms.$(OBJEXT) \
+@COND_OPENCV2_TRUE@	agast7_12s.$(OBJEXT) \
+@COND_OPENCV2_TRUE@	agast7_12s_nms.$(OBJEXT) \
+@COND_OPENCV2_TRUE@	nonMaximumSuppression.$(OBJEXT) \
+@COND_OPENCV2_TRUE@	oast9_16.$(OBJEXT) oast9_16_nms.$(OBJEXT)
 libagast_a_OBJECTS = $(am_libagast_a_OBJECTS)
 libbrisk_a_AR = $(AR) $(ARFLAGS)
 libbrisk_a_LIBADD =
 am__libbrisk_a_SOURCES_DIST = brisk/brisk.cpp
-@COND_OPENCV_TRUE@am_libbrisk_a_OBJECTS = brisk.$(OBJEXT)
+@COND_OPENCV2_TRUE@am_libbrisk_a_OBJECTS = brisk.$(OBJEXT)
 libbrisk_a_OBJECTS = $(am_libbrisk_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -158,6 +159,10 @@ LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 OBJEXT = @OBJEXT@
+OPENCV1_CFLAGS = @OPENCV1_CFLAGS@
+OPENCV1_LIBS = @OPENCV1_LIBS@
+OPENCV2_CFLAGS = @OPENCV2_CFLAGS@
+OPENCV2_LIBS = @OPENCV2_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -234,24 +239,25 @@ top_srcdir = @top_srcdir@
 #AM_CPPFLAGS += -Wall -pedantic
 
 # logger flags ( STDOUTLOG, STDERRLOG, FILELOG="${TARGET}.log" )
-AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG
+AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG \
+	$(am__append_1)
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
-noinst_LIBRARIES = $(am__append_1)
-@COND_OPENCV_TRUE@libagast_a_SOURCES = \
-@COND_OPENCV_TRUE@	agast/agast5_8.cc \
-@COND_OPENCV_TRUE@	agast/agast5_8_nms.cc \
-@COND_OPENCV_TRUE@	agast/agast7_12d.cc \
-@COND_OPENCV_TRUE@	agast/agast7_12d_nms.cc \
-@COND_OPENCV_TRUE@	agast/agast7_12s.cc \
-@COND_OPENCV_TRUE@	agast/agast7_12s_nms.cc \
-@COND_OPENCV_TRUE@	agast/nonMaximumSuppression.cc \
-@COND_OPENCV_TRUE@	agast/oast9_16.cc \
-@COND_OPENCV_TRUE@	agast/oast9_16_nms.cc
+noinst_LIBRARIES = $(am__append_2)
+@COND_OPENCV2_TRUE@libagast_a_SOURCES = \
+@COND_OPENCV2_TRUE@	agast/agast5_8.cc \
+@COND_OPENCV2_TRUE@	agast/agast5_8_nms.cc \
+@COND_OPENCV2_TRUE@	agast/agast7_12d.cc \
+@COND_OPENCV2_TRUE@	agast/agast7_12d_nms.cc \
+@COND_OPENCV2_TRUE@	agast/agast7_12s.cc \
+@COND_OPENCV2_TRUE@	agast/agast7_12s_nms.cc \
+@COND_OPENCV2_TRUE@	agast/nonMaximumSuppression.cc \
+@COND_OPENCV2_TRUE@	agast/oast9_16.cc \
+@COND_OPENCV2_TRUE@	agast/oast9_16_nms.cc
 
-@COND_OPENCV_TRUE@libbrisk_a_SOURCES = \
-@COND_OPENCV_TRUE@	brisk/brisk.cpp
+@COND_OPENCV2_TRUE@libbrisk_a_SOURCES = \
+@COND_OPENCV2_TRUE@	brisk/brisk.cpp
 
 all: all-am
 

@@ -18,7 +18,7 @@ libopengl_a_SOURCES = \
 	opengl/map_2d.cpp
 endif
 
-if COND_OPENCV
+if COND_OPENCV2
 noinst_LIBRARIES += libslam.a
 
 libslam_a_SOURCES = \

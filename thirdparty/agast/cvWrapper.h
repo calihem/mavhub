@@ -19,9 +19,11 @@
 #ifndef CVWRAPPER_H_
 #define CVWRAPPER_H_
 
-#define HAVE_OPENCV  //we normally do have opencv
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
 
-#ifdef HAVE_OPENCV
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)
 	#include <opencv2/opencv.hpp>
 #else
 	typedef struct CvPoint

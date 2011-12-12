@@ -7,7 +7,8 @@
 // #include <map>
 // #include <sstream> //istringstream
 
-#include <opencv/cxtypes.h>
+//#include <opencv/cxtypes.h>
+#include <opencv/cxcore.h>
 
 namespace hub {
 namespace opengl {

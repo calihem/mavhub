@@ -62,10 +62,12 @@ am_libmodule_a_OBJECTS = pp.$(OBJEXT) pp_uss.$(OBJEXT) \
 	fc_mpkg.$(OBJEXT) ctrl_hover.$(OBJEXT) ctrl_lateral.$(OBJEXT) \
 	ctrl_zrate.$(OBJEXT) ctrl_bump.$(OBJEXT) \
 	ctrl_logfileplayer.$(OBJEXT) ctrl_logger.$(OBJEXT) \
-	ctrl_wifimeter.$(OBJEXT) filter_kalmancv.$(OBJEXT) \
-	filter_fir.$(OBJEXT) filter_median.$(OBJEXT) PID.$(OBJEXT) \
+	ctrl_wifimeter.$(OBJEXT) n_ff.$(OBJEXT) \
+	filter_kalmancv.$(OBJEXT) filter_fir.$(OBJEXT) \
+	filter_median.$(OBJEXT) PID.$(OBJEXT) Bumper.$(OBJEXT) \
 	sim_crrcsim.$(OBJEXT) testcore.$(OBJEXT) \
-	stat_meanvar.$(OBJEXT)
+	stat_meanvar.$(OBJEXT) bridge_ivy.$(OBJEXT) \
+	exec_timing.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -146,6 +148,10 @@ LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 OBJEXT = @OBJEXT@
+OPENCV1_CFLAGS = @OPENCV1_CFLAGS@
+OPENCV1_LIBS = @OPENCV1_LIBS@
+OPENCV2_CFLAGS = @OPENCV2_CFLAGS@
+OPENCV2_LIBS = @OPENCV2_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -244,13 +250,17 @@ libmodule_a_SOURCES = \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
 	ctrl_wifimeter.cpp \
+	n_ff.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \
 	filter_median.cpp \
 	PID.cpp \
+	Bumper.cpp \
 	sim_crrcsim.cpp \
 	testcore.cpp \
-	stat_meanvar.cpp
+	stat_meanvar.cpp \
+	bridge_ivy.cpp \
+	exec_timing.cpp
 
 all: all-am
 
@@ -300,7 +310,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Bumper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PID.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_ivy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_bump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_hover.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_lateral.Po@am__quote@
@@ -308,10 +320,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_logger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_wifimeter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_zrate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/exec_timing.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fc_mpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_fir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_kalmancv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_median.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n_ff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_acc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_baro.Po@am__quote@

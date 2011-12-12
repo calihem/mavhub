@@ -5,7 +5,7 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV2
 
 #include <opencv/cv.h>	//cv::Mat
 #include <opencv2/features2d/features2d.hpp>	//DescriptorMatcher
@@ -17,6 +17,8 @@ void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
 	cv::Mat &translation_vector);
+
+#if (CV_MINOR_VERSION > 1)
 
 /**
  * \brief Calculate the Shi-Tomasi score.
@@ -154,6 +156,6 @@ cv::Ptr<cv::DescriptorMatcher> RadiusMatcher<DescriptorDistance, RadiusDistance>
 	return cv::Ptr<cv::DescriptorMatcher>();
 }
 
-
-#endif // HAVE_OPENCV_CV_H
+#endif // CV_MINOR_VERSION > 1
+#endif // HAVE_OPENCV2
 #endif // _HUB_FEATURES_H_

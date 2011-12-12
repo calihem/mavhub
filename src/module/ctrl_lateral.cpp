@@ -17,7 +17,9 @@
 using namespace std;
 
 namespace mavhub {
-	Ctrl_Lateral::Ctrl_Lateral(const map<string, string> args) : AppInterface("ctrl_lateral"), AppLayer("ctrl_lateral") {
+	Ctrl_Lateral::Ctrl_Lateral(const map<string, string> args) :
+		AppInterface("ctrl_lateral"),
+		AppLayer<mavlink_message_t>("ctrl_lateral") {
 		read_conf(args);
 		param_request_list = 0;
 		prm_test_nick = 0;

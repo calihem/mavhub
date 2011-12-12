@@ -39,9 +39,9 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(top_srcdir)/am/am_incl_common.am
 @COND_USE_GSTREAMER_TRUE@am__append_1 = $(top_builddir)/src/lib/libgstreamer.a
 @COND_OPENGL_TRUE@am__append_2 = $(top_builddir)/src/lib/libopengl.a
-@COND_OPENCV_TRUE@am__append_3 = $(top_builddir)/src/lib/libslam.a
-@COND_OPENCV_TRUE@am__append_4 = $(top_builddir)/thirdparty/libbrisk.a \
-@COND_OPENCV_TRUE@	$(top_builddir)/thirdparty/libagast.a
+@COND_OPENCV2_TRUE@am__append_3 = $(top_builddir)/src/lib/libslam.a
+@COND_OPENCV2_TRUE@am__append_4 = $(top_builddir)/thirdparty/libbrisk.a \
+@COND_OPENCV2_TRUE@	$(top_builddir)/thirdparty/libagast.a
 
 bin_PROGRAMS = mavhub$(EXEEXT)
 subdir = src
@@ -70,7 +70,8 @@ mavhub_DEPENDENCIES = $(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a $(SRC_EXTRA_LIBS) \
-	$(THIRDPARTY_EXTRA_LIBS) $(am__DEPENDENCIES_1)
+	$(THIRDPARTY_EXTRA_LIBS) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -188,6 +189,10 @@ LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 OBJEXT = @OBJEXT@
+OPENCV1_CFLAGS = @OPENCV1_CFLAGS@
+OPENCV1_LIBS = @OPENCV1_LIBS@
+OPENCV2_CFLAGS = @OPENCV2_CFLAGS@
+OPENCV2_LIBS = @OPENCV2_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -286,6 +291,8 @@ mavhub_LDADD = \
 	$(SRC_EXTRA_LIBS) \
 	$(THIRDPARTY_EXTRA_LIBS) \
 	$(GSTREAMER_LIBS) \
+	$(OPENCV1_LIBS) \
+	$(OPENCV2_LIBS) \
 	$(AM_LDFLAGS)
 
 all: config.h
@@ -716,6 +723,8 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
 	uninstall uninstall-am uninstall-binPROGRAMS
 
+
+#	$(top_builddir)/src/lib/*.a
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
