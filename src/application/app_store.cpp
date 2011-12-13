@@ -58,7 +58,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "acc_calibration_app") {
 #ifdef HAVE_MAVLINK_H
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 		std::string arg;
 		int number_of_measurements_for_determine_min_max(50);
 		find_iter = args.find("number_of_measurements_for_determine_min_max");
@@ -76,11 +76,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 			number_of_measurements_for_determine_min_max,
 			measurement_timeout_in_us);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(acc_calib_app);
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "attitude_filter_app") {
 #ifdef HAVE_MAVLINK_H
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 		std::string arg;
 		int number_of_measurements_for_gyro_bias_mean(50);
 		find_iter = args.find("number_of_measurements_for_gyro_bias_mean");
@@ -98,7 +98,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 			measurement_timeout_in_us,
 			number_of_measurements_for_gyro_bias_mean);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(att_filter_app);
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "fc_mpkg_app") {
 #ifdef HAVE_MAVLINK_H
@@ -116,11 +116,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "ctrl_hover_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MKLINK_H
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 		// pass only configuration map into constructor
 		Ctrl_Hover *ctrl_hover_app = new Ctrl_Hover(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_hover_app);
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_lateral_app") {
@@ -177,10 +177,12 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "slam_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION > 2
 		SLAMApp *slam_app = new SLAMApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
-#endif // HAVE_OPENCV_CV_H
+#endif
+#endif // HAVE_OPENCV
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "sim_crrcsim_app") {

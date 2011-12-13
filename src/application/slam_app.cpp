@@ -4,7 +4,7 @@
 
 #ifdef HAVE_GSTREAMER
 
-#ifdef HAVE_OPENCV_CV_H
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)
 
 #include "core/logger.h"
 #include "core/datacenter.h"
@@ -148,7 +148,7 @@ void SLAMApp::run() {
 
 } // namespace mavhub
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV2 && CV_MINOR_VERSION > 1
 
 #endif // HAVE_GSTREAMER
 

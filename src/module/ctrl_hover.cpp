@@ -34,7 +34,7 @@
 
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MKLINK_H
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 
 #include <mavlink.h>
 #include <math.h> //pow
@@ -60,7 +60,7 @@ namespace mavhub {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : 
 		AppInterface("ctrl_hover"), 
 		AppLayer<mavlink_message_t>("ctrl_hover"),
-		AppLayer<mk_message_t>("ctrl_hover"),
+		// AppLayer<mk_message_t>("ctrl_hover"),
 		uss_win(WINSIZE, 0.0),
 		uss_win_sorted(WINSIZE, 0.0),
 		uss_win_idx(0),
@@ -161,31 +161,32 @@ namespace mavhub {
 		//Logger::log("Ctrl_Hover got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 
 		switch(msg.msgid) {
-		case MAVLINK_MSG_ID_MK_DEBUGOUT:
-			// Logger::log("Ctrl_Hover got MK_DEBUGOUT", Logger::LOGLEVEL_INFO);
-			mavlink_msg_mk_debugout_decode(&msg, (mavlink_mk_debugout_t *)&mk_debugout);
-			// MK FlightCtrl IMU data
-			debugout2attitude(&mk_debugout);
-			// MK FlightCtrl Barometric sensor data
-			debugout2altitude(&mk_debugout);
-			// MK huch-FlightCtrl I2C USS data
-			// XXX: this should be in kopter config, e.g. if settings == fc_has_uss
-			if(typemap[0] == USS_FC)
-				debugout2ranger(&mk_debugout, &ranger);
-			// real debugout data
-			debugout2status(&mk_debugout, &mk_fc_status);
 
-			// put into standard pixhawk structs
-			// raw IMU
-			//set_pxh_raw_imu();
-			set_pxh_attitude();
-			set_pxh_manual_control();
+		// case MAVLINK_MSG_ID_MK_DEBUGOUT:
+		// 	// Logger::log("Ctrl_Hover got MK_DEBUGOUT", Logger::LOGLEVEL_INFO);
+		// 	mavlink_msg_mk_debugout_decode(&msg, (mavlink_mk_debugout_t *)&mk_debugout);
+		// 	// MK FlightCtrl IMU data
+		// 	debugout2attitude(&mk_debugout);
+		// 	// MK FlightCtrl Barometric sensor data
+		// 	debugout2altitude(&mk_debugout);
+		// 	// MK huch-FlightCtrl I2C USS data
+		// 	// XXX: this should be in kopter config, e.g. if settings == fc_has_uss
+		// 	if(typemap[0] == USS_FC)
+		// 		debugout2ranger(&mk_debugout, &ranger);
+		// 	// real debugout data
+		// 	debugout2status(&mk_debugout, &mk_fc_status);
 
-			// publish_data(get_time_us());
-			// deadlock problem
-			// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
-			// send(msg_j);
-			break;
+		// 	// put into standard pixhawk structs
+		// 	// raw IMU
+		// 	//set_pxh_raw_imu();
+		// 	set_pxh_attitude();
+		// 	set_pxh_manual_control();
+
+		// 	// publish_data(get_time_us());
+		// 	// deadlock problem
+		// 	// mavlink_msg_huch_attitude_encode(42, 23, &msg_j, &huch_attitude);
+		// 	// send(msg_j);
+		// 	break;
 
 		// case MAVLINK_MSG_ID_HUCH_ATTITUDE:	
 		// 	// Logger::log("Ctrl_Hover got huch attitude", Logger::LOGLEVEL_INFO);
@@ -279,7 +280,7 @@ namespace mavhub {
 		}
   }
 
-  void Ctrl_Hover::handle_input(const mk_message_t &msg) { }
+  //void Ctrl_Hover::handle_input(const mk_message_t &msg) { }
 
   void Ctrl_Hover::run() {
 		int buf[1]; // to MK buffer
@@ -296,10 +297,14 @@ namespace mavhub {
 		int run_cnt_cyc = 0;
 		double gas;
 
-		// heartbeat
-		int system_type = MAV_QUADROTOR;
-		mavlink_message_t msg_hb;
-		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		mavlink_raw_pressure_t raw_pressure;
+		mavlink_huch_mk_imu_t huch_mk_imu;
+
+		// // heartbeat
+		// int system_type = MAV_QUADROTOR;
+		// mavlink_message_t msg_hb;
+		// mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		// comes from mkhuchlink app now
 
 		// XXX: infrared valid FIRs
 		//double tmp_d[] = {0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05};
@@ -367,11 +372,17 @@ namespace mavhub {
 		
 		// request debug msgs
 		buf[0] = 10;
+		/* FIXME: MK_MSG
 		mk_message_t msg_debug_on;
 		mklink_msg_pack(&msg_debug_on, MK_FC_ADDRESS, MK_MSG_TYPE_POLL_DEBUG, buf, 1);
 		sleep(1);
 		AppLayer<mk_message_t>::send(msg_debug_on);
 		Logger::log("Ctrl_Hover debug request sent to FC", Logger::LOGLEVEL_INFO);
+		*/
+
+		// subscribe to data streams
+		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, 50);
+		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, 50);
 
 		while(true) {
 
@@ -411,11 +422,12 @@ namespace mavhub {
 			// manual control
 			// mavlink_msg_manual_control_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &manual_control);
 			// AppLayer<mavlink_message_t>::send(msg);
+
 			//if(params["gs_en"]) {
-				// attitude
-				mavlink_msg_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
-				AppLayer<mavlink_message_t>::send(msg);
-				//}
+			// attitude
+			// mavlink_msg_attitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ml_attitude);
+			// AppLayer<mavlink_message_t>::send(msg);
+			//}
 			
 			if(params["en_skipmain"] > 0.0)
 				continue;
@@ -428,10 +440,15 @@ namespace mavhub {
 			//ranger = DataCenter::get_huch_ranger();
 			// Logger::log(ranger.ranger1, ranger.ranger2, ranger.ranger3, Logger::LOGLEVEL_INFO);
 
+			raw_pressure = DataCenter::get_raw_pressure();
+			huch_mk_imu = DataCenter::get_huch_mk_imu();
+
 			// double tmp = tmp;
 			raw[0] = (int)DataCenter::get_sensor(chanmap[0]); //ranger.ranger1; // USS
-			raw[1] = altitude.baro; // barometer
-			raw[2] = attitude.zacc; // z-acceleration
+			//raw[1] = altitude.baro; // barometer
+			raw[1] = raw_pressure.press_abs;
+			//raw[2] = attitude.zacc; // z-acceleration
+			raw[2] = huch_mk_imu.zacc; // z-acceleration
 			raw[3] = (int)DataCenter::get_sensor(chanmap[3]); //ranger.ranger2; // ir ranger 1
 			raw[4] = (int)DataCenter::get_sensor(chanmap[4]); // ranger.ranger3; // ir ranger 2
 
@@ -503,8 +520,8 @@ namespace mavhub {
 			// 	pre[0].first = uss_win[uss_win_idx];
 			// }
 
+			//&& pre[3].first > params["uss_llim"]
 			if(in_range(pre[0].first, params["uss_llim"], params["uss_hlim"])
-				 && pre[3].first > params["uss_llim"]
 				 && uss_plaus)
 				tmp_valid = 1.0;
 			else {
@@ -523,7 +540,8 @@ namespace mavhub {
 			// BARO: disable below 30.0 cm
 			// FIXME
 			// if((pre[3].first < 300.0 && pre[4].first < 600) || stats[0]->get_mean() < 1600.0) {
-			if(pre[3].first < 300.0 && pre[4].first < 600) {
+			//if(pre[3].first < 300.0 && pre[4].first < 600) {
+			if(pre[4].first < 600) {
 				precov[1] = 0.0;
 				//pre[1].second = 0;
 			} else {
@@ -545,7 +563,7 @@ namespace mavhub {
 			// 39, 300
 			if(in_range(pre[3].first, params["ir1_llim"], params["ir1_ulim"])
 				 && pre[4].first < 600.0) // carpet problem: ir1 freaks out on carpet FIXME
-				tmp_valid = 1.0;
+				tmp_valid = 0.0;
 			else
 				tmp_valid = 0.0;
 			precov[3] = filt_valid_ir1.calc(tmp_valid);
@@ -557,8 +575,9 @@ namespace mavhub {
 			 // if(in_range(pre[0].first, 300.0, 700.0))
 			 // if(in_range(pre[4].first, 300.0, 560.0))
 			// 300, 600
-			 if(in_range(pre[4].first, params["ir2_llim"], params["ir2_ulim"]) &&
-					pre[3].first > 300.0)
+			 if(in_range(pre[4].first, params["ir2_llim"], params["ir2_ulim"])
+					//&& pre[3].first > 300.0
+					)
 				 tmp_valid = 1;
 			 else
 				 tmp_valid = 0;
@@ -753,9 +772,11 @@ namespace mavhub {
 			// send control output to FC
 			// Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
 			if(params["output_enable"] > 0) {
+				/* FIXME: MK_MSG
 				mk_message_t msg_extctrl;
 				mklink_msg_pack(&msg_extctrl, MK_FC_ADDRESS, MK_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(extctrl));
 				AppLayer<mk_message_t>::send(msg_extctrl);
+				*/
 			}
 
 			// send data to groundstation
@@ -802,11 +823,13 @@ namespace mavhub {
 
 			// set neutral?
 			if(set_neutral_rq > 0) {
+				/* FIXME: MK_MSG
 				Logger::log("Requesting setneutral from flightcontrol", Logger::LOGLEVEL_INFO);
 				mk_message_t msg_setneutral;
 				mklink_msg_pack(&msg_setneutral, MK_FC_ADDRESS, MK_MSG_TYPE_SETNEUTRAL_REQ, NULL, 0);
 				AppLayer<mk_message_t>::send(msg_setneutral);
 				set_neutral_rq = 0;
+				*/
 			}
 
 			// typed message forwarding
@@ -880,8 +903,9 @@ namespace mavhub {
 			run_cnt += 1;
 			run_cnt_cyc = run_cnt % 10;
 			// send heartbeat
-			if(run_cnt_cyc == 0)
-				AppLayer<mavlink_message_t>::send(msg_hb);
+			// if(run_cnt_cyc == 0)
+			// 	AppLayer<mavlink_message_t>::send(msg_hb);
+			// outsourced
 			// XXX: usleep call takes ~5000 us?
 			//usleep(10000);
 		}
@@ -1423,9 +1447,26 @@ namespace mavhub {
 		return (int32_t) uh << 16 | ul;
 	}
 
+	void Ctrl_Hover::send_stream_request(mavlink_message_t* msg, 
+																			 uint8_t req_stream_id,
+																			 uint16_t req_message_rate) {
+		mavlink_request_data_stream_t req_datastream;
+		req_datastream.target_system = system_id();
+		req_datastream.target_component = component_id;
+		req_datastream.req_stream_id = req_stream_id;
+		req_datastream.req_message_rate = req_message_rate;
+		req_datastream.start_stop = 1;
+		mavlink_msg_request_data_stream_encode(system_id(),
+																					 component_id,
+																					 msg,
+																					 &req_datastream);
+		AppLayer<mavlink_message_t>::send(*msg);
+		return;
+	}
+
 }
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
 

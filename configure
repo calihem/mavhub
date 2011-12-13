@@ -8122,14 +8122,6 @@ _ACEOF
 
 fi
 
-#AC_CHECK_LIB([cxcore], [cvCreateMat])
-#AC_CHECK_LIB([cv], [cvCreateKalman])
-#AC_CHECK_LIB([opencv_core], [cvCreateMat])
-#AC_CHECK_LIB([opencv_video], [cvCreateKalman])
-#AC_CHECK_LIB([opencv_imgproc], [cvIntegral])
-#AC_CHECK_LIB([opencv_features2d], [cvCalcPCA])
-#AC_CHECK_LIB([opencv_highgui], [cvShowImage])
-#AC_CHECK_LIB([opencv_legacy], [cvRand])
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_mutex_lock in -lpthread" >&5
 $as_echo_n "checking for pthread_mutex_lock in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_pthread_mutex_lock+:} false; then :
@@ -8355,7 +8347,6 @@ _ACEOF
 
 fi
 
-#AC_CHECK_LIB([gstapp-0.10], [gst_app_sink_pull_buffer])
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for IvyInit in -livy" >&5
 $as_echo_n "checking for IvyInit in -livy... " >&6; }
 if ${ac_cv_lib_ivy_IvyInit+:} false; then :
@@ -8854,7 +8845,6 @@ fi
 
 done
 
-#AC_CHECK_HEADERS([opencv/cv.h], AM_CONDITIONAL(COND_OPENCV, true) , [AM_CONDITIONAL(COND_OPENCV, false) AC_MSG_WARN([OpenCV headers not found])])
 for ac_header in libgpsmm.h
 do :
   ac_fn_cxx_check_header_mongrel "$LINENO" "libgpsmm.h" "ac_cv_header_libgpsmm_h" "$ac_includes_default"

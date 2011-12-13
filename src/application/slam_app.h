@@ -11,7 +11,7 @@
 #include "lib/gstreamer/video_server.h"
 #include "lib/gstreamer/video_client.h"
 
-#ifdef HAVE_OPENCV_CV_H
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1)
 #include <brisk/brisk.h>
 
 #include "protocol/protocollayer.h"
@@ -56,7 +56,7 @@ namespace mavhub {
 
 } // namespace mavhub
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV2 && CV_MINOR_VERSION > 1
 
 #endif // HAVE_GSTREAMER
 

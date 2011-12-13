@@ -8,7 +8,7 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 #include <opencv/cv.h>
 
 #include "protocol/protocollayer.h"
@@ -63,7 +63,7 @@ namespace mavhub {
 
 }
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 
 #endif // HAVE_MAVLINK_H
 

@@ -1,7 +1,7 @@
 // kalman opencv
 #include "filter_kalmancv.h"
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 
 #include <math.h> //pow
 #include <iostream> //cout
@@ -69,5 +69,5 @@ namespace mavhub {
 
 }
 
-#endif //  HAVE_OPENCV_CV_H
+#endif //  HAVE_OPENCV
 
