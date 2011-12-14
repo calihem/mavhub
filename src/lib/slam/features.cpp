@@ -49,8 +49,8 @@ void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 			translation_vector);
 	}
 	catch(cv::Exception &e) {
-		rotation_vector = cv::Scalar(0);
-		translation_vector = cv::Scalar(0);
+		rotation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
+		rotation_vector.copyTo(translation_vector);
 	}
 }
 

@@ -174,8 +174,8 @@ void SLAMApp::extract_features() {
 		component_id,
 		&tx_mav_msg,
 		get_time_us(),
-		rotation_vector.at<double>(0, 0),
 		rotation_vector.at<double>(0, 1),
+		rotation_vector.at<double>(0, 0),
 		rotation_vector.at<double>(0, 2),
 		0, 0, 0);
 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
