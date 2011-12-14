@@ -59,8 +59,9 @@ libapp_a_AR = $(AR) $(ARFLAGS)
 libapp_a_LIBADD =
 am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
 	attitude_filter_app.$(OBJEXT) app_store.$(OBJEXT) \
-	mavlink_mk_app.$(OBJEXT) mavlink_mkhuch_app.$(OBJEXT) \
-	mk_app.$(OBJEXT) opengl_app.$(OBJEXT) slam_app.$(OBJEXT)
+	core_app.$(OBJEXT) mavlink_mk_app.$(OBJEXT) \
+	mavlink_mkhuch_app.$(OBJEXT) mk_app.$(OBJEXT) \
+	opengl_app.$(OBJEXT) slam_app.$(OBJEXT)
 libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -233,6 +234,7 @@ libapp_a_SOURCES = \
 	acc_calibration_app/acc_calibration_app.cpp \
 	attitude_filter_app/attitude_filter_app.cpp \
 	app_store.cpp \
+	core_app.cpp \
 	mavlink_mk_app.cpp \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
@@ -290,6 +292,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acc_calibration_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/app_store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attitude_filter_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mk_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mkhuch_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@

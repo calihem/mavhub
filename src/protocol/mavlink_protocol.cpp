@@ -1,5 +1,6 @@
 #include "protocol.h"
 
+#include <istream>
 #include <cassert>
 
 namespace mavhub {
@@ -73,6 +74,28 @@ int parse_byte<mavlink_message_t>(const uint8_t input, uint16_t &index, mavlink_
 	}
 
 	return index;
+}
+
+std::istream& operator >>(std::istream &is, enum MAV_TYPE &type) {
+	int int_type;
+	is >> int_type;
+	if(int_type >= 0 && int_type <= 6) {
+		type = static_cast<enum MAV_TYPE>(int_type);
+	}
+	return is;
+}
+
+std::istream& operator >>(std::istream &is, enum MAV_AUTOPILOT_TYPE &type) {
+	int int_type;
+	is >> int_type;
+#ifdef MAVLINK_ENABLED_HUCH
+	if(int_type >= 0 && int_type <= 4) {
+#else
+	if(int_type >= 0 && int_type <= 3) {
+#endif
+		type = static_cast<enum MAV_AUTOPILOT_TYPE>(int_type);
+	}
+	return is;
 }
 
 #endif // HAVE_MAVLINK_H

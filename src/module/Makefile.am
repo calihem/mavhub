@@ -11,7 +11,6 @@ libmodule_a_SOURCES = \
 	pp_acc.cpp \
 	pp_baro.cpp \
 	pp_ir.cpp \
-	coremod.cpp \
 	fc_mpkg.cpp \
 	ctrl_hover.cpp \
 	ctrl_lateral.cpp \

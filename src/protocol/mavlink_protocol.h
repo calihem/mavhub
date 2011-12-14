@@ -49,6 +49,24 @@ int serialize<mavlink_message_t>(const mavlink_message_t &msg, uint8_t *buffer, 
 template <>
 int parse_byte<mavlink_message_t>(const uint8_t input, uint16_t &index, mavlink_message_t &msg);
 
+/**
+ * \brief Input stream operator for MAV types.
+ * \param[in,out] is The input stream.
+ * \tparam[out] type The MAV type which should hold the value from
+ * input stream is.
+ * \return Reference to input stream is.
+ */
+std::istream& operator >>(std::istream &is, enum MAV_TYPE &type);
+
+/**
+ * \brief Input stream operator for MAV types.
+ * \param[in,out] is The input stream.
+ * \tparam[out] type The autopilot type which should hold the value from
+ * input stream is.
+ * \return Reference to input stream is.
+ */
+std::istream& operator >>(std::istream &is, enum MAV_AUTOPILOT_TYPE &type);
+
 } // namespace mavhub
 
 #endif // HAVE_MAVLINK_H
