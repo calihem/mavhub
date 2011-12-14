@@ -8,7 +8,7 @@
 // #include <sstream> //istringstream
 
 //#include <opencv/cxtypes.h>
-#include <opencv/cxcore.h>
+// #include <opencv/cxcore.h>
 
 #include <GL/glut.h>
 #include <GL/freeglut_ext.h>	//glutMainLoopEvent
@@ -34,9 +34,15 @@ class Map2D  {
 		static void bind_textures(std::vector<unsigned int> &ids);
 		static void camera_direction(const float roll, const float pitch, const float yaw, bool deg = true);
 		static void display();
-		static void load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height) throw(const std::exception&); 
-		static void load_texture(const unsigned int id, const IplImage &image) throw(const std::exception&);
-		static void load_texture(const unsigned int id, const std::string &filename, const unsigned int width, const unsigned int height) throw(const std::exception&);
+		static void load_texture(const unsigned int id,
+			const char *image,
+			const unsigned int width,
+			const unsigned int height,
+			const unsigned int bpp = 24) throw(const std::exception&); 
+		static void load_texture(const unsigned int id,
+			const std::string &filename,
+			const unsigned int width,
+			const unsigned int height) throw(const std::exception&);
 		static int release_textures(const std::vector<unsigned int> &ids);
 		static void rotate(const float roll, const float pitch, const float yaw, bool deg = true);
 // 		static int translate(const float x, const float y, const float z);
@@ -67,10 +73,6 @@ class Map2D  {
 		static void post_process();
 // 		static void reshape(int width, int height);
 };
-
-inline void Map2D::load_texture(const unsigned int id, const IplImage &image) throw(const std::exception&) {
-	load_texture(id, image.imageData, image.width, image.height);
-}
 
 } // namespace opengl
 } // namespace hub

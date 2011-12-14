@@ -4,6 +4,8 @@
 #include <fstream>	//ifstream
 #include <iomanip>	//setw
 #include <stdexcept>
+#include <cmath>	//cos, sin
+#include <sstream>	//ostringstream
 
 namespace hub {
 namespace opengl {
@@ -97,10 +99,9 @@ void Map2D::bind_textures(std::vector<unsigned int> &ids) {
 int Map2D::calc_rotation_matrix(float *roation_matrix, const float roll_deg, const float pitch_deg, const float yaw_deg) {
 	if(!roation_matrix) return -1;
 
-	//FIXME: use function/macro to convert between deg and rad
-	GLfloat roll_rad = roll_deg * pi / 180;
-	GLfloat pitch_rad = pitch_deg * pi / 180;
-	GLfloat yaw_rad = yaw_deg * pi / 180;
+	GLfloat roll_rad = deg2rad(roll_deg);
+	GLfloat pitch_rad = deg2rad(pitch_deg);
+	GLfloat yaw_rad = deg2rad(yaw_deg);
 
 	rotation_matrix[0] = cos(pitch_rad)*cos(yaw_rad);
 	rotation_matrix[1] = -cos(roll_rad)*sin(yaw_rad) + sin(roll_rad)*sin(pitch_rad)*cos(yaw_rad);
@@ -310,7 +311,7 @@ void Map2D::mouse_movement(int x, int y) {
 // 	display();
 }
 
-void Map2D::load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height) throw(const std::exception&) {
+void Map2D::load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height, const unsigned int bpp) throw(const std::exception&) {
 	if(!image) throw std::domain_error("image argument is NULL pointer");
 
 	//select texture with given id
@@ -319,6 +320,10 @@ void Map2D::load_texture(const unsigned int id, const char *image, const unsigne
 	//FIXME: use glTexSumImage2D instead
 //   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 
+	GLenum format = GL_BGR;
+	if (bpp == 8)
+		format = GL_LUMINANCE;
+
 	//build texture mipmaps
 	glTexImage2D(GL_TEXTURE_2D,	//target
 		0,			//level
@@ -326,7 +331,7 @@ void Map2D::load_texture(const unsigned int id, const char *image, const unsigne
 		width,			//width
 		height,			//height
 		0,			//border
-		GL_BGR,			//format
+		format,			//format
 		GL_UNSIGNED_BYTE,	//_type
 		image);
 
@@ -368,7 +373,6 @@ void Map2D::print(const std::string &text) {
 	glPushMatrix();
 	glLoadIdentity();
 	// set a 2D orthographic projection
-	//FIXME: set right and bottom
 	gluOrtho2D(0, m_width, m_height, 0);
 	glMatrixMode(GL_MODELVIEW);
 

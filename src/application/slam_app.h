@@ -20,55 +20,58 @@
 
 namespace mavhub {
 
-	class SLAMApp : public MavlinkAppLayer
-		, public hub::gstreamer::VideoClient
-	{
-		public:
-			SLAMApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
-			virtual ~SLAMApp();
+class SLAMApp : public MavlinkAppLayer,
+	public hub::gstreamer::VideoClient {
 
-			virtual void handle_input(const mavlink_message_t &msg);
-			virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
+	public:
+		SLAMApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+		virtual ~SLAMApp();
 
-		protected:
-			virtual void print(std::ostream &os) const;
-			virtual void run();
+		virtual void handle_input(const mavlink_message_t &msg);
+		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
 
-		private:
-			bool with_out_stream;
-			uint8_t take_new_image;
-			bool new_video_data;
-			/// Mutex to sync between application thread and input calls
-			pthread_mutex_t sync_mutex;
-			unsigned int target_system;
-			unsigned int target_component;
-			unsigned int imu_rate;
-			/// Current attitude of system
-			mavlink_attitude_t attitude;
+	protected:
+		virtual void print(std::ostream &os) const;
+		virtual void run();
 
-			//FIXME: replace old_* by database of these informations
-			std::string sink_name;
-			cv::Mat cam_matrix;
-			cv::Mat dist_coeffs;
-			cv::Mat old_image;
-			cv::Mat new_image;
-			mavlink_attitude_t old_attitude;
-			mavlink_attitude_t new_attitude;
-			std::vector<cv::KeyPoint> old_features;
-			std::vector<cv::KeyPoint> new_features;
-			std::vector<cv::Point3f> old_object_points;
-			cv::BriskFeatureDetector feature_detector;
-			cv::Mat old_descriptors;
-			cv::Mat new_descriptors;
-			cv::BriskDescriptorExtractor descriptor_extractor;
+	private:
+		bool with_out_stream;
+		uint8_t take_new_image;
+		bool new_video_data;
+		/// Mutex to sync between application thread and input calls
+		pthread_mutex_t sync_mutex;
+		unsigned int target_system;
+		unsigned int target_component;
+		unsigned int imu_rate;
+		/// Current attitude of system
+		mavlink_attitude_t attitude;
+
+		//FIXME: replace old_* by database of these informations
+		std::string sink_name;
+		cv::Mat cam_matrix;
+		cv::Mat dist_coeffs;
+		cv::Mat old_image;
+		cv::Mat new_image;
+		mavlink_attitude_t old_attitude;
+		mavlink_attitude_t new_attitude;
+		std::vector<cv::KeyPoint> old_features;
+		std::vector<cv::KeyPoint> new_features;
+		std::vector<cv::Point3f> old_object_points;
+		cv::BriskFeatureDetector feature_detector;
+		cv::Mat old_descriptors;
+		cv::Mat new_descriptors;
+		cv::BriskDescriptorExtractor descriptor_extractor;
 #ifdef HAVE_SSSE3
-			cv::BruteForceMatcher<cv::HammingSse> matcher;
+		cv::BruteForceMatcher<cv::HammingSse> matcher;
 #else
-			cv::BruteForceMatcher<cv::Hamming> matcher;
+		cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif
-			void extract_features();
-			void load_calibration_data(const std::string &filename);
-	};
+		cv::Mat rotation_vector;
+		cv::Mat translation_vector;
+
+		void extract_features();
+		void load_calibration_data(const std::string &filename);
+};
 
 } // namespace mavhub
 

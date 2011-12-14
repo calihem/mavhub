@@ -16,6 +16,7 @@
 
 using namespace std;
 using namespace cpp_pthread;
+using namespace hub::slam;
 
 namespace mavhub {
 
@@ -30,7 +31,9 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	imu_rate(10),
 	cam_matrix(3, 3, CV_32FC1),
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
-	feature_detector(60, 3) //threshold, octaves
+	feature_detector(60, 3), //threshold, octaves
+	rotation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
+	translation_vector( cv::Mat::zeros(3, 1, CV_64FC1) )
 	{
 
 	pthread_mutex_init(&sync_mutex, NULL);
@@ -94,10 +97,10 @@ void SLAMApp::extract_features() {
 			old_object_points);
 	} else {
 		feature_detector.detect(new_image, new_features);
-		Logger::log(name(), ": found", new_features.size(), "(new) features", Logger::LOGLEVEL_DEBUG, _loglevel);
+		Logger::log("found", new_features.size(), "(new) features", Logger::LOGLEVEL_DEBUG, _loglevel);
 
 		if( new_features.empty() ) {
-			log(name(), ": didn't found features in current image", Logger::LOGLEVEL_WARN);
+			log("didn't found features in current image", Logger::LOGLEVEL_WARN);
 			return;
 		}
 
@@ -119,10 +122,10 @@ void SLAMApp::extract_features() {
 		Logger::LOGLEVEL_DEBUG, _loglevel);
 	
 	// calculate transformation matrix
-	double distance = 1.0; //FIXME: use altitude information
-	double factor = 300.0;
-	float delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
-	float delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
+// 	double distance = 1.0; //FIXME: use altitude information
+// 	double factor = 300.0;
+// 	float delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
+// 	float delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
 	// rotate image
 	cv::Point center(new_image.cols/2, new_image.rows/2);
 // 	cv::Mat rotation_matrix = getRotationMatrix2D(center, -rad2deg(attitude_change.yaw), 1.0);
@@ -137,7 +140,18 @@ void SLAMApp::extract_features() {
 
 	// match descriptors
 	std::vector<std::vector<cv::DMatch> > matches;
+// 	std::vector<std::vector<cv::DMatch> > forward_matches;
+// 	std::vector<std::vector<cv::DMatch> > backward_matches;
+// 	matcher.radiusMatch(old_descriptors, new_descriptors, forward_matches, 100.0);	//0.21 for L2
+// 	matcher.radiusMatch(new_descriptors, old_descriptors, backward_matches, 100.0);	//0.21 for L2
+// 	fusion_matches(forward_matches, backward_matches, matches);
 	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
+	if(matches.empty()) {
+		Logger::log("no matches were found", Logger::LOGLEVEL_DEBUG, _loglevel);
+		return;
+	}
+
+	//TODO: check for ambigous matches
 
 	// TODO: use RANSAC instead of IMU filter?
 // 	std::vector<uint8_t> filter;
@@ -157,8 +171,8 @@ void SLAMApp::extract_features() {
 // 	double yaw = acos( (H.at<double>(0,0) + H.at<double>(1,1))/2.0 );
 // 	std::cout << "yaw = " << rad2deg(yaw) << " (" << H.at<double>(0,2) << ", " << H.at<double>(1,2) << std::endl;
 
-	cv::Mat rotation_vector;
-	cv::Mat translation_vector;
+// 	cv::Mat rotation_vector;
+// 	cv::Mat translation_vector;
 	determine_egomotion(old_features,
 		new_features,
 		matches,
@@ -180,11 +194,6 @@ void SLAMApp::extract_features() {
 		0, 0, 0);
 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
 	}
-	//FIXME:
-// 	new_features.clear();
-// 	matches.clear();
-
-	//TODO: check for ambigous matches
 
 	if(with_out_stream && Core::video_server) {
 		cv::Mat match_img;
