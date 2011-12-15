@@ -7,7 +7,7 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 #include "opencv/cv.h" // opencv headers
 
 #include <sstream>
@@ -108,6 +108,6 @@ namespace mavhub {
   };
 }
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 
 #endif

@@ -1,7 +1,7 @@
 #include "acc_calibration_app.h"
 
 #ifdef HAVE_MAVLINK_H
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 
 #include <iostream>
 #include <iomanip>
@@ -494,6 +494,6 @@ CvPoint3D32f AccCalibrationApp::readInSavedCalibrationScaleFactors() {
 
 } // namespace mavhub
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 
 #endif // HAVE_MAVLINK_H

@@ -13,7 +13,7 @@
 #ifdef HAVE_MKLINK_H
 #include <mklink.h>
 
-#ifdef HAVE_OPENCV_CV_H
+#ifdef HAVE_OPENCV
 
 #include "debug_channels.h"
 #include "filter_kalmancv.h"
@@ -34,7 +34,8 @@
 
 namespace mavhub {
 	/// Controller: hover (altitude)
-  class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
+  //class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
+  class Ctrl_Hover : public AppLayer<mavlink_message_t> {
   public:
 		/// Constructor
 		// Ctrl_Hover(int component_id_, int numchan, const std::list< std::pair<int, int> > chanmap, const std::map<std::string, std::string> args);
@@ -42,7 +43,7 @@ namespace mavhub {
 		virtual ~Ctrl_Hover();
 		/// mavhub protocolstack input handler
 		virtual void handle_input(const mavlink_message_t &msg);
-		virtual void handle_input(const mk_message_t &msg);
+		//virtual void handle_input(const mk_message_t &msg);
 		/// sensor types
 		enum sensor_types_t {
 			USS_FC = 0,
@@ -198,6 +199,8 @@ namespace mavhub {
 
 		double integrate_and_saturate(double offset, double d, double min, double max);
 		double calc_var_nonlin(double var_e, double min, double max);
+
+		virtual void send_stream_request(mavlink_message_t* msg, uint8_t req_stream_id, uint16_t req_message_rate);
   };
 
 	// limit gas
@@ -235,7 +238,7 @@ namespace mavhub {
 	}
 }
 
-#endif // HAVE_OPENCV_CV_H
+#endif // HAVE_OPENCV
 
 #endif // HAVE_MKLINK_H
 

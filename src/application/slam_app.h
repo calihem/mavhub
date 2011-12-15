@@ -12,6 +12,9 @@
 #include "lib/gstreamer/video_client.h"
 
 #ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
+
+#if CV_MINOR_VERSION >= 2
 #include <brisk/brisk.h>
 #include "lib/slam/features.h"
 #include "protocol/protocollayer.h"
@@ -75,10 +78,8 @@ class SLAMApp : public MavlinkAppLayer,
 
 } // namespace mavhub
 
-#endif // HAVE_OPENCV_CV_H
-
+#endif // CV_MINOR_VERSION >= 2
+#endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
-
 #endif // HAVE_MAVLINK_H
-
 #endif // _OPENGL_APP_H_
