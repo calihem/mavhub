@@ -16,6 +16,28 @@
 namespace hub {
 namespace slam {
 
+struct brisk_landmark_t {
+	brisk_landmark_t(const cv::KeyPoint &kp,
+		const cv::Point3f &op,
+		const uint8_t descr[16],
+		const unsigned int counter,
+		const int fc);
+	cv::KeyPoint keypoint;	// 2D coordinate, octave, ...
+	cv::Point3f object_point;	// 3D coordinate
+	uint8_t descriptor[16];	// 128 bit value
+	unsigned int counter;	// how often occured this landmark in a scene
+	int first_occurence;	// index of first scene in which the landmark occured
+};
+
+struct landmarks_t {
+	void clear();
+	std::vector<cv::KeyPoint> keypoints;
+	std::vector<cv::Point3f> objectpoints;
+	cv::Mat descriptors;
+	std::vector<int> counters;
+	std::vector<int> scene_ids;
+};
+
 void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<std::vector<cv::DMatch> >& matches,
@@ -23,6 +45,10 @@ void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
 	cv::Mat &translation_vector);
+
+void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask);
+
+void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches);
 
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,

@@ -9,6 +9,21 @@ namespace hub {
 namespace slam {
 
 #define min_eigenval(dxx, dxy, dyy) 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ))
+brisk_landmark_t::brisk_landmark_t(const cv::KeyPoint &kp,
+	const cv::Point3f &op,
+	const uint8_t descr[16],
+	const unsigned int counter,
+	const int fc) {
+	//TODO
+}
+
+void landmarks_t::clear() {
+	keypoints.clear();
+	objectpoints.clear();
+	descriptors.resize(0);
+	counters.clear();
+	scene_ids.clear();
+}
 
 void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
@@ -57,6 +72,37 @@ void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	catch(cv::Exception &e) {
 // 		rotation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
 // 		rotation_vector.copyTo(translation_vector);
+	}
+}
+
+void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask) {
+	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
+std::cout << i << ": " << landmarks.counters[i] << std::endl;
+		if(landmarks.counters[i] < 70)
+			//set complete row
+// 			mask.at<uint8_t>(i, 0) = 0;
+			mask.row(i) = cv::Scalar(0);
+	}
+}
+
+void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches) {
+	// increment all counters by 1
+/*	for(std::vector<int>::iterator iter = landmarks.counters.begin(); iter != landmarks.counters.end(); ++iter)
+	{
+		(*iter)++;
+	}*/
+	std::vector<uint8_t> mask(landmarks.counters.size(), 0);
+	for(size_t i = 0; i < matches.size(); i++) {
+		for(size_t j = 0; j < matches[i].size(); j++) {
+			unsigned int index = matches[i][j].queryIdx;
+			landmarks.counters[index] = (landmarks.counters[index] + 101) / 2;
+			mask[index] = 1;
+		}
+	}
+
+	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
+		if(mask[i] == 0)
+			landmarks.counters[i] /= 2;
 	}
 }
 

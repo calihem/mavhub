@@ -34,7 +34,6 @@ class SLAMApp : public MavlinkAppLayer,
 		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
 
 	protected:
-		virtual void print(std::ostream &os) const;
 		virtual void run();
 
 	private:
@@ -55,6 +54,10 @@ class SLAMApp : public MavlinkAppLayer,
 		cv::Mat dist_coeffs;
 		cv::Mat old_image;
 		cv::Mat new_image;
+// 		std::list<hub::slam::brisk_landmark_t> landmarks;
+		hub::slam::landmarks_t landmarks;
+		/// List of images
+		std::list<cv::Mat> scenes;
 		mavlink_attitude_t old_attitude;
 		mavlink_attitude_t new_attitude;
 		std::vector<cv::KeyPoint> old_features;

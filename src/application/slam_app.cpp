@@ -29,6 +29,7 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	imu_rate(10),
 	cam_matrix(3, 3, CV_32FC1),
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
+	scenes(2),
 	feature_detector(60, 3), //threshold, octaves
 	rotation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
 	translation_vector( cv::Mat::zeros(3, 1, CV_64FC1) )
@@ -70,54 +71,70 @@ void SLAMApp::extract_features() {
 	//FIXME: remove benchmark
 	uint64_t start_time = get_time_ms();
 
-	//FIXME: remove doubled code
-	if( old_features.empty() ) {
-		feature_detector.detect(old_image, old_features);
-		Logger::log(name(), ": found", old_features.size(), "(old) features", Logger::LOGLEVEL_DEBUG, _loglevel);
-		
-		if( old_features.empty() ) {
-			log(name(), ": didn't found features in snapshot image", Logger::LOGLEVEL_WARN);
+	if(landmarks.keypoints.empty()) {
+		// get features from image
+		feature_detector.detect(scenes.front(), landmarks.keypoints);
+		if(landmarks.keypoints.empty()) {
+			log("didn't found reference features", Logger::LOGLEVEL_DEBUG);
 			take_new_image = 1;
 			return;
 		}
 
 		//TODO: filter features (shi-tomasi)
 
-		descriptor_extractor.compute(old_image, old_features, old_descriptors);
-		if( new_descriptors.empty() )
-			return;
-		
 		// calculate corresponding 3D object points
-		old_object_points.clear();
-		keypoints_to_objectpoints(old_features,
+		//FIXME: use distance information
+		keypoints_to_objectpoints(landmarks.keypoints,
 			cam_matrix,
-			0.0,
-			old_object_points);
-	} else {
-		feature_detector.detect(new_image, new_features);
-		Logger::log("found", new_features.size(), "(new) features", Logger::LOGLEVEL_DEBUG, _loglevel);
+			0.0,	//distance
+			landmarks.objectpoints);
 
-		if( new_features.empty() ) {
-			log("didn't found features in current image", Logger::LOGLEVEL_WARN);
-			return;
-		}
-
-		//TODO: filter features (shi-tomasi)
-
-		descriptor_extractor.compute(new_image, new_features, new_descriptors);
+		// calculate descriptors
+		descriptor_extractor.compute(scenes.front(), landmarks.keypoints, landmarks.descriptors);
+		
+		// init counters
+		landmarks.counters.assign(landmarks.keypoints.size(), 100);
+		return;
 	}
 
+	// get features from image
+	vector<cv::KeyPoint> keypoints;
+	feature_detector.detect(scenes.back(), keypoints);
+	if(keypoints.empty()) {
+		log("didn't found features", Logger::LOGLEVEL_DEBUG);
+		return;
+	}
+
+	//TODO: filter features (shi-tomasi)
+
+	// calculate descriptors
+	cv::Mat descriptors;
+	descriptor_extractor.compute(scenes.back(), keypoints, descriptors);
+	if(keypoints.empty()) {
+		log("keypoints empty after descriptor computation", Logger::LOGLEVEL_DEBUG);
+		return;
+	}
+
+	// create filter mask
+	cv::Mat mask = cv::Mat::ones(landmarks.keypoints.size(), keypoints.size(), CV_8UC1);
+	filter_landmarks(landmarks, mask);
+
+	// match features
+	std::vector<std::vector<cv::DMatch> > matches;
+	matcher.radiusMatch(landmarks.descriptors, descriptors, matches, 100.0, mask);	//0.21 for L2
+
+	update_landmarks(landmarks, matches);
 	// get change of attitude
 	//TODO: time check of attitude
-	mavlink_attitude_t attitude_change;
-	attitude_change.roll = new_attitude.roll - old_attitude.roll;
-	attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
-	attitude_change.yaw = new_attitude.yaw - old_attitude.yaw;
-	Logger::log(name(), "Changed attitude:",
-		rad2deg(attitude_change.roll),
-		rad2deg(attitude_change.pitch),
-		rad2deg(attitude_change.yaw),
-		Logger::LOGLEVEL_DEBUG, _loglevel);
+// 	mavlink_attitude_t attitude_change;
+// 	attitude_change.roll = new_attitude.roll - old_attitude.roll;
+// 	attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
+// 	attitude_change.yaw = new_attitude.yaw - old_attitude.yaw;
+// 	Logger::log(name(), "Changed attitude:",
+// 		rad2deg(attitude_change.roll),
+// 		rad2deg(attitude_change.pitch),
+// 		rad2deg(attitude_change.yaw),
+// 		Logger::LOGLEVEL_DEBUG, _loglevel);
 	
 	// calculate transformation matrix
 // 	double distance = 1.0; //FIXME: use altitude information
@@ -125,7 +142,7 @@ void SLAMApp::extract_features() {
 // 	float delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
 // 	float delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
 	// rotate image
-	cv::Point center(new_image.cols/2, new_image.rows/2);
+// 	cv::Point center(new_image.cols/2, new_image.rows/2);
 // 	cv::Mat rotation_matrix = getRotationMatrix2D(center, -rad2deg(attitude_change.yaw), 1.0);
 // 	cv::Mat rotated_image;
 	//FIXME: warp features (not image)
@@ -137,17 +154,17 @@ void SLAMApp::extract_features() {
 // 	cv::warpAffine(rotated_image, transformed_image, transform_matrix, rotated_image.size());
 
 	// match descriptors
-	std::vector<std::vector<cv::DMatch> > matches;
+// 	std::vector<std::vector<cv::DMatch> > matches;
 // 	std::vector<std::vector<cv::DMatch> > forward_matches;
 // 	std::vector<std::vector<cv::DMatch> > backward_matches;
 // 	matcher.radiusMatch(old_descriptors, new_descriptors, forward_matches, 100.0);	//0.21 for L2
 // 	matcher.radiusMatch(new_descriptors, old_descriptors, backward_matches, 100.0);	//0.21 for L2
 // 	fusion_matches(forward_matches, backward_matches, matches);
-	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
-	if(matches.empty()) {
-		Logger::log("no matches were found", Logger::LOGLEVEL_DEBUG, _loglevel);
-		return;
-	}
+// 	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
+// 	if(matches.empty()) {
+// 		Logger::log("no matches were found", Logger::LOGLEVEL_DEBUG, _loglevel);
+// 		return;
+// 	}
 
 	//TODO: check for ambigous matches
 
@@ -171,32 +188,32 @@ void SLAMApp::extract_features() {
 
 // 	cv::Mat rotation_vector;
 // 	cv::Mat translation_vector;
-	determine_egomotion(old_features,
+/*	determine_egomotion(old_features,
 		new_features,
 		matches,
 		cam_matrix,
 		dist_coeffs,
 		rotation_vector,
-		translation_vector);
+		translation_vector);*/
 // 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
 //	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
-	{
-	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_attitude_pack(system_id(),
-		component_id,
-		&tx_mav_msg,
-		get_time_us(),
-		rotation_vector.at<double>(0, 1),
-		rotation_vector.at<double>(0, 0),
-		rotation_vector.at<double>(0, 2),
-		0, 0, 0);
-	AppLayer<mavlink_message_t>::send(tx_mav_msg);
-	}
+// 	{
+// 	Lock tx_lock(tx_mav_mutex);
+// 	mavlink_msg_attitude_pack(system_id(),
+// 		component_id,
+// 		&tx_mav_msg,
+// 		get_time_us(),
+// 		rotation_vector.at<double>(0, 1),
+// 		rotation_vector.at<double>(0, 0),
+// 		rotation_vector.at<double>(0, 2),
+// 		0, 0, 0);
+// 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
+// 	}
 
 	if(with_out_stream && Core::video_server) {
 		cv::Mat match_img;
-		cv::drawMatches(old_image, old_features,
-			new_image, new_features,
+		cv::drawMatches(scenes.front(), landmarks.keypoints,
+			scenes.back(), keypoints,
 			matches,
 			match_img,
 			cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
@@ -256,7 +273,7 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 	//FIXME: dirty hack
 	//throw first frames away
 	static int counter = 0;
-	if(counter < 10) {
+	if(counter < 5) {
 		counter++;
 		return;
 	}
@@ -268,23 +285,23 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 	Lock sync_lock(sync_mutex);
 	if(take_new_image) {
 		// make a new reference image
-		video_data.copyTo(old_image);
-		old_features.clear();
-		memcpy(&old_attitude, &attitude, sizeof(mavlink_attitude_t));
+		video_data.copyTo(scenes.front());
+		landmarks.clear();
+// 		memcpy(&old_attitude, &attitude, sizeof(mavlink_attitude_t));
 		if(take_new_image & (1 << 1)) {
 			//TODO: send ACK
 		}
 		take_new_image = 0;
-		log(name(), ": took new image", Logger::LOGLEVEL_DEBUG);
+		log("took new reference image", Logger::LOGLEVEL_DEBUG);
 	} else {
-		video_data.copyTo(new_image);
-		new_features.clear();
-		memcpy(&new_attitude, &attitude, sizeof(mavlink_attitude_t));
-		Logger::log(name(), "attitude of new image",
-			rad2deg(new_attitude.roll),
-			rad2deg(new_attitude.pitch),
-			rad2deg(new_attitude.yaw),
-			Logger::LOGLEVEL_DEBUG, _loglevel);
+		video_data.copyTo(scenes.back());
+// 		new_features.clear();
+// 		memcpy(&new_attitude, &attitude, sizeof(mavlink_attitude_t));
+// 		Logger::log(name(), "attitude of new image",
+// 			rad2deg(new_attitude.roll),
+// 			rad2deg(new_attitude.pitch),
+// 			rad2deg(new_attitude.yaw),
+// 			Logger::LOGLEVEL_DEBUG, _loglevel);
 	}
 	new_video_data = true;
 }
@@ -298,10 +315,6 @@ void SLAMApp::load_calibration_data(const std::string &filename) {
 
 	fs["camera_matrix"] >> cam_matrix;
 	fs["distortion_coefficients"] >> dist_coeffs;
-}
-
-void SLAMApp::print(std::ostream &os) const {
-	AppLayer<mavlink_message_t>::print(os);
 }
 
 void SLAMApp::run() {

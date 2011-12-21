@@ -53,14 +53,14 @@ const float BriskScaleSpace::basicSize_             =12.0;
 
 // constructors
 BriskDescriptorExtractor::BriskDescriptorExtractor(bool rotationInvariant,
-		bool scaleInvariant, float patternScale){
+		bool scaleInvariant, float patternScale) :
+		rotationInvariance(rotationInvariant),
+		scaleInvariance(scaleInvariant) {
 
-	std::vector<float> rList;
-	std::vector<int> nList;
+	std::vector<float> rList(5);
+	std::vector<int> nList(5);
 
 	// this is the standard pattern found to be suitable also
-	rList.resize(5);
-	nList.resize(5);
 	const double f=0.85*patternScale;
 
 	rList[0]=f*0;
@@ -75,16 +75,14 @@ BriskDescriptorExtractor::BriskDescriptorExtractor(bool rotationInvariant,
 	nList[3]=15;
 	nList[4]=20;
 
-	rotationInvariance=rotationInvariant;
-	scaleInvariance=scaleInvariant;
 	generateKernel(rList,nList,5.85*patternScale,8.2*patternScale);
 
 }
 BriskDescriptorExtractor::BriskDescriptorExtractor(std::vector<float> &radiusList,
 		std::vector<int> &numberList, bool rotationInvariant, bool scaleInvariant,
-		float dMax, float dMin, std::vector<int> indexChange){
-	rotationInvariance=rotationInvariant;
-	scaleInvariance=scaleInvariant;
+		float dMax, float dMin, std::vector<int> indexChange) :
+		rotationInvariance(rotationInvariant),
+		scaleInvariance(scaleInvariant) {
 	generateKernel(radiusList,numberList,dMax,dMin,indexChange);
 }
 
@@ -365,8 +363,7 @@ void BriskDescriptorExtractor::computeImpl(const Mat& image,
 
 	//Remove keypoints very close to the border
 	size_t ksize=keypoints.size();
-	std::vector<int> kscales; // remember the scale per keypoint
-	kscales.resize(ksize);
+	std::vector<int> kscales(ksize); // remember the scale per keypoint
 	static const float log2 = 0.693147180559945;
 	static const float lb_scalerange = log(scalerange_)/(log2);
 	std::vector<cv::KeyPoint>::iterator beginning = keypoints.begin();
@@ -518,11 +515,11 @@ void BriskDescriptorExtractor::computeImpl(const Mat& image,
 	delete [] _values;
 }
 
-int BriskDescriptorExtractor::descriptorSize() const{
+__inline__ int BriskDescriptorExtractor::descriptorSize() const{
 	return strings_;
 }
 
-int BriskDescriptorExtractor::descriptorType() const{
+__inline__ int BriskDescriptorExtractor::descriptorType() const{
 	return CV_8U;
 }
 
