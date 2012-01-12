@@ -74,6 +74,7 @@ class SLAMApp : public MavlinkAppLayer,
 #endif
 		cv::Mat rotation_vector;
 		cv::Mat translation_vector;
+		std::ofstream log_file;
 
 		void extract_features();
 		void load_calibration_data(const std::string &filename);

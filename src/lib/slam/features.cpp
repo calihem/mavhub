@@ -4,6 +4,17 @@
 
 #include <iostream>     // cout
 #include <iomanip>	//setprecision
+#include <cmath>	//sin, cos
+#include <limits>	//epsilon
+
+#define VERBOSE 1
+
+// little debug makro
+#if VERBOSE >= 1
+#define dout if(1) std::cout
+#else
+#define dout if(0) std::cout
+#endif
 
 namespace hub {
 namespace slam {
@@ -25,37 +36,44 @@ void landmarks_t::clear() {
 	scene_ids.clear();
 }
 
-void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	cv::Mat &camera_matrix,
-	cv::Mat &distortion_coefficients,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat &camera_matrix,
+	const cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
-	cv::Mat &translation_vector) {
+	cv::Mat &translation_vector,
+	std::vector<char> matches_mask) {
+
+	if(matches_mask.empty()) {
+		matches_mask.assign(matches.size(), 1);
+	} else if(matches_mask.size() != matches.size()) {
+		return -1;
+	}
+
+	//TODO: check dimensions of camera_matrix and distortion_coefficients
 
 	double fx = camera_matrix.at<double>(0, 0);
 	double fy = camera_matrix.at<double>(1, 1);
-	//FIXME: check for |fx| <= 0+eps
-	if(fx == 0.0) fx = 1.0;
-	if(fy == 0.0) fy = 1.0;
+	if( abs(fx) <= std::numeric_limits<double>::epsilon())fx = 1.0;
+	if( abs(fy) <= std::numeric_limits<double>::epsilon()) fy = 1.0;
 
 	std::vector<cv::Point3f> object_points;
 	object_points.reserve(src_keypoints.size());
 	std::vector<cv::Point2f> image_points;
 	image_points.reserve(dst_keypoints.size());
 	for(size_t i = 0; i < matches.size(); i++) {
-		for(size_t j = 0; j < matches[i].size(); j++) {
-			//FIXME
-			// determine (wrong) object points
-			int src_index = matches[i][j].queryIdx;
-			const cv::KeyPoint& src_keypoint = src_keypoints[src_index];
-			object_points.push_back( cv::Point3f(src_keypoint.pt.x/fx, src_keypoint.pt.y/fy, 0.0) );
+		if( matches_mask[i] == 0) continue;
+		//FIXME
+		// determine (wrong) object points
+		int src_index = matches[i].queryIdx;
+		const cv::KeyPoint& src_keypoint = src_keypoints[src_index];
+		object_points.push_back( cv::Point3f(src_keypoint.pt.x/fx, src_keypoint.pt.y/fy, 0.0) );
 
-			// add destination image points of matched points
-			int dst_index = matches[i][j].trainIdx;
-			const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
-			image_points.push_back(dst_keypoint.pt);
-		}
+		// add destination image points of matched points
+		int dst_index = matches[i].trainIdx;
+		const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
+		image_points.push_back(dst_keypoint.pt);
 	}
 
 	try {
@@ -70,14 +88,16 @@ void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 			false ); //use extrinsic guess
 	}
 	catch(cv::Exception &e) {
+		return -2;
 // 		rotation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
 // 		rotation_vector.copyTo(translation_vector);
 	}
+	
+	return 0;
 }
 
 void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask) {
 	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
-std::cout << i << ": " << landmarks.counters[i] << std::endl;
 		if(landmarks.counters[i] < 70)
 			//set complete row
 // 			mask.at<uint8_t>(i, 0) = 0;
@@ -106,6 +126,214 @@ void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::D
 	}
 }
 
+//FIXME: improve performance
+void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
+	std::vector<std::vector<cv::DMatch> > filtered_matches;
+
+// 	std::list<int> query_indicies, train_indicies;
+	int query_index, train_index;
+	for(size_t i = 0; i < matches.size(); i++) {
+		std::vector<cv::DMatch> row_matches;
+		for(size_t j = 0; j < matches[i].size(); j++) {
+			query_index = matches[i][j].queryIdx;
+			train_index = matches[i][j].trainIdx;
+			bool is_ambigous = false;
+			for(size_t ii = 0; ii < matches.size(); ii++) {
+				for(size_t jj = 0; jj < matches[ii].size(); jj++) {
+					if (train_index == matches[ii][jj].trainIdx
+					&& query_index != matches[ii][jj].queryIdx)
+						is_ambigous = true;
+					if (query_index == matches[ii][jj].queryIdx
+					&& train_index != matches[ii][jj].trainIdx)
+						is_ambigous = true;
+				}
+			}
+// 			if(is_ambigous) {
+			if(!is_ambigous) {
+				row_matches.push_back(matches[i][j]);
+			}
+// 			query_indicies.push_back(matches[i][j].queryIdx);
+// 			train_indicies.push_back(matches[i][j].trainIdx);
+		}
+		if(!row_matches.empty())
+			filtered_matches.push_back(row_matches);
+	}
+
+	matches = filtered_matches;
+// 	query_indicies.sort(); train_indicies.sort();
+}
+
+//TODO
+void filter_lis(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		std::vector<std::vector<cv::DMatch> > &matches) {
+
+	unsigned int num_of_matches = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		num_of_matches += matches[i].size();
+	}
+// 	vector< pair<int, int> > hor_sorted_match_indicies(num_of_matches);
+// 	for(size_t i = 0; i < matches.size(); i++) {
+// 		num_of_matches += matches[i].size();
+// 	}
+	
+// 	vector<cv::DMatch> hor_sorted_matches;
+// 	for(size_t i = 0; i < matches.size(); i++) {
+// 		hor_sorted_matches.push_back(matches[i]);
+// 	}
+// 	sort(hor_sorted_matches.begin(), hor_sorted_matches.end(), sort_matches_horizontal);
+
+
+	unsigned int index_counter = 0;
+	std::vector<int> row_indicies(matches.size(), 0);
+	while (index_counter < num_of_matches) {
+		int min_row_index = 0;
+		float minimum = 0.0;
+		for(size_t i = 0; i < matches.size(); i++) {
+			int keypoint_index = matches[i][row_indicies[i]].queryIdx;
+			if( src_keypoints[keypoint_index].pt.x < minimum ) {
+				minimum = src_keypoints[keypoint_index].pt.x;
+				min_row_index = i;
+			}
+		}
+		matches[min_row_index][row_indicies[min_row_index]].imgIdx = index_counter++;
+		row_indicies[min_row_index]++;
+	}
+
+	std::vector<cv::DMatch> hor_sorted_matches;
+	row_indicies =  std::vector<int>(matches.size(), 0);
+	while(hor_sorted_matches.size() < num_of_matches) {
+		int min_row_index = 0;
+		float minimum = 0.0;
+		for(size_t i = 0; i < matches.size(); i++) {
+			int keypoint_index = matches[i][row_indicies[i]].trainIdx;
+			if( dst_keypoints[keypoint_index].pt.x < minimum ) {
+				minimum = dst_keypoints[keypoint_index].pt.x;
+				min_row_index = i;
+			}
+		}
+ 		hor_sorted_matches.push_back( matches[min_row_index][row_indicies[min_row_index]] );
+		row_indicies[min_row_index]++;
+	}
+}
+
+void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
+		const std::vector<cv::DMatch> &backward_matches,
+		std::vector<char> mask) {
+
+	if(matches.size() != mask.size()) return;
+
+int counter = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		int src_index = matches[i].queryIdx;
+		int dst_index = matches[i].trainIdx;
+
+		mask[i] = 0;
+counter++;
+		// begin inner loop
+		for(size_t j = 0; j<backward_matches.size(); j++) {
+			if(backward_matches[j].queryIdx == dst_index
+			&& backward_matches[j].trainIdx == src_index) {
+				mask[i] = 1;
+counter--;
+				//stop inner loop
+				break;
+			}
+		}
+	}
+	
+dout << "filtered " << counter << " matches by backward matching" << std::endl;
+}
+
+//FIXME: improve performance
+void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> mask) {
+
+	if(matches.size() != mask.size());
+	std::vector<float> match_length;
+	std::vector<float> match_angle;
+	cv::L2<float> euclidean_distance;
+	cv::L1<float> manhattan_distance;
+
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		unsigned int src_index = matches[i].queryIdx;
+		unsigned int dst_index = matches[i].trainIdx;
+		float length = euclidean_distance(&(src_keypoints[src_index].pt.x), &(dst_keypoints[dst_index].pt.x), 2);
+		match_length.push_back(length);
+		float x_length = manhattan_distance(&(src_keypoints[src_index].pt.x), &(dst_keypoints[dst_index].pt.x), 1);
+		float y_length = manhattan_distance(&(src_keypoints[src_index].pt.y), &(dst_keypoints[dst_index].pt.y), 1);
+		float angle;
+		if (x_length > 0.0)
+			angle = std::atan(y_length/ x_length);
+		else
+			angle = 0.0;
+		match_angle.push_back(angle);
+	}
+
+	float mean_length = mean(match_length);
+	float mean_angle = mean(match_angle);
+	float s_dev_length = std_dev(match_length);
+	float s_dev_angle = std_dev(match_angle);
+
+int counter = 0;
+	std::vector<cv::DMatch> filtered_matches;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		if( abs(match_length[i] - mean_length) >= s_dev_length
+		|| abs(match_angle[i] - mean_angle) >= s_dev_angle ) {
+			mask[i] = 0;
+counter++;
+		}
+	}
+dout << "filtered " << counter << " matches by distribution" << std::endl;
+}
+   
+void filter_matches_by_landmarks(const landmarks_t &landmarks, std::vector<std::vector<cv::DMatch> > &matches) {
+	std::vector<std::vector<cv::DMatch> > filtered_matches;
+
+	for(size_t i = 0; i < matches.size(); i++) {
+		std::vector<cv::DMatch> row_matches;
+		for(size_t j = 0; j < matches[i].size(); j++) {
+			unsigned int index = matches[i][j].queryIdx;
+			if(landmarks.counters[index] < 80) { // good match
+				row_matches.push_back(matches[i][j]);
+			} //else
+// 				std::cout << index << ": " << landmarks.counters[index] << std::endl;
+		}
+		if(!row_matches.empty())
+			filtered_matches.push_back(row_matches);
+	}
+
+	matches = filtered_matches;
+}
+
+void fusion_matches(const std::vector<cv::DMatch> &forward_matches,
+		    const std::vector<cv::DMatch> &backward_matches,
+		    std::vector<cv::DMatch> &matches) {
+
+	for(size_t i = 0; i < forward_matches.size(); i++) {
+		int src_index = forward_matches[i].queryIdx;
+		int dst_index = forward_matches[i].trainIdx;
+
+		// begin inner loop
+		for(size_t j = 0; j<backward_matches.size(); j++) {
+			if(backward_matches[j].queryIdx == dst_index
+			&& backward_matches[j].trainIdx == src_index) {
+				matches.push_back(forward_matches[i]);
+				//stop inner loop
+				break;
+			}
+		}
+	}
+}
+
+//FIXME: improve performance
 void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches,
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
 		    std::vector<std::vector<cv::DMatch> > &matches) {
@@ -119,9 +347,9 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 			// begin inner loops
 			for(size_t ii = 0; ii < backward_matches.size(); ii++) {
 				for(size_t jj = 0; jj < backward_matches[ii].size(); jj++) {
-					if(backward_matches[ii][jj].queryIdx == dst_index) {
-						if(backward_matches[ii][jj].trainIdx == src_index)
-							row_matches.push_back(forward_matches[i][j]); 
+					if(backward_matches[ii][jj].queryIdx == dst_index
+					&& backward_matches[ii][jj].trainIdx == src_index) {
+						row_matches.push_back(forward_matches[i][j]); 
 						//stop inner loops
 						jj = backward_matches[ii].size();
 						ii = backward_matches.size() - 1;

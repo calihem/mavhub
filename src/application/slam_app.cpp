@@ -32,7 +32,8 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	scenes(2),
 	feature_detector(60, 3), //threshold, octaves
 	rotation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
-	translation_vector( cv::Mat::zeros(3, 1, CV_64FC1) )
+	translation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
+	log_file("egomotion.data")
 	{
 
 	pthread_mutex_init(&sync_mutex, NULL);
@@ -63,6 +64,9 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	get_value_from_args("calibration_data", calib_filename);
 	if(!calib_filename.empty())
 		load_calibration_data(calib_filename);
+	
+	log_file << "# time [ms]" << " 3D rotation vector" << "3D translation vector" << std::endl;
+	log_file << "#" << std::endl;
 }
 
 SLAMApp::~SLAMApp() {}
@@ -116,14 +120,30 @@ void SLAMApp::extract_features() {
 	}
 
 	// create filter mask
-	cv::Mat mask = cv::Mat::ones(landmarks.keypoints.size(), keypoints.size(), CV_8UC1);
-	filter_landmarks(landmarks, mask);
+// 	cv::Mat mask = cv::Mat::ones(landmarks.keypoints.size(), keypoints.size(), CV_8UC1);
+// 	filter_landmarks(landmarks, mask);
 
 	// match features
-	std::vector<std::vector<cv::DMatch> > matches;
-	matcher.radiusMatch(landmarks.descriptors, descriptors, matches, 100.0, mask);	//0.21 for L2
+// 	std::vector<std::vector<cv::DMatch> > matches;
+// 	matcher.radiusMatch(landmarks.descriptors, descriptors, matches, 100.0, mask);	//0.21 for L2
+// 	matcher.radiusMatch(landmarks.descriptors, descriptors, matches, 100.0);	//0.21 for L2
+// 	matcher.knnMatch(landmarks.descriptors, descriptors, matches, 1);
 
-	update_landmarks(landmarks, matches);
+	std::vector<cv::DMatch> matches;
+	matcher.match(landmarks.descriptors, descriptors, matches);
+	std::vector<char> matches_mask(matches.size(), 1);
+
+	std::vector<cv::DMatch> backward_matches;
+	matcher.match(descriptors, landmarks.descriptors, backward_matches);
+	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
+
+// 	filter_ambigous_matches(matches);
+
+	filter_matches_by_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
+
+// 	update_landmarks(landmarks, matches);
+// 	filter_matches_by_landmarks(landmarks, matches);
+
 	// get change of attitude
 	//TODO: time check of attitude
 // 	mavlink_attitude_t attitude_change;
@@ -186,29 +206,43 @@ void SLAMApp::extract_features() {
 // 	double yaw = acos( (H.at<double>(0,0) + H.at<double>(1,1))/2.0 );
 // 	std::cout << "yaw = " << rad2deg(yaw) << " (" << H.at<double>(0,2) << ", " << H.at<double>(1,2) << std::endl;
 
-// 	cv::Mat rotation_vector;
-// 	cv::Mat translation_vector;
-/*	determine_egomotion(old_features,
-		new_features,
+	cv::Mat rotation_vector;
+	cv::Mat translation_vector;
+	egomotion(landmarks.keypoints,
+		keypoints,
 		matches,
 		cam_matrix,
 		dist_coeffs,
 		rotation_vector,
-		translation_vector);*/
+		translation_vector,
+		matches_mask);
+	if(rotation_vector.empty() || translation_vector.empty()) {
+		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
+		return;
+	}
+
+// 	log_file << get_time_ms()
+// 		<< " " << rotation_vector.at<double>(0, 1)
+// 		<< " " << rotation_vector.at<double>(0, 2)
+// 		<< " " << rotation_vector.at<double>(0, 3)
+// 		<< " " << translation_vector.at<double>(0, 1)
+// 		<< " " << translation_vector.at<double>(0, 2)
+// 		<< " " << translation_vector.at<double>(0, 3)
+// 		<< std::endl;
 // 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
 //	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
-// 	{
-// 	Lock tx_lock(tx_mav_mutex);
-// 	mavlink_msg_attitude_pack(system_id(),
-// 		component_id,
-// 		&tx_mav_msg,
-// 		get_time_us(),
-// 		rotation_vector.at<double>(0, 1),
-// 		rotation_vector.at<double>(0, 0),
-// 		rotation_vector.at<double>(0, 2),
-// 		0, 0, 0);
-// 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
-// 	}
+	{
+	Lock tx_lock(tx_mav_mutex);
+	mavlink_msg_attitude_pack(system_id(),
+		component_id,
+		&tx_mav_msg,
+		get_time_us(),
+		rotation_vector.at<double>(0, 1),
+		rotation_vector.at<double>(0, 0),
+		rotation_vector.at<double>(0, 2),
+		0, 0, 0);
+	AppLayer<mavlink_message_t>::send(tx_mav_msg);
+	}
 
 	if(with_out_stream && Core::video_server) {
 		cv::Mat match_img;
@@ -217,7 +251,9 @@ void SLAMApp::extract_features() {
 			matches,
 			match_img,
 			cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
-			std::vector<std::vector<char> >(),
+			matches_mask,
+// 			std::vector<char>(),
+// 			std::vector<std::vector<char> >(),
 			cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS
 		);
 		//FIXME:

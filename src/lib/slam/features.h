@@ -38,17 +38,51 @@ struct landmarks_t {
 	std::vector<int> scene_ids;
 };
 
-void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+/**
+ * \brief Determine egomotion based on feature matches.
+ * \param[in] src_keypoints
+ * \param[in] dst_keypoints
+ * \param[in] matches
+ * \param[in] camera_matrix
+ * \param[in] distortion_coefficients
+ * \param[out] rotation_vector
+ * \param[out] translation_vector 
+ * \param[in] matches_mask matches.at(i) will only be considered if matches_mask.at(i) is non-zero
+ */
+int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	cv::Mat &camera_matrix,
-	cv::Mat &distortion_coefficients,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat &camera_matrix,
+	const cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
-	cv::Mat &translation_vector);
+	cv::Mat &translation_vector,
+	std::vector<char> matches_mask = std::vector<char>() );
 
+
+/// Filter out landmarks which have a small counter value 
 void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask);
 
+/// Increase counter value of landmark if it was matched
 void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches);
+
+/// Filter out matches 
+void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
+
+void filter_lis(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		std::vector<std::vector<cv::DMatch> > &matches);
+
+/// Filter out matches which have no corresponding backward match.
+void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
+		const std::vector<cv::DMatch> &backward_matches,
+		std::vector<char> mask);
+
+void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> mask);
+
+void filter_matches_by_landmarks(const landmarks_t &landmarks, std::vector<std::vector<cv::DMatch> > &matches);
 
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
@@ -95,31 +129,32 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix);
 
-template <class DescriptorDistance, class RadiusDistance>
-class RadiusMatcher : public cv::DescriptorMatcher {
-public:
-	RadiusMatcher( DescriptorDistance dd = DescriptorDistance(), RadiusDistance rd = RadiusDistance() );
-	virtual ~RadiusMatcher() {}
-	virtual bool isMaskSupported() const { return false; }
-	virtual cv::Ptr<cv::DescriptorMatcher> clone(bool emptyTrainData=false) const;
-
-private:
-	DescriptorDistance descr_distance;
-	RadiusDistance radius_distance;
-};
-
-template <typename Distance>
-int test_foo(const std::vector<cv::KeyPoint>& src_keypoints, Distance distance_metric = Distance());
-
-template <typename Distance>
-int test_foo(const std::vector<cv::KeyPoint>& src_keypoints, Distance distance_metric) {
-	if(src_keypoints.size() < 2) return 0;
-	return distance_metric(&(src_keypoints[0].pt.x), &(src_keypoints[1].pt.x), 2);
-}
-
 // ----------------------------------------------------------------------------
 // IMU Filter
 // ----------------------------------------------------------------------------
+template <typename T>
+T mean(const std::vector<T> &values) {
+	if(values.size() == 0) return 0;
+
+	T sum = 0;
+	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
+		sum += *i;
+	}
+	return sum / values.size();
+}
+
+template <typename T>
+T std_dev(const std::vector<T> &values) {
+	if(values.size() <= 1) return 0;
+
+	T m = mean(values);
+	T sum = 0;
+	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
+		sum += std::pow(*i-m, 2);
+	}
+	return sqrt( sum/(values.size()-1) );
+}
+
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
@@ -203,21 +238,6 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	//thus we have used unscaled version to calculate derivatives, we have to do it now
 	int num_pixels = (2*box_radius+1)*(2*box_radius+1);
 	return min_lambda / (4.0*num_pixels);
-}
-
-// ----------------------------------------------------------------------------
-// RadiusMatcher
-// ----------------------------------------------------------------------------
-template <class DescriptorDistance, class RadiusDistance>
-RadiusMatcher<DescriptorDistance, RadiusDistance>::RadiusMatcher( DescriptorDistance dd, RadiusDistance rd ) :
-	descr_distance(dd),
-	radius_distance(rd) {
-}
-
-template <class DescriptorDistance, class RadiusDistance>
-cv::Ptr<cv::DescriptorMatcher> RadiusMatcher<DescriptorDistance, RadiusDistance>::clone(bool emptyTrainData) const {
-	//FIXME
-	return cv::Ptr<cv::DescriptorMatcher>();
 }
 
 } // namespace slam
