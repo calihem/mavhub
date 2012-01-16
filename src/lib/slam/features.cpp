@@ -163,63 +163,113 @@ void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
 // 	query_indicies.sort(); train_indicies.sort();
 }
 
-//TODO
-void filter_lis(const std::vector<cv::KeyPoint> src_keypoints,
-		const std::vector<cv::KeyPoint> dst_keypoints,
-		std::vector<std::vector<cv::DMatch> > &matches) {
+void find_lis(const std::vector<int> &sequence, std::vector<int> &lis) {
 
-	unsigned int num_of_matches = 0;
-	for(size_t i = 0; i < matches.size(); i++) {
-		num_of_matches += matches[i].size();
+	lis.clear();
+	lis.push_back(0);
+
+	std::vector<int> tmp_vec(sequence.size());
+	int lower, upper;
+	for(size_t i = 0; i < sequence.size(); i++) {
+		// if next element is greater than last element of longest subseq
+		if( sequence[lis.back()] < sequence[i] ) {
+			tmp_vec[i] = lis.back();
+			lis.push_back(i);
+			continue;
+		}
+		
+		// binary search to find smallest element
+		for(lower = 0, upper = lis.size()-1; lower < upper;) {
+			int bin_index = (lower + upper) / 2;
+			if(sequence[lis[bin_index]] < sequence[i])
+				lower = bin_index + 1;
+			else
+				upper = bin_index;
+		}
+		
+		// update lis if new value is smaller then previously
+		if(sequence[i] < sequence[lis[lower]]) {
+			if(lower > 0)
+				tmp_vec[i] = lis[lower-1];
+			lis[lower] = i;
+		}
 	}
-// 	vector< pair<int, int> > hor_sorted_match_indicies(num_of_matches);
-// 	for(size_t i = 0; i < matches.size(); i++) {
-// 		num_of_matches += matches[i].size();
-// 	}
 	
-// 	vector<cv::DMatch> hor_sorted_matches;
-// 	for(size_t i = 0; i < matches.size(); i++) {
-// 		hor_sorted_matches.push_back(matches[i]);
-// 	}
-// 	sort(hor_sorted_matches.begin(), hor_sorted_matches.end(), sort_matches_horizontal);
+	for(lower = lis.size(), upper = lis.back(); lower--; upper = tmp_vec[upper])
+		lis[lower] = upper;
+}
 
+//FIXME: improve performance
+//TODO
+void filter_matches_by_lis(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask) {
 
-	unsigned int index_counter = 0;
-	std::vector<int> row_indicies(matches.size(), 0);
-	while (index_counter < num_of_matches) {
-		int min_row_index = 0;
-		float minimum = 0.0;
-		for(size_t i = 0; i < matches.size(); i++) {
-			int keypoint_index = matches[i][row_indicies[i]].queryIdx;
-			if( src_keypoints[keypoint_index].pt.x < minimum ) {
-				minimum = src_keypoints[keypoint_index].pt.x;
-				min_row_index = i;
-			}
-		}
-		matches[min_row_index][row_indicies[min_row_index]].imgIdx = index_counter++;
-		row_indicies[min_row_index]++;
+	if(matches.size() != mask.size()) return;
+
+	int valid_before = 0;
+	for(size_t i=0; i<mask.size(); i++) {
+		if(mask[i]) valid_before++;
 	}
 
-	std::vector<cv::DMatch> hor_sorted_matches;
-	row_indicies =  std::vector<int>(matches.size(), 0);
-	while(hor_sorted_matches.size() < num_of_matches) {
-		int min_row_index = 0;
-		float minimum = 0.0;
-		for(size_t i = 0; i < matches.size(); i++) {
-			int keypoint_index = matches[i][row_indicies[i]].trainIdx;
-			if( dst_keypoints[keypoint_index].pt.x < minimum ) {
-				minimum = dst_keypoints[keypoint_index].pt.x;
-				min_row_index = i;
+	std::vector<int> sequence(matches.size());
+	//determine horizontal order of matches (with respect to src_keypoints)
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) {
+			continue;
+		}
+		const float x_min = src_keypoints[matches[i].queryIdx].pt.x; // minimum of current match
+		size_t x_min_counter = 0; // how many matches are smaller than current match
+		for(size_t j = 0; j < matches.size(); j++) {
+			size_t kp_index = matches[j].queryIdx;
+			if(src_keypoints[kp_index].pt.x < x_min) {
+				x_min_counter++;
 			}
 		}
- 		hor_sorted_matches.push_back( matches[min_row_index][row_indicies[min_row_index]] );
-		row_indicies[min_row_index]++;
+		sequence[i] = x_min_counter;
 	}
+
+	float last_min = 0.0;
+	std::vector<int> sorted_sequence;
+	sorted_sequence.reserve(matches.size());
+	std::map<int,int> seq2index_map; //maps sequence index to matches index
+	//sort matches (with respect to dst_keypoints)
+	for(size_t i = 0; i < matches.size(); i++) {
+		float x_min = std::numeric_limits<float>::max();
+		size_t x_min_index = 0;
+		for(size_t j = 0; j < matches.size(); j++) {
+			if(mask[j] == 0) continue;
+			size_t kp_index = matches[j].trainIdx;
+			if(dst_keypoints[kp_index].pt.x < x_min
+			&& dst_keypoints[kp_index].pt.x > last_min) {
+				x_min = dst_keypoints[kp_index].pt.x;
+				x_min_index = j;
+			}
+		}
+		sorted_sequence.push_back(sequence[x_min_index]);
+		seq2index_map.insert( std::make_pair(sequence[x_min_index], x_min_index));
+		last_min = x_min;
+	}
+
+	std::vector<int> lis;
+	find_lis(sorted_sequence, lis);
+	
+	mask.assign(mask.size(), 0);
+	for(size_t i = 0; i < lis.size(); i++) {
+		mask[ seq2index_map[lis[i]] ] = 1;
+	}
+
+	int valid_after = 0;
+	for(size_t i=0; i<mask.size(); i++) {
+		if(mask[i]) valid_after++;
+	}
+	dout << "filtered " << valid_before - valid_after << " matches by lis" << std::endl;
 }
 
 void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
 		const std::vector<cv::DMatch> &backward_matches,
-		std::vector<char> mask) {
+		std::vector<char> &mask) {
 
 	if(matches.size() != mask.size()) return;
 
@@ -247,13 +297,72 @@ counter--;
 dout << "filtered " << counter << " matches by backward matching" << std::endl;
 }
 
+void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask) {
+
+	if(matches.size() != mask.size()) return;
+
+	// filter in horizontal direction first (reduces the computation cost of vertical filter)
+	std::vector<float> x_distances;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const unsigned int x_distance = abs(src_keypoints[src_index].pt.x - dst_keypoints[dst_index].pt.x);
+		x_distances.push_back(x_distance);
+	}
+	if(x_distances.size() == 0) return;
+
+	// calculate median and MAD as robust estimations of mean and standard deviation
+	const float x_median = const_median(x_distances);
+	const float x_mad = mad(x_distances, x_median);
+
+	size_t distance_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		if(abs(x_distances[distance_index] - x_median) > 3*x_mad) {
+			mask[i] = 0;
+		}
+		distance_index++;
+	}
+
+	// filter in vertical direction
+	std::vector<float> y_distances;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const unsigned int y_distance = abs(src_keypoints[src_index].pt.y - dst_keypoints[dst_index].pt.y);
+		y_distances.push_back(y_distance);
+	}
+	if(y_distances.size() == 0) return;
+
+	// calculate median and MAD as robust estimations of mean and standard deviation
+	const float y_median = const_median(y_distances);
+	const float y_mad = mad(y_distances, y_median);
+
+	distance_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		if( abs(y_distances[distance_index] - y_median) > 3*y_mad ) {
+			mask[i] = 0;
+		}
+		distance_index++;
+	}
+}
+
 //FIXME: improve performance
 void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoints,
 		const std::vector<cv::KeyPoint> dst_keypoints,
 		const std::vector<cv::DMatch> &matches,
-		std::vector<char> mask) {
+		std::vector<char> &mask) {
 
-	if(matches.size() != mask.size());
+	if(matches.size() != mask.size()) return;
+
 	std::vector<float> match_length;
 	std::vector<float> match_angle;
 	cv::L2<float> euclidean_distance;
@@ -281,15 +390,16 @@ void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoint
 	float s_dev_angle = std_dev(match_angle);
 
 int counter = 0;
-	std::vector<cv::DMatch> filtered_matches;
+	size_t index = 0;
 	for(size_t i = 0; i < matches.size(); i++) {
 		if(mask[i] == 0) continue;
 
-		if( abs(match_length[i] - mean_length) >= s_dev_length
-		|| abs(match_angle[i] - mean_angle) >= s_dev_angle ) {
+		if( abs(match_length[index] - mean_length) > s_dev_length
+		|| abs(match_angle[index] - mean_angle) > s_dev_angle ) {
 			mask[i] = 0;
 counter++;
 		}
+		index++;
 	}
 dout << "filtered " << counter << " matches by distribution" << std::endl;
 }

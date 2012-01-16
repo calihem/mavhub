@@ -68,19 +68,27 @@ void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::D
 /// Filter out matches 
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
 
-void filter_lis(const std::vector<cv::KeyPoint> src_keypoints,
+void find_lis(const std::vector<int> &sequence, std::vector<int> &lis);
+
+void filter_matches_by_lis(const std::vector<cv::KeyPoint> src_keypoints,
 		const std::vector<cv::KeyPoint> dst_keypoints,
-		std::vector<std::vector<cv::DMatch> > &matches);
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask);
 
 /// Filter out matches which have no corresponding backward match.
 void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
 		const std::vector<cv::DMatch> &backward_matches,
-		std::vector<char> mask);
+		std::vector<char> &mask);
+
+void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask);
 
 void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoints,
 		const std::vector<cv::KeyPoint> dst_keypoints,
 		const std::vector<cv::DMatch> &matches,
-		std::vector<char> mask);
+		std::vector<char> &mask);
 
 void filter_matches_by_landmarks(const landmarks_t &landmarks, std::vector<std::vector<cv::DMatch> > &matches);
 
@@ -141,6 +149,42 @@ T mean(const std::vector<T> &values) {
 		sum += *i;
 	}
 	return sum / values.size();
+}
+
+/**
+ * \brief Calculate median using selection algorithm in O(n)
+ */
+template <typename T>
+T const_median(const std::vector<T> &values) {
+	typename std::vector<T> values_copy(values);
+	return median(values_copy);
+}
+
+template <typename T>
+T median(std::vector<T> &values) {
+	typename std::vector<T>::iterator first = values.begin();
+	typename std::vector<T>::iterator last = values.end();
+	typename std::vector<T>::iterator middle = first + (last - first) / 2;
+	std::nth_element(first, middle, last);
+	return *middle;
+}
+
+/**
+ * \brief Calculate the median absolute deviation.
+ * \param[in] values A vector of values.
+ * \param[in] median The median of the given values.
+ */
+template <typename T>
+T mad(const std::vector<T> &values, const T median) {
+	if(values.size() == 0)
+		return 0;
+
+	std::vector<T> absolute_deviations;
+	absolute_deviations.reserve(values.size());
+	for(size_t i=0; i<values.size(); i++) {
+		absolute_deviations.push_back( abs(values[i] - median) );
+	}
+	return hub::slam::median(absolute_deviations);
 }
 
 template <typename T>

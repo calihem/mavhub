@@ -109,6 +109,10 @@ void SLAMApp::extract_features() {
 		return;
 	}
 
+	uint64_t stop_time = get_time_ms();
+	log( "feature extraction needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
+
 	//TODO: filter features (shi-tomasi)
 
 	// calculate descriptors
@@ -119,27 +123,44 @@ void SLAMApp::extract_features() {
 		return;
 	}
 
+	stop_time = get_time_ms();
+	log( "descriptors needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
+
 	// create filter mask
 // 	cv::Mat mask = cv::Mat::ones(landmarks.keypoints.size(), keypoints.size(), CV_8UC1);
 // 	filter_landmarks(landmarks, mask);
-
-	// match features
-// 	std::vector<std::vector<cv::DMatch> > matches;
-// 	matcher.radiusMatch(landmarks.descriptors, descriptors, matches, 100.0, mask);	//0.21 for L2
-// 	matcher.radiusMatch(landmarks.descriptors, descriptors, matches, 100.0);	//0.21 for L2
-// 	matcher.knnMatch(landmarks.descriptors, descriptors, matches, 1);
 
 	std::vector<cv::DMatch> matches;
 	matcher.match(landmarks.descriptors, descriptors, matches);
 	std::vector<char> matches_mask(matches.size(), 1);
 
+	stop_time = get_time_ms();
+	log( "forward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
+
 	std::vector<cv::DMatch> backward_matches;
 	matcher.match(descriptors, landmarks.descriptors, backward_matches);
+
+	stop_time = get_time_ms();
+	log( "backward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
+
 	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
 
-// 	filter_ambigous_matches(matches);
+	stop_time = get_time_ms();
+	log( "forward/backward filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
 
-	filter_matches_by_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
+	filter_matches_by_robust_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
+
+	stop_time = get_time_ms();
+	log( "distribution filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
+
+// 	filter_matches_by_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
+
+// 	filter_matches_by_lis(landmarks.keypoints, keypoints, matches, matches_mask);
 
 // 	update_landmarks(landmarks, matches);
 // 	filter_matches_by_landmarks(landmarks, matches);
@@ -221,6 +242,10 @@ void SLAMApp::extract_features() {
 		return;
 	}
 
+	stop_time = get_time_ms();
+	log( "egomotion needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
+
 // 	log_file << get_time_ms()
 // 		<< " " << rotation_vector.at<double>(0, 1)
 // 		<< " " << rotation_vector.at<double>(0, 2)
@@ -263,8 +288,9 @@ void SLAMApp::extract_features() {
 		else
 			log(name(), ": no appsrc found", Logger::LOGLEVEL_DEBUG);
 	}
-	uint64_t stop_time = get_time_ms();
-	Logger::log(name(), ": needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
+// 	uint64_t stop_time = get_time_ms();
+	stop_time = get_time_ms();
+	Logger::log(name(), ": needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO, _loglevel);
 }
 
 void SLAMApp::handle_input(const mavlink_message_t &msg) {
