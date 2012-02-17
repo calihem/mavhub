@@ -381,8 +381,8 @@ namespace mavhub {
 		*/
 
 		// subscribe to data streams
-		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, 50);
-		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, 50);
+		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
 
 		while(true) {
 
@@ -446,7 +446,7 @@ namespace mavhub {
 			// double tmp = tmp;
 			raw[0] = (int)DataCenter::get_sensor(chanmap[0]); //ranger.ranger1; // USS
 			//raw[1] = altitude.baro; // barometer
-			raw[1] = raw_pressure.press_abs;
+			raw[1] = raw_pressure.press_abs * 20.43;
 			//raw[2] = attitude.zacc; // z-acceleration
 			raw[2] = huch_mk_imu.zacc; // z-acceleration
 			raw[3] = (int)DataCenter::get_sensor(chanmap[3]); //ranger.ranger2; // ir ranger 1
