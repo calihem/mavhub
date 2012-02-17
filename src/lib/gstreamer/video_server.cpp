@@ -228,7 +228,6 @@ void VideoServer::print_elements() const {
 		g_print("\n");
 	}
 }
-static void foo_finalize(void *priv) {};
 
 int VideoServer::push(GstAppSrc *appsrc, unsigned char *data, const int width, const int height, const int bpp) {
 	if(!appsrc) return -1;

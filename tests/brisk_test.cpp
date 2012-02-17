@@ -1,3 +1,11 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
+
+#if CV_MINOR_VERSION >= 2
 #include "brisk/brisk.h"
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
@@ -50,3 +58,6 @@ BOOST_AUTO_TEST_CASE(Test_HammingSse)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2

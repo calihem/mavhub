@@ -52,7 +52,8 @@ namespace mavhub {
 			std::vector<unsigned int> textures;
 			unsigned int width;
 			unsigned int height;
-			char buffer[921600];
+			unsigned int bpp;
+			char buffer[921600]; //640x480x3
 			pthread_mutex_t buf_mutex;
 
 #ifdef HAVE_GSTREAMER

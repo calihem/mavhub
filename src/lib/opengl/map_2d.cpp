@@ -2,10 +2,10 @@
 
 #include <iostream>	//cout
 #include <fstream>	//ifstream
+#include <iomanip>	//setw
 #include <stdexcept>
-
-#include <GL/glut.h>
-#include <GL/freeglut_ext.h>	//glutMainLoopEvent
+#include <cmath>	//cos, sin
+#include <sstream>	//ostringstream
 
 namespace hub {
 namespace opengl {
@@ -24,29 +24,22 @@ namespace opengl {
 
 using namespace std;
 
-typedef struct {
-	GLfloat x;
-	GLfloat y;
-	GLfloat z;
-	GLfloat roll;
-	GLfloat pitch;
-	GLfloat yaw;
-} position_t;
-
 const double Map2D::pi = 3.1415926535897932384626433832795028841971693993751058209749;
 
 int Map2D::window;
-GLfloat rotation_matrix[16];
-GLfloat zoom_factor = 1.0;
-position_t camera_position;
-position_t object_position;
+int Map2D::m_width, Map2D::m_height;
+GLfloat Map2D::rotation_matrix[16];
+GLfloat Map2D::zoom_factor = 1.0;
+Map2D::position_t Map2D::camera_position;
+Map2D::position_t Map2D::object_position;
 
 
 Map2D::Map2D(int *argc, char **argv, const int width, const int height) {
+	m_width = width; m_height = height;
 	glutInit(argc, argv);
   
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize(width, height); 
+	glutInitWindowSize(m_width, m_height);
 
 	window = glutCreateWindow("OpenGL 2D Map");
 	//TODO: check window variable
@@ -106,10 +99,9 @@ void Map2D::bind_textures(std::vector<unsigned int> &ids) {
 int Map2D::calc_rotation_matrix(float *roation_matrix, const float roll_deg, const float pitch_deg, const float yaw_deg) {
 	if(!roation_matrix) return -1;
 
-	//FIXME: use function/macro to convert between deg and rad
-	GLfloat roll_rad = roll_deg * pi / 180;
-	GLfloat pitch_rad = pitch_deg * pi / 180;
-	GLfloat yaw_rad = yaw_deg * pi / 180;
+	GLfloat roll_rad = deg2rad(roll_deg);
+	GLfloat pitch_rad = deg2rad(pitch_deg);
+	GLfloat yaw_rad = deg2rad(yaw_deg);
 
 	rotation_matrix[0] = cos(pitch_rad)*cos(yaw_rad);
 	rotation_matrix[1] = -cos(roll_rad)*sin(yaw_rad) + sin(roll_rad)*sin(pitch_rad)*cos(yaw_rad);
@@ -188,9 +180,21 @@ void Map2D::display() {
 
 	display_textures();
 
+	display_camera_orientation();
+
 	glutSwapBuffers();
 
 	post_process();
+}
+
+void Map2D::display_camera_orientation() {
+	ostringstream oss;
+	oss  << setfill(' ') << fixed << setprecision(1)
+		<< "roll: "  << setw(5) << camera_position.roll
+		<< " pitch: "  << setw(5) << camera_position.pitch
+		<< " yaw: "   << setw(5) << camera_position.yaw;
+
+	print(oss.str());
 }
 
 void Map2D::display_grid() {
@@ -307,7 +311,7 @@ void Map2D::mouse_movement(int x, int y) {
 // 	display();
 }
 
-void Map2D::load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height) throw(const std::exception&) {
+void Map2D::load_texture(const unsigned int id, const char *image, const unsigned int width, const unsigned int height, const unsigned int bpp) throw(const std::exception&) {
 	if(!image) throw std::domain_error("image argument is NULL pointer");
 
 	//select texture with given id
@@ -316,6 +320,10 @@ void Map2D::load_texture(const unsigned int id, const char *image, const unsigne
 	//FIXME: use glTexSumImage2D instead
 //   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 
+	GLenum format = GL_BGR;
+	if (bpp == 8)
+		format = GL_LUMINANCE;
+
 	//build texture mipmaps
 	glTexImage2D(GL_TEXTURE_2D,	//target
 		0,			//level
@@ -323,7 +331,7 @@ void Map2D::load_texture(const unsigned int id, const char *image, const unsigne
 		width,			//width
 		height,			//height
 		0,			//border
-		GL_BGR,			//format
+		format,			//format
 		GL_UNSIGNED_BYTE,	//_type
 		image);
 
@@ -354,6 +362,36 @@ void Map2D::load_texture(const unsigned int id, const std::string &filename, con
 
 	load_texture(id, image, width, height);
 	free(image);
+}
+
+void Map2D::print(const std::string &text) {
+	if(text.empty()) return;
+
+	glPushMatrix();
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	// set a 2D orthographic projection
+	gluOrtho2D(0, m_width, m_height, 0);
+	glMatrixMode(GL_MODELVIEW);
+
+	bool is_blending = false;
+	if(glIsEnabled(GL_BLEND))
+		is_blending = true;
+	glEnable(GL_BLEND);
+	glColor3f(1.0, 1.0, 0.0);
+	glRasterPos2f(3.0, 20.0);
+	for(std::string::const_iterator char_iter = text.begin(); char_iter != text.end(); ++char_iter) {
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *char_iter);
+	}
+	if(!is_blending)
+		glDisable(GL_BLEND);
+
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
 }
 
 void Map2D::post_process() {

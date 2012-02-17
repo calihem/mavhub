@@ -39,6 +39,8 @@
 
 namespace mavhub {
 
+const double pi = 3.1415926535897932384626433832795028841971693993751058209749;
+
 /**
  * \brief Calculates the difference between two timevals
  * \param[out] diff The difference diff = t1 - t2.
@@ -141,6 +143,18 @@ int in_range(int x, int low, int high);
  * @return true (1) if x is in specified range
  */
 int in_range(double x, double low, double high);
+
+/**
+ * Convert radian to degree.
+ */
+template <typename T>
+T rad2deg(const T r);
+
+/**
+ * Convert radian to degree.
+ */
+template <typename T>
+T deg2rad(const T d);
 
 /**
  * Adds a us delta to a timeval struct
@@ -272,6 +286,16 @@ inline int in_range(int x, int low, int high) {
 
 inline int in_range(double x, double low, double high) {
 	return x >= low && x <= high;
+}
+
+template <typename T>
+inline T rad2deg(const T r) {
+	return (r*180) / pi;
+}
+
+template <typename T>
+T deg2rad(const T d) {
+	return (d*pi) / 180;
 }
 
 inline struct timeval add_delta_us_to_timeval(const struct timeval &time, uint32_t delta_us) {

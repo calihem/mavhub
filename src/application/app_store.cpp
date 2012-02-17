@@ -2,7 +2,6 @@
 
 #include "protocol/protocolstack.h"
 
-#include "module/coremod.h"
 #include "module/testcore.h"
 #include "module/fc_mpkg.h"
 #include "module/ctrl_hover.h"
@@ -14,6 +13,7 @@
 #include "module/ctrl_wifimeter.h"
 #include "module/sim_crrcsim.h"
 #include "module/bridge_ivy.h"
+#include "core_app.h"
 #include "mavlink_mk_app.h"
 #include "mavlink_mkhuch_app.h"
 #include "mk_app.h"
@@ -53,7 +53,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "core_app") {
 #ifdef HAVE_MAVLINK_H
-		CoreModule *core_app = new CoreModule();
+		CoreApp *core_app = new CoreApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(core_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "acc_calibration_app") {
@@ -178,11 +178,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
 #ifdef HAVE_OPENCV2
-#if CV_MINOR_VERSION > 2
+#if CV_MINOR_VERSION >= 2
 		SLAMApp *slam_app = new SLAMApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
-#endif
-#endif // HAVE_OPENCV
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "sim_crrcsim_app") {
