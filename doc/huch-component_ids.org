@@ -1,4 +1,5 @@
-MAVHUB internal component IDs
+MAVHUB component IDs
+#+AUTHOR: 
 
 | *Component*            | *ID* |
 |------------------------+------|
@@ -12,5 +13,7 @@ MAVHUB internal component IDs
 | ctrl_zrate_app         |   31 |
 | bridge_ivy_app         |   32 |
 | v_oflow_app            |   33 |
+| ctrl_yaw               |   34 |
+|                        |      |
 
 

@@ -1,8 +1,8 @@
-                 MAVHUB internal component IDs
-                 =============================
+                      MAVHUB component IDs
+                      ====================
 
-Author: Oswald Berthold
-Date: 2012-03-15 09:23:34 CET
+Author: 
+Date: 2012-03-20 21:38:35 CET
 
 
   *Component*              *ID*  
@@ -17,5 +17,6 @@ Date: 2012-03-15 09:23:34 CET
   ctrl_zrate_app             31  
   bridge_ivy_app             32  
   v_oflow_app                33  
+  ctrl_yaw                   34  
 
 
