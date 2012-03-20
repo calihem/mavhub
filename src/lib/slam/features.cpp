@@ -1,6 +1,6 @@
 #include "features.h"
 
-#if defined HAVE_OPENCV2 && CV_MINOR_VERSION >= 2
+#if defined HAVE_OPENCV2 && CV_MINOR_VERSION >= 3
 
 #include <iostream>     // cout
 #include <iomanip>	//setprecision

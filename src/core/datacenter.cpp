@@ -2,7 +2,7 @@
 
 namespace mavhub {
 
-double DataCenter::extctrl_nick = 0;
+double DataCenter::extctrl_pitch = 0;
 double DataCenter::extctrl_roll = 0;
 double DataCenter::extctrl_yaw = 0;
 double DataCenter::sensors[DC_NUMSENS] = {};

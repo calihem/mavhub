@@ -4,7 +4,7 @@
 
 #ifdef HAVE_GSTREAMER
 
-#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION >= 2)
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION >= 3)
 
 #include "core/logger.h"
 #include "core/datacenter.h"

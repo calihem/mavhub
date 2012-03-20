@@ -25,9 +25,11 @@ namespace mavhub {
 	}
 
 	void Kalman_CV::init() {
-		Logger::log("kalman_cv init", Logger::LOGLEVEL_INFO);
+		Logger::log("Kalman_CV", "init", Logger::LOGLEVEL_DEBUG);
 		// state transition matrix
-		const float F[] = {1.0, 0.02, 0.0, 0.0, 1.0, 0.004, 0.0, 0.0, 1.0};
+		const float F[] = {1.0, 0.02, 0.0, \
+											 0.0, 1.0, 0.004, \
+											 0.0, 0.0, 1.0};
 		memcpy( cvkal->transition_matrix->data.fl, F, sizeof(F));
 		// H - measurement transform
 		const float H[] = {1.0, 0.0, 0.0, \

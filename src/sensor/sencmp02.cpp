@@ -155,7 +155,7 @@ void SenCmp02::run() {
 				for(i=0; i < CMP02_NUMCHAN; i++) {
 					sensor_data[i].analog = cmp_value[i];
 					sensor_data[i].usec = start;
-					//Logger::log("Cmp02 sensor:", i, sensor_data[i].analog, Logger::LOGLEVEL_INFO);
+					// Logger::log("Cmp02 sensor:", i, sensor_data[i].analog, Logger::LOGLEVEL_INFO);
 				}
 			} // end of data mutex scope
 #endif // MAVLINK_ENABLED_HUCH
@@ -177,7 +177,6 @@ void SenCmp02::run() {
 			if (timings) {
 				if (time_output <= end) {
 					Logger::log("Cmp02 frequency: ", (float)1000000/frequency, Logger::LOGLEVEL_DEBUG);
-					//Logger::log("hmc5843 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
 					time_output += 1000000;
 				}
 			}
@@ -204,6 +203,7 @@ void SenCmp02::publish_data(uint64_t time) {
 #ifdef MAVLINK_ENABLED_HUCH
 	int i;
 	for(i=0; i < CMP02_NUMCHAN; i++) {
+		// Logger::log("Cmp02 sensor:", i, chanmap[i], sensor_data[i].analog, Logger::LOGLEVEL_INFO);
 		DataCenter::set_sensor(chanmap[i], (double)sensor_data[i].analog);
 	}
 #endif // MAVLINK_ENABLED_HUCH

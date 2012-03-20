@@ -19,6 +19,7 @@ libmodule_a_SOURCES = \
 	ctrl_logfileplayer.cpp \
 	ctrl_logger.cpp \
 	ctrl_wifimeter.cpp \
+	ctrl_yaw.cpp \
 	n_ff.cpp \
 	filter_kalmancv.cpp \
 	filter_fir.cpp \

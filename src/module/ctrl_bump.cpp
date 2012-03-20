@@ -142,7 +142,7 @@ namespace mavhub {
 		// abs
 		flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
 		extctrl.remote_buttons = 0;	/* for lcd menu */
-		extctrl.nick = 0; //nick;
+		extctrl.nick = 0; //pitch;
 		extctrl.roll = 0; //roll;
 		extctrl.yaw = 0; //yaw;
 		extctrl.gas = 0; //gas;	/* MotorGas = min(ExternControl.Gas, StickGas) */

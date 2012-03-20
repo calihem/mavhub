@@ -60,6 +60,7 @@ namespace mavhub {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : 
 		AppInterface("ctrl_hover"), 
 		AppLayer<mavlink_message_t>("ctrl_hover"),
+		AppLayer<mkhuch_message_t>("ctrl_hover"),
 		// AppLayer<mk_message_t>("ctrl_hover"),
 		uss_win(WINSIZE, 0.0),
 		uss_win_sorted(WINSIZE, 0.0),
@@ -124,13 +125,17 @@ namespace mavhub {
 				break;
 			case IR_SHARP_30_5V:
 				// sigma, beta, k
-				premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-08, 3.7778e-5, 0.42);
+				//premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-08, 3.7778e-5, 0.42);
+				premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-07, 3.0e-5, 0.42);
 				break;
 			case IR_SHARP_150_5V:
 				// sigma, beta, k
-				premod[i] = new PreProcessorIR(250.0, 1500.0, 1.5369e-07, 8.8526e-06, 0.42);
+				//premod[i] = new PreProcessorIR(250.0, 1500.0, 1.5369e-07, 8.8526e-06, 0.42);
+				premod[i] = new PreProcessorIR(250.0, 1500.0, 1.54e-08, 5.8e-06, 0.42);
 				break;
-			}	
+			}
+			pre[i].first = 0.0;
+			pre[i].second = 0.0;
 			premean[i] = 0.0;
 			precov[i] = 1.0;
 			stats[i] = new Stat_MeanVar(64);
@@ -144,6 +149,10 @@ namespace mavhub {
 			Logger::log("Ctrl_Hover chanmap", i, chanmap[i], Logger::LOGLEVEL_DEBUG);
 			iter++;
 		}
+
+		pthread_mutex_init(&tx_mav_mutex, NULL);
+		pthread_mutex_init(&tx_mkhuch_mutex, NULL);
+		mkhuchlink_msg_init(&tx_mkhuch_msg);
   }
 
   Ctrl_Hover::~Ctrl_Hover() {
@@ -272,6 +281,12 @@ namespace mavhub {
 				}
 			}
 			break;
+		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+			man_thrust = mavlink_msg_rc_channels_raw_get_chan2_raw(&msg);
+			man_thrust -= 1345;
+			man_thrust *= 0.66;
+			// Logger::log("Ctrl_Hover::handle_input: man_thrust", man_thrust, Logger::LOGLEVEL_INFO);
+			break;
 		default:
 			break;
 		}
@@ -280,11 +295,12 @@ namespace mavhub {
 		}
   }
 
-  //void Ctrl_Hover::handle_input(const mk_message_t &msg) { }
+	void Ctrl_Hover::handle_input(const mkhuch_message_t& msg) {
+	}
 
   void Ctrl_Hover::run() {
 		int buf[1]; // to MK buffer
-		uint8_t flags = 0;
+		// uint8_t flags = 0;
 		ostringstream o;
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
@@ -343,17 +359,20 @@ namespace mavhub {
 		// relative
 		//flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_HEIGHT_CTRL1 );
 		// absolute
-		flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
-		extctrl.remote_buttons = 0;	/* for lcd menu */
-		extctrl.nick = 0; //nick;
-		extctrl.roll = 0; //roll;
-		extctrl.yaw = 0; //yaw;
-		extctrl.gas = 0; //gas;	/* MotorGas = min(ExternControl.Gas, StickGas) */
+		// flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
+		// extctrl.remote_buttons = 0;	/* for lcd menu */
 
-		// for autopilot
-		extctrl.AP_flags = flags;
-		extctrl.frame = 'E';	/* get ack from flightctrl */
-		extctrl.config = 0;	/* activate external control via serial iface in FlightCtrl */
+		// initialize extern control structure for MK imu
+		extctrl.pitch   = 0; // pitch
+		extctrl.roll   = 0; // roll
+		extctrl.yaw    = 0; // yaw
+		extctrl.thrust = 0; // thrust
+		extctrl.mask   = 0; // control mask: select control channels
+
+		// // for autopilot
+		// extctrl.AP_flags = flags;
+		// extctrl.frame = 'E';	/* get ack from flightctrl */
+		// extctrl.config = 0;	/* activate external control via serial iface in FlightCtrl */
 
 		// init position stuff
 		C = cvCreateMat(3,3, CV_32FC1);
@@ -383,6 +402,7 @@ namespace mavhub {
 		// subscribe to data streams
 		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
 		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_RC_CHANNELS, ctl_update_rate);
 
 		while(true) {
 
@@ -415,7 +435,8 @@ namespace mavhub {
 			// dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			// tkm1 = tk; // save current time
 
-			exec_tmr->updateExecStats();
+			// get effective dt
+			dt = exec_tmr->updateExecStats();
 			
 			// FIXME: do timing
 
@@ -522,7 +543,10 @@ namespace mavhub {
 
 			//&& pre[3].first > params["uss_llim"]
 			if(in_range(pre[0].first, params["uss_llim"], params["uss_hlim"])
+				 && pre[3].first > params["uss_llim"]
 				 && uss_plaus)
+			// if(in_range(pre[0].first, params["uss_llim"], params["uss_hlim"])
+			// 	 && pre[3].first > 200.0)
 				tmp_valid = 1.0;
 			else {
 				// pre[0].first = uss_win[uss_win_idx_m1];
@@ -563,7 +587,7 @@ namespace mavhub {
 			// 39, 300
 			if(in_range(pre[3].first, params["ir1_llim"], params["ir1_ulim"])
 				 && pre[4].first < 600.0) // carpet problem: ir1 freaks out on carpet FIXME
-				tmp_valid = 0.0;
+				tmp_valid = 1.0;
 			else
 				tmp_valid = 0.0;
 			precov[3] = filt_valid_ir1.calc(tmp_valid);
@@ -576,11 +600,11 @@ namespace mavhub {
 			 // if(in_range(pre[4].first, 300.0, 560.0))
 			// 300, 600
 			 if(in_range(pre[4].first, params["ir2_llim"], params["ir2_ulim"])
-					//&& pre[3].first > 300.0
+					&& pre[3].first > params["ir2_llim"]
 					)
-				 tmp_valid = 1;
+				 tmp_valid = 1.;
 			 else
-				 tmp_valid = 0;
+				 tmp_valid = 0.;
 			 precov[4] = filt_valid_ir2.calc(tmp_valid);
 			 pre[4].second = (precov[4] >= 0.99) ? 1 : 0;
 
@@ -739,18 +763,18 @@ namespace mavhub {
 			gas = pid_alt->calc((double)dt * 1e-6, ctrl_hover_state.kal_s0);
 			// printf("gas 1: %f\n", gas);
 
-			// enforce more limits
+			// limit altctl thrust to stick thrust
 			if(params["ctl_sticksp"] < 1.0 &&
 				 params["physical"] > 0) {
-				if(gas > (manual_control.thrust * 4)) { // 4 <- stick_gain
+				if(gas > (man_thrust * 4)) { // 4 <- stick_gain
 					pid_alt->setIntegralM1();
-					gas = manual_control.thrust * 4;
+					gas = man_thrust * 4;
 				}
 			}
-			//printf("gas 2: %f, man: %f\n", gas, manual_control.thrust);
+			// printf("gas 2: %f, man: %f\n", gas, manual_control.thrust);
 
 			// reset integral
-			if(manual_control.thrust < params["ctl_mingas"]) // reset below threshold
+			if((man_thrust * 4) < params["ctl_mingas"]) // reset below threshold
 				pid_alt->setIntegral(0.0);
 
 			// limit integral
@@ -760,23 +784,27 @@ namespace mavhub {
 			// min/max limits
 			gas = limit_gas(gas);
 
-			extctrl.gas = (int16_t)gas;
-			// nick, roll, yaw are computed in a separate controller,
+			extctrl.thrust = (int16_t)gas >> 2;
+			// pitch, roll, yaw are computed in a separate controller,
 			// fused here and sent to the flightctrl for execution
-			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
+			// extctrl.pitch = 0;
+			// extctrl.roll = 0;
+			extctrl.yaw = 0;
+			Logger::log("Ctrl_Hover cmp", DataCenter::get_sensor(6), Logger::LOGLEVEL_DEBUG);
+			extctrl.pitch = (int16_t)DataCenter::get_extctrl_pitch();
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
-			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
-			// Logger::log("Ctrl_Hover nick", , Logger::LOGLEVEL_INFO);
+			// extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+			// extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK | YAW_MANUAL_MASK | THRUST_MANUAL_MASK;
+			extctrl.mask = THRUST_MANUAL_MASK;
+			// extctrl.mask = 0;
+			// Logger::log(name(), "pitch, roll", extctrl.pitch, extctrl.roll, Logger::LOGLEVEL_DEBUG);
 			// extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
 			// send control output to FC
-			// Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
 			if(params["output_enable"] > 0) {
-				/* FIXME: MK_MSG
-				mk_message_t msg_extctrl;
-				mklink_msg_pack(&msg_extctrl, MK_FC_ADDRESS, MK_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(extctrl));
-				AppLayer<mk_message_t>::send(msg_extctrl);
-				*/
+				// Logger::log("Ctrl_Hover: extctrl.thrust:", extctrl.thrust, Logger::LOGLEVEL_INFO);
+				mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
+				AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
 			}
 
 			// send data to groundstation
@@ -841,9 +869,11 @@ namespace mavhub {
 			// huch_fc_altitude
 			// mavlink_msg_huch_fc_altitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
 			// send(msg);
-			// mk_fc_status
-			mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
-			AppLayer<mavlink_message_t>::send(msg);
+
+			// // mk_fc_status
+			// mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
+			// AppLayer<mavlink_message_t>::send(msg);
+
 			// huch ctrl_hover
 			mavlink_msg_huch_ctrl_hover_state_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
 			AppLayer<mavlink_message_t>::send(msg);
@@ -862,6 +892,8 @@ namespace mavhub {
 				send_debug(&msg, &dbg, ALT_PID_SP, pid_alt->getSp());
 				// VALID USS
 				send_debug(&msg, &dbg, DBG_VALID_USS, pre[0].second * 256);
+				// VALID BARO
+				send_debug(&msg, &dbg, DBG_VALID_BAR, pre[1].second * 256);
 				// VALID IR1
 				send_debug(&msg, &dbg, DBG_VALID_IR1, pre[3].second * 256);
 				// VALID IR2

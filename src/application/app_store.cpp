@@ -21,6 +21,7 @@
 #include "attitude_filter_app/attitude_filter_app.h"
 #include "opengl_app.h"
 #include "slam_app.h"
+#include "vision/v_oflow_app.h"
 
 #include <iostream>
 #include <sstream> //istringstream
@@ -178,9 +179,20 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
 #ifdef HAVE_OPENCV2
-#if CV_MINOR_VERSION >= 2
+#if CV_MINOR_VERSION >= 3
 		SLAMApp *slam_app = new SLAMApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "v_oflow_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION >= 2
+		V_OFLOWApp *v_oflow_app = new V_OFLOWApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(v_oflow_app);
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER

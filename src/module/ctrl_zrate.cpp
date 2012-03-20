@@ -1,4 +1,4 @@
-// control zrate components: nick, roll, yaw
+// control zrate components: pitch, roll, yaw
 
 #include "ctrl_zrate.h"
 
@@ -105,9 +105,9 @@ namespace mavhub {
 
 		// body variables
 		//double tmp;
-		int16_t nick, roll, yaw;
+		int16_t pitch, roll, yaw;
 		vector<int16_t> v(3);
-		int nick_test_dur, nick_test_delay;
+		int pitch_test_dur, pitch_test_delay;
 		int my_cnt;
 
 		// extctrl
@@ -116,7 +116,7 @@ namespace mavhub {
 		extern_control_t extctrl;
 		flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
 		extctrl.remote_buttons = 0;	/* for lcd menu */
-		extctrl.nick = 0; //nick;
+		extctrl.nick = 0; //pitch;
 		extctrl.roll = 0; //roll;
 		extctrl.yaw = 0; //yaw;
 		extctrl.gas = 0; //gas;	/* MotorGas = min(ExternControl.Gas, StickGas) */
@@ -131,9 +131,9 @@ namespace mavhub {
 		gettimeofday(&tk, NULL);
 		gettimeofday(&tkm1, NULL);
 
-		nick = roll = yaw = 0;
-		nick_test_dur = 0;
-		nick_test_delay = 10;
+		pitch = roll = yaw = 0;
+		pitch_test_dur = 0;
+		pitch_test_delay = 10;
 		my_cnt = 0;
 
 		Logger::log("Ctrl_Zrate started:", name(), Logger::LOGLEVEL_INFO);
@@ -215,18 +215,18 @@ namespace mavhub {
 			}
 
 			extctrl.gas = (int16_t)gas;
-			// extctrl.nick = 0; //(int16_t)DataCenter::get_extctrl_nick();
+			// extctrl.pitch = 0; //(int16_t)DataCenter::get_extctrl_pitch();
 			// extctrl.roll = 0; //(int16_t)DataCenter::get_extctrl_roll();
 			// extctrl.yaw = 0; //(int16_t)DataCenter::get_extctrl_yaw();
-			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
+			extctrl.nick = (int16_t)DataCenter::get_extctrl_pitch();
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
 
-			mavlink_msg_debug_pack( system_id(), component_id, &msg, 103, DataCenter::get_extctrl_nick() );
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, 103, DataCenter::get_extctrl_pitch() );
 			AppLayer<mavlink_message_t>::send(msg);
 			mavlink_msg_debug_pack( system_id(), component_id, &msg, 104, DataCenter::get_extctrl_roll() );
 			AppLayer<mavlink_message_t>::send(msg);
-			//send_debug(&msg, &dbg, 103, DataCenter::get_extctrl_nick(), component_id);
+			//send_debug(&msg, &dbg, 103, DataCenter::get_extctrl_pitch(), component_id);
 			//send_debug(&msg, &dbg, 104, DataCenter::get_extctrl_roll(), component_id);
 
 			if(params["output_enable"] > 0) {
@@ -235,7 +235,7 @@ namespace mavhub {
 				AppLayer<mk_message_t>::send(msg_extctrl);
 			}
 
-			// DataCenter::set_extctrl_nick(nick);
+			// DataCenter::set_extctrl_pitch(pitch);
 			// DataCenter::set_extctrl_roll(roll);
 			// DataCenter::set_extctrl_yaw(yaw);
 			// Logger::log("Ctrl_Zrate (n,r,y)", v, Logger::LOGLEVEL_INFO);

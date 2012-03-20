@@ -54,10 +54,10 @@ namespace mavhub {
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
 			/// set FC legacy extctrl components
-			static void set_extctrl_nick(const double nick);
+			static void set_extctrl_pitch(const double pitch);
 			static void set_extctrl_roll(const double roll);
 			static void set_extctrl_yaw(const double yaw);
-			static const double get_extctrl_nick();
+			static const double get_extctrl_pitch();
 			static const double get_extctrl_roll();
 			static const double get_extctrl_yaw();
 
@@ -66,7 +66,7 @@ namespace mavhub {
 			static const double get_sensor(const int id);
 
 		private:
-			static double extctrl_nick;
+			static double extctrl_pitch;
 			static double extctrl_roll;
 			static double extctrl_yaw;
 			// unified sensor array
@@ -263,11 +263,11 @@ namespace mavhub {
 #endif // HAVE_MAVLINK_H
 
 	// extctrl component setters
-	inline void DataCenter::set_extctrl_nick(const double nick) {
+	inline void DataCenter::set_extctrl_pitch(const double pitch) {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		extctrl_nick = nick;
+		extctrl_pitch = pitch;
 	}
 	inline void DataCenter::set_extctrl_roll(const double roll) {
 		using namespace cpp_pthread;
@@ -283,11 +283,11 @@ namespace mavhub {
 	}
 	
 	// extctrl component getters
-	inline const double DataCenter::get_extctrl_nick() {
+	inline const double DataCenter::get_extctrl_pitch() {
 		using namespace cpp_pthread;
 
 		Lock ri_lock(extctrl_mutex);
-		return extctrl_nick;
+		return extctrl_pitch;
 	}
 	inline const double DataCenter::get_extctrl_roll() {
 		using namespace cpp_pthread;

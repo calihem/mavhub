@@ -1,4 +1,4 @@
-// control lateral components: nick, roll, yaw
+// control lateral components: pitch, roll, yaw
 
 #include "ctrl_lateral.h"
 
@@ -22,13 +22,13 @@ namespace mavhub {
 		AppLayer<mavlink_message_t>("ctrl_lateral") {
 		read_conf(args);
 		param_request_list = 0;
-		prm_test_nick = 0;
+		prm_test_pitch = 0;
 		prm_yaw_P = 100.0;
 		pid_yaw = new PID(0, params["yaw_Kc"], params["yaw_Ti"],
 											params["yaw_Td"]);
-		pid_nick = new PID(params["nick_bias"], params["nick_Kc"],
-											 params["nick_Ti"], params["nick_Td"]);
-		pid_roll = new PID(params["nick_roll"], params["roll_Kc"],
+		pid_pitch = new PID(params["pitch_bias"], params["pitch_Kc"],
+											 params["pitch_Ti"], params["pitch_Td"]);
+		pid_roll = new PID(params["pitch_roll"], params["roll_Kc"],
 											 params["roll_Ti"], params["roll_Td"]);
 	}
 
@@ -39,13 +39,23 @@ namespace mavhub {
 		static int8_t param_id[15];
 		//Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
+
 #ifdef MAVLINK_ENABLED_HUCH
+
 		case MAVLINK_MSG_ID_HUCH_VISUAL_NAVIGATION:
 			//Logger::log("Ctrl_Lateral: got visual_navigation msg", Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_visual_navigation_decode(&msg, (mavlink_huch_visual_navigation_t *)&huch_visual_navigation);
 			//Logger::log("psi_est:", huch_visual_navigation.psi_estimate, Logger::LOGLEVEL_INFO);
 			break;
+
+		case MAVLINK_MSG_ID_HUCH_VISUAL_FLOW:
+			//Logger::log("Ctrl_Lateral: got visual_flow msg", Logger::LOGLEVEL_INFO);
+			mavlink_msg_huch_visual_flow_decode(&msg, (mavlink_huch_visual_flow_t *)&huch_visual_flow);
+			//Logger::log("psi_est:", huch_visual_flow.psi_estimate, Logger::LOGLEVEL_INFO);
+			break;
+
 #endif // MAVLINK_ENABLED_HUCH	
+
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
 			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
@@ -70,12 +80,14 @@ namespace mavhub {
 					}
 
 					// update PID controllers
-					pid_nick->setBias(params["nick_bias"]);
+					pid_pitch->setKc(params["pitch_Kc"]);
+					pid_roll->setKc(params["roll_Kc"]);
+					pid_pitch->setBias(params["pitch_bias"]);
 					pid_roll->setBias(params["roll_bias"]);
 
-					// if(!strcmp("prm_test_nick", (const char *)param_id)) {
-					// 	prm_test_nick = (int)mavlink_msg_param_set_get_param_value(&msg);
-					// 	Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_nick", prm_test_nick, Logger::LOGLEVEL_INFO);
+					// if(!strcmp("prm_test_pitch", (const char *)param_id)) {
+					// 	prm_test_pitch = (int)mavlink_msg_param_set_get_param_value(&msg);
+					// 	Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_pitch", prm_test_pitch, Logger::LOGLEVEL_INFO);
 					// }	else if(!strcmp("prm_yaw_P", (const char *)param_id)) {
 					// 	prm_yaw_P = (double)mavlink_msg_param_set_get_param_value(&msg);
 					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for prm_yaw_P", prm_yaw_P, Logger::LOGLEVEL_INFO);
@@ -105,10 +117,10 @@ namespace mavhub {
 
 		// body variables
 		double tmp;
-		//int16_t nick, roll, yaw, yaw1;
-		double nick, roll, yaw, yaw1;
+		//int16_t pitch, roll, yaw, yaw1;
+		double pitch, roll, yaw, yaw1;
 		vector<int16_t> v(3);
-		int nick_test_dur, nick_test_delay;
+		int pitch_test_dur, pitch_test_delay;
 		int my_cnt;
 		// position
 		double x = 0.0, y = 0.0;
@@ -116,9 +128,9 @@ namespace mavhub {
 		gettimeofday(&tk, NULL);
 		gettimeofday(&tkm1, NULL);
 
-		nick = roll = yaw = yaw1 = 0;
-		nick_test_dur = 0;
-		nick_test_delay = 10;
+		pitch = roll = yaw = yaw1 = 0;
+		pitch_test_dur = 0;
+		pitch_test_delay = 10;
 		my_cnt = 0;
 
 		Logger::log("Ctrl_Lateral started:", name(), Logger::LOGLEVEL_INFO);
@@ -159,7 +171,7 @@ namespace mavhub {
 					send(msg);
 				}
 
-				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_nick", prm_test_nick, 1, 0);
+				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_test_pitch", prm_test_pitch, 1, 0);
 				// send(msg);
 				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_yaw_P", prm_yaw_P, 1, 0);
 				// send(msg);
@@ -170,14 +182,14 @@ namespace mavhub {
 			// mavlink_msg_huch_visual_navigation_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_visual_navigation);
 			// send(msg);
 
-			if(prm_test_nick > 0) {
-				nick_test_delay--;
+			if(prm_test_pitch > 0) {
+				pitch_test_delay--;
 			}
 
-			if(nick_test_delay == 0) {
-				nick_test_dur = 2;
-				prm_test_nick = 0;
-				nick_test_delay = 10;
+			if(pitch_test_delay == 0) {
+				pitch_test_dur = 2;
+				prm_test_pitch = 0;
+				pitch_test_delay = 10;
 			}
 
 			// body
@@ -185,7 +197,7 @@ namespace mavhub {
 				tmp = rand() * RAND_MAX_TO_M1;
 				tmp -= 0.5;
 				tmp *= 1000;
-				nick = v[0] = (int16_t)tmp;
+				pitch = v[0] = (int16_t)tmp;
 				tmp = rand() * RAND_MAX_TO_M1;
 				tmp -= 0.5;
 				tmp *= 1000;
@@ -194,25 +206,25 @@ namespace mavhub {
 				tmp *= 1000;
 				yaw = v[2] = (int16_t)tmp;
 			}
-			//if(nick_test_dur > 0) {
+			//if(pitch_test_dur > 0) {
 			if(0) {
 				if(my_cnt % 40 == 0 || my_cnt % 40 == 1) {
-					nick = 200;
-					nick_test_dur--;
+					pitch = 200;
+					pitch_test_dur--;
 				} else if (my_cnt % 40 == 10 || my_cnt % 40 == 11) {
-					nick = -200;
-					nick_test_dur--;
+					pitch = -200;
+					pitch_test_dur--;
 				} else if (my_cnt % 40 == 20 || my_cnt % 40 == 21) {
 					roll = 200;
 				} else if (my_cnt % 40 == 30 || my_cnt % 40 == 31) {
 					roll = -200;
 				}
 				else {
-					nick = 0;
+					pitch = 0;
 					roll = 0;
 				}
 			} else {
-				nick = 0;
+				pitch = 0;
 				roll = 0;
 			}
 			//roll = 0;
@@ -224,8 +236,10 @@ namespace mavhub {
 			// Logger::log("Ctrl_Lateral (psi_est, yaw)", DataCenter::get_sensor(6), yaw, Logger::LOGLEVEL_INFO);
 #ifdef MAVLINK_ENABLED_HUCH
 			// vn.ego_beta
-			x = cosf(huch_visual_navigation.ego_beta);
-			y = sinf(huch_visual_navigation.ego_beta);
+			// x = cosf(huch_visual_navigation.ego_beta);
+			// y = sinf(huch_visual_navigation.ego_beta);
+			x = huch_visual_flow.u_i;
+			y = huch_visual_flow.v_i;
 			// vn.distance
 
 			// FIXME: optical compass
@@ -235,42 +249,46 @@ namespace mavhub {
 			//Logger::log("Ctrl_Lateral (psi_est, yaw)", huch_visual_navigation.psi_vc, yaw, Logger::LOGLEVEL_INFO);
 			// Logger::log("Ctrl_Lateral (psi_est, yaw1)", huch_visual_navigation.psi_vc, yaw1, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
-			// nick
-			pid_nick->setSp(0.0);
-			nick = pid_nick->calc(dtf, y * huch_visual_navigation.ego_speed);
+			// pitch
+			pid_pitch->setSp(0.0);
+			// pitch = pid_pitch->calc(dtf, y * huch_visual_navigation.ego_speed);
+			pitch = pid_pitch->calc(dtf, x);
 			// limit
-			if(nick > params["nick_limit"])
-				nick = params["nick_limit"];
-			if(nick < -params["nick_limit"])
-				nick = -params["nick_limit"];
+			if(pitch > params["pitch_limit"])
+				pitch = params["pitch_limit"];
+			if(pitch < -params["pitch_limit"])
+				pitch = -params["pitch_limit"];
 			// roll
 			pid_roll->setSp(0.0);
-			roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
+			// roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
+			roll = pid_roll->calc(dtf, y);
 			if(roll > params["roll_limit"])
 				roll = params["roll_limit"];
 			if(roll < -params["roll_limit"])
 				roll = -params["roll_limit"];
+
 #endif // MAVLINK_ENABLED_HUCH	
+
 			mavlink_msg_debug_pack(system_id(), component_id, &msg, 100, x);
 			AppLayer<mavlink_message_t>::send(msg);
 			mavlink_msg_debug_pack(system_id(), component_id, &msg, 101, y);
 			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack(system_id(), component_id, &msg, 105, nick);
+			mavlink_msg_debug_pack(system_id(), component_id, &msg, 105, pitch);
 			AppLayer<mavlink_message_t>::send(msg);
 			mavlink_msg_debug_pack(system_id(), component_id, &msg, 106, roll);
 			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack( system_id(), component_id, &msg, 107, atan2f(-nick, -roll) );
-			AppLayer<mavlink_message_t>::send(msg);
+			// mavlink_msg_debug_pack( system_id(), component_id, &msg, 107, atan2f(-pitch, -roll) );
+			// AppLayer<mavlink_message_t>::send(msg);
 	
 			//send_debug(&msg, &dbg, 100, x, component_id);
 			//send_debug(&msg, &dbg, 101, y, component_id);
-			//send_debug(&msg, &dbg, 105, nick, component_id);
+			//send_debug(&msg, &dbg, 105, pitch, component_id);
 			//send_debug(&msg, &dbg, 106, roll, component_id);
-			//send_debug(&msg, &dbg, 107, atan2f(-nick, -roll), component_id);
+			//send_debug(&msg, &dbg, 107, atan2f(-pitch, -roll), component_id);
 
-			//DataCenter::set_extctrl_nick(nick);
-			//DataCenter::set_extctrl_roll(roll);
-			DataCenter::set_extctrl_yaw(yaw*-1.0);
+			DataCenter::set_extctrl_pitch(pitch);
+			DataCenter::set_extctrl_roll(roll);
+			// DataCenter::set_extctrl_yaw(yaw*-1.0);
 			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
 			my_cnt++;
@@ -281,9 +299,9 @@ namespace mavhub {
 		params["yaw_Kc"] = 100.0;
 		params["yaw_Ti"] = 0.0;
 		params["yaw_Td"] = 0.0;
-		params["nick_Kc"] = 1.0;
-		params["nick_Ti"] = 0.0;
-		params["nick_Td"] = 0.0;
+		params["pitch_Kc"] = 1.0;
+		params["pitch_Ti"] = 0.0;
+		params["pitch_Td"] = 0.0;
 		params["roll_Kc"] = 1.0;
 		params["roll_Ti"] = 0.0;
 		params["roll_Td"] = 0.0;
@@ -314,31 +332,31 @@ namespace mavhub {
 			s >> params["yaw_Td"];
 		}
 
-		// controller params nick
-		iter = args.find("nick_bias");
+		// controller params pitch
+		iter = args.find("pitch_bias");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["nick_bias"];
+			s >> params["pitch_bias"];
 		}
-		iter = args.find("nick_Kc");
+		iter = args.find("pitch_Kc");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["nick_Kc"];
+			s >> params["pitch_Kc"];
 		}
-		iter = args.find("nick_Ti");
+		iter = args.find("pitch_Ti");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["nick_Ti"];
+			s >> params["pitch_Ti"];
 		}
-		iter = args.find("nick_Td");
+		iter = args.find("pitch_Td");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["nick_Td"];
+			s >> params["pitch_Td"];
 		}
-		iter = args.find("nick_limit");
+		iter = args.find("pitch_limit");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["nick_limit"];
+			s >> params["pitch_limit"];
 		}
 
 		// controller params roll
@@ -372,11 +390,11 @@ namespace mavhub {
 		Logger::log("ctrl_lateral::read_conf: yaw_Kc", params["yaw_Kc"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: yaw_Ti", params["yaw_Ti"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: yaw_Td", params["yaw_Td"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_lateral::read_conf: nick_bias", params["nick_bias"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_lateral::read_conf: nick_Kc", params["nick_Kc"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_lateral::read_conf: nick_Ti", params["nick_Ti"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_lateral::read_conf: nick_Td", params["nick_Td"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_lateral::read_conf: nick_limit", params["nick_limit"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: pitch_bias", params["pitch_bias"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: pitch_Kc", params["pitch_Kc"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: pitch_Ti", params["pitch_Ti"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: pitch_Td", params["pitch_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_lateral::read_conf: pitch_limit", params["pitch_limit"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: roll_bias", params["roll_bias"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: roll_Kc", params["roll_Kc"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_lateral::read_conf: roll_Ti", params["roll_Ti"], Logger::LOGLEVEL_DEBUG);

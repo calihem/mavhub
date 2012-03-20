@@ -61,7 +61,7 @@ am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
 	attitude_filter_app.$(OBJEXT) app_store.$(OBJEXT) \
 	core_app.$(OBJEXT) mavlink_mk_app.$(OBJEXT) \
 	mavlink_mkhuch_app.$(OBJEXT) mk_app.$(OBJEXT) \
-	opengl_app.$(OBJEXT) slam_app.$(OBJEXT)
+	opengl_app.$(OBJEXT) slam_app.$(OBJEXT) v_oflow_app.$(OBJEXT)
 libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -239,7 +239,8 @@ libapp_a_SOURCES = \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
 	opengl_app.cpp \
-	slam_app.cpp
+	slam_app.cpp \
+	vision/v_oflow_app.cpp
 
 all: all-am
 
@@ -298,6 +299,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opengl_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slam_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/v_oflow_app.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -340,6 +342,20 @@ attitude_filter_app.obj: attitude_filter_app/attitude_filter_app.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='attitude_filter_app/attitude_filter_app.cpp' object='attitude_filter_app.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o attitude_filter_app.obj `if test -f 'attitude_filter_app/attitude_filter_app.cpp'; then $(CYGPATH_W) 'attitude_filter_app/attitude_filter_app.cpp'; else $(CYGPATH_W) '$(srcdir)/attitude_filter_app/attitude_filter_app.cpp'; fi`
+
+v_oflow_app.o: vision/v_oflow_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT v_oflow_app.o -MD -MP -MF $(DEPDIR)/v_oflow_app.Tpo -c -o v_oflow_app.o `test -f 'vision/v_oflow_app.cpp' || echo '$(srcdir)/'`vision/v_oflow_app.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/v_oflow_app.Tpo $(DEPDIR)/v_oflow_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/v_oflow_app.cpp' object='v_oflow_app.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o v_oflow_app.o `test -f 'vision/v_oflow_app.cpp' || echo '$(srcdir)/'`vision/v_oflow_app.cpp
+
+v_oflow_app.obj: vision/v_oflow_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT v_oflow_app.obj -MD -MP -MF $(DEPDIR)/v_oflow_app.Tpo -c -o v_oflow_app.obj `if test -f 'vision/v_oflow_app.cpp'; then $(CYGPATH_W) 'vision/v_oflow_app.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/v_oflow_app.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/v_oflow_app.Tpo $(DEPDIR)/v_oflow_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/v_oflow_app.cpp' object='v_oflow_app.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o v_oflow_app.obj `if test -f 'vision/v_oflow_app.cpp'; then $(CYGPATH_W) 'vision/v_oflow_app.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/v_oflow_app.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

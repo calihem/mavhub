@@ -472,7 +472,7 @@ void MAVLinkMKHUCHApp::print(std::ostream &os) const {
 }
 
 void MAVLinkMKHUCHApp::run() {
-	// log("MAVLinkMKHUCHApp running", Logger::LOGLEVEL_DEBUG);
+	log("MAVLinkMKHUCHApp run enter", Logger::LOGLEVEL_DEBUG);
 
 	// the block below is for testing control of a mkhuchlink
 	// enabled FlightCtrl. provisional.
@@ -512,19 +512,24 @@ void MAVLinkMKHUCHApp::run() {
 			thrust = 0;
 		}
 
-		extctrl.roll = 0; //roll * 15;
-		extctrl.pitch = 0; //pitch * 15;
-		extctrl.yaw = 0; //yaw;
+		// extctrl.roll = 0;
+		// extctrl.pitch = 0;
+		// extctrl.yaw = 0;
+
+		extctrl.roll = roll * 15;
+		extctrl.pitch =  pitch * 15;
+		extctrl.yaw = yaw;
 		extctrl.thrust = thrust;
 		//extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK;
 		//extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK | YAW_MANUAL_MASK | THRUST_MANUAL_MASK;
 		//extctrl.mask = THRUST_MANUAL_MASK;
 		extctrl.mask = 0;
 
-		mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
-		AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
-		//log("MAVLinkMKHUCHApp running", Logger::LOGLEVEL_DEBUG);
+		// mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
+		// AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
+		// log("MAVLinkMKHUCHApp running", extctrl.thrust, Logger::LOGLEVEL_DEBUG);
 		cnt++;
+
 		usleep(100000);
 	}
 

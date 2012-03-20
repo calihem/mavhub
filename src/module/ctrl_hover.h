@@ -35,7 +35,7 @@
 namespace mavhub {
 	/// Controller: hover (altitude)
   //class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
-  class Ctrl_Hover : public AppLayer<mavlink_message_t> {
+  class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mkhuch_message_t> {
   public:
 		/// Constructor
 		// Ctrl_Hover(int component_id_, int numchan, const std::list< std::pair<int, int> > chanmap, const std::map<std::string, std::string> args);
@@ -43,7 +43,9 @@ namespace mavhub {
 		virtual ~Ctrl_Hover();
 		/// mavhub protocolstack input handler
 		virtual void handle_input(const mavlink_message_t &msg);
-		//virtual void handle_input(const mk_message_t &msg);
+		/// mkhuch protocolstack input handler
+		virtual void handle_input(const mkhuch_message_t &msg);
+
 		/// sensor types
 		enum sensor_types_t {
 			USS_FC = 0,
@@ -80,14 +82,22 @@ namespace mavhub {
 		mavlink_huch_exp_ctrl_t exp_ctrl;
 		/// huch ranger(s) struct
 		mavlink_huch_ranger_t ranger;
-		/// MK external control
-		extern_control_t extctrl;
+		/* /// MK external control */
+		/* extern_control_t extctrl; */
+		/// mkhuch control output
+		mkhuch_extern_control_t extctrl;
+		/// Mutex to protect tx_mav_msg
+		pthread_mutex_t tx_mav_mutex;
+		/// tx buffer for MKHUCH messages
+		mkhuch_message_t tx_mkhuch_msg;
+		/// Mutex to protect tx_mkhuch_msg
+		pthread_mutex_t tx_mkhuch_mutex;
 		/// local state
 		mavlink_huch_ctrl_hover_state_t ctrl_hover_state;
 		/// MK DebugOut structure
 		mavlink_mk_debugout_t mk_debugout;
-		/// MK FC Status
-		mavlink_mk_fc_status_t mk_fc_status;
+		/* /// MK FC Status */
+		/* mavlink_mk_fc_status_t mk_fc_status; */
 		/// huch hover ctrl (hc) raw altitude readings
 		mavlink_huch_hc_raw_t ch_raw;
 
@@ -163,6 +173,9 @@ namespace mavhub {
 
 		// update rate
 		int ctl_update_rate;
+
+		// manual thrust
+		int man_thrust;
 		
 		/// strapdown matrix setter
 		int sd_comp_C(mavlink_huch_attitude_t *a, CvMat *C);

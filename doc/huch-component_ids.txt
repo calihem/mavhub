@@ -1,14 +1,21 @@
-mavhub interal component IDs
+                 MAVHUB internal component IDs
+                 =============================
 
-| *component*            | *ID* |
-|------------------------+------|
-| fc_mpkg_app            |   23 |
-| flightctrl             |   25 |
-| ctrl_hover_app         |   26 |
-| ctrl_bump_app          |   27 |
-| ctrl_lateral_app       |   28 |
-| ctrl_logger_app        |   29 |
-| ctrl_logfileplayer_app |   30 |
-| ctrl_zrate_app         |   31 |
-| bridge_ivy_app         |   32 |
+Author: Oswald Berthold
+Date: 2012-03-15 09:23:34 CET
+
+
+  *Component*              *ID*  
+ ------------------------+------
+  fc_mpkg_app                23  
+  flightctrl                 25  
+  ctrl_hover_app             26  
+  ctrl_bump_app              27  
+  ctrl_lateral_app           28  
+  ctrl_logger_app            29  
+  ctrl_logfileplayer_app     30  
+  ctrl_zrate_app             31  
+  bridge_ivy_app             32  
+  v_oflow_app                33  
+
 
