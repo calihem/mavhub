@@ -34,8 +34,8 @@ struct landmarks_t {
 	std::vector<cv::KeyPoint> keypoints;
 	std::vector<cv::Point3f> objectpoints;
 	cv::Mat descriptors;
-	std::vector<int> counters;
-	std::vector<int> scene_ids;
+	std::vector<int> counters; //FIXME: needed?
+	std::vector<int> scene_ids; //FIXME: needed?
 };
 
 /**
@@ -45,8 +45,9 @@ struct landmarks_t {
  * \param[in] matches
  * \param[in] camera_matrix
  * \param[in] distortion_coefficients
- * \param[out] rotation_vector
- * \param[out] translation_vector 
+ * \param[in,out] rotation_vector
+ * \param[in,out] translation_vector
+ * \param[in] use_extrinsic_guess Use \a rotation_vector and \a translation_vector as initial guess.
  * \param[in] matches_mask matches.at(i) will only be considered if matches_mask.at(i) is non-zero
  */
 int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
@@ -56,6 +57,7 @@ int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
 	cv::Mat &translation_vector,
+	const bool use_extrinsic_guess = false,
 	std::vector<char> matches_mask = std::vector<char>() );
 
 
@@ -136,6 +138,12 @@ template <typename T>
 T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box_radius);
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix);
+
+float yaw(const std::vector<cv::KeyPoint>& src_keypoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat &camera_matrix,
+	std::vector<char> mask);
 
 // ----------------------------------------------------------------------------
 // IMU Filter

@@ -30,6 +30,7 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	cam_matrix(3, 3, CV_32FC1),
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
 	scenes(2),
+	attitudes(2),
 	feature_detector(60, 3), //threshold, octaves
 	rotation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
 	translation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
@@ -37,8 +38,9 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	{
 
 	pthread_mutex_init(&sync_mutex, NULL);
+
 	// invalidate attitude
-	attitude.usec = 0;
+	bzero(&attitude, sizeof(mavlink_attitude_t));
 
 	// set sink name
 	std::map<std::string,std::string>::const_iterator iter = args.find("sink");
@@ -227,8 +229,25 @@ void SLAMApp::extract_features() {
 // 	double yaw = acos( (H.at<double>(0,0) + H.at<double>(1,1))/2.0 );
 // 	std::cout << "yaw = " << rad2deg(yaw) << " (" << H.at<double>(0,2) << ", " << H.at<double>(1,2) << std::endl;
 
-	cv::Mat rotation_vector;
-	cv::Mat translation_vector;
+// 	const float _yaw = yaw(landmarks.keypoints,
+// 			       keypoints,
+// 				matches,
+// 				cam_matrix,
+// 				matches_mask);
+// 	log("yaw:", _yaw, Logger::LOGLEVEL_INFO);
+
+	// get change of attitude
+	cv::Mat rotation_vector(3, 1, cv::DataType<double>::type);
+	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
+	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;
+	rotation_vector.at<double>(0, 2) = attitudes.back().yaw - attitudes.front().yaw;
+// 	Logger::log(name(), "Attitude change: ",
+// 		rad2deg(rotation_vector.at<double>(0, 1)), //roll
+// 		rad2deg(rotation_vector.at<double>(0, 0)), //pitch
+// 		rad2deg(rotation_vector.at<double>(0, 2)), //yaw
+// 		Logger::LOGLEVEL_DEBUG, _loglevel);
+
+	cv::Mat translation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
 	egomotion(landmarks.keypoints,
 		keypoints,
 		matches,
@@ -236,6 +255,7 @@ void SLAMApp::extract_features() {
 		dist_coeffs,
 		rotation_vector,
 		translation_vector,
+		true,
 		matches_mask);
 	if(rotation_vector.empty() || translation_vector.empty()) {
 		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
@@ -349,7 +369,7 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 		// make a new reference image
 		video_data.copyTo(scenes.front());
 		landmarks.clear();
-// 		memcpy(&old_attitude, &attitude, sizeof(mavlink_attitude_t));
+		memcpy(&(attitudes.front()), &attitude, sizeof(mavlink_attitude_t));
 		if(take_new_image & (1 << 1)) {
 			//TODO: send ACK
 		}
@@ -358,7 +378,7 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 	} else {
 		video_data.copyTo(scenes.back());
 // 		new_features.clear();
-// 		memcpy(&new_attitude, &attitude, sizeof(mavlink_attitude_t));
+		memcpy(&(attitudes.back()), &attitude, sizeof(mavlink_attitude_t));
 // 		Logger::log(name(), "attitude of new image",
 // 			rad2deg(new_attitude.roll),
 // 			rad2deg(new_attitude.pitch),

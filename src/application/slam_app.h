@@ -52,20 +52,24 @@ class SLAMApp : public MavlinkAppLayer,
 		std::string sink_name;
 		cv::Mat cam_matrix;
 		cv::Mat dist_coeffs;
-		cv::Mat old_image;
-		cv::Mat new_image;
+// 		cv::Mat old_image;
+// 		cv::Mat new_image;
 // 		std::list<hub::slam::brisk_landmark_t> landmarks;
+		/// landmark database
 		hub::slam::landmarks_t landmarks;
 		/// List of images
 		std::list<cv::Mat> scenes;
-		mavlink_attitude_t old_attitude;
-		mavlink_attitude_t new_attitude;
-		std::vector<cv::KeyPoint> old_features;
-		std::vector<cv::KeyPoint> new_features;
-		std::vector<cv::Point3f> old_object_points;
+		/// Attitude of scenes
+		std::list<mavlink_attitude_t> attitudes;
+
+// 		mavlink_attitude_t old_attitude;
+// 		mavlink_attitude_t new_attitude;
+// 		std::vector<cv::KeyPoint> old_features;
+// 		std::vector<cv::KeyPoint> new_features;
+// 		std::vector<cv::Point3f> old_object_points;
 		cv::BriskFeatureDetector feature_detector;
-		cv::Mat old_descriptors;
-		cv::Mat new_descriptors;
+// 		cv::Mat old_descriptors;
+// 		cv::Mat new_descriptors;
 		cv::BriskDescriptorExtractor descriptor_extractor;
 #ifdef HAVE_SSSE3
 		cv::BruteForceMatcher<cv::HammingSse> matcher;

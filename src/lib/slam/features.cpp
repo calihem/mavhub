@@ -16,6 +16,9 @@
 #define dout if(0) std::cout
 #endif
 
+#define rad2deg(r) ((r) * 180) / M_PI
+#define deg2rad(d) ((d) * M_PI) / 180
+
 namespace hub {
 namespace slam {
 
@@ -43,6 +46,7 @@ int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	const cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
 	cv::Mat &translation_vector,
+	const bool use_extrinsic_guess,
 	std::vector<char> matches_mask) {
 
 	if(matches_mask.empty()) {
@@ -55,8 +59,8 @@ int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 
 	double fx = camera_matrix.at<double>(0, 0);
 	double fy = camera_matrix.at<double>(1, 1);
-	if( abs(fx) <= std::numeric_limits<double>::epsilon())fx = 1.0;
-	if( abs(fy) <= std::numeric_limits<double>::epsilon()) fy = 1.0;
+	if( abs(fx) <= std::numeric_limits<double>::epsilon() ) fx = 1.0;
+	if( abs(fy) <= std::numeric_limits<double>::epsilon() ) fy = 1.0;
 
 	std::vector<cv::Point3f> object_points;
 	object_points.reserve(src_keypoints.size());
@@ -77,15 +81,14 @@ int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 	}
 
 	try {
-		cv::solvePnPRansac(object_points,
-// 		cv::solvePnP(object_points,
+// 		cv::solvePnPRansac(object_points,
+		cv::solvePnP(object_points,
 			image_points,
 			camera_matrix,
 			distortion_coefficients,
 			rotation_vector,
 			translation_vector,
-// 			true ); //use extrinsic guess
-			false ); //use extrinsic guess
+			use_extrinsic_guess );
 	}
 	catch(cv::Exception &e) {
 		return -2;
@@ -273,7 +276,7 @@ void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
 
 	if(matches.size() != mask.size()) return;
 
-int counter = 0;
+// int counter = 0;
 	for(size_t i = 0; i < matches.size(); i++) {
 		if(mask[i] == 0) continue;
 
@@ -281,20 +284,20 @@ int counter = 0;
 		int dst_index = matches[i].trainIdx;
 
 		mask[i] = 0;
-counter++;
+// counter++;
 		// begin inner loop
 		for(size_t j = 0; j<backward_matches.size(); j++) {
 			if(backward_matches[j].queryIdx == dst_index
 			&& backward_matches[j].trainIdx == src_index) {
 				mask[i] = 1;
-counter--;
+// counter--;
 				//stop inner loop
 				break;
 			}
 		}
 	}
 	
-dout << "filtered " << counter << " matches by backward matching" << std::endl;
+// dout << "filtered " << counter << " matches by backward matching" << std::endl;
 }
 
 void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_keypoints,
@@ -533,6 +536,54 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 
 // 	cv::Mat point_matrix = cv::Mat(image_points).reshape(1).t();
 // 	cv::Mat object_matrix = inv_cam_matrix*point_matrix;
+}
+
+// simple (and not working) algo to determine rotation
+float yaw(const std::vector<cv::KeyPoint>& src_keypoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat &camera_matrix,
+	std::vector<char> mask) {
+
+	if(matches.size() != mask.size()) return 0.0;
+
+	const cv::Point2f center(camera_matrix.at<double>(0, 2), camera_matrix.at<double>(1, 2));
+	cv::L2<float> euclidean_distance;
+
+	std::vector<float> radian_meassures; // normed to radius 1
+	std::vector<float> x_distances;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const float b = euclidean_distance(&(src_keypoints[src_index].pt.x), &(dst_keypoints[dst_index].pt.x), 2);
+		const float l1 = euclidean_distance(&(src_keypoints[src_index].pt.x), &(center.x), 2);
+		const float l2 = euclidean_distance(&(dst_keypoints[dst_index].pt.x), &(center.x), 2);
+		const float radius = (l1 + l2)/2;
+// dout << "P1: (" << src_keypoints[src_index].pt.x << ", " << src_keypoints[src_index].pt.y << ") "
+// 	<< "P2: (" << dst_keypoints[dst_index].pt.x << ", " << dst_keypoints[dst_index].pt.y << ") "
+// 	<< "b " << b
+// 	<< " radius " << radius
+// 	<< std::endl;
+		if(radius >= 5.0) //ignore movement near rotation center
+			// use intercept theorem to normalize rotation movement to radius 1
+			radian_meassures.push_back(b/radius);
+// 		if(radius <= 1.0)
+// 			radian_meassures.push_back(b);
+// 		else
+// 			radian_meassures.push_back(b/(radius-1));
+	}
+	if(radian_meassures.size() == 0) return 0.0;
+// for(size_t i = 0; i < radian_meassures.size(); i++) {
+// 	dout << radian_meassures[i] << " ";
+// }
+// dout << std::endl;
+	const float r_median = median(radian_meassures);
+// 	const float ret = rad2deg( acos(1-r_median/2) );
+	const float ret = 2*rad2deg( asin(r_median/2) );
+
+// dout << "r_median: " << r_median << ", ret: " << ret << std::endl;
+	return ret;
 }
 
 
