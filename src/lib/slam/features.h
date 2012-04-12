@@ -114,10 +114,23 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
 		    std::vector<std::vector<cv::DMatch> > &matches);
 
-void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
-	const cv::Mat& camera_matrix,
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const float distance,
-	std::vector<cv::Point3f>& objectpoints);
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
+
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
+	const std::vector<float>& distances,
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
+
+void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
+	const float distance,
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
 
 /**
  * \brief Calculate the Shi-Tomasi score.
@@ -146,8 +159,22 @@ float yaw(const std::vector<cv::KeyPoint>& src_keypoints,
 	std::vector<char> mask);
 
 // ----------------------------------------------------------------------------
-// IMU Filter
+// Implementations
 // ----------------------------------------------------------------------------
+inline void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
+	const float distance,
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+	
+	std::vector<float> distances(imagepoints.size(), distance);
+	imagepoints_to_objectpoints(imagepoints,
+		distances,
+		objectpoints,
+		camera_matrix,
+		distortion_coefficients);
+}
+
 template <typename T>
 T mean(const std::vector<T> &values) {
 	if(values.size() == 0) return 0;

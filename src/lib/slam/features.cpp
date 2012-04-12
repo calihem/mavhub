@@ -513,29 +513,46 @@ cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
 	return cv::findHomography(src_points, dst_points, method, ransac_reproj_threshold);
 }
 
-void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
+	const std::vector<float>& distances,
+	std::vector<cv::Point3f>& objectpoints,
 	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	if( imagepoints.size() == 0) return;
+	if( imagepoints.size() != distances.size() ) return;
+
+	objectpoints.resize( imagepoints.size() );
+	std::vector<cv::Point2f> undistorted_points( imagepoints.size() );
+
+	// undistortPoints returns ideal point coordinates, i.e. x = undistorted_x * fx + cx and y = undistorted_y * fy + cy 
+	undistortPoints(imagepoints, undistorted_points, camera_matrix, distortion_coefficients);
+	for(unsigned int i = 0; i < undistorted_points.size(); i++) {
+		//for ideal point coordinates it is enough to multiply with the distance
+		const float x = undistorted_points[i].x * distances[i];
+		const float y = undistorted_points[i].y * distances[i];
+		objectpoints[i] = cv::Point3f(x, y, distances[i]);
+	}
+}
+
+void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 	const float distance,
-	std::vector<cv::Point3f>& objectpoints) {
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
 
-	//TODO: test camera_matrix for beeing 3x3 double
-	//TODO: have a look at cvConvertPointsHomogenious
-
-	double fx = camera_matrix.at<double>(0, 0);
-	double fy = camera_matrix.at<double>(1, 1);
-	//FIXME: check for |fx| <= 0+eps
-	if(fx == 0.0) fx = 1.0;
-	if(fy == 0.0) fy = 1.0;
+	std::vector<cv::Point2f> imagepoints( keypoints.size() );
 	for(std::vector<cv::KeyPoint>::const_iterator kp_iter = keypoints.begin();
 		kp_iter != keypoints.end();
 		++kp_iter) {
-
-		//TODO: use distance for z
-		objectpoints.push_back( cv::Point3f( (kp_iter->pt).x/fx, (kp_iter->pt).y/fy, 0) );
+		
+		imagepoints.push_back(kp_iter->pt);
 	}
-
-// 	cv::Mat point_matrix = cv::Mat(image_points).reshape(1).t();
-// 	cv::Mat object_matrix = inv_cam_matrix*point_matrix;
+	imagepoints_to_objectpoints(imagepoints,
+		distance,
+		objectpoints,
+		camera_matrix,
+		distortion_coefficients);
 }
 
 // simple (and not working) algo to determine rotation
