@@ -256,9 +256,9 @@ namespace mavhub {
 					}	else if(!strcmp("gs_en", (const char *)param_id)) {
 						params["gs_en"] = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en", params["gs_en"], Logger::LOGLEVEL_INFO);
-					}	else if(!strcmp("gs_en_dbg", (const char *)param_id)) {
-						params["gs_en_dbg"] = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("gs_en_dbg_ac", (const char *)param_id)) {
+						params["gs_en_dbg_ac"] = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg_ac", params["gs_en_dbg_ac"], Logger::LOGLEVEL_INFO);
 					}	else if(!strcmp("gs_en_stats", (const char *)param_id)) {
 						params["gs_en_stats"] = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_INFO);
@@ -299,7 +299,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Hover::run() {
-		int buf[1]; // to MK buffer
+		// int buf[1]; // to MK buffer
 		// uint8_t flags = 0;
 		ostringstream o;
 		static mavlink_message_t msg;
@@ -390,7 +390,7 @@ namespace mavhub {
 		Logger::log("Ctrl_Hover started:", name(), Logger::LOGLEVEL_INFO);
 		
 		// request debug msgs
-		buf[0] = 10;
+		// buf[0] = 10;
 		/* FIXME: MK_MSG
 		mk_message_t msg_debug_on;
 		mklink_msg_pack(&msg_debug_on, MK_FC_ADDRESS, MK_MSG_TYPE_POLL_DEBUG, buf, 1);
@@ -403,6 +403,7 @@ namespace mavhub {
 		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
 		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
 		send_stream_request(&msg, MAV_DATA_STREAM_RC_CHANNELS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_EXTRA1, ctl_update_rate);
 
 		while(true) {
 
@@ -789,8 +790,9 @@ namespace mavhub {
 			// fused here and sent to the flightctrl for execution
 			// extctrl.pitch = 0;
 			// extctrl.roll = 0;
-			extctrl.yaw = 0;
-			Logger::log("Ctrl_Hover cmp", DataCenter::get_sensor(6), Logger::LOGLEVEL_DEBUG);
+			// extctrl.yaw = 0;
+			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+			// Logger::log("Ctrl_Hover cmp", DataCenter::get_sensor(6), Logger::LOGLEVEL_DEBUG);
 			extctrl.pitch = (int16_t)DataCenter::get_extctrl_pitch();
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			// extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
@@ -834,7 +836,7 @@ namespace mavhub {
 				AppLayer<mavlink_message_t>::send(msg);
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
-				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
+				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_dbg_ac", params["gs_en_dbg_ac"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
@@ -879,7 +881,7 @@ namespace mavhub {
 			AppLayer<mavlink_message_t>::send(msg);
 
 			// send debug signals to groundstation
-			if(params["gs_en_dbg"]) {
+			if(params["gs_en_dbg_ac"]) {
 				// gas out
 				send_debug(&msg, &dbg, ALT_GAS, gas);
 				// // PID error
@@ -1147,10 +1149,10 @@ namespace mavhub {
 		}
 
 		// mavlink to groundstation debug data enable
-		iter = args.find("gs_en_dbg");
+		iter = args.find("gs_en_dbg_ac");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["gs_en_dbg"];
+			s >> params["gs_en_dbg_ac"];
 		}
 
 		// mavlink to groundstation debug data enable
@@ -1310,7 +1312,7 @@ namespace mavhub {
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_maxgas\"]", params["ctl_maxgas"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: output_enable", params["output_enable"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en", params["gs_en"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: gs_en_dbg_ac", params["gs_en_dbg_ac"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_update_rate", ctl_update_rate, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: usS_max_vz", params["uss_max_vz"], Logger::LOGLEVEL_DEBUG);

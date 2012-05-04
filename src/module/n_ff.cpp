@@ -1,4 +1,5 @@
 #ifdef _HAVE_OPENCV_2
+#ifdef HAVE_LIBFANN
 // kalman opencv
 #include "n_ff.h"
 
@@ -92,4 +93,5 @@ namespace mavhub {
 
 }
 
+#endif // HAVE_LIBFANN
 #endif

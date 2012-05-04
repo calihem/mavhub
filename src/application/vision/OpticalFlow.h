@@ -1,0 +1,91 @@
+#ifndef _OPTICALFLOW_H_
+#define _OPTICALFLOW_H_
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
+#include <stdint.h>
+#include <list>
+
+#ifdef HAVE_OPENCV2
+#include "opencv/cv.h"
+
+#if CV_MINOR_VERSION >= 2
+#include "oftypes.h"
+
+enum of_algorithm { UNKNOWN, FIRST_ORDER, HORN_SCHUNCK, CENSUS_TRANSFORM, LINE_SUM, LINE_CENSUS };
+
+/// type representing sparse motion 
+// typedef std::list<Displacement> motion_list;
+
+/// abstract base class representing optical flow
+class OpticalFlow {
+	public:
+		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0) = 0;
+		virtual void clear() = 0;
+		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const = 0;
+		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const = 0;
+		virtual void visualize(cv::Mat &image) const = 0;
+		virtual void visualizeMean(int sectors, cv::Mat &image) const; 
+		virtual void visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) const; 
+
+	protected:
+		of_algorithm algo;
+
+};
+
+/// class representing dense optical flow
+class DenseOpticalFlow : public OpticalFlow {
+	public:
+		DenseOpticalFlow(int rows, int cols);
+		virtual ~DenseOpticalFlow();
+		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
+		virtual void clear();
+		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
+		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
+		virtual void visualize(cv::Mat &image) const;
+		virtual int getDirection(cv::Mat &image) const;
+
+	protected:
+		CvMat *velX, *velY;
+};
+inline DenseOpticalFlow::DenseOpticalFlow(int rows, int cols) {
+	velX = cvCreateMat(rows, cols, CV_8SC1);
+	velY = cvCreateMat(rows, cols, CV_8SC1);
+}
+inline void DenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
+	*( (signed char*)CV_MAT_ELEM_PTR(*(velX), y, x) ) = dx;
+	*( (signed char*)CV_MAT_ELEM_PTR(*(velY), y, x) ) = dy;
+}
+inline void DenseOpticalFlow::clear() {
+// 	TODO
+}
+
+/// class representing sparse optical flow
+class SparseOpticalFlow : public OpticalFlow {
+	public:
+		SparseOpticalFlow();
+		virtual ~SparseOpticalFlow();
+		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
+		virtual void clear();
+		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
+		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
+		virtual void visualize(cv::Mat &image) const;
+
+	protected:
+		std::list<Displacement> velocity;
+
+};
+inline SparseOpticalFlow::SparseOpticalFlow() {
+}
+inline void SparseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
+	velocity.push_back( Displacement(x, y, dx, dy) );
+}
+inline void SparseOpticalFlow::clear() {
+	velocity.clear();
+}
+
+#endif // CV_MINOR_VERSION >= 2
+#endif // HAVE_OPENCV2
+#endif

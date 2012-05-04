@@ -31,6 +31,8 @@ namespace mavhub {
 
   void Ctrl_Yaw::handle_input(const mavlink_message_t &msg) {
 		static int8_t param_id[15];
+		int rc2;
+		int rc5;
 		//Logger::log("Ctrl_Yaw got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
 
@@ -84,6 +86,14 @@ namespace mavhub {
 				}
 			}
 			break;
+
+		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+			rc2 = mavlink_msg_rc_channels_raw_get_chan2_raw(&msg);
+			rc5 = mavlink_msg_rc_channels_raw_get_chan5_raw(&msg);
+			if (rc2 > 1700 && rc5 > 1700) 
+				params["reset_sp"] = 2.0;
+			break;
+
 		default:
 			break;
 		}		
@@ -107,7 +117,7 @@ namespace mavhub {
 		// body variables
 		int yaw_meas;
 		int sp;
-		int compass_res, compass_res_half;
+		int compass_res, compass_res_half, compass_res_three_half;
 		double yaw, yaw1;
 		// vector<int16_t> v(3);
 
@@ -119,6 +129,7 @@ namespace mavhub {
 		yaw_meas = 0;
 		compass_res = 256;
 		compass_res_half = 128;
+		compass_res_three_half = 384;
 
 		Logger::log("Ctrl_Yaw started:", name(), Logger::LOGLEVEL_INFO);
 		while(true) {
@@ -164,6 +175,11 @@ namespace mavhub {
 				// send(msg);
 			}
 
+			if(params["reset_sp"] > 0.0) {
+				params["reset_sp"] = 0.0;
+				sp = yaw_meas;
+			}
+
 			// // test huch_visual_navigation
 			// huch_visual_navigation.psi_estimate = 1.234;
 			// mavlink_msg_huch_visual_navigation_encode(owner()->system_id(), static_cast<uint8_t>(component_id), &msg, &huch_visual_navigation);
@@ -173,8 +189,10 @@ namespace mavhub {
 
 			// get magnetic 2D compass measurement
 			yaw_meas = DataCenter::get_sensor(6);
+			// Logger::log("Ctrl_Yaw yaw_meas", yaw_meas, Logger::LOGLEVEL_INFO);
 			// calculate controller output
-			yaw = (((sp - yaw_meas) + compass_res_half) % compass_res) - compass_res_half;
+			yaw = (((sp - yaw_meas) + compass_res_three_half) % compass_res) - compass_res_half;
+			//yaw = ((sp - yaw_meas) + compass_res_three_half) % compass_res; //
 			// apply gain
 			yaw *= params["yaw_Kc"];
 			// //comp = (/255.0) * 6.28;
@@ -192,9 +210,11 @@ namespace mavhub {
 
 			mavlink_msg_debug_pack( system_id(), component_id, &msg, 108, yaw);
 			AppLayer<mavlink_message_t>::send(msg);
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, 109, sp);
+			AppLayer<mavlink_message_t>::send(msg);
 	
 			// write output to shared store
-			DataCenter::set_extctrl_yaw(yaw*-1.0);
+			DataCenter::set_extctrl_yaw(yaw);
 			// Logger::log("Ctrl_Yaw (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
 		}
@@ -204,6 +224,7 @@ namespace mavhub {
 		params["yaw_Kc"] = 100.0;
 		params["yaw_Ti"] = 0.0;
 		params["yaw_Td"] = 0.0;
+		params["reset_sp"] = 0.0;
 	}
 
 	void Ctrl_Yaw::read_conf(const map<string, string> args) {
@@ -231,10 +252,17 @@ namespace mavhub {
 			s >> params["yaw_Td"];
 		}
 
+		iter = args.find("reset_sp");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["reset_sp"];
+		}
+
 		Logger::log("ctrl_yaw::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_yaw::read_conf: yaw_Kc", params["yaw_Kc"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_yaw::read_conf: yaw_Ti", params["yaw_Ti"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_yaw::read_conf: yaw_Td", params["yaw_Td"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_yaw::read_conf: reset_sp", params["reset_sp"], Logger::LOGLEVEL_DEBUG);
 	}
 }
 

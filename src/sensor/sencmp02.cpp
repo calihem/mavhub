@@ -41,7 +41,7 @@ namespace mavhub {
 	for(int i = 0; i < CMP02_NUMCHAN; i++) {
 		// FIXME: rather two concurrent iterators?
 		chanmap[i] = iter->second;
-		Logger::log("sensrf02: chantype", chanmap[i], Logger::LOGLEVEL_DEBUG);
+		Logger::log("Cmp02: chantype", chanmap[i], Logger::LOGLEVEL_DEBUG);
 		iter++;
 	}
 
@@ -84,10 +84,10 @@ void SenCmp02::run() {
 	Logger::log("Cmp02: running (Hz)", update_rate, Logger::LOGLEVEL_INFO);
 	// uint64_t end = getTimeUs() + 1000000;
 
-	try {
-		status = RUNNING;
-		
-		while((status == RUNNING) && update_rate) {
+	status = RUNNING;
+
+	while((status == RUNNING) && update_rate) {
+		try {
 
 			/* wait time */
 			usec = get_time_us();
@@ -104,16 +104,16 @@ void SenCmp02::run() {
 			frequency = (15 * frequency + end - start) / 16;
 			start = end;
 
-			// Logger::log("Cmp02: in run 1", Logger::LOGLEVEL_INFO);
-
+			// Logger::log("sencmp2: pre i2c_start_conversion", Logger::LOGLEVEL_DEBUG);
 			i2c_start_conversion(fd, CMP02_ADR);
-			// Logger::log("Cmp02: in run 2", Logger::LOGLEVEL_INFO);
 
 			// set read register
 			buffer[0] = 0x00;
+			// Logger::log("sencmp2: pre i2c_write_bytes", Logger::LOGLEVEL_DEBUG);
 			i2c_write_bytes(fd, (uint8_t*)buffer, 1);
 
 			// read data
+			// Logger::log("sencmp2: pre i2c_read_bytes", Logger::LOGLEVEL_DEBUG);
 			i2c_read_bytes(fd, (uint8_t*)buffer, 1);
 
 			// get version
@@ -122,9 +122,12 @@ void SenCmp02::run() {
 			// Logger::log("Cmp02: version", (int)version, Logger::LOGLEVEL_INFO);
 
 			buffer[0] = 0x01;
+			// Logger::log("sencmp2: pre i2c_write_bytes 2", Logger::LOGLEVEL_DEBUG);
 			i2c_write_bytes(fd, (uint8_t*)buffer, 1);
+			// Logger::log("sencmp2: pre i2c_read_bytes 2", Logger::LOGLEVEL_DEBUG);
 			i2c_read_bytes(fd, (uint8_t*)buffer, 1);
 			
+			// Logger::log("sencmp2: pre i2c_end_conversion", Logger::LOGLEVEL_DEBUG);
 			i2c_end_conversion(fd);
 
 			// get values
@@ -180,17 +183,25 @@ void SenCmp02::run() {
 					time_output += 1000000;
 				}
 			}
+		} // end try
+		catch(const char *message) {
+			i2c_end_conversion(fd);
+			status = STRANGE;
+
+			string s(message);
+			Logger::log("sencmp2: would-be exception:", s, Logger::LOGLEVEL_DEBUG);
+			// fallback termination and free bus
+			i2c_end_conversion(fd);
+			Logger::log("sencmp2: would-be exception:", s, Logger::LOGLEVEL_DEBUG);
+
+			// FIXME: throw and exit on "write_bytes 2"
+			// throw ("Cmp02::run(): " + s).c_str();
+			status = RUNNING;
 		}
-	}
-	catch(const char *message) {
-		i2c_end_conversion(fd);
-		status = STRANGE;
+	} // end while
 
-		string s(message);
-		throw ("Cmp02::run(): " + s).c_str();
-	}
-
-	Logger::debug("exp_ctrl: stopped");
+	Logger::debug("sencmp02: stopped, exiting run()");
+	return;
 }
 
 void SenCmp02::print_debug() {

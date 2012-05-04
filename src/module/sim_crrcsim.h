@@ -51,8 +51,10 @@ namespace mavhub {
 			double x_hat, y_hat, z_hat;
 			/// measurements
 			double m1, m2;
-			/// controller mode
+			/// altitude controller mode
 			int ctl_mode;
+			/// lateral controller mode
+			int ctl_mode_lat;
 			/// PID altitude controller
 			PID* pid_alt;
 			/// parameter dict
@@ -63,6 +65,8 @@ namespace mavhub {
 			Exec_Timing* exec_tmr;
 			/// Bump controller module
 			Bumper* bump;
+			/// Bump controller module
+			Bumper* bump_lat;
 			/// direct thrust
 			double thrust;
 			/// test ffnet

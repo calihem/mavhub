@@ -525,9 +525,10 @@ void MAVLinkMKHUCHApp::run() {
 		//extctrl.mask = THRUST_MANUAL_MASK;
 		extctrl.mask = 0;
 
+		// uncomment to enable transmission of ctrl structure
 		// mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
 		// AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
-		// log("MAVLinkMKHUCHApp running", extctrl.thrust, Logger::LOGLEVEL_DEBUG);
+		// log("MAVLinkMKHUCHApp running", extctrl.thrust, extctrl.roll, Logger::LOGLEVEL_DEBUG);
 		cnt++;
 
 		usleep(100000);

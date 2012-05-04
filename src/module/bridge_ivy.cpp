@@ -159,7 +159,7 @@ void cb_DlValue (TimerId id, void *data, unsigned long delta) {
 }
 
 namespace mavhub {
-	Bridge_Ivy::Bridge_Ivy(const map<string, string> args) : AppInterface("crrcsim"), AppLayer("crrcsim") {
+	Bridge_Ivy::Bridge_Ivy(const map<string, string> args) : AppInterface("bridge_ivy"), AppLayer("bridge_ivy") {
 		//, phi(0.0), theta(0.0), psi(0.0) 
 		// initialize mod parameters from conf
 		read_conf(args);

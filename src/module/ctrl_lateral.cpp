@@ -28,7 +28,7 @@ namespace mavhub {
 											params["yaw_Td"]);
 		pid_pitch = new PID(params["pitch_bias"], params["pitch_Kc"],
 											 params["pitch_Ti"], params["pitch_Td"]);
-		pid_roll = new PID(params["pitch_roll"], params["roll_Kc"],
+		pid_roll = new PID(params["pitch_bias"], params["roll_Kc"],
 											 params["roll_Ti"], params["roll_Td"]);
 	}
 
@@ -49,7 +49,7 @@ namespace mavhub {
 			break;
 
 		case MAVLINK_MSG_ID_HUCH_VISUAL_FLOW:
-			//Logger::log("Ctrl_Lateral: got visual_flow msg", Logger::LOGLEVEL_INFO);
+			// Logger::log("Ctrl_Lateral: got visual_flow msg", Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_visual_flow_decode(&msg, (mavlink_huch_visual_flow_t *)&huch_visual_flow);
 			//Logger::log("psi_est:", huch_visual_flow.psi_estimate, Logger::LOGLEVEL_INFO);
 			break;
@@ -108,7 +108,7 @@ namespace mavhub {
 		uint64_t dt = 0;
 		double dtf = 0.0;
 		struct timeval tk, tkm1; // timevals
-		int update_rate = 10; // 100 Hz
+		int update_rate = 60; // 100 Hz
 		int wait_freq = update_rate? 1000000 / update_rate: 0;
 		int wait_time = wait_freq;
 		uint64_t frequency = wait_time;
@@ -269,14 +269,14 @@ namespace mavhub {
 
 #endif // MAVLINK_ENABLED_HUCH	
 
-			mavlink_msg_debug_pack(system_id(), component_id, &msg, 100, x);
-			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack(system_id(), component_id, &msg, 101, y);
-			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack(system_id(), component_id, &msg, 105, pitch);
-			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack(system_id(), component_id, &msg, 106, roll);
-			AppLayer<mavlink_message_t>::send(msg);
+			// mavlink_msg_debug_pack(system_id(), component_id, &msg, 100, x);
+			// AppLayer<mavlink_message_t>::send(msg);
+			// mavlink_msg_debug_pack(system_id(), component_id, &msg, 101, y);
+			// AppLayer<mavlink_message_t>::send(msg);
+			// mavlink_msg_debug_pack(system_id(), component_id, &msg, 105, pitch);
+			// AppLayer<mavlink_message_t>::send(msg);
+			// mavlink_msg_debug_pack(system_id(), component_id, &msg, 106, roll);
+			// AppLayer<mavlink_message_t>::send(msg);
 			// mavlink_msg_debug_pack( system_id(), component_id, &msg, 107, atan2f(-pitch, -roll) );
 			// AppLayer<mavlink_message_t>::send(msg);
 	
@@ -289,6 +289,8 @@ namespace mavhub {
 			DataCenter::set_extctrl_pitch(pitch);
 			DataCenter::set_extctrl_roll(roll);
 			// DataCenter::set_extctrl_yaw(yaw*-1.0);
+			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
+			// Logger::log("Ctrl_Lateral (x,y)", x, y, Logger::LOGLEVEL_INFO);
 			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
 			my_cnt++;

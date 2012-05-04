@@ -18,6 +18,7 @@ namespace mavhub {
 		AppInterface("crrcsim"),
 		AppLayer<mavlink_message_t>("crrcsim"),
 		ctl_mode(0),
+		ctl_mode_lat(0),
 		thrust(0.0)
 	{
 		// try and set reasonable defaults
@@ -60,6 +61,7 @@ namespace mavhub {
 
 		// Bumper
 		bump = new Bumper(params["bump_thr_low"], params["bump_thr_high"]);
+		bump_lat = new Bumper(0, 0.05);
 		// ffnet
 		//ffnet = new N_FF();
 	}
@@ -73,7 +75,7 @@ namespace mavhub {
 
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HEARTBEAT:
-			//Logger::log("Sim_Crrcsimule got ml heartbeat, (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
+			Logger::log("Sim_Crrcsimule got mavlink heartbeat, (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
 			break;
 
 		case MAVLINK_MSG_ID_ATTITUDE:
@@ -126,6 +128,8 @@ namespace mavhub {
 					pid_alt->setTd(params["ac_pid_Kd"]);
 					//pid_alt->setIntegral(0.0);
 					ctl_mode = static_cast<int>(params["ctl_mode"]);
+					ctl_mode_lat = static_cast<int>(params["ctl_mode_lat"]);
+					bump_lat->bump(0.0);
 					//printf("ctl_mode: %d\n", ctl_mode);
 					bump->set_thr_low(params["bump_thr_low"]);
 					bump->set_thr_high(params["bump_thr_high"]);
@@ -265,6 +269,17 @@ namespace mavhub {
 				ctl.thrust = 0.0;
 				break;
 			}
+
+			switch(ctl_mode_lat) {
+			case CTL_MODE_BUMP:
+				ctl.roll = bump_lat->calc((double)dt * 1e-6);
+				break;
+			case CTL_MODE_NULL:
+			default:
+				ctl.roll = 0.0;
+				break;
+			}
+
 			//Logger::log("sim_crrcsimule: ctl.thust = ", ctl.thrust, Logger::LOGLEVEL_INFO);
 			mavlink_msg_manual_control_encode(43, 1, &msg, &ctl);
 			AppLayer<mavlink_message_t>::send(msg);
@@ -325,6 +340,7 @@ namespace mavhub {
 		params["ac_pid_scalef"] = 0.0;
 		params["ac_sp"] = 2.23;
 		params["ctl_mode"] = 0;
+		params["ctl_mode_lat"] = 0;
 		params["ctl_update_rate"] = 100; // Hz
 		params["bump_thr_low"] = 0.38;
 		params["bump_thr_high"] = 0.39;

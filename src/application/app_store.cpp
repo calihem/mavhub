@@ -6,6 +6,7 @@
 #include "module/fc_mpkg.h"
 #include "module/ctrl_hover.h"
 #include "module/ctrl_lateral.h"
+#include "module/ctrl_yaw.h"
 #include "module/ctrl_zrate.h"
 #include "module/ctrl_bump.h"
 #include "module/ctrl_logfileplayer.h"
@@ -13,6 +14,8 @@
 #include "module/ctrl_wifimeter.h"
 #include "module/sim_crrcsim.h"
 #include "module/bridge_ivy.h"
+#include "module/bridge_osc.h"
+#include "module/ui_potibox.h"
 #include "core_app.h"
 #include "mavlink_mk_app.h"
 #include "mavlink_mkhuch_app.h"
@@ -130,6 +133,12 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		Ctrl_Lateral *ctrl_lateral_app = new Ctrl_Lateral(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_lateral_app);
 #endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "ctrl_yaw_app") {
+#ifdef HAVE_MAVLINK_H
+		// pass only configuration map into constructor
+		Ctrl_Yaw *ctrl_yaw_app = new Ctrl_Yaw(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_yaw_app);
+#endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_zrate_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MKLINK_H
@@ -210,6 +219,19 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		Bridge_Ivy * bridge_ivy_app = new Bridge_Ivy(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(bridge_ivy_app);
 #endif // HAVE_IVY_IVY_H
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "bridge_osc_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_LIBOSCPACK
+		// pass only configuration map into constructor
+		Bridge_Osc * bridge_osc_app = new Bridge_Osc(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(bridge_osc_app);
+#endif // HAVE_LIBOSCPACK
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "ui_potibox_app") {
+#ifdef HAVE_MAVLINK_H
+		UI_Potibox *ui_potibox_app = new UI_Potibox();
+		return ProtocolStack<mavlink_message_t>::instance().add_application(ui_potibox_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "mavlink_mk_app") {
 #ifdef HAVE_MAVLINK_H
