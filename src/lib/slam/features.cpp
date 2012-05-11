@@ -39,7 +39,7 @@ void landmarks_t::clear() {
 	scene_ids.clear();
 }
 
-int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+int egomotion(const std::vector<cv::Point3f> objectpoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<cv::DMatch>& matches,
 	const cv::Mat &camera_matrix,
@@ -55,27 +55,17 @@ int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
 		return -1;
 	}
 
-	//TODO: check dimensions of camera_matrix and distortion_coefficients
-
-	double fx = camera_matrix.at<double>(0, 0);
-	double fy = camera_matrix.at<double>(1, 1);
-	if( abs(fx) <= std::numeric_limits<double>::epsilon() ) fx = 1.0;
-	if( abs(fy) <= std::numeric_limits<double>::epsilon() ) fy = 1.0;
-
-	std::vector<cv::Point3f> object_points;
-	object_points.reserve(src_keypoints.size());
-	std::vector<cv::Point2f> image_points;
-	image_points.reserve(dst_keypoints.size());
+	std::vector<cv::Point3f> object_points; //matched object points
+	object_points.reserve( objectpoints.size() );
+	std::vector<cv::Point2f> image_points; //matched destination image points
+	image_points.reserve( dst_keypoints.size() );
 	for(size_t i = 0; i < matches.size(); i++) {
 		if( matches_mask[i] == 0) continue;
-		//FIXME
-		// determine (wrong) object points
-		int src_index = matches[i].queryIdx;
-		const cv::KeyPoint& src_keypoint = src_keypoints[src_index];
-		object_points.push_back( cv::Point3f(src_keypoint.pt.x/fx, src_keypoint.pt.y/fy, 0.0) );
 
-		// add destination image points of matched points
-		int dst_index = matches[i].trainIdx;
+		const int src_index = matches[i].queryIdx;
+		object_points.push_back( objectpoints[src_index] );
+
+		const int dst_index = matches[i].trainIdx;
 		const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
 		image_points.push_back(dst_keypoint.pt);
 	}

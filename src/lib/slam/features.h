@@ -40,7 +40,7 @@ struct landmarks_t {
 
 /**
  * \brief Determine egomotion based on feature matches.
- * \param[in] src_keypoints
+ * \param[in] objectpoints
  * \param[in] dst_keypoints
  * \param[in] matches
  * \param[in] camera_matrix
@@ -50,7 +50,7 @@ struct landmarks_t {
  * \param[in] use_extrinsic_guess Use \a rotation_vector and \a translation_vector as initial guess.
  * \param[in] matches_mask matches.at(i) will only be considered if matches_mask.at(i) is non-zero
  */
-int egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+int egomotion(const std::vector<cv::Point3f> objectpoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<cv::DMatch>& matches,
 	const cv::Mat &camera_matrix,

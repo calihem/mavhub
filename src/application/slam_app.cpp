@@ -111,6 +111,9 @@ void SLAMApp::extract_features() {
 
 		//TODO: filter features (shi-tomasi)
 
+		// calculate descriptors which can remove or add some of the keypoints
+		descriptor_extractor.compute(scenes.front(), landmarks.keypoints, landmarks.descriptors);
+
 		// calculate corresponding 3D object points
 		keypoints_to_objectpoints(landmarks.keypoints,
 			altitude, //distance from ground
@@ -118,9 +121,7 @@ void SLAMApp::extract_features() {
 			cam_matrix,
 			dist_coeffs);
 
-		// calculate descriptors
-		descriptor_extractor.compute(scenes.front(), landmarks.keypoints, landmarks.descriptors);
-		
+		//FIXME: deprecated
 		// init counters
 		landmarks.counters.assign(landmarks.keypoints.size(), 100);
 		return;
@@ -135,7 +136,7 @@ void SLAMApp::extract_features() {
 	}
 
 	uint64_t stop_time = get_time_ms();
-	log( "feature extraction needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	log( "feature extraction needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
 	//TODO: filter features (shi-tomasi)
@@ -149,7 +150,7 @@ void SLAMApp::extract_features() {
 	}
 
 	stop_time = get_time_ms();
-	log( "descriptors needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	log( "descriptors needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
 	// create filter mask
@@ -161,7 +162,7 @@ void SLAMApp::extract_features() {
 	std::vector<char> matches_mask(matches.size(), 1);
 
 	stop_time = get_time_ms();
-	log( "forward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	log( "forward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
 // 	std::vector<cv::DMatch> backward_matches;
@@ -180,7 +181,7 @@ void SLAMApp::extract_features() {
 	filter_matches_by_robust_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
 
 	stop_time = get_time_ms();
-	log( "distribution filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	log( "distribution filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
 // 	filter_matches_by_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
@@ -264,34 +265,30 @@ void SLAMApp::extract_features() {
 	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
 	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;
 	rotation_vector.at<double>(0, 2) = attitudes.back().yaw - attitudes.front().yaw;
-// 	Logger::log(name(), "Attitude change: ",
-// 		rad2deg(rotation_vector.at<double>(0, 1)), //roll
-// 		rad2deg(rotation_vector.at<double>(0, 0)), //pitch
-// 		rad2deg(rotation_vector.at<double>(0, 2)), //yaw
-// 		Logger::LOGLEVEL_DEBUG, _loglevel);
-
 	cv::Mat translation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
-	egomotion(landmarks.keypoints,
+	egomotion(landmarks.objectpoints,
 		keypoints,
 		matches,
 		cam_matrix,
 		dist_coeffs,
 		rotation_vector,
 		translation_vector,
-		true,
+		use_extrinsic_guess,
 		matches_mask);
 	if(rotation_vector.empty() || translation_vector.empty()) {
 		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
 		return;
 	}
 	stop_time = get_time_ms();
-	log( "egomotion needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	log( "egomotion needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
-	rotation_vector.at<double>(0, 1) += attitudes.front().roll;
-	rotation_vector.at<double>(0, 0) += attitudes.front().pitch;
-	rotation_vector.at<double>(0, 2) += attitudes.front().yaw;
-	//FIXME: add offsets to translation to get position out of egomotion (atm zero)
+	// add offsets to rotation vector to get orientation out of relative changes
+// 	rotation_vector.at<double>(0, 1) += attitudes.front().roll;
+// 	rotation_vector.at<double>(0, 0) += attitudes.front().pitch;
+// 	rotation_vector.at<double>(0, 2) += attitudes.front().yaw;
+	//FIXME: add offsets to translation to get position out of egomotion
+// 	translation_vector.at<double>(0, 2) += altitude;
 
 #ifdef SLAM_LOG
 	log_file << setw(13) << get_time_ms()
@@ -346,7 +343,7 @@ void SLAMApp::extract_features() {
 	}
 // 	uint64_t stop_time = get_time_ms();
 	stop_time = get_time_ms();
-	Logger::log(name(), "sending and displaying needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO, _loglevel);
+	Logger::log(name(), "sending and displaying needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
 }
 
 void SLAMApp::handle_input(const mavlink_message_t &msg) {
