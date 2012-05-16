@@ -75,6 +75,8 @@ PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10 gstreamer-app-0.10],
 AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
 
 # Checks for libraries.
+# To list the function names of a library run:
+# nm -D /lib/libfoo.so
 AC_CHECK_LIB([ncurses], [newwin])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([gps], [gps_clear_fix])
@@ -82,6 +84,8 @@ AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
 AC_CHECK_LIB([ivy], [IvyInit])
+AC_CHECK_LIB([lapack], [catlas_cset], [AM_CONDITIONAL(COND_LIBLAPACK, true) LIBS+="-llapack "], AM_CONDITIONAL(COND_LIBLAPACK, false) )
+AC_CHECK_LIB([blas], [catlas_cset], [AM_CONDITIONAL(COND_LIBBLAS, true) LIBS+="-lblas "], AM_CONDITIONAL(COND_LIBBLAS, false))
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])

@@ -9,6 +9,7 @@
 #include "core/logger.h"
 #include "core/datacenter.h"
 #include "utility.h"
+#include "lib/slam/pose.h"
 
 #include <sstream> //istringstream
 
@@ -261,20 +262,28 @@ void SLAMApp::extract_features() {
 // 	log("yaw:", _yaw, Logger::LOGLEVEL_INFO);
 
 	// get change of attitude
+	vector<float> parameter_vector(6);
 	cv::Mat rotation_vector(3, 1, cv::DataType<double>::type);
 	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
 	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;
 	rotation_vector.at<double>(0, 2) = attitudes.back().yaw - attitudes.front().yaw;
 	cv::Mat translation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
-	egomotion(landmarks.objectpoints,
+	estimate_pose(landmarks.objectpoints,
 		keypoints,
 		matches,
 		cam_matrix,
 		dist_coeffs,
-		rotation_vector,
-		translation_vector,
-		use_extrinsic_guess,
-		matches_mask);
+		matches_mask,
+		parameter_vector);
+// 	egomotion(landmarks.objectpoints,
+// 		keypoints,
+// 		matches,
+// 		cam_matrix,
+// 		dist_coeffs,
+// 		rotation_vector,
+// 		translation_vector,
+// 		use_extrinsic_guess,
+// 		matches_mask);
 	if(rotation_vector.empty() || translation_vector.empty()) {
 		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
 		return;

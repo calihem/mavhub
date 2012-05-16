@@ -22,5 +22,6 @@ if COND_OPENCV2
 noinst_LIBRARIES += libslam.a
 
 libslam_a_SOURCES = \
-	slam/features.cpp
+	slam/features.cpp \
+	slam/pose.cpp
 endif

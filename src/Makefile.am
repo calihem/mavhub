@@ -26,6 +26,12 @@ THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/libbrisk.a \
 	$(top_builddir)/thirdparty/libagast.a
 endif
 
+if COND_LIBLAPACK
+if COND_LIBBLAS
+THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/liblevmar.a
+endif
+endif
+
 bin_PROGRAMS = mavhub
 mavhub_SOURCES =  main.cpp
 
