@@ -61,6 +61,8 @@ namespace mavhub {
 		protected:
 			virtual void run();
 			virtual void* get_data_pointer(unsigned int id) throw(const char *);
+			/// copy data into datacenter
+			void publish_data(uint64_t time);
 			
 		private:
 #ifdef MAVLINK_ENABLED_HUCH

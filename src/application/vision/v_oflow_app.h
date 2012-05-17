@@ -29,6 +29,8 @@
 #include "OpticalFlow.h"
 #include "ofdifferential.h"
 
+#include "../../module/filter_ma.h"
+
 #include <inttypes.h> //uint8_t
 
 // #define ABS(x) ((x)<0?-(x):(x))
@@ -65,7 +67,7 @@ namespace mavhub {
 		LINE_CENSUS /// Line census
 	};
 
-	class V_OFLOWApp : public MavlinkAppLayer,
+	class V_OFLOWApp : public AppLayer<mavlink_message_t>,
 		public hub::gstreamer::VideoClient {
 
 	public:
@@ -129,6 +131,13 @@ namespace mavhub {
 
 		mavlink_huch_imu_raw_adc_t raw_adc_imu; /// for Gyro values
 		mavlink_huch_ctrl_hover_state_t hover_state; /// for altitude estimate
+
+		/// gyro moving average filter
+		MA *ma_pitch;
+		MA *ma_roll;
+
+		/// lateral control active
+		uint8_t lc_active;
 
 		//FIXME: replace old_* by database of these informations
 		std::string sink_name;

@@ -19,12 +19,14 @@ pthread_mutex_t DataCenter::huch_ranger_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::exp_ctrl_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::huch_imu_raw_adc_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t DataCenter::huch_mk_imu_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t DataCenter::huch_magnetic_kompass_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif // MAVLINK_ENABLED_HUCH
 
 mavlink_raw_imu_t DataCenter::raw_imu = {};
 mavlink_raw_pressure_t DataCenter::raw_pressure = {};
 #ifdef MAVLINK_ENABLED_HUCH
 mavlink_huch_imu_raw_adc_t DataCenter::huch_imu_raw_adc = {};
+mavlink_huch_magnetic_kompass_t DataCenter::huch_magnetic_kompass = {};
 mavlink_huch_mk_imu_t DataCenter::huch_mk_imu = {};
 mavlink_huch_attitude_t DataCenter::huch_attitude = {};
 mavlink_huch_fc_altitude_t DataCenter::huch_altitude = {};

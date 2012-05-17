@@ -34,7 +34,7 @@ void cb_DlSetting (IvyClientPtr app, void *data, int argc, char **argv)
 
 	if(argc == 4) {
 		param_set.target_system = 43; //atoi(argv[1]);
-		param_set.target_component = 27; // FIXME: HUCH_COMPID_SIM_CRRCSIM
+		param_set.target_component = 27; // FIXME: HUCH_COMPID_PLAT_LINK_CRRCSIM
 		switch(atoi(argv[2])) {
 		case 38: // ctl_mode
 			//param_set.param_id = (int8_t*)strdup("ctl_mode");

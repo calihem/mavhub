@@ -10,11 +10,12 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
-#ifdef HAVE_MKLINK_H
-#include <mklink.h>
+#ifdef HAVE_MKHUCHLINK_H
+// #include <mklink.h>
 
 #ifdef HAVE_OPENCV
 
+#include "modulebase.h"
 #include "debug_channels.h"
 #include "filter_kalmancv.h"
 #include "stat_meanvar.h"
@@ -34,8 +35,9 @@
 
 namespace mavhub {
 	/// Controller: hover (altitude)
-  //class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
-  class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mkhuch_message_t> {
+  // class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
+  // class Ctrl_Hover : public AppLayer<mavlink_message_t>, public AppLayer<mkhuch_message_t> {
+  class Ctrl_Hover : public ModuleBase {
   public:
 		/// Constructor
 		// Ctrl_Hover(int component_id_, int numchan, const std::list< std::pair<int, int> > chanmap, const std::map<std::string, std::string> args);
@@ -100,6 +102,8 @@ namespace mavhub {
 		/* mavlink_mk_fc_status_t mk_fc_status; */
 		/// huch hover ctrl (hc) raw altitude readings
 		mavlink_huch_hc_raw_t ch_raw;
+		/// huch generic channel
+		mavlink_huch_generic_channel_t chan;
 
 		// PIXHAWK stuff
 		/// pixhawk raw imu
@@ -108,8 +112,6 @@ namespace mavhub {
 		mavlink_attitude_t ml_attitude;
 		/// pixhawk manual control input
 		mavlink_manual_control_t manual_control;
-		/// pixhawk attitude controller output
-		mavlink_attitude_controller_output_t attitude_controller_output;
 
 		/// Kalman instance
 		Kalman_CV* kal;
@@ -167,16 +169,19 @@ namespace mavhub {
 		int set_neutral_rq;
 
 
-		// parameters
+		/// parameters
 		int param_request_list;
 		int param_count;		
 
-		// update rate
+		/// update rate
 		int ctl_update_rate;
 
-		// manual thrust
+		/// manual thrust
 		int man_thrust;
 		
+		/// thrust: main output variable of this module
+		float thrust;
+
 		/// strapdown matrix setter
 		int sd_comp_C(mavlink_huch_attitude_t *a, CvMat *C);
 
@@ -192,6 +197,8 @@ namespace mavhub {
 		void send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value);
 		/// limit gas
 		virtual int limit_gas(double gas);
+		/// ac active
+		uint8_t ac_active;
 
 		// MK debug structure conversion
 		int mk_debugout_digital_offset;
@@ -253,7 +260,7 @@ namespace mavhub {
 
 #endif // HAVE_OPENCV
 
-#endif // HAVE_MKLINK_H
+#endif // HAVE_MKHUCHLINK_H
 
 #endif // HAVE_MAVLINK_H
 

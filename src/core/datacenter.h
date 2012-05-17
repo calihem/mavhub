@@ -41,16 +41,25 @@ namespace mavhub {
 			static void set_huch_mk_imu(const mavlink_huch_mk_imu_t &huch_mk_imu);
 			static const mavlink_huch_mk_imu_t get_huch_mk_imu();
 			// FlightCtrl legacy
+
 			/// get FC legacy data
 			static const mavlink_huch_attitude_t get_huch_attitude();
 			static const mavlink_huch_fc_altitude_t get_huch_fc_altitude();
 			static const mavlink_huch_ranger_t get_huch_ranger();
 			static const mavlink_mk_fc_status_t get_mk_fc_status();
+
 			/// set FC legacy data
 			static void set_huch_attitude(const mavlink_huch_attitude_t &huch_attitude);
 			static void set_huch_fc_altitude(const mavlink_huch_fc_altitude_t &huch_fc_altitude);
 			static void set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger, int index);
 			static void set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status);
+
+			/**
+			 * HUCH MAGNETIC KOMPASS
+			 */
+			static void set_huch_magnetic_kompass(const mavlink_huch_magnetic_kompass_t &huch_magnetic_kompass);
+			static const mavlink_huch_magnetic_kompass_t get_huch_magnetic_kompass();
+
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
 			/// set FC legacy extctrl components
@@ -87,6 +96,8 @@ namespace mavhub {
 			static mavlink_mk_fc_status_t mk_fc_status;
 			/// ExpCtrl data structure
 			static mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
+			/// Magnetic kompass
+			static mavlink_huch_magnetic_kompass_t huch_magnetic_kompass;
 #endif // MAVLINK_ENABLED_HUCH
 
 			//sync data
@@ -96,6 +107,7 @@ namespace mavhub {
 			static pthread_mutex_t exp_ctrl_mutex;
 			static pthread_mutex_t huch_imu_raw_adc_mutex;
 			static pthread_mutex_t huch_mk_imu_mutex;
+			static pthread_mutex_t huch_magnetic_kompass_mutex;
 			// FlightCtrl legacy
 			static pthread_mutex_t mk_fc_mutex;
 			static pthread_mutex_t huch_ranger_mutex;
@@ -184,6 +196,21 @@ namespace mavhub {
 
 		Lock mi_lock(huch_imu_raw_adc_mutex);
 		DataCenter::huch_mk_imu = huch_mk_imu;
+	}
+
+	inline const mavlink_huch_magnetic_kompass_t DataCenter::get_huch_magnetic_kompass() {
+		using namespace cpp_pthread;
+
+		Lock ira_lock(raw_imu_mutex);
+		mavlink_huch_magnetic_kompass_t magnetic_kompass_copy(huch_magnetic_kompass);
+
+		return magnetic_kompass_copy;
+	}
+	inline void DataCenter::set_huch_magnetic_kompass(const mavlink_huch_magnetic_kompass_t &huch_magnetic_kompass) {
+		using namespace cpp_pthread;
+
+		Lock ira_lock(huch_magnetic_kompass_mutex);
+		DataCenter::huch_magnetic_kompass = huch_magnetic_kompass;
 	}
 
 	// FlightCtrl legacy functions

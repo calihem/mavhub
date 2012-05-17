@@ -74,16 +74,18 @@ AR = ar
 ARFLAGS = cru
 libmodule_a_AR = $(AR) $(ARFLAGS)
 libmodule_a_LIBADD =
-am_libmodule_a_OBJECTS = Bumper.$(OBJEXT) PID.$(OBJEXT) \
-	bridge_ivy.$(OBJEXT) bridge_osc.$(OBJEXT) ctrl_bump.$(OBJEXT) \
-	ctrl_hover.$(OBJEXT) ctrl_lateral.$(OBJEXT) \
-	ctrl_logfileplayer.$(OBJEXT) ctrl_logger.$(OBJEXT) \
-	ctrl_wifimeter.$(OBJEXT) ctrl_yaw.$(OBJEXT) \
-	ctrl_zrate.$(OBJEXT) exec_timing.$(OBJEXT) fc_mpkg.$(OBJEXT) \
-	filter_fir.$(OBJEXT) filter_kalmancv.$(OBJEXT) \
-	filter_median.$(OBJEXT) n_ff.$(OBJEXT) pp.$(OBJEXT) \
-	pp_acc.$(OBJEXT) pp_baro.$(OBJEXT) pp_ir.$(OBJEXT) \
-	pp_uss.$(OBJEXT) sim_crrcsim.$(OBJEXT) stat_meanvar.$(OBJEXT) \
+am_libmodule_a_OBJECTS = modulebase.$(OBJEXT) Bumper.$(OBJEXT) \
+	PID.$(OBJEXT) bridge_ivy.$(OBJEXT) bridge_osc.$(OBJEXT) \
+	ctrl_alt_simple.$(OBJEXT) ctrl_bump.$(OBJEXT) \
+	ctrl_lat_bump.$(OBJEXT) ctrl_hover.$(OBJEXT) \
+	ctrl_lateral.$(OBJEXT) ctrl_logfileplayer.$(OBJEXT) \
+	ctrl_logger.$(OBJEXT) ctrl_wifimeter.$(OBJEXT) \
+	ctrl_yaw.$(OBJEXT) ctrl_zrate.$(OBJEXT) exec_timing.$(OBJEXT) \
+	fc_mpkg.$(OBJEXT) filter_fir.$(OBJEXT) filter_ma.$(OBJEXT) \
+	filter_kalmancv.$(OBJEXT) filter_median.$(OBJEXT) \
+	n_ff.$(OBJEXT) pp.$(OBJEXT) pp_acc.$(OBJEXT) pp_baro.$(OBJEXT) \
+	pp_ir.$(OBJEXT) pp_uss.$(OBJEXT) plat_link_crrcsim.$(OBJEXT) \
+	plat_link_mk.$(OBJEXT) stat_meanvar.$(OBJEXT) \
 	testcore.$(OBJEXT) ui_potibox.$(OBJEXT)
 libmodule_a_OBJECTS = $(am_libmodule_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
@@ -259,11 +261,14 @@ AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
 # AM_CXXFLAGS = 
 noinst_LIBRARIES = libmodule.a
 libmodule_a_SOURCES = \
+	modulebase.cpp \
 	Bumper.cpp \
 	PID.cpp \
 	bridge_ivy.cpp \
 	bridge_osc.cpp \
+	ctrl_alt_simple.cpp \
 	ctrl_bump.cpp \
+	ctrl_lat_bump.cpp \
 	ctrl_hover.cpp \
 	ctrl_lateral.cpp \
 	ctrl_logfileplayer.cpp \
@@ -274,6 +279,7 @@ libmodule_a_SOURCES = \
 	exec_timing.cpp \
 	fc_mpkg.cpp \
 	filter_fir.cpp \
+	filter_ma.cpp \
 	filter_kalmancv.cpp \
 	filter_median.cpp \
 	n_ff.cpp \
@@ -282,7 +288,8 @@ libmodule_a_SOURCES = \
 	pp_baro.cpp \
 	pp_ir.cpp \
 	pp_uss.cpp \
-	sim_crrcsim.cpp \
+	plat_link_crrcsim.cpp \
+	plat_link_mk.cpp \
 	stat_meanvar.cpp \
 	testcore.cpp \
   ui_potibox.cpp
@@ -340,8 +347,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PID.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_ivy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_osc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_alt_simple.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_bump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_hover.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_lat_bump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_lateral.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_logfileplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctrl_logger.Po@am__quote@
@@ -352,14 +361,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fc_mpkg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_fir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_kalmancv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_ma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_median.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modulebase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n_ff.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plat_link_crrcsim.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plat_link_mk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_acc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_baro.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_ir.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pp_uss.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim_crrcsim.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stat_meanvar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testcore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ui_potibox.Po@am__quote@

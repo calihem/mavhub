@@ -19,7 +19,7 @@ using namespace std;
 namespace mavhub {
 	Ctrl_Lateral::Ctrl_Lateral(const map<string, string> args) :
 		AppInterface("ctrl_lateral"),
-		AppLayer<mavlink_message_t>("ctrl_lateral") {
+		ModuleBase(args, "ctrl_lateral") {
 		read_conf(args);
 		param_request_list = 0;
 		prm_test_pitch = 0;
@@ -288,6 +288,25 @@ namespace mavhub {
 
 			DataCenter::set_extctrl_pitch(pitch);
 			DataCenter::set_extctrl_roll(roll);
+
+			chan.usec = get_time_us();
+			chan.index = CHAN_PITCH;    
+			chan.value = pitch;
+			mavlink_msg_huch_generic_channel_encode(system_id(),
+																							component_id,
+																							&msg,
+																							&chan);
+			AppLayer<mavlink_message_t>::send(msg);
+
+			chan.usec = get_time_us();
+			chan.index = CHAN_ROLL;
+			chan.value = roll;
+			mavlink_msg_huch_generic_channel_encode(system_id(),
+																							component_id,
+																							&msg,
+																							&chan);
+			AppLayer<mavlink_message_t>::send(msg);
+
 			// DataCenter::set_extctrl_yaw(yaw*-1.0);
 			// Logger::log("Ctrl_Lateral (n,r,y)", v, Logger::LOGLEVEL_INFO);
 			// Logger::log("Ctrl_Lateral (x,y)", x, y, Logger::LOGLEVEL_INFO);

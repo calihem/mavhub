@@ -19,6 +19,8 @@
 #define BILINEAR_INTERPOLATION  1
 #define BICUBIC_INTERPOLATION   2
 
+#define ACTION_TOGGLE_LC 2
+
 using namespace std;
 using namespace cpp_pthread;
 //using namespace hub::slam;
@@ -39,7 +41,7 @@ namespace mavhub {
 
 	V_OFLOWApp::V_OFLOWApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
 		AppInterface("v_oflow_app", loglevel),
-		MavlinkAppLayer("v_oflow_app", loglevel),
+		AppLayer<mavlink_message_t>("v_oflow_app", loglevel),
 		hub::gstreamer::VideoClient(),
 		with_out_stream(false),
 		take_new_image(1),
@@ -56,15 +58,17 @@ namespace mavhub {
 		of_alt(0.0),
 		of_x(0.0),
 		of_y(0.0),
-		param_request_list(0)
+		param_request_list(0),
+		lc_active(0)
 		//		cam_matrix(3, 3, CV_32FC1),
 		// dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
 		// feature_detector(60, 3), //threshold, octaves
 		// rotation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
 		// translation_vector( cv::Mat::zeros(3, 1, CV_64FC1))
 	{
+		// cout << loglevel << endl;
 		// Logger::log(name(), "Ctor", Logger::LOGLEVEL_DEBUG);
-
+		
 		pthread_mutex_init(&sync_mutex, NULL);
 		// invalidate attitude
 		attitude.usec = 0;
@@ -112,13 +116,16 @@ namespace mavhub {
 		// 	load_calibration_data(calib_filename);
 
 		// neural network
-		ann = fann_create_from_file("n_lateral_control.net");
+		// ann = fann_create_from_file("n_lateral_control.net");
 
 		// cout << "set OF algo" << endl;
 		algo = (of_algorithm)FIRST_ORDER;
 		// cout << "pre initModel()" << endl;
 		initModel(algo);
 		// cout << "post initModel()" << endl;
+
+		ma_pitch = new MA(1200, 0);
+		ma_roll = new MA(1200, 0);
 
 	}
 
@@ -308,10 +315,10 @@ namespace mavhub {
 		int rc2;
 		int rc5;
 
-		Logger::log(name(), "got mavlink_message", static_cast<int>(msg.msgid),
-								"from", static_cast<int>(msg.sysid),
-								static_cast<int>(msg.compid),
-								Logger::LOGLEVEL_DEBUG, _loglevel);
+		// Logger::log(name(), "got mavlink_message", static_cast<int>(msg.msgid),
+		// 						"from", static_cast<int>(msg.sysid),
+		// 						static_cast<int>(msg.compid),
+		// 						Logger::LOGLEVEL_DEBUG, _loglevel);
 
 		switch(msg.msgid) {
 
@@ -343,13 +350,22 @@ namespace mavhub {
 			break;
 
 		case MAVLINK_MSG_ID_ACTION:
+			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
 			if( (mavlink_msg_action_get_target(&msg) == system_id()) ) {
 				// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
 				uint8_t action_id = mavlink_msg_action_get_action(&msg);
-				if(action_id == MAV_ACTION_GET_IMAGE) {
-					Lock sync_lock(sync_mutex);
-					// new image with ACK
-					take_new_image = 3;
+				// if(action_id == MAV_ACTION_GET_IMAGE) {
+				// 	Lock sync_lock(sync_mutex);
+				// 	// new image with ACK
+				// 	take_new_image = 3;
+				// }
+				switch(action_id) {
+				case ACTION_TOGGLE_LC:
+					lc_active = !lc_active;
+					params["reset_i"] = (float)lc_active;
+					Logger::log(name(), "action done: lc_active, reset_i", (int)lc_active, params["reset_i"], Logger::LOGLEVEL_DEBUG);
+				default:
+					break;
 				}
 			}
 			break;
@@ -495,12 +511,14 @@ namespace mavhub {
 	}
 
 	void V_OFLOWApp::getOF_FirstOrder2() {
-		static int of_comp_x[4];
-		static int of_comp_y[4];
-		int i;
+		// static int of_comp_x[4];
+		// static int of_comp_y[4];
+		// static float of_u_m = 0.;
+		// static float of_v_m = 0.;
+		// int i;
 		// int num_hor = 4;
-		int sec_width = 50;
-		int sec_height = 50;
+		// int sec_width = 50;
+		// int sec_height = 50;
 
 		// int of_yaw_int = 0;
 		// int of_alt_int = 0;
@@ -516,10 +534,14 @@ namespace mavhub {
 		// visualize secotrized mean flow
 		ofModel->getOpticalFlow().visualizeMeanXY(1, 1, new_image);
 
-		of_u = ofModel->getOpticalFlow()
-			.getMeanVelX(1, 99, 1, 99);
-		of_v = ofModel->getOpticalFlow()
-			.getMeanVelY(1, 99, 1, 99);
+		// of_u = ofModel->getOpticalFlow()
+		// 	.getMeanVelX(1, 99, 1, 99);
+		// of_v = ofModel->getOpticalFlow()
+		// 	.getMeanVelY(1, 99, 1, 99);
+
+		of_u = iirFilter(of_u, ofModel->getOpticalFlow().getMeanVelX(1, 99, 1, 99));
+		of_v = iirFilter(of_v, ofModel->getOpticalFlow().getMeanVelY(1, 99, 1, 99));
+
 
 		// for(i = 0; i < 4; i++) {
 		// 	of_comp_x[i] =
@@ -577,9 +599,9 @@ namespace mavhub {
 		static int of_comp_x[4];
 		static int of_comp_y[4];
 		int i;
-		int num_hor = 4;
+		// int num_hor = 4;
 		int sec_width = 125;
-		int sec_height = 70;
+		// int sec_height = 70;
 
 		int of_yaw_int = 0;
 		int of_alt_int = 0;
@@ -731,6 +753,7 @@ namespace mavhub {
 		//uint64_t start_time = get_time_ms();
 
 		// Logger::log(name(), ": got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG);
+
 		if(bpp != 8) {
 			log(name(), ": unsupported video data with bpp =", bpp, Logger::LOGLEVEL_WARN);
 			return;
@@ -819,14 +842,15 @@ namespace mavhub {
 	}
 
 	void V_OFLOWApp::run() {
-		log(name(), ": running", Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), ": running", Logger::LOGLEVEL_DEBUG);
 
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
 		static mavlink_huch_visual_flow_t flow;
 		double pitch, roll;
 		double imu_pitch, imu_roll, imu_pitchm1, imu_rollm1;
-		double imu_pitch_speed, imu_roll_speed;
+		float imu_pitch_speed, imu_roll_speed;
+		int imu_pitch_ma, imu_roll_ma;
 		double imu_pitch_derot, imu_roll_derot;
 
 		if(Core::video_server) {
@@ -851,6 +875,7 @@ namespace mavhub {
 		pitch = roll = 0.0;
 		imu_pitch = imu_roll = imu_pitchm1 = imu_rollm1 = 0.0;
 		imu_pitch_speed = imu_roll_speed = 0.0;
+		imu_pitch_ma = imu_roll_ma = 0;
 		imu_pitch_derot = imu_roll_derot = 0.0;
 
 		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
@@ -904,10 +929,23 @@ namespace mavhub {
 					// use raw_adc_imu
 					// imu_roll_speed = static_cast<double>(raw_adc_imu.xgyro - 497);
 					// imu_pitch_speed = static_cast<double>(raw_adc_imu.ygyro - 508);
-					imu_pitch_speed = static_cast<double>(raw_adc_imu.ygyro) - params["derot_pit_b"];
-					imu_roll_speed  = static_cast<double>(raw_adc_imu.xgyro) - params["derot_rol_b"];
-					imu_pitch_derot = params["derot_pit_g"] * imu_pitch_speed;
-					imu_roll_derot = params["derot_rol_g"] * imu_roll_speed;
+					// imu_pitch_speed = static_cast<double>(raw_adc_imu.ygyro) - params["derot_pit_b"];
+					// imu_roll_speed  = static_cast<double>(raw_adc_imu.xgyro) - params["derot_rol_b"];
+
+
+					imu_pitch_ma = ma_pitch->calc(raw_adc_imu.ygyro);
+					imu_roll_ma  = ma_roll->calc(raw_adc_imu.xgyro);
+
+					imu_pitch_speed = static_cast<float>(raw_adc_imu.ygyro);
+					imu_roll_speed  = static_cast<float>(raw_adc_imu.xgyro);
+
+					// imu_pitch_derot = params["derot_pit_g"] * (imu_pitch_speed - imu_pitchm1);
+					// imu_roll_derot = params["derot_rol_g"] * (imu_roll_speed - imu_rollm1);
+					imu_pitch_derot = params["derot_pit_g"] * (imu_pitch_speed - ((float)imu_pitch_ma/1200.));
+					imu_roll_derot = params["derot_rol_g"] * (imu_roll_speed - ((float)imu_roll_ma/1200.));
+
+					// imu_pitchm1 = imu_pitch_speed;
+					// imu_rollm1 = imu_roll_speed;
 
 					// write back into attitude struct
 					// attitude.pitchspeed = imu_pitch_speed;

@@ -1,5 +1,5 @@
-#ifndef _SIM_CRRCSIM_H_
-#define _SIM_CRRCSIM_H_
+#ifndef _PLAT_LINK_CRRCSIM_H_
+#define _PLAT_LINK_CRRCSIM_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -8,6 +8,7 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
+#include "modulebase.h"
 #include "PID.h"
 #include "n_ff.h"
 #include "Bumper.h"
@@ -20,28 +21,17 @@
 #include <inttypes.h> //uint8_t
 #include "protocol/protocollayer.h"
 
-// controller modes
-enum ctl_mode_t {
-	CTL_MODE_NULL, // do nothing
-	CTL_MODE_BUMP, // do system bumping
-	CTL_MODE_AC,   // dpo altitude control
-	CTL_MODE_DIRECT, // directly provide thrust value
-	CTL_MODE_NMODES // number of items in enum
-};
-
 namespace mavhub {
-
-	class Sim_Crrcsimule : public AppLayer<mavlink_message_t> {
+	class Plat_Link_Crrcsim : public ModuleBase {
 		public:
-			Sim_Crrcsimule(const std::map<std::string, std::string> args);
-			virtual ~Sim_Crrcsimule();
+			Plat_Link_Crrcsim(const std::map<std::string, std::string> args);
+			virtual ~Plat_Link_Crrcsim();
 			virtual void handle_input(const mavlink_message_t &msg);
 
 		protected:
 			virtual void run();
 
 	private:
-			uint16_t component_id;
 
 			/// attitude variables
 			double phi, theta, psi;
@@ -57,10 +47,10 @@ namespace mavhub {
 			int ctl_mode_lat;
 			/// PID altitude controller
 			PID* pid_alt;
-			/// parameter dict
-			std::map<std::string, double>	params;
-			/// params requested for transmission
-			bool param_request_list;
+			/* /// parameter dict */
+			/* std::map<std::string, double>	params; */
+			/* /// params requested for transmission */
+			/* bool param_request_list; */
 			/// execution timing
 			Exec_Timing* exec_tmr;
 			/// Bump controller module
@@ -69,16 +59,28 @@ namespace mavhub {
 			Bumper* bump_lat;
 			/// direct thrust
 			double thrust;
+			/// direct roll
+			double roll, pitch;
 			/// test ffnet
 			//N_FF* ffnet;
+
+			// transmissibles
+			// base message
+			mavlink_message_t msg;
+			// control message
+			// mavlink_manual_control_t ctl;
+			mavlink_huch_attitude_control_t ctl;
+			// debug structure
+			mavlink_debug_t dbg;
+
 
 			////////////////////////////////////////////////////////////
 			// methods
 
 			/// read data from config
 			virtual void conf_defaults();
-			/// handle parameter list request
-			virtual void param_request_respond(bool param_request);
+			/* /// handle parameter list request */
+			/* virtual void param_request_respond(); */
 			/// ivy timer callback
 			virtual void read_conf(const std::map<std::string, std::string> args);
 			//virtual void handle_timer (TimerId id, void *data, unsigned long delta);
@@ -88,7 +90,7 @@ namespace mavhub {
 	};
 	
 	// ----------------------------------------------------------------------------
-	// Sim_Crrcsimule
+	// Plat_Link_Crrcsim
 	// ----------------------------------------------------------------------------
 
 

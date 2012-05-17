@@ -59,8 +59,9 @@ namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : 
 		AppInterface("ctrl_hover"), 
-		AppLayer<mavlink_message_t>("ctrl_hover"),
-		AppLayer<mkhuch_message_t>("ctrl_hover"),
+		ModuleBase(args, "ctrl_hover"),
+		// AppLayer<mavlink_message_t>("ctrl_hover"),
+		// AppLayer<mkhuch_message_t>("ctrl_hover"),
 		// AppLayer<mk_message_t>("ctrl_hover"),
 		uss_win(WINSIZE, 0.0),
 		uss_win_sorted(WINSIZE, 0.0),
@@ -68,7 +69,9 @@ namespace mavhub {
 		uss_win_idx_m1(0),
 		uss_med(0.0),
 		d_uss(0.0),
-		uss_plaus(0)
+		uss_plaus(0),
+		thrust(0.0),
+		ac_active(0)
 	{
 		// sensible pre-config defaults
 		conf_defaults();
@@ -287,6 +290,25 @@ namespace mavhub {
 			man_thrust *= 0.66;
 			// Logger::log("Ctrl_Hover::handle_input: man_thrust", man_thrust, Logger::LOGLEVEL_INFO);
 			break;
+
+		case MAVLINK_MSG_ID_ACTION:
+			Logger::log(name(), "handle_input: received action request", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_action_get_target(&msg) == system_id()){
+				if(mavlink_msg_action_get_target_component(&msg) == component_id) {
+					switch(mavlink_msg_action_get_action(&msg)) {
+					case ACTION_TOGGLE_AC:
+						ac_active = !ac_active;
+						params["ctl_setpoint"] = ctrl_hover_state.kal_s0;
+						params["output_enable"] = (float)ac_active;
+						Logger::log(name(), "handle_input: action request done", (int)ac_active, params["output_enable"], Logger::LOGLEVEL_INFO);
+						break;
+					default:
+						break;
+					}
+				}
+			}
+			break;
+
 		default:
 			break;
 		}
@@ -775,8 +797,9 @@ namespace mavhub {
 			// printf("gas 2: %f, man: %f\n", gas, manual_control.thrust);
 
 			// reset integral
-			if((man_thrust * 4) < params["ctl_mingas"]) // reset below threshold
+			if(man_thrust < params["ctl_mingas"]) { // reset below threshold
 				pid_alt->setIntegral(0.0);
+			}
 
 			// limit integral
 			if(gas > params["ctl_maxgas"])
@@ -785,28 +808,43 @@ namespace mavhub {
 			// min/max limits
 			gas = limit_gas(gas);
 
-			extctrl.thrust = (int16_t)gas >> 2;
+			// extctrl.thrust = (int16_t)gas >> 2;
+			// FIXME: 
+			thrust = (float)(((int16_t)gas) >> 2);
+
 			// pitch, roll, yaw are computed in a separate controller,
 			// fused here and sent to the flightctrl for execution
-			// extctrl.pitch = 0;
-			// extctrl.roll = 0;
-			// extctrl.yaw = 0;
-			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+
+			// extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+			// extctrl.pitch = (int16_t)DataCenter::get_extctrl_pitch();
+			// extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
+
 			// Logger::log("Ctrl_Hover cmp", DataCenter::get_sensor(6), Logger::LOGLEVEL_DEBUG);
-			extctrl.pitch = (int16_t)DataCenter::get_extctrl_pitch();
-			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			// extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
 			// extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK | YAW_MANUAL_MASK | THRUST_MANUAL_MASK;
+
 			extctrl.mask = THRUST_MANUAL_MASK;
+
 			// extctrl.mask = 0;
 			// Logger::log(name(), "pitch, roll", extctrl.pitch, extctrl.roll, Logger::LOGLEVEL_DEBUG);
 			// extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
-			// send control output to FC
+			// send control output to (onboard) attitude controller
 			if(params["output_enable"] > 0) {
-				// Logger::log("Ctrl_Hover: extctrl.thrust:", extctrl.thrust, Logger::LOGLEVEL_INFO);
-				mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
-				AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
+				// Logger::log("Ctrl_Hover: thrust:", thrust, Logger::LOGLEVEL_INFO);
+
+				// mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
+				// AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
+
+				chan.usec = get_time_us();
+				chan.index = CHAN_THRUST;
+				chan.value = thrust;
+				mavlink_msg_huch_generic_channel_encode(system_id(),
+																								component_id,
+																								&msg,
+																								&chan);
+				AppLayer<mavlink_message_t>::send(msg);
+
 			}
 
 			// send data to groundstation
@@ -927,12 +965,6 @@ namespace mavhub {
 				send_debug(&msg, &dbg, DBG_KAL_VAR4, ((1.0 - precov[4]) * 10.0 + 1) * params["kal_R4"]);
 			}
 
-			// XXX: does this make problems with time / qgc?
-			// XXX: see qgc/src/uas/UAS.cc -> attitude_control
-			// attitude_controller_output.thrust = extctrl.gas / 4 - 128;
-			// mavlink_msg_attitude_controller_output_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
-			// send(msg);
-			
 			// stats
 			run_cnt += 1;
 			run_cnt_cyc = run_cnt % 10;
@@ -1503,4 +1535,3 @@ namespace mavhub {
 #endif // HAVE_OPENCV
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
-

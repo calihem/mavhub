@@ -12,6 +12,7 @@
 
 #include <math.h>
 
+#define PI 3.1415926535897931
 #define RAND_MAX_TO_M1 1/(double)RAND_MAX
 
 using namespace std;
@@ -19,7 +20,9 @@ using namespace std;
 namespace mavhub {
 	Ctrl_Yaw::Ctrl_Yaw(const map<string, string> args) :
 		AppInterface("ctrl_yaw"),
-		AppLayer<mavlink_message_t>("ctrl_yaw") {
+		AppLayer<mavlink_message_t>("ctrl_yaw"),
+		sensor_type(1)
+	{
 		read_conf(args);
 		param_request_list = 0;
 		// pid_yaw = new PID(0, params["yaw_Kc"], params["yaw_Ti"],
@@ -92,6 +95,11 @@ namespace mavhub {
 			rc5 = mavlink_msg_rc_channels_raw_get_chan5_raw(&msg);
 			if (rc2 > 1700 && rc5 > 1700) 
 				params["reset_sp"] = 2.0;
+			break;
+
+		case MAVLINK_MSG_ID_ATTITUDE:
+			// Logger::log(name(), "rx msg attitude", Logger::LOGLEVEL_DEBUG);
+			mavlink_msg_attitude_decode(&msg, &attitude);
 			break;
 
 		default:
@@ -188,8 +196,13 @@ namespace mavhub {
 #ifdef MAVLINK_ENABLED_HUCH
 
 			// get magnetic 2D compass measurement
-			yaw_meas = DataCenter::get_sensor(6);
-			// Logger::log("Ctrl_Yaw yaw_meas", yaw_meas, Logger::LOGLEVEL_INFO);
+			if(sensor_type == 1) { // hmc5843
+				yaw_meas = 128 * ((calcYaw() / PI) + 1.);
+				Logger::log("Ctrl_Yaw yaw_meas", yaw_meas, Logger::LOGLEVEL_DEBUG);
+			}
+			else { // cmp02
+				yaw_meas = DataCenter::get_sensor(6);
+			}
 			// calculate controller output
 			yaw = (((sp - yaw_meas) + compass_res_three_half) % compass_res) - compass_res_half;
 			//yaw = ((sp - yaw_meas) + compass_res_three_half) % compass_res; //
@@ -218,6 +231,63 @@ namespace mavhub {
 			// Logger::log("Ctrl_Yaw (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
 		}
+	}
+
+	float Ctrl_Yaw::mapfromto(float x, float minf, float maxf, float mint, float maxt) {
+		float rf, rt;
+		rf = maxf - minf;
+		rt = maxt - mint;
+		return (((x - minf)/rf) * rt) + mint;
+	}
+
+	float Ctrl_Yaw::calcYaw() {
+		static float xmag_max = 0.0, ymag_max = 0.0, zmag_max = 0.0;
+		static float xmag_min = 0.0, ymag_min = 0.0, zmag_min = 0.0;
+		float norm;
+		float xmag_map, ymag_map, zmag_map;
+		float yaw;
+		huch_magnetic_kompass = DataCenter::get_huch_magnetic_kompass();
+		Logger::log(name(), "calc kompass(x,y,z): ",
+								huch_magnetic_kompass.data_x,
+								huch_magnetic_kompass.data_y, 
+								huch_magnetic_kompass.data_z,
+								Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), "calc attitude(pitch,roll): ",
+								attitude.pitch,
+								attitude.roll, 
+								Logger::LOGLEVEL_DEBUG);
+
+		// taken from http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1267295038
+		// Arhtur Spooner
+
+		//this part is required to normalize the magnetic vector
+		if (huch_magnetic_kompass.data_x > xmag_max) {xmag_max = huch_magnetic_kompass.data_x;}
+		if (huch_magnetic_kompass.data_y > ymag_max) {ymag_max = huch_magnetic_kompass.data_y;}
+		if (huch_magnetic_kompass.data_z > zmag_max) {zmag_max = huch_magnetic_kompass.data_z;}
+
+		if (huch_magnetic_kompass.data_x < xmag_min) {xmag_min = huch_magnetic_kompass.data_x;}
+		if (huch_magnetic_kompass.data_y < ymag_min) {ymag_min = huch_magnetic_kompass.data_y;}
+		if (huch_magnetic_kompass.data_z < zmag_min) {zmag_min = huch_magnetic_kompass.data_z;}
+    
+		xmag_map = mapfromto(huch_magnetic_kompass.data_x, xmag_min, xmag_max, -1., 1.);
+		ymag_map = mapfromto(huch_magnetic_kompass.data_y, ymag_min, ymag_max, -1., 1.);
+		zmag_map = mapfromto(huch_magnetic_kompass.data_z, zmag_min, zmag_max, -1., 1.);
+
+		//normalize the magnetic vector
+		norm = sqrtf( powf(xmag_map, 2) + powf(ymag_map, 2) + powf(zmag_map, 2));
+		xmag_map /= norm;
+		ymag_map /= norm;
+		zmag_map /= norm;
+  
+		//compare Applications of Magnetic Sensors for Low Cost Compass Systems by Michael J. Caruso
+		//for the compensated Yaw equations...
+		//http://www.ssec.honeywell.com/magnetic/datasheets/lowcost.pdf
+		yaw = atan2f((-ymag_map*cosf(attitude.pitch) + zmag_map*sinf(attitude.pitch) ),
+								 xmag_map * cosf(attitude.roll) + ymag_map*sinf(attitude.roll)*sinf(attitude.pitch) + zmag_map * sinf(attitude.roll)*cosf(attitude.pitch)
+								 );
+		// YawU=atan2(-ymag_map, xmag_map) *180/PI;
+
+		return yaw;
 	}
 
 	void Ctrl_Yaw::default_conf() {

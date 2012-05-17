@@ -35,8 +35,11 @@ namespace mavhub {
 #ifdef MAVLINK_ENABLED_HUCH
 		mavlink_huch_visual_navigation_t huch_visual_navigation;
 		mavlink_huch_visual_flow_t huch_visual_flow;
+		mavlink_huch_magnetic_kompass_t huch_magnetic_kompass;
 #endif // MAVLINK_ENABLED_HUCH	
+		mavlink_attitude_t attitude;
 
+		int sensor_type;
 		// params
 		// request
 		int param_request_list;
@@ -50,6 +53,10 @@ namespace mavhub {
 		virtual void default_conf();
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
+		/// calculate yaw (heading) from 3-axis magnetometer and attitude
+		virtual float calcYaw();
+		/// util function to map x from from-range into to-range
+		virtual float mapfromto(float x, float minf, float maxf, float mint, float maxt);
 	};
 }
 
