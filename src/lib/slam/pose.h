@@ -8,9 +8,13 @@
 #ifdef HAVE_OPENCV2
 
 #include <vector>
+#include <cmath>	//sin, cos
+#include <iostream>     // cout
+
 #include <opencv/cv.h>
 #include <TooN/TooN.h>
 #include <TooN/se3.h>
+#include <levmar/levmar.h>
 
 #include "lib/hubmath.h"
 
@@ -20,14 +24,14 @@ namespace slam {
 template<typename Precision = TooN::DefaultPrecision>
 struct pinhole_model_data_t {
 	pinhole_model_data_t(std::vector<Precision> &object_points,
-		std::vector<cv::Point2f> &image_points,
+		std::vector< cv::Point_<Precision> > &image_points,
 		const cv::Mat &camera_matrix) :
 			object_points(object_points),
 			image_points(image_points),
 			camera_matrix(camera_matrix) {};
 
 	std::vector<Precision> &object_points;
-	std::vector<cv::Point2f> &image_points;
+	std::vector< cv::Point_<Precision> > &image_points;
 	const cv::Mat &camera_matrix;
 
 // 	pinhole_model_data_t(TooN::Matrix<3,TooN::Dynamic,Precision> &object_points, TooN::Matrix<3,3,Precision> &camera_matrix) :
@@ -43,7 +47,7 @@ void pinhole_model(T *p, T *hx, int m, int n, void *data) {
 	const pinhole_model_data_t<T> *pinhole_model_data = static_cast< pinhole_model_data_t<T>* >(data);
 	if(!pinhole_model_data) return;
 	std::vector<T> &object_points_vector = pinhole_model_data->object_points;
-	std::vector<cv::Point2f> &image_points = pinhole_model_data->image_points;
+	std::vector< cv::Point_<T> > &image_points = pinhole_model_data->image_points;
 	const cv::Mat &camera_matrix = pinhole_model_data->camera_matrix;
 
 	const int num_points = n/2;
@@ -54,12 +58,15 @@ void pinhole_model(T *p, T *hx, int m, int n, void *data) {
 	Vector<3,T,Reference> translation_vector(p+3);
 	SE3<T> transformation_matrix(rotation_vector, translation_vector);
 	Matrix<3,Dynamic>  rotated_points = transformation_matrix.get_rotation() * object_points;
+// std::cout << "rotation: " << rotation_vector << std::endl;
+// std::cout << "translation: " << translation_vector << std::endl;
 
-	const double cx = camera_matrix.at<double>(0, 2);
-	const double cy = camera_matrix.at<double>(1, 2);
-	const double fx = camera_matrix.at<double>(0, 0);
-	const double fy = camera_matrix.at<double>(1, 1);
+	const T cx = camera_matrix.at<double>(0, 2);
+	const T cy = camera_matrix.at<double>(1, 2);
+	const T fx = camera_matrix.at<double>(0, 0);
+	const T fy = camera_matrix.at<double>(1, 1);
 
+// std::cout << "_Projected pinhole model_" << std::endl;
 	// calculate residuals
 	for(int i=0; i<num_points; i++) {
 		T z = rotated_points[2][i] + translation_vector[2];
@@ -67,10 +74,18 @@ void pinhole_model(T *p, T *hx, int m, int n, void *data) {
 		// hx = measured image point - projected(transformed(object_point))
 		hx[i] = image_points[i].x;
 		hx[i] -= cx + fx * (rotated_points[0][i] + translation_vector[0]) / z;
+// 		hx[i] -= (rotated_points[0][i] + translation_vector[0]) / z;
 		hx[num_points+i] = image_points[i].y;
 		hx[num_points+i] -= cy + fy * (rotated_points[1][i] + translation_vector[1]) / z;
+// 		hx[num_points+i] -= (rotated_points[1][i] + translation_vector[1]) / z;
+// std::cout << "(" << cx + fx * (rotated_points[0][i] + translation_vector[0]) / z
+// 	<< ", " << cy + fy * (rotated_points[1][i] + translation_vector[1]) / z << ")" << std::endl;
 	}
 
+// std::cout << "_Residuals_" << std::endl;
+// for(int i=0; i<2*num_points; i++) {
+// 	std::cout << hx[i] << std::endl; 
+// }
 	// apply M-estimator
 	std::vector<T> residuals(hx, hx+n);
 	const T sigma = cl_robust_sigma<T>(residuals);
@@ -84,7 +99,7 @@ void jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 	using namespace TooN;
 	assert(p);
 	assert(jac);
-	assert(m >= 6);
+	assert(m == 6);
 
 	const pinhole_model_data_t<T> *pinhole_model_data = static_cast< pinhole_model_data_t<T>* >(data);
 	if(!pinhole_model_data) return;
@@ -99,7 +114,7 @@ void jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 	const T t1 = p[3];
 	const T t2 = p[4];
 	const T t3 = p[5];
-
+// std::cout << "p: " << phi << ", " << theta << ", " << psi << ", " << t1 << ", " << t2 << ", " << t3 << std::endl;
 	const T cphi = cos(phi);
 	const T cpsi = cos(psi);
 	const T ctheta = cos(theta);
@@ -131,7 +146,8 @@ void jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 
 	const int num_points = n/2;
 	Matrix<3,Dynamic,T,Reference::RowMajor> object_points(&(object_points_vector[0]), 3, num_points);
-
+// std::cout << "_Object points (jacobian)_" << std::endl;
+// std::cout << object_points << std::endl;
 	int j = 0;
 	const unsigned int v_offset = m*num_points;
 	for(int i=0; i<num_points; i++) {
@@ -168,6 +184,17 @@ void jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 		// partial v / partial z
 		jac[v_offset+j++] = (fy*y2)/y3_square;
 	}
+// std::cout << "_Jacobians_" << std::endl;
+// for(int i=0; i<n; i++) {
+// 	int index = i*m;
+// 	std::cout << "[" << jac[index]
+// 		<< ", " << jac[index+1]
+// 		<< ", " << jac[index+2]
+// 		<< ", " << jac[index+3]
+// 		<< ", " << jac[index+4]
+// 		<< ", " << jac[index+5]
+// 		<< "]" << std::endl;
+// }
 }
 
 template<typename T>
@@ -213,13 +240,157 @@ void simple_jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 	}
 }
 
-int estimate_pose(const std::vector<cv::Point3f> &object_points,
+
+// int estimate_pose(const std::vector<cv::Point3f> &object_points,
+// 	const std::vector<cv::KeyPoint>& dst_keypoints,
+// 	const std::vector<cv::DMatch>& matches,
+// 	const cv::Mat &camera_matrix,
+// 	const cv::Mat &distortion_coefficients,
+// 	const std::vector<char> &matches_mask,
+// 	std::vector<float> &parameter_vector);
+
+template<typename T>
+inline int wrap_levmar_der(
+	void (*func)(T *p, T *hx, int m, int n, void *adata),
+	void (*jacf)(T *p, T *j, int m, int n, void *adata),
+	T *p,
+	T *x,
+	int m,
+	int n,
+	int itmax,
+	T opts[4],
+	T info[LM_INFO_SZ],
+	T *work,
+	T *covar,
+	void *adata);
+
+template<>
+inline int wrap_levmar_der<float>(
+	void (*func)(float *p, float *hx, int m, int n, void *adata),
+	void (*jacf)(float *p, float *j, int m, int n, void *adata),
+	float *p,
+	float *x,
+	int m,
+	int n,
+	int itmax,
+	float opts[4],
+	float info[LM_INFO_SZ],
+	float *work,
+	float *covar,
+	void *adata) {
+
+	return slevmar_der(func, jacf, p, x, m, n, itmax, opts, info, work, covar, adata);
+}
+
+template<>
+inline int wrap_levmar_der<double>(
+	void (*func)(double *p, double *hx, int m, int n, void *adata),
+	void (*jacf)(double *p, double *j, int m, int n, void *adata),
+	double *p,
+	double *x,
+	int m,
+	int n,
+	int itmax,
+	double opts[4],
+	double info[LM_INFO_SZ],
+	double *work,
+	double *covar,
+	void *adata) {
+
+	return dlevmar_der(func, jacf, p, x, m, n, itmax, opts, info, work, covar, adata);
+}
+
+template<typename T>
+int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<cv::DMatch>& matches,
 	const cv::Mat &camera_matrix,
 	const cv::Mat &distortion_coefficients,
 	const std::vector<char> &matches_mask,
-	std::vector<float> &parameter_vector);
+	std::vector<T> &parameter_vector) {
+
+	if(parameter_vector.size() != 6)
+		return -1;
+
+	unsigned int num_matches; //number of valid matches
+	if(matches_mask.empty()) { //empty mask => all matches are valid
+		num_matches = matches.size();
+	} else if(matches_mask.size() != matches.size()) { //mask doesn't fit the matches
+		return -2;
+	} else { //count number of valid matches
+		num_matches = 0;
+		for(size_t i = 0; i < matches.size(); i++) {
+			if( matches_mask[i] == 0) continue;
+			num_matches++;
+		}
+	}
+
+	std::vector<T> matched_object_points(3*num_matches); // allocate matrix 3 x num_matches
+// 	vector<float> matched_image_points(2*num_matches); // allocate matrix 2 x num_matches
+	std::vector< cv::Point_<T> > matched_image_points(num_matches);
+	
+	unsigned int next_point_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if( !matches_mask.empty() && matches_mask[i] == 0) continue;
+
+		const int src_index = matches[i].queryIdx;
+		matched_object_points[next_point_index] = object_points[src_index].x;
+		matched_object_points[next_point_index+num_matches] = object_points[src_index].y;
+		matched_object_points[next_point_index+2*num_matches] = object_points[src_index].z;
+
+		const int dst_index = matches[i].trainIdx;
+		const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
+// 		matched_image_points[next_point_index] = dst_keypoint.pt.x;
+// 		matched_image_points[next_point_index+num_matches] = dst_keypoint.pt.y;
+		matched_image_points[i].x = dst_keypoint.pt.x;
+		matched_image_points[i].y = dst_keypoint.pt.y;
+
+		next_point_index++;
+	}
+
+	std::vector< cv::Point_<T> > undistorted_points(num_matches);
+	//undistortPoints produces ideal point coordinates
+	undistortPoints(matched_image_points, undistorted_points, camera_matrix, distortion_coefficients);
+// std::cout << "_Undistorted points_ (ideal)" << std::endl;
+// for(typename std::vector< cv::Point_<T> >::iterator iter = undistorted_points.begin(); iter != undistorted_points.end(); ++iter) {
+// 	std::cout << "(" << iter->x << ", " << iter->y << ")" << std::endl;
+// }
+
+const double cx = camera_matrix.at<double>(0, 2);
+const double cy = camera_matrix.at<double>(1, 2);
+const double fx = camera_matrix.at<double>(0, 0);
+const double fy = camera_matrix.at<double>(1, 1);
+for(typename std::vector< cv::Point_<T> >::iterator iter = undistorted_points.begin(); iter != undistorted_points.end(); ++iter) {
+	iter->x = fx*iter->x + cx;
+	iter->y = fy*iter->y + cy;
+}
+// std::cout << "_Undistorted points_ (unideal)" << std::endl;
+// for(typename std::vector< cv::Point_<T> >::iterator iter = undistorted_points.begin(); iter != undistorted_points.end(); ++iter) {
+// 	std::cout << "(" << iter->x << ", " << iter->y << ")" << std::endl;
+// }
+	pinhole_model_data_t<T> pinhole_model_data(matched_object_points,
+// 		matched_image_points,
+		undistorted_points,
+		camera_matrix);
+
+// 	T info[LM_INFO_SZ];
+
+	int rc = wrap_levmar_der<T>(
+		pinhole_model<T>,
+		jac_pinhole_model<T>,
+		&(parameter_vector[0]),	//parameter vector
+		NULL,	//measurement vector
+		6,	//parameter vector dimension
+		2*num_matches,	//measurement vector dimension
+		100,	//max. number of iterations
+		NULL,	//opts
+		NULL,	//info
+		NULL,	//work
+		NULL,	//covar
+		(void*)&pinhole_model_data);	//data
+
+	return rc;
+}
 
 } // namespace slam
 } // namespace hub
