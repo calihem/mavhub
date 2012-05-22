@@ -200,6 +200,9 @@ namespace mavhub {
 		/// ac active
 		uint8_t ac_active;
 
+		/// request all data streams from FC
+		virtual void send_stream_request_all();
+
 		// MK debug structure conversion
 		int mk_debugout_digital_offset;
 		// fetch different types from byte based mk_debugout

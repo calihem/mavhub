@@ -18,9 +18,10 @@
 using namespace std;
 
 namespace mavhub {
-	Ctrl_Yaw::Ctrl_Yaw(const map<string, string> args) :
-		AppInterface("ctrl_yaw"),
-		AppLayer<mavlink_message_t>("ctrl_yaw"),
+	Ctrl_Yaw::Ctrl_Yaw(const map<string, string> args,
+										 const Logger::log_level_t loglevel) :
+		AppInterface("ctrl_yaw", loglevel),
+		ModuleBase(args, "ctrl_yaw"),
 		sensor_type(1)
 	{
 		read_conf(args);
@@ -115,7 +116,7 @@ namespace mavhub {
 		// uint64_t dt = 0;
 		// double dtf = 0.0;
 		struct timeval tk, tkm1; // timevals
-		int update_rate = 10; // 100 Hz
+		int update_rate = 60; // 100 Hz
 		int wait_freq = update_rate? 1000000 / update_rate: 0;
 		int wait_time = wait_freq;
 		uint64_t frequency = wait_time;
@@ -198,7 +199,7 @@ namespace mavhub {
 			// get magnetic 2D compass measurement
 			if(sensor_type == 1) { // hmc5843
 				yaw_meas = 128 * ((calcYaw() / PI) + 1.);
-				Logger::log("Ctrl_Yaw yaw_meas", yaw_meas, Logger::LOGLEVEL_DEBUG);
+				// Logger::log("Ctrl_Yaw yaw_meas", yaw_meas, Logger::LOGLEVEL_DEBUG);
 			}
 			else { // cmp02
 				yaw_meas = DataCenter::get_sensor(6);
@@ -230,6 +231,15 @@ namespace mavhub {
 			DataCenter::set_extctrl_yaw(yaw);
 			// Logger::log("Ctrl_Yaw (n,r,y)", v, Logger::LOGLEVEL_INFO);
 
+			chan.usec = get_time_us();
+			chan.index = CHAN_YAW;    
+			chan.value = yaw;
+			mavlink_msg_huch_generic_channel_encode(system_id(),
+																							component_id,
+																							&msg,
+																							&chan);
+			AppLayer<mavlink_message_t>::send(msg);
+
 		}
 	}
 
@@ -247,15 +257,16 @@ namespace mavhub {
 		float xmag_map, ymag_map, zmag_map;
 		float yaw;
 		huch_magnetic_kompass = DataCenter::get_huch_magnetic_kompass();
-		Logger::log(name(), "calc kompass(x,y,z): ",
-								huch_magnetic_kompass.data_x,
-								huch_magnetic_kompass.data_y, 
-								huch_magnetic_kompass.data_z,
-								Logger::LOGLEVEL_DEBUG);
-		Logger::log(name(), "calc attitude(pitch,roll): ",
-								attitude.pitch,
-								attitude.roll, 
-								Logger::LOGLEVEL_DEBUG);
+
+		// Logger::log(name(), "calc kompass(x,y,z): ",
+		// 						huch_magnetic_kompass.data_x,
+		// 						huch_magnetic_kompass.data_y, 
+		// 						huch_magnetic_kompass.data_z,
+		// 						Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "calc attitude(pitch,roll): ",
+		// 						attitude.pitch,
+		// 						attitude.roll, 
+		// 						Logger::LOGLEVEL_DEBUG);
 
 		// taken from http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1267295038
 		// Arhtur Spooner
@@ -282,8 +293,11 @@ namespace mavhub {
 		//compare Applications of Magnetic Sensors for Low Cost Compass Systems by Michael J. Caruso
 		//for the compensated Yaw equations...
 		//http://www.ssec.honeywell.com/magnetic/datasheets/lowcost.pdf
-		yaw = atan2f((-ymag_map*cosf(attitude.pitch) + zmag_map*sinf(attitude.pitch) ),
-								 xmag_map * cosf(attitude.roll) + ymag_map*sinf(attitude.roll)*sinf(attitude.pitch) + zmag_map * sinf(attitude.roll)*cosf(attitude.pitch)
+		// yaw = atan2f((ymag_map * cosf(attitude.pitch) + zmag_map * sinf(attitude.pitch)),
+		// 						 (xmag_map * cosf(attitude.roll)) + (ymag_map * sinf(attitude.roll) * sinf(attitude.pitch)) + (zmag_map * sinf(attitude.roll) * cosf(attitude.pitch))
+		// 						 );
+		yaw = atan2f((ymag_map * cosf(attitude.roll) + zmag_map * sinf(attitude.roll)),
+								 (xmag_map * cosf(attitude.pitch)) + (ymag_map * sinf(attitude.pitch) * sinf(attitude.roll)) + (zmag_map * sinf(attitude.pitch) * cosf(attitude.roll))
 								 );
 		// YawU=atan2(-ymag_map, xmag_map) *180/PI;
 

@@ -422,10 +422,7 @@ namespace mavhub {
 		*/
 
 		// subscribe to data streams
-		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
-		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
-		send_stream_request(&msg, MAV_DATA_STREAM_RC_CHANNELS, ctl_update_rate);
-		send_stream_request(&msg, MAV_DATA_STREAM_EXTRA1, ctl_update_rate);
+		send_stream_request_all();
 
 		while(true) {
 
@@ -965,6 +962,11 @@ namespace mavhub {
 				send_debug(&msg, &dbg, DBG_KAL_VAR4, ((1.0 - precov[4]) * 10.0 + 1) * params["kal_R4"]);
 			}
 
+			if(params["streams"] > 0.0) {
+				params["streams"] = 0.;
+				send_stream_request_all();
+			}
+
 			// stats
 			run_cnt += 1;
 			run_cnt_cyc = run_cnt % 10;
@@ -984,6 +986,16 @@ namespace mavhub {
 		dbg->value = value;
 		mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), msg, dbg);
 		AppLayer<mavlink_message_t>::send(*msg);
+	}
+
+	void Ctrl_Hover::send_stream_request_all() {
+		// mavlink_message_t msg;
+		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_EXTENDED_STATUS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_RAW_CONTROLLER, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_RC_CHANNELS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_EXTRA1, ctl_update_rate);
 	}
 
 	void Ctrl_Hover::preproc() {
@@ -1058,6 +1070,7 @@ namespace mavhub {
 		params["ir1_ulim"] = 300.0;
 		params["ir2_llim"] = 300.0;
 		params["ir2_ulim"] = 600.0;
+		params["stream"] = 0.;
 	}
 
 	void Ctrl_Hover::kal_setRFromParams() {
@@ -1325,8 +1338,6 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> params["ir2_ulim"];
 		}
-
-
 
 		// XXX
 		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);

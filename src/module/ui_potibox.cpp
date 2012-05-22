@@ -116,6 +116,10 @@ namespace mavhub {
 															28,
 															string("pitch_Kc"),
 															gain);
+						// param_request_set(system_id(),
+						// 									28,
+						// 									string("roll_Kc"),
+						// 									0.0);
 						param_request_set(system_id(),
 															28,
 															string("roll_Kc"),

@@ -10,16 +10,18 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
+#include "modulebase.h"
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
 // #include "PID.h"
 
 namespace mavhub {
-	class Ctrl_Yaw : public AppLayer<mavlink_message_t> {
+	class Ctrl_Yaw : public ModuleBase {
 	public:
 		/// Ctor: yaw controller
-		Ctrl_Yaw(const std::map<std::string, std::string>);
+		Ctrl_Yaw(const std::map<std::string, std::string>,
+						 const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 		/// Dtor
 		virtual ~Ctrl_Yaw();
 		/// protocol stack input handling
@@ -36,6 +38,7 @@ namespace mavhub {
 		mavlink_huch_visual_navigation_t huch_visual_navigation;
 		mavlink_huch_visual_flow_t huch_visual_flow;
 		mavlink_huch_magnetic_kompass_t huch_magnetic_kompass;
+		mavlink_huch_generic_channel_t chan;
 #endif // MAVLINK_ENABLED_HUCH	
 		mavlink_attitude_t attitude;
 

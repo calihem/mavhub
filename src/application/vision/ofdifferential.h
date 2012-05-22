@@ -34,6 +34,18 @@ class HornSchunck : public OFModel {
 		IplImage *lastImage;
 };
 
+class LucasKanade : public OFModel {
+	public:
+	LucasKanade(int height, int width);
+	virtual ~LucasKanade();
+	virtual const OpticalFlow &calcOpticalFlow(const IplImage &image);
+
+	private:
+		int height;
+		int width;
+		IplImage *lastImage;
+};
+
 #endif // CV_MINOR_VERSION >= 2
 #endif // HAVE_OPENCV2
 #endif

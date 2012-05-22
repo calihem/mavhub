@@ -14,7 +14,8 @@ FILE *logg=fopen("log.log","w") ;
 
 void OpticalFlow::visualizeMean(int sectors, cv::Mat &image) const {
 	CvPoint p,q;
-	int dx, dy, avgx=0, avgy=0;
+	int dx, dy;
+	// int avgx=0, avgy=0;
 	const CvScalar color = CV_RGB(255,0,0);
 	const double pi = 3.14159265358979323846;
 	double angle;
@@ -35,14 +36,14 @@ void OpticalFlow::visualizeMean(int sectors, cv::Mat &image) const {
 											 max(sectorHeight*j, 1),
 											 sectorHeight*(j+1)-1);
 
-			avgy+=dy;
+			// avgy+=dy;
 			p.x = sectorWidth*i+(sectorWidth/2);
 			p.y = sectorHeight*j+(sectorHeight/2);
 			q.x = p.x - scaleFactor*dx;
 			q.y = p.y - scaleFactor*dy;
 			cvLine( &image, p, q, color, lineThickness, CV_AA, 0 );
 
-			//arrow head
+			// arrow head
 			if(dx || dy) {
 				angle = atan2( (double) p.y - q.y, (double) p.x - q.x );
 				p.x = (int) (q.x + 9 * cos(angle + pi / 4));
@@ -58,7 +59,8 @@ void OpticalFlow::visualizeMean(int sectors, cv::Mat &image) const {
 
 void OpticalFlow::visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) const {
 	CvPoint p,q;
-	int dx, dy, avgx=0, avgy=0;
+	int dx, dy;
+	// int avgx=0, avgy=0;
 	const CvScalar color = CV_RGB(255,0,0);
 	const double pi = 3.14159265358979323846;
 	double angle;
@@ -83,7 +85,7 @@ void OpticalFlow::visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) co
 											 max(sectorHeight*j, 1),
 											 sectorHeight*(j+1)-1);
 	// 		// cout << "hier 2" << endl;
-			avgy+=dy;
+			// avgy+=dy;
 			p.x = sectorWidth*i+(sectorWidth/2);
 			p.y = sectorHeight*j+(sectorHeight/2);
 			q.x = p.x - scaleFactor*dx;
@@ -110,6 +112,8 @@ void OpticalFlow::visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) co
 DenseOpticalFlow::~DenseOpticalFlow() {
 	cvReleaseMat(&velX);
 	cvReleaseMat(&velY);
+	cvReleaseMat(&velXf);
+	cvReleaseMat(&velYf);
 }
 
 int DenseOpticalFlow::getMeanVelX(int x0, int x1, int y0, int y1) const {
@@ -156,6 +160,107 @@ int DenseOpticalFlow::getMeanVelY(int x0, int x1, int y0, int y1) const {
 	}
 
 	return 0;
+}
+
+float DenseOpticalFlow::getMeanVelXf(int x0, int x1, int y0, int y1) const {
+	float sum_x = 0;	//sum of vectors
+	int16_t num_x = 0;	//number of vectors which are not null
+
+	// signed char vel;
+	float vel;
+
+	for(int y=y0;y<y1;y++) {//for every row in range
+		for(int x=x0;x<x1;x++) {//for every col in range
+			vel = CV_MAT_ELEM(*velXf, float, y, x);
+			if(vel) {
+				num_x++;
+				sum_x += vel;
+			}
+		}
+	}
+
+	if(num_x) {
+		return sum_x / num_x;
+	}
+
+	return 0;
+}
+
+float DenseOpticalFlow::getMeanVelYf(int x0, int x1, int y0, int y1) const {
+	float sum_y = 0;	//sum of vectors
+	int16_t num_y = 0;	//number of vectors which are not null
+
+	float vel;
+
+	for(int y=y0;y<y1;y++) {//for every row in range
+		for(int x=x0;x<x1;x++) {//for every col in range
+			vel = CV_MAT_ELEM(*velYf, float, y, x);
+			if(vel) {
+				num_y++;
+				sum_y += vel;
+			}
+		}
+	}
+
+	if(num_y) {
+		return sum_y / num_y;
+	}
+
+	return 0;
+}
+
+void DenseOpticalFlow::visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &image) const {
+	CvPoint p,q;
+	float dx, dy;
+	// int avgx = 0, avgy = 0;
+	const CvScalar color = CV_RGB(255,0,0);
+	const double pi = 3.14159265358979323846;
+	double angle;
+
+	int sectorHeight = image.rows / sectorsy;
+	int sectorWidth = image.cols / sectorsx;
+	const int8_t scaleFactor = max(3, image.cols/50);
+	const int lineThickness = max(2, image.cols/300);
+
+	// cout << "visualizeMeanXY: log gehts: " << sectorHeight << ", " << sectorWidth << endl;
+	// cout << "visualizeMeanXY: log gehts: " << image.rows << ", " << image.cols << endl;
+
+	for(int i=0;i<sectorsx;i++) {//for every sector in row
+		for(int j=0;j<sectorsy;j++) {//for every sector in col
+			// cout << "hier 1: " << i << ", " << j << endl;
+			dx = getMeanVelXf(max(sectorWidth*i, 1),
+											 sectorWidth*(i+1)-1,
+											 max(sectorHeight*j, 1),
+											 sectorHeight*(j+1)-1);
+			dy = getMeanVelYf(max(sectorWidth*i, 1),
+											 sectorWidth*(i+1)-1,
+											 max(sectorHeight*j, 1),
+											 sectorHeight*(j+1)-1);
+	// 		// cout << "hier 2" << endl;
+			// avgy+=dy;
+			p.x = sectorWidth*i+(sectorWidth/2);
+			p.y = sectorHeight*j+(sectorHeight/2);
+			q.x = p.x - scaleFactor*dx;
+			q.y = p.y - scaleFactor*dy;
+			//cvLine( &image, p, q, color, lineThickness, CV_AA, 0 );
+			cv::line( image, p, q, color, lineThickness, CV_AA, 0 );
+
+			//arrow head
+			if(dx || dy) {
+				angle = atan2( (double) p.y - q.y, (double) p.x - q.x );
+				p.x = (int) (q.x + 9 * cos(angle + pi / 4));
+				p.y = (int) (q.y + 9 * sin(angle + pi / 4));
+				// cvLine( &image, p, q, color, lineThickness, CV_AA, 0 );
+				cv::line(image, p, q, color, lineThickness, CV_AA, 0 );
+				p.x = (int) (q.x + 9 * cos(angle - pi / 4));
+				p.y = (int) (q.y + 9 * sin(angle - pi / 4));
+				// cvLine( &image, p, q, color, lineThickness, CV_AA, 0 );
+				cv::line(image, p, q, color, lineThickness, CV_AA, 0 );
+			}
+		}
+	}
+	
+	// image = velYf;
 }
 
 void DenseOpticalFlow::visualize(cv::Mat &image) const {

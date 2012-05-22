@@ -89,6 +89,7 @@ namespace mavhub {
 			i2c_end_conversion(fd);
 
 			string s(message);
+			Logger::log("sensrf02 exception", s, Logger::LOGLEVEL_DEBUG);
 			throw ("SenSrf02(): " + s).c_str();
 		}
 
@@ -113,10 +114,10 @@ namespace mavhub {
 
 		Logger::log("sensrf02: running (Hz)", 1e6 / wait_time, Logger::LOGLEVEL_INFO);
 		i2c_start_conversion(fd, SRF02_ADR);
-		try {
-			status = RUNNING;
+		status = RUNNING;
 
-			while(status == RUNNING) {
+		while(status == RUNNING) {
+			try {
 				/* mode - start measurement */
 				// if (mode == SINGLE_CONVERSION_MODE) {
 				// 	buffer[0] = MR;
@@ -182,17 +183,20 @@ namespace mavhub {
 					}
 				}
 			}
-		}
-		catch(const char *message) {
-			//i2c_end_conversion(fd);
-			status = STRANGE;
+			catch(const char *message) {
+				//i2c_end_conversion(fd);
+				status = STRANGE;
 
-			string s(message);
-			throw ("SenSrf02::run(): " + s).c_str();
+				string s(message);
+				Logger::log("sensrf02 exception", s, Logger::LOGLEVEL_DEBUG);
+				i2c_end_conversion(fd);
+				// throw ("SenSrf02::run(): " + s).c_str();
+				status = RUNNING;
+			}
 		}
+
 		/* unlock i2c */
 		//i2c_end_conversion(fd);
-
 		Logger::log("sensrf02: stopped", Logger::LOGLEVEL_INFO);
 	}
 
@@ -214,9 +218,17 @@ namespace mavhub {
 			case KOMPASS_SENSOR: // kompass 
 				return &sensor_data;
 #endif // MAVLINK_ENABLED_HUCH
-			default: throw "sensor srf02 doesn't support this sensor type";
+			default:
+				string s("sensor srf02 doesn't support this sensor type");
+				Logger::log("sensrf02 exception", s, Logger::LOGLEVEL_DEBUG);
+				throw ("sensrf02: " + s).c_str();
+				break;
 			}
-		} throw "sensor srf02 isn't running";
+		}
+		string s("sensor srf02 isn't running");
+		Logger::log("sensrf02 exception", s, Logger::LOGLEVEL_DEBUG);
+		throw ("sensrf02: " + s).c_str();
+
 	}
 
 	int SenSrf02::get_hw_version() {

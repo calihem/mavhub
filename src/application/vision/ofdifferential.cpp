@@ -20,7 +20,7 @@ FirstOrder::~FirstOrder() {
 ///	first order optical flow
 
 const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
-	const bool unwrapped = true;
+	// const bool unwrapped = true;
 
 	if(lastImage) {
 
@@ -171,5 +171,92 @@ const OpticalFlow &HornSchunck::calcOpticalFlow(const IplImage &image) {
 
 	return *oFlow;
 }
+
+LucasKanade::LucasKanade(int height, int width) : height(height), width(width), lastImage(0) {
+	oFlow = new DenseOpticalFlow(height, width);
+}
+
+LucasKanade::~LucasKanade() {
+	delete oFlow;
+	if(lastImage)
+		cvReleaseImage(&lastImage);
+}
+
+const OpticalFlow &LucasKanade::calcOpticalFlow(const IplImage &image) {
+
+	// IplImage* velx = cvCreateImage(cvSize(width,height),IPL_DEPTH_32F, 1);
+	// IplImage* vely = cvCreateImage(cvSize(width,height),IPL_DEPTH_32F, 1);
+	// cv::Mat velx = cv::Mat::zeros(cv::Size(width, height), CV_32F);
+	// cv::Mat vely = cv::Mat::zeros(cv::Size(width, height), CV_32F);
+	CvMat *velx, *vely;
+
+	double velocity_y = 0;
+	double velocity_x = 0;
+
+	double _x = 0;
+	double _y = 0;
+
+	velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
+	vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
+
+	// cvSet(velx, cvScalarAll(0));
+	// cvSet(vely, cvScalarAll(0));
+
+	// cv::Mat m(velx);
+	// // m.setTo(0.);
+	// // cout << "velx:" << velx << endl;
+	// cout << "m: " << m << endl;
+	// // velx = (CvMat*) &m;
+
+	if(lastImage) {
+		cvCalcOpticalFlowLK(lastImage, &image, cvSize(5,5),
+												velx,
+												vely);
+
+		for(int i = 0; i < width; i++) {
+      for(int j = 1; j < height - 1; j++) {
+				double u = cvGetReal2D(velx,j,i);
+				double v = cvGetReal2D(vely,j,i);
+				double n = sqrt((double)(u*u + v*v));
+
+				if(n == 0) continue;
+
+				double x = (double)(u) / n;
+				double y = (double)(v) / n;
+
+				_x += x;
+				_y += y;
+
+				velocity_x += u;
+				velocity_y += v;
+
+      }
+		}
+
+		double n = sqrt((double)(_x*_x + _y*_y));
+		if(n != 0) {
+      _x /= n;
+      _y /= n;
+		}
+
+		// cout << "velX: " << velocity_x << endl;
+		// cout << "velY: " << velocity_y << endl;
+		// cout << "_x: " << _x << endl;
+		// cout << "_y: " << _y << endl;
+
+		//replace last image with current image
+		cvCopy(&image, lastImage, NULL);
+
+	} else {
+		lastImage = cvCloneImage(&image);
+	}
+
+	// cvReleaseImage(&velx);
+	// cvReleaseImage(&vely);
+	// cv::ReleaseMat(&velx);
+	// cv::ReleaseMat(&vely);
+	return *oFlow;
+}
+
 
 #endif // defined HAVE_OPENCV2 and CV_MINOR_VERSION >= 2

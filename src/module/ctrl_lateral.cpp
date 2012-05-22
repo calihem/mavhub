@@ -82,6 +82,10 @@ namespace mavhub {
 					// update PID controllers
 					pid_pitch->setKc(params["pitch_Kc"]);
 					pid_roll->setKc(params["roll_Kc"]);
+					pid_pitch->setTi(params["pitch_Ti"]);
+					pid_roll->setTi(params["roll_Ti"]);
+					pid_pitch->setTd(params["pitch_Td"]);
+					pid_roll->setTd(params["roll_Td"]);
 					pid_pitch->setBias(params["pitch_bias"]);
 					pid_roll->setBias(params["roll_bias"]);
 

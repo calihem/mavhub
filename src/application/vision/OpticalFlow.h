@@ -14,7 +14,7 @@
 #if CV_MINOR_VERSION >= 2
 #include "oftypes.h"
 
-enum of_algorithm { UNKNOWN, FIRST_ORDER, HORN_SCHUNCK, CENSUS_TRANSFORM, LINE_SUM, LINE_CENSUS };
+enum of_algorithm { UNKNOWN, FIRST_ORDER, HORN_SCHUNCK, CENSUS_TRANSFORM, LINE_SUM, LINE_CENSUS, LK};
 
 /// type representing sparse motion 
 // typedef std::list<Displacement> motion_list;
@@ -26,6 +26,8 @@ class OpticalFlow {
 		virtual void clear() = 0;
 		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const = 0;
 		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const = 0;
+		/* virtual CvMat* getVelXf(); */
+		/* virtual CvMat* getVelYf(); */
 		virtual void visualize(cv::Mat &image) const = 0;
 		virtual void visualizeMean(int sectors, cv::Mat &image) const; 
 		virtual void visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) const; 
@@ -34,6 +36,13 @@ class OpticalFlow {
 		of_algorithm algo;
 
 };
+
+/* inline CvMat* getVelXf() { */
+/* 	return NULL; */
+/* } */
+/* inline CvMat* getVelYf() { */
+/* 	return NULL; */
+/* } */
 
 /// class representing dense optical flow
 class DenseOpticalFlow : public OpticalFlow {
@@ -44,15 +53,24 @@ class DenseOpticalFlow : public OpticalFlow {
 		virtual void clear();
 		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
 		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
+		virtual CvMat* getVelXf();
+		virtual CvMat* getVelYf();
+		virtual float getMeanVelXf(int x0, int x1, int y0, int y1) const;
+		virtual float getMeanVelYf(int x0, int x1, int y0, int y1) const;
+		virtual void visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &image) const;
 		virtual void visualize(cv::Mat &image) const;
 		virtual int getDirection(cv::Mat &image) const;
 
 	protected:
 		CvMat *velX, *velY;
+		CvMat *velXf, *velYf;
 };
+
 inline DenseOpticalFlow::DenseOpticalFlow(int rows, int cols) {
 	velX = cvCreateMat(rows, cols, CV_8SC1);
 	velY = cvCreateMat(rows, cols, CV_8SC1);
+	velXf = cvCreateMat(rows, cols, CV_32F);
+	velYf = cvCreateMat(rows, cols, CV_32F);
 }
 inline void DenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
 	*( (signed char*)CV_MAT_ELEM_PTR(*(velX), y, x) ) = dx;
@@ -60,6 +78,12 @@ inline void DenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
 }
 inline void DenseOpticalFlow::clear() {
 // 	TODO
+}
+inline CvMat* DenseOpticalFlow::getVelXf() {
+	return(velXf);
+}
+inline CvMat* DenseOpticalFlow::getVelYf() {
+	return (velYf);
 }
 
 /// class representing sparse optical flow

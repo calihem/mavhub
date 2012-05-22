@@ -169,6 +169,7 @@ namespace mavhub {
 		void getOF_FirstOrder();
 		void getOF_FirstOrder2();
 		void getOF_FirstOrder_Omni();
+		void getOF_LK();
 		void preprocessImage(cv::Mat img);
 		UnwrapSettings& defaultSettings();
 		void unwrapImage(cv::Mat* inputImg, cv::Mat* outputImg, UnwrapSettings& opt);

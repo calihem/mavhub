@@ -119,13 +119,14 @@ namespace mavhub {
 		// ann = fann_create_from_file("n_lateral_control.net");
 
 		// cout << "set OF algo" << endl;
-		algo = (of_algorithm)FIRST_ORDER;
+		// algo = (of_algorithm)FIRST_ORDER;
+		algo = (of_algorithm)LK;
 		// cout << "pre initModel()" << endl;
 		initModel(algo);
 		// cout << "post initModel()" << endl;
 
-		ma_pitch = new MA(1200, 0);
-		ma_roll = new MA(1200, 0);
+		ma_pitch = new MA(1200, 0.);
+		ma_roll = new MA(1200, 0.);
 
 	}
 
@@ -161,6 +162,9 @@ namespace mavhub {
 		// 	ofModel = new LineCensus(width, height, 1, 1);
 		// 	smoothSize = 3;
 		// 	break;
+		case LK:
+			ofModel = new LucasKanade(height, width);
+			break;
 
 		default:
 			ofModel = 0;
@@ -274,7 +278,8 @@ namespace mavhub {
 
 		if (static_cast<int>(params["cam_type"]) == CAM_TYPE_PLANAR) {
 			// getOF_FirstOrder();
-			getOF_FirstOrder2();
+			// getOF_FirstOrder2();
+			getOF_LK();
 		}
 		else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
 			getOF_FirstOrder_Omni();
@@ -427,6 +432,7 @@ namespace mavhub {
 	
 		cv::line(img, p, q, color, lineThickness, CV_AA, 0 );
 		cv::line(img, q, q, color, lineThickness*3, CV_AA, 0 );
+
 	}
 
 	void V_OFLOWApp::getOF_FirstOrder() {
@@ -660,6 +666,38 @@ namespace mavhub {
 		// cout << "of_alt = " << of_alt << endl;
 		// cout << "of_x = " << of_x << endl;
 		// cout << "of_y = " << of_y << endl;
+	}
+
+	void V_OFLOWApp::getOF_LK() {
+		DenseOpticalFlow *oFlow;
+		// static int of_comp_x[4];
+		// static int of_comp_y[4];
+		// static float of_u_m = 0.;
+		// static float of_v_m = 0.;
+		// int i;
+		// int num_hor = 4;
+		// int sec_width = 50;
+		// int sec_height = 50;
+
+		// int of_yaw_int = 0;
+		// int of_alt_int = 0;
+		// int of_x_int = 0;
+		// int of_y_int = 0;
+
+		// cv::Mat new_image_unwr;
+		// unwrapImage(&new_image, &new_image_unwr, defaultSettings());
+		// cout << "getOF_FirstOrder_Omni()" << endl;
+		preprocessImage(new_image);
+		// // calculate X and Y flow matrices
+		ofModel->calcOpticalFlow(new_image);
+		// // visualize secotrized mean flow
+		oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+		oFlow->visualizeMeanXYf(1, 1, new_image);
+		// Logger::log(name(), "LK", Logger::LOGLEVEL_DEBUG);
+		// of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
+		// of_v = iirFilter(of_v, oFlow->getMeanVelYf(1, 99, 1, 99));
+		of_u = oFlow->getMeanVelXf(1, 99, 1, 99);
+		of_v = oFlow->getMeanVelYf(1, 99, 1, 99);
 	}
 
 	UnwrapSettings& V_OFLOWApp::defaultSettings() {
