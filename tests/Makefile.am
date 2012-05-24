@@ -6,6 +6,7 @@ include $(top_srcdir)/am/am_incl_common.am
 bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
 	brisk_test.cpp \
+	features_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
 	utility_test.cpp \

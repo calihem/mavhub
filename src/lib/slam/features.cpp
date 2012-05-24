@@ -7,6 +7,8 @@
 #include <cmath>	//sin, cos
 #include <limits>	//epsilon
 
+#include "lib/hub/math.h"
+
 #define VERBOSE 1
 
 // little debug makro
@@ -89,36 +91,6 @@ int egomotion(const std::vector<cv::Point3f> objectpoints,
 	return 0;
 }
 
-void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask) {
-	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
-		if(landmarks.counters[i] < 70)
-			//set complete row
-// 			mask.at<uint8_t>(i, 0) = 0;
-			mask.row(i) = cv::Scalar(0);
-	}
-}
-
-void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches) {
-	// increment all counters by 1
-/*	for(std::vector<int>::iterator iter = landmarks.counters.begin(); iter != landmarks.counters.end(); ++iter)
-	{
-		(*iter)++;
-	}*/
-	std::vector<uint8_t> mask(landmarks.counters.size(), 0);
-	for(size_t i = 0; i < matches.size(); i++) {
-		for(size_t j = 0; j < matches[i].size(); j++) {
-			unsigned int index = matches[i][j].queryIdx;
-			landmarks.counters[index] = (landmarks.counters[index] + 101) / 2;
-			mask[index] = 1;
-		}
-	}
-
-	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
-		if(mask[i] == 0)
-			landmarks.counters[i] /= 2;
-	}
-}
-
 //FIXME: improve performance
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
 	std::vector<std::vector<cv::DMatch> > filtered_matches;
@@ -156,40 +128,13 @@ void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
 // 	query_indicies.sort(); train_indicies.sort();
 }
 
-void find_lis(const std::vector<int> &sequence, std::vector<int> &lis) {
-
-	lis.clear();
-	lis.push_back(0);
-
-	std::vector<int> tmp_vec(sequence.size());
-	int lower, upper;
-	for(size_t i = 0; i < sequence.size(); i++) {
-		// if next element is greater than last element of longest subseq
-		if( sequence[lis.back()] < sequence[i] ) {
-			tmp_vec[i] = lis.back();
-			lis.push_back(i);
-			continue;
-		}
-		
-		// binary search to find smallest element
-		for(lower = 0, upper = lis.size()-1; lower < upper;) {
-			int bin_index = (lower + upper) / 2;
-			if(sequence[lis[bin_index]] < sequence[i])
-				lower = bin_index + 1;
-			else
-				upper = bin_index;
-		}
-		
-		// update lis if new value is smaller then previously
-		if(sequence[i] < sequence[lis[lower]]) {
-			if(lower > 0)
-				tmp_vec[i] = lis[lower-1];
-			lis[lower] = i;
-		}
+void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask) {
+	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
+		if(landmarks.counters[i] < 70)
+			//set complete row
+// 			mask.at<uint8_t>(i, 0) = 0;
+			mask.row(i) = cv::Scalar(0);
 	}
-	
-	for(lower = lis.size(), upper = lis.back(); lower--; upper = tmp_vec[upper])
-		lis[lower] = upper;
 }
 
 //FIXME: improve performance
@@ -308,17 +253,21 @@ void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_k
 	}
 	if(x_distances.size() == 0) return;
 
-	// calculate median and MAD as robust estimations of mean and standard deviation
-	const float x_median = const_median(x_distances);
-	const float x_mad = mad(x_distances, x_median);
+	// calculate robust standard deviation
+	float median;
+	float sigma = robust_sigma(x_distances, median);
+	if( sigma <= std::numeric_limits<float>::min() )
+		return;
 
 	size_t distance_index = 0;
 	for(size_t i = 0; i < matches.size(); i++) {
 		if(mask[i] == 0) continue;
 
-		if(abs(x_distances[distance_index] - x_median) > 3*x_mad) {
+		// scale distance to fit standard normal distribution
+		const float z = abs(x_distances[distance_index] - median) / sigma;
+		//use 0,95 interval for z
+		if(z > 1.96)
 			mask[i] = 0;
-		}
 		distance_index++;
 	}
 
@@ -333,17 +282,21 @@ void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_k
 	}
 	if(y_distances.size() == 0) return;
 
-	// calculate median and MAD as robust estimations of mean and standard deviation
-	const float y_median = const_median(y_distances);
-	const float y_mad = mad(y_distances, y_median);
+	// calculate robust standard deviation
+	sigma = robust_sigma(y_distances, median);
+	if( sigma <= std::numeric_limits<float>::min() )
+		return;
 
 	distance_index = 0;
 	for(size_t i = 0; i < matches.size(); i++) {
 		if(mask[i] == 0) continue;
 
-		if( abs(y_distances[distance_index] - y_median) > 3*y_mad ) {
+		// scale distance to fit standard normal distribution
+		const float z = abs(y_distances[distance_index] - median) / sigma;
+		//use 0,95 interval for z
+		if(z > 1.96)
 			mask[i] = 0;
-		}
+
 		distance_index++;
 	}
 }
@@ -416,6 +369,67 @@ void filter_matches_by_landmarks(const landmarks_t &landmarks, std::vector<std::
 	matches = filtered_matches;
 }
 
+cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<std::vector<cv::DMatch> >& matches,
+	int method,
+	double ransac_reproj_threshold) {
+
+	std::vector<cv::Point2f> src_points, dst_points;
+
+	int index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		src_points.resize(src_points.size() + matches[i].size());
+		dst_points.resize(src_points.size());
+		for(size_t j = 0; j < matches[i].size(); j++) {
+			src_points[index] = src_keypoints[matches[i][j].queryIdx].pt; 
+			dst_points[index] = dst_keypoints[matches[i][j].trainIdx].pt; 
+
+			index++;
+		}
+	}
+
+	if(src_points.size() <= 3 || src_points.size() != dst_points.size())
+		return (cv::Mat_<double>(3,3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
+	return cv::findHomography(src_points, dst_points, method, ransac_reproj_threshold);
+}
+
+void find_lis(const std::vector<int> &sequence, std::vector<int> &lis) {
+
+	lis.clear();
+	lis.push_back(0);
+
+	std::vector<int> tmp_vec(sequence.size());
+	int lower, upper;
+	for(size_t i = 0; i < sequence.size(); i++) {
+		// if next element is greater than last element of longest subseq
+		if( sequence[lis.back()] < sequence[i] ) {
+			tmp_vec[i] = lis.back();
+			lis.push_back(i);
+			continue;
+		}
+		
+		// binary search to find smallest element
+		for(lower = 0, upper = lis.size()-1; lower < upper;) {
+			int bin_index = (lower + upper) / 2;
+			if(sequence[lis[bin_index]] < sequence[i])
+				lower = bin_index + 1;
+			else
+				upper = bin_index;
+		}
+		
+		// update lis if new value is smaller then previously
+		if(sequence[i] < sequence[lis[lower]]) {
+			if(lower > 0)
+				tmp_vec[i] = lis[lower-1];
+			lis[lower] = i;
+		}
+	}
+	
+	for(lower = lis.size(), upper = lis.back(); lower--; upper = tmp_vec[upper])
+		lis[lower] = upper;
+}
+
 void fusion_matches(const std::vector<cv::DMatch> &forward_matches,
 		    const std::vector<cv::DMatch> &backward_matches,
 		    std::vector<cv::DMatch> &matches) {
@@ -465,42 +479,31 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 	}
 }
 
-cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix) {
-	if(transform_matrix.rows != 2 || transform_matrix.cols != 3)
-		return point;
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
+	const float distance,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients,
+	std::vector<cv::Point3f>& objectpoints) {
 
-	cv::Point2f transformed;
-	
-	const double *matrix_data = reinterpret_cast<const double*>(transform_matrix.data);
-	transformed.x = matrix_data[0]*point.x + matrix_data[1]*point.y + matrix_data[2];
-	transformed.y = matrix_data[3]*point.x + matrix_data[4]*point.y + matrix_data[5];
-	
-	return transformed;
-}
+	if( imagepoints.size() == 0) return;
+	objectpoints.resize( imagepoints.size() );
 
-cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	int method,
-	double ransac_reproj_threshold) {
+	std::vector<cv::Point2f> undistorted_points( imagepoints.size() );
+	// undistortPoints returns ideal point coordinates, i.e. x = undistorted_x * fx + cx and y = undistorted_y * fy + cy 
+	undistortPoints(imagepoints, undistorted_points, camera_matrix, distortion_coefficients);
 
-	std::vector<cv::Point2f> src_points, dst_points;
-
-	int index = 0;
-	for(size_t i = 0; i < matches.size(); i++) {
-		src_points.resize(src_points.size() + matches[i].size());
-		dst_points.resize(src_points.size());
-		for(size_t j = 0; j < matches[i].size(); j++) {
-			src_points[index] = src_keypoints[matches[i][j].queryIdx].pt; 
-			dst_points[index] = dst_keypoints[matches[i][j].trainIdx].pt; 
-
-			index++;
-		}
+	for(unsigned int i = 0; i < undistorted_points.size(); i++) {
+		//for ideal point coordinates it is enough to multiply with the distance
+		const float x = undistorted_points[i].x * distance;
+		const float y = undistorted_points[i].y * distance;
+		objectpoints[i] = cv::Point3f(x, y, distance);
 	}
 
-	if(src_points.size() <= 3 || src_points.size() != dst_points.size())
-		return (cv::Mat_<double>(3,3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
-	return cv::findHomography(src_points, dst_points, method, ransac_reproj_threshold);
+	imagepoints_to_objectpoints(imagepoints,
+		distance,
+		objectpoints,
+		camera_matrix,
+		distortion_coefficients);
 }
 
 void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
@@ -540,57 +543,79 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 	}
 	imagepoints_to_objectpoints(imagepoints,
 		distance,
-		objectpoints,
 		camera_matrix,
-		distortion_coefficients);
+		distortion_coefficients,
+		objectpoints);
 }
 
-// simple (and not working) algo to determine rotation
-float yaw(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<cv::DMatch>& matches,
-	const cv::Mat &camera_matrix,
-	std::vector<char> mask) {
+void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
+	const std::vector<float>& rotation_vector,
+	const std::vector<float>& translation_vector,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& imagepoints) {
 
-	if(matches.size() != mask.size()) return 0.0;
+	if(objectpoints.size() == 0) return;
+	imagepoints.resize( objectpoints.size() );
 
-	const cv::Point2f center(camera_matrix.at<double>(0, 2), camera_matrix.at<double>(1, 2));
-	cv::L2<float> euclidean_distance;
+	cv::Mat rotation_matrix(3,3, CV_32FC1);
+	Rodrigues(rotation_vector, rotation_matrix);
+	const float r11 = rotation_matrix.at<float>(0,0);
+	const float r12 = rotation_matrix.at<float>(0,1);
+	const float r13 = rotation_matrix.at<float>(0,2);
+	const float r21 = rotation_matrix.at<float>(1,0);
+	const float r22 = rotation_matrix.at<float>(1,1);
+	const float r23 = rotation_matrix.at<float>(1,2);
+	const float r31 = rotation_matrix.at<float>(2,0);
+	const float r32 = rotation_matrix.at<float>(2,1);
+	const float r33 = rotation_matrix.at<float>(2,2);
 
-	std::vector<float> radian_meassures; // normed to radius 1
-	std::vector<float> x_distances;
-	for(size_t i = 0; i < matches.size(); i++) {
-		if(mask[i] == 0) continue;
-		const unsigned int src_index = matches[i].queryIdx;
-		const unsigned int dst_index = matches[i].trainIdx;
-		const float b = euclidean_distance(&(src_keypoints[src_index].pt.x), &(dst_keypoints[dst_index].pt.x), 2);
-		const float l1 = euclidean_distance(&(src_keypoints[src_index].pt.x), &(center.x), 2);
-		const float l2 = euclidean_distance(&(dst_keypoints[dst_index].pt.x), &(center.x), 2);
-		const float radius = (l1 + l2)/2;
-// dout << "P1: (" << src_keypoints[src_index].pt.x << ", " << src_keypoints[src_index].pt.y << ") "
-// 	<< "P2: (" << dst_keypoints[dst_index].pt.x << ", " << dst_keypoints[dst_index].pt.y << ") "
-// 	<< "b " << b
-// 	<< " radius " << radius
-// 	<< std::endl;
-		if(radius >= 5.0) //ignore movement near rotation center
-			// use intercept theorem to normalize rotation movement to radius 1
-			radian_meassures.push_back(b/radius);
-// 		if(radius <= 1.0)
-// 			radian_meassures.push_back(b);
-// 		else
-// 			radian_meassures.push_back(b/(radius-1));
+	const float cx = camera_matrix.at<double>(0, 2);
+	const float cy = camera_matrix.at<double>(1, 2);
+	const float fx = camera_matrix.at<double>(0, 0);
+	const float fy = camera_matrix.at<double>(1, 1);
+
+	for(unsigned int i = 0; i < objectpoints.size(); i++) {
+		const float x = r11*objectpoints[i].x + r12*objectpoints[i].y + r13*objectpoints[i].z + translation_vector[0];
+		const float y = r21*objectpoints[i].x + r22*objectpoints[i].y + r23*objectpoints[i].z + translation_vector[1];
+		const float z = r31*objectpoints[i].x + r32*objectpoints[i].y + r33*objectpoints[i].z + translation_vector[2];
+		
+		imagepoints[i].x = cx + (fx*x)/z;
+		imagepoints[i].y = cy + (fy*y)/z;
 	}
-	if(radian_meassures.size() == 0) return 0.0;
-// for(size_t i = 0; i < radian_meassures.size(); i++) {
-// 	dout << radian_meassures[i] << " ";
-// }
-// dout << std::endl;
-	const float r_median = median(radian_meassures);
-// 	const float ret = rad2deg( acos(1-r_median/2) );
-	const float ret = 2*rad2deg( asin(r_median/2) );
+}
 
-// dout << "r_median: " << r_median << ", ret: " << ret << std::endl;
-	return ret;
+cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix) {
+	if(transform_matrix.rows != 2 || transform_matrix.cols != 3)
+		return point;
+
+	cv::Point2f transformed;
+	
+	const double *matrix_data = reinterpret_cast<const double*>(transform_matrix.data);
+	transformed.x = matrix_data[0]*point.x + matrix_data[1]*point.y + matrix_data[2];
+	transformed.y = matrix_data[3]*point.x + matrix_data[4]*point.y + matrix_data[5];
+	
+	return transformed;
+}
+
+void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches) {
+	// increment all counters by 1
+/*	for(std::vector<int>::iterator iter = landmarks.counters.begin(); iter != landmarks.counters.end(); ++iter)
+	{
+		(*iter)++;
+	}*/
+	std::vector<uint8_t> mask(landmarks.counters.size(), 0);
+	for(size_t i = 0; i < matches.size(); i++) {
+		for(size_t j = 0; j < matches[i].size(); j++) {
+			unsigned int index = matches[i][j].queryIdx;
+			landmarks.counters[index] = (landmarks.counters[index] + 101) / 2;
+			mask[index] = 1;
+		}
+	}
+
+	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
+		if(mask[i] == 0)
+			landmarks.counters[i] /= 2;
+	}
 }
 
 

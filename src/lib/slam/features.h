@@ -116,6 +116,13 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 
 void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const float distance,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients,
+	std::vector<cv::Point3f>& objectpoints);
+
+//FIXME: remove
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
+	const float distance,
 	std::vector<cv::Point3f>& objectpoints,
 	const cv::Mat& camera_matrix,
 	const cv::Mat& distortion_coefficients);
@@ -131,6 +138,23 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 	std::vector<cv::Point3f>& objectpoints,
 	const cv::Mat& camera_matrix,
 	const cv::Mat& distortion_coefficients);
+
+/**
+ * \brief Projects 3D point coordinates to their 2D image coordinates.
+ * 
+ * This function is almost similar to cv::projectPoints except that it doesn't
+ * support distorted image points.
+ * \param[in] objectpoints Vector of 3D object points.
+ * \param[in] rotation_vector 3D rotation vector containing euler angles (rad).
+ * \param[in] translation_vector 3D translation vector.
+ * \param[in] camera_matrix Matrix of intrinsic parameters
+ * \param[out] imagepoints Outputvector containing the 2D projected object points.
+ */
+void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
+	const std::vector<float>& rotation_vector,
+	const std::vector<float>& translation_vector,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& imagepoints);
 
 /**
  * \brief Calculate the Shi-Tomasi score.
@@ -152,12 +176,6 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix);
 
-float yaw(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<cv::DMatch>& matches,
-	const cv::Mat &camera_matrix,
-	std::vector<char> mask);
-
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
@@ -167,71 +185,13 @@ inline void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoi
 	const cv::Mat& camera_matrix,
 	const cv::Mat& distortion_coefficients) {
 	
+	//FIXME: vector is waste of memory
 	std::vector<float> distances(imagepoints.size(), distance);
 	imagepoints_to_objectpoints(imagepoints,
 		distances,
 		objectpoints,
 		camera_matrix,
 		distortion_coefficients);
-}
-
-template <typename T>
-T mean(const std::vector<T> &values) {
-	if(values.size() == 0) return 0;
-
-	T sum = 0;
-	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
-		sum += *i;
-	}
-	return sum / values.size();
-}
-
-/**
- * \brief Calculate median using selection algorithm in O(n)
- */
-template <typename T>
-T const_median(const std::vector<T> &values) {
-	typename std::vector<T> values_copy(values);
-	return median(values_copy);
-}
-
-template <typename T>
-T median(std::vector<T> &values) {
-	typename std::vector<T>::iterator first = values.begin();
-	typename std::vector<T>::iterator last = values.end();
-	typename std::vector<T>::iterator middle = first + (last - first) / 2;
-	std::nth_element(first, middle, last);
-	return *middle;
-}
-
-/**
- * \brief Calculate the median absolute deviation.
- * \param[in] values A vector of values.
- * \param[in] median The median of the given values.
- */
-template <typename T>
-T mad(const std::vector<T> &values, const T median) {
-	if(values.size() == 0)
-		return 0;
-
-	std::vector<T> absolute_deviations;
-	absolute_deviations.reserve(values.size());
-	for(size_t i=0; i<values.size(); i++) {
-		absolute_deviations.push_back( abs(values[i] - median) );
-	}
-	return hub::slam::median(absolute_deviations);
-}
-
-template <typename T>
-T std_dev(const std::vector<T> &values) {
-	if(values.size() <= 1) return 0;
-
-	T m = mean(values);
-	T sum = 0;
-	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
-		sum += std::pow(*i-m, 2);
-	}
-	return sqrt( sum/(values.size()-1) );
 }
 
 template <typename Distance>

@@ -263,11 +263,12 @@ void SLAMApp::extract_features() {
 
 	// get change of attitude
 	vector<float> parameter_vector(6);
-	cv::Mat rotation_vector(3, 1, cv::DataType<double>::type);
-	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
-	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;
-	rotation_vector.at<double>(0, 2) = attitudes.back().yaw - attitudes.front().yaw;
-	cv::Mat translation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
+	parameter_vector[0] = attitudes.back().pitch - attitudes.front().pitch;	//phi
+	parameter_vector[1] = attitudes.back().roll - attitudes.front().roll;	//theta
+	parameter_vector[2] = attitudes.back().yaw - attitudes.front().yaw;	//psi
+	parameter_vector[3] = 0;
+	parameter_vector[4] = 0;
+	parameter_vector[5] = 0;
 	estimate_pose(landmarks.objectpoints,
 		keypoints,
 		matches,
@@ -275,6 +276,11 @@ void SLAMApp::extract_features() {
 		dist_coeffs,
 		matches_mask,
 		parameter_vector);
+// 	cv::Mat rotation_vector(3, 1, cv::DataType<double>::type);
+// 	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
+// 	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;
+// 	rotation_vector.at<double>(0, 2) = attitudes.back().yaw - attitudes.front().yaw;
+// 	cv::Mat translation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
 // 	egomotion(landmarks.objectpoints,
 // 		keypoints,
 // 		matches,
@@ -284,10 +290,10 @@ void SLAMApp::extract_features() {
 // 		translation_vector,
 // 		use_extrinsic_guess,
 // 		matches_mask);
-	if(rotation_vector.empty() || translation_vector.empty()) {
-		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
-		return;
-	}
+// 	if(rotation_vector.empty() || translation_vector.empty()) {
+// 		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
+// 		return;
+// 	}
 	stop_time = get_time_ms();
 	log( "egomotion needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
@@ -308,25 +314,26 @@ void SLAMApp::extract_features() {
 		<< setw(10) << right << attitudes.back().pitchspeed
 		<< setw(10) << right << attitudes.back().yawspeed
 		<< setw(10) << right << altitude
-		<< setw(10) << right << rotation_vector.at<double>(0, 1)
-		<< setw(10) << right << rotation_vector.at<double>(0, 0)
-		<< setw(10) << right << rotation_vector.at<double>(0, 2)
-		<< setw(10) << right << translation_vector.at<double>(0, 1)
-		<< setw(10) << right << translation_vector.at<double>(0, 0)
-		<< setw(10) << right << translation_vector.at<double>(0, 2)
+		<< setw(10) << right << parameter_vector[1]
+		<< setw(10) << right << parameter_vector[0]
+		<< setw(10) << right << parameter_vector[2]
+		<< setw(10) << right << parameter_vector[4]
+		<< setw(10) << right << parameter_vector[3]
+		<< setw(10) << right << parameter_vector[5]
 		<< std::endl;
 #endif
-	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
-	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
+// 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
+// 	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
+	log("parameter_vector_vector", parameter_vector, Logger::LOGLEVEL_INFO);
 	{
 	Lock tx_lock(tx_mav_mutex);
 	mavlink_msg_attitude_pack(system_id(),
 		component_id,
 		&tx_mav_msg,
 		get_time_us(),
-		rotation_vector.at<double>(0, 1),
-		rotation_vector.at<double>(0, 0),
-		rotation_vector.at<double>(0, 2),
+		parameter_vector[1],
+		parameter_vector[0],
+		parameter_vector[2],
 		0, 0, 0);
 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
 	}

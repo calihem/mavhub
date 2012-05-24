@@ -18,6 +18,9 @@ namespace hub {
 template <typename T>
 T mad(std::vector<T> values);
 
+template <typename T>
+T mad(std::vector<T> values, T &median);
+
 /**
  * Calculate MAD (Median Absolute Deviation) without copy constructor.
  * \param[in] values Data vector.
@@ -26,6 +29,12 @@ T mad(std::vector<T> values);
  */
 template <typename T>
 T _mad(std::vector<T> &values);
+
+template <typename T>
+T _mad(std::vector<T> &values, T &median);
+
+template <typename T>
+T mean(const std::vector<T> &values);
 
 /**
  * \brief Find median in linear time.
@@ -56,6 +65,9 @@ T _median(std::vector<T> &values);
 template<typename T>
 T robust_sigma(const std::vector<T> &values);
 
+template<typename T>
+T robust_sigma(const std::vector<T> &values, T &median);
+
 /**
  * \brief Estimate deviation using MAD.
  * \param[in] values Data vector.
@@ -64,6 +76,12 @@ T robust_sigma(const std::vector<T> &values);
  */
 template<typename T>
 T _robust_sigma(std::vector<T> &values);
+
+template<typename T>
+T _robust_sigma(std::vector<T> &values, T &median);
+
+template <typename T>
+T std_dev(const std::vector<T> &values);
 
 /**
  * \brief Calculate weight of Tukey M-estimator.
@@ -83,12 +101,37 @@ T mad(std::vector<T> values) {
 }
 
 template <typename T>
+T mad(std::vector<T> values, T &median) {
+	return _mad(values, median);
+}
+
+template <typename T>
 T _mad(std::vector<T> &values) {
 	T med = _median(values);
 	for(typename std::vector<T>::iterator iter = values.begin(); iter != values.end(); ++iter) {
 		*iter = std::abs(*iter - med);
 	}
 	return _median(values);
+}
+
+template <typename T>
+T _mad(std::vector<T> &values, T &median) {
+	median = _median(values);
+	for(typename std::vector<T>::iterator iter = values.begin(); iter != values.end(); ++iter) {
+		*iter = std::abs(*iter - median);
+	}
+	return _median(values);
+}
+
+template <typename T>
+T mean(const std::vector<T> &values) {
+	if(values.size() == 0) return 0;
+
+	T sum = 0;
+	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
+		sum += *i;
+	}
+	return sum / values.size();
 }
 
 template <typename T>
@@ -112,9 +155,33 @@ inline T robust_sigma(const std::vector<T> &values) {
 }
 
 template<typename T>
+inline T robust_sigma(const std::vector<T> &values, T &median) {
+	const T sigma = 1.4862 * mad(values, median);
+	return sigma;
+}
+
+template<typename T>
 inline T _robust_sigma(std::vector<T> &values) {
         T sigma = 1.4862 * _mad(values);
         return sigma;
+}
+
+template<typename T>
+inline T _robust_sigma(std::vector<T> &values, T &median) {
+        T sigma = 1.4862 * _mad(values, median);
+        return sigma;
+}
+
+template <typename T>
+T std_dev(const std::vector<T> &values) {
+	if(values.size() <= 1) return 0;
+
+	T m = mean(values);
+	T sum = 0;
+	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
+		sum += std::pow(*i-m, 2);
+	}
+	return sqrt( sum/(values.size()-1) );
 }
 
 template<typename T>

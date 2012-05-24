@@ -143,7 +143,7 @@ inline int wrap_levmar_der(
  * \param[in] distortion_coefficients Vector containing the distortion coefficients.
  * \param[in] matches_mask Filter mask. Only matches with a non zero entry are considered.
  *                         An empty mask means all matches are considered
- * \param[in,out] parameter_vector The parameter vector containing the 3 euler angles and
+ * \param[in,out] parameter_vector The parameter vector containing the 3 euler angles (rad) and
  *                                 the 3 translations. The values given are used as a starting
  *                                 point for the iteration process.
  * \param[in] max_iterations Maximum number of iterations.
