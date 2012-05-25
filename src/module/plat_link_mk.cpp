@@ -176,6 +176,17 @@ namespace mavhub {
 						Logger::log("Plat_Link_Mk::handle_input: received action TOGGLE_LC",
 												(int)lc_active, (int)mask, params["ctl_mode_lat"],
 												Logger::LOGLEVEL_INFO);
+						
+						// send lc_active on huch channel
+						chan.usec = get_time_us();
+						chan.index = CHAN_LC_ACTIVE;
+						chan.value = lc_active;
+						mavlink_msg_huch_generic_channel_encode(system_id(),
+																										component_id,
+																										&msg_l,
+																										&chan);
+						AppLayer<mavlink_message_t>::send(msg_l);
+						
 						break;
 					default:
 						break;
@@ -256,9 +267,6 @@ namespace mavhub {
 			}
 
 			switch(ctl_mode_lat) {
-			case CTL_MODE_BUMP:
-				extern_control.roll = 0; // bump_lat->calc((double)dt * 1e-6);
-				break;
 			case CTL_MODE_DIRECT:
 				extern_control.roll = roll;
 				extern_control.pitch = pitch;

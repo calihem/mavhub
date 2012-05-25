@@ -28,7 +28,7 @@ namespace mavhub {
 											params["yaw_Td"]);
 		pid_pitch = new PID(params["pitch_bias"], params["pitch_Kc"],
 											 params["pitch_Ti"], params["pitch_Td"]);
-		pid_roll = new PID(params["pitch_bias"], params["roll_Kc"],
+		pid_roll = new PID(params["roll_bias"], params["roll_Kc"],
 											 params["roll_Ti"], params["roll_Td"]);
 	}
 
@@ -37,6 +37,8 @@ namespace mavhub {
 
   void Ctrl_Lateral::handle_input(const mavlink_message_t &msg) {
 		static int8_t param_id[15];
+		int rc2;
+		int rc5;
 		//Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
 
@@ -99,6 +101,34 @@ namespace mavhub {
 				}
 			}
 			break;
+
+		case MAVLINK_MSG_ID_ACTION:
+			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
+			if( (mavlink_msg_action_get_target(&msg) == system_id()) ) {
+				// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
+				uint8_t action_id = mavlink_msg_action_get_action(&msg);
+				// if(action_id == MAV_ACTION_GET_IMAGE) {
+				// 	Lock sync_lock(sync_mutex);
+				// 	// new image with ACK
+				// 	take_new_image = 3;
+				// }
+				switch(action_id) {
+				case ACTION_TOGGLE_LC:
+					params["reset_i"] = 1.;
+					Logger::log(name(), "action done: reset_i", params["reset_i"], Logger::LOGLEVEL_DEBUG);
+				default:
+					break;
+				}
+			}
+			break;
+
+		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+			rc2 = mavlink_msg_rc_channels_raw_get_chan2_raw(&msg);
+			rc5 = mavlink_msg_rc_channels_raw_get_chan5_raw(&msg);
+			if (rc2 > 1700 && rc5 > 1700) 
+				params["reset_i"] = 2.0;
+			break;
+
 		default:
 			break;
 		}		
@@ -179,6 +209,12 @@ namespace mavhub {
 				// send(msg);
 				// mavlink_msg_param_value_pack(owner()->system_id(), component_id, &msg, (int8_t *)"prm_yaw_P", prm_yaw_P, 1, 0);
 				// send(msg);
+			}
+
+			if(params["reset_i"] > 0.0) {
+				params["reset_i"] = 0.0;
+				pid_pitch->setIntegral(0.0);
+				pid_roll->setIntegral(0.0);
 			}
 
 			// // test huch_visual_navigation
@@ -262,6 +298,13 @@ namespace mavhub {
 				pitch = params["pitch_limit"];
 			if(pitch < -params["pitch_limit"])
 				pitch = -params["pitch_limit"];
+
+			// debug pitch PID
+			send_debug(&msg, &dbg, 8, pid_pitch->getErr());
+			send_debug(&msg, &dbg, 9, pid_pitch->getIpart());
+			send_debug(&msg, &dbg, 10, pid_pitch->getDpart());
+			send_debug(&msg, &dbg, 11, dtf);
+
 			// roll
 			pid_roll->setSp(0.0);
 			// roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
@@ -409,6 +452,15 @@ namespace mavhub {
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
 			s >> params["roll_limit"];
+		}
+
+		iter = args.find("reset_i");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["reset_i"];
+		}
+		else {
+			params["reset_i"] = 0.0;
 		}
 
 		Logger::log("ctrl_lateral::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);

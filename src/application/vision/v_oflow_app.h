@@ -30,6 +30,7 @@
 #include "ofdifferential.h"
 
 #include "../../module/filter_ma.h"
+#include "../../module/exec_timing.h"
 
 #include <inttypes.h> //uint8_t
 
@@ -101,6 +102,9 @@ namespace mavhub {
 		/// raw imu data
 		// mavlink_huch_mk_imu_t huch_mk_imu;
 
+		/// update rate
+		int ctl_update_rate;
+
 		// oflow / planar-persprective
 		float of_u;
 		float of_v;
@@ -118,6 +122,13 @@ namespace mavhub {
 		of_algorithm algo;
 		OFModel *ofModel;
 		OpticalFlow *oFlow;
+
+		/// input stream parameters
+		int is_width;
+		int is_height;
+
+		/// execution timing
+		Exec_Timing* exec_tmr;
 
 		/// parameter request
 		int param_request_list;

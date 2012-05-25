@@ -107,7 +107,7 @@ namespace mavhub {
 
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HEARTBEAT:
-			// Logger::log("Bridge_Osc got mavlink heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_DEBUG);
+			Logger::log("Bridge_Osc got mavlink heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_DEBUG);
 			//OscSendMsg("%d ALIVE 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0", msg.sysid);
 			// OscSendMsg("%d ALIVE 50,162,250,192,221,27,111,57,63,249,122,206,139,11,197,244", msg.sysid);
 			p << osc::BeginBundleImmediate
@@ -200,6 +200,43 @@ namespace mavhub {
 								 );
 			
 			break;
+
+#ifdef MAVLINK_ENABLED_HUCH
+		case MAVLINK_MSG_ID_HUCH_VISUAL_FLOW:
+			p << osc::BeginBundleImmediate
+        << osc::BeginMessage( "/huch_visual_flow" ) 
+				<< static_cast<int>(msg.sysid)
+				<< mavlink_msg_huch_visual_flow_get_u(&msg)
+				<< mavlink_msg_huch_visual_flow_get_v(&msg)
+				<< mavlink_msg_huch_visual_flow_get_u_i(&msg)
+				<< mavlink_msg_huch_visual_flow_get_v_i(&msg)
+				<< osc::EndMessage
+				<< osc::EndBundle;
+
+			sp->SendTo(
+								 IpEndpointName( "127.0.0.1", 7002),
+								 p.Data(),
+								 p.Size()
+								 );
+			
+			break;
+		case MAVLINK_MSG_ID_HUCH_GENERIC_CHANNEL:
+			p << osc::BeginBundleImmediate
+        << osc::BeginMessage( "/huch_generic_channel" ) 
+				<< static_cast<int>(msg.sysid)
+				<< mavlink_msg_huch_generic_channel_get_index(&msg)
+				<< mavlink_msg_huch_generic_channel_get_value(&msg)
+				<< osc::EndMessage
+				<< osc::EndBundle;
+
+			sp->SendTo(
+								 IpEndpointName( "127.0.0.1", 7002),
+								 p.Data(),
+								 p.Size()
+								 );
+			
+			break;
+#endif
 
 		default:
 			break;

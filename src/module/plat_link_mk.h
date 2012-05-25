@@ -78,7 +78,7 @@ namespace mavhub {
 
 			// transmissibles
 			// base message
-			mavlink_message_t msg;
+			mavlink_message_t msg_l;
 			/// attitude control message
 			/* // mavlink_manual_control_t ctl; */
 			/* mavlink_huch_attitude_control_t ctl; */

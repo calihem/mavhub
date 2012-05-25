@@ -27,6 +27,7 @@ enum huch_generic_channel_types_t {
 	CHAN_PITCH,   // Pitch value
 	CHAN_YAW, // Yaw value
 	CHAN_TRIG_BUMP_ROLL, // trigger roll bumping
+	CHAN_LC_ACTIVE, // lateral control active
 	CHAN_NUM // number of items in enum
 };
 
@@ -72,6 +73,8 @@ namespace mavhub {
 		mavlink_param_set_t param_set;
 		/// mavlink action
 		mavlink_action_t action;
+		/// mavlink action
+		mavlink_huch_generic_channel_t chan;
 
 		/// respond to parameters request
 		inline void param_request_respond() {

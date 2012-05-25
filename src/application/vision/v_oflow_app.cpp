@@ -58,6 +58,8 @@ namespace mavhub {
 		of_alt(0.0),
 		of_x(0.0),
 		of_y(0.0),
+		is_width(320),
+		is_height(240),
 		param_request_list(0),
 		lc_active(0)
 		//		cam_matrix(3, 3, CV_32FC1),
@@ -115,6 +117,9 @@ namespace mavhub {
 		// if(!calib_filename.empty())
 		// 	load_calibration_data(calib_filename);
 
+		// init execution timer
+		exec_tmr = new Exec_Timing(ctl_update_rate);
+
 		// neural network
 		// ann = fann_create_from_file("n_lateral_control.net");
 
@@ -135,6 +140,7 @@ namespace mavhub {
 	int V_OFLOWApp::initModel(of_algorithm algo) {
 		int width;
 		int height;
+		// this is for omni case
 		width = static_cast<int>(params["unwrap_w"]);
 		height = static_cast<int>(params["unwrap_h"]);
 		switch(algo) {
@@ -326,6 +332,10 @@ namespace mavhub {
 		// 						Logger::LOGLEVEL_DEBUG, _loglevel);
 
 		switch(msg.msgid) {
+
+		case MAVLINK_MSG_ID_HEARTBEAT:
+			Logger::log(name(), "got mavlink heartbeat: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_DEBUG);
+			break;
 
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
 			Logger::log("Ctrl_Hover::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
@@ -669,7 +679,7 @@ namespace mavhub {
 	}
 
 	void V_OFLOWApp::getOF_LK() {
-		DenseOpticalFlow *oFlow;
+		static DenseOpticalFlow *oFlow;
 		// static int of_comp_x[4];
 		// static int of_comp_y[4];
 		// static float of_u_m = 0.;
@@ -696,8 +706,10 @@ namespace mavhub {
 		// Logger::log(name(), "LK", Logger::LOGLEVEL_DEBUG);
 		// of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
 		// of_v = iirFilter(of_v, oFlow->getMeanVelYf(1, 99, 1, 99));
-		of_u = oFlow->getMeanVelXf(1, 99, 1, 99);
-		of_v = oFlow->getMeanVelYf(1, 99, 1, 99);
+		of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
+		of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
+		// of_u = 0.;
+		// of_v = 0.;
 	}
 
 	UnwrapSettings& V_OFLOWApp::defaultSettings() {
@@ -802,6 +814,8 @@ namespace mavhub {
 		static int counter = 0;
 		if(counter < 10) {
 			counter++;
+			if(width != is_width) is_width = width;
+			if(height != is_height) is_height = height;
 			return;
 		}
 
@@ -891,6 +905,8 @@ namespace mavhub {
 		int imu_pitch_ma, imu_roll_ma;
 		double imu_pitch_derot, imu_roll_derot;
 
+		int wait_time;
+
 		if(Core::video_server) {
 			int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str());
 			Logger::log(name(), ": binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG, _loglevel);
@@ -925,6 +941,12 @@ namespace mavhub {
 
 		while( !interrupted() ) {
 			//log(name(), "enter main loop", Logger::LOGLEVEL_DEBUG);
+
+			wait_time = exec_tmr->calcSleeptime();
+		
+			/* wait */
+			usleep(wait_time);
+
 
 			if(param_request_list) {
 				Logger::log("V_OFLOWApp::run: param request", Logger::LOGLEVEL_DEBUG);
@@ -1011,7 +1033,7 @@ namespace mavhub {
 					// of_u_i_derot = params["derot_pit_g"] * attitude.pitch;
 					// of_v_i_derot = params["derot_rol_g"] * attitude.roll;
 
-					if(params["dbg_en"] > -1.0) {
+					if(params["dbg_en"] > 0.0) {
 						send_debug(&msg, &dbg, 4, of_u_i);
 						send_debug(&msg, &dbg, 5, of_v_i);
 						send_debug(&msg, &dbg, 6, of_u_i_derot);
@@ -1107,7 +1129,7 @@ namespace mavhub {
 				new_video_data = false;
 			}
 			//FIXME: remove usleep
-			usleep(1000);
+			// usleep(1000);
 		}
 
 		//unbind from video server
@@ -1234,6 +1256,15 @@ namespace mavhub {
 		else {
 			params["ctl_en"] = 0.0;
 		}
+
+		// run method update rate
+		iter = args.find("ctl_update_rate");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> ctl_update_rate;
+		}
+		else
+			ctl_update_rate = 100;
 
 		// camera type
 		iter = args.find("cam_type");

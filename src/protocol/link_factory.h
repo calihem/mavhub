@@ -25,6 +25,8 @@ class LinkFactory {
 		struct link_construction_plan_t {
 			link_construction_plan_t();
 
+			void clear();
+
 			/* generic */
 			link_type_t link_type;
 			protocol_type_t protocol_type;

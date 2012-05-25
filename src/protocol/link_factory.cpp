@@ -17,6 +17,15 @@ LinkFactory::link_construction_plan_t::link_construction_plan_t() :
 		groupmember_list()
 {}
 
+	void LinkFactory::link_construction_plan_t::clear() {
+		link_type = UnknownLink;
+		protocol_type = UnknownProtocol;
+		dev_name.clear();
+		baudrate = 57600;
+		port = 0;
+		groupmember_list.clear();
+	}
+
 std::ostream& operator <<(std::ostream &os, const LinkFactory::link_type_t &link_type) {
 	switch(link_type) {
 		case LinkFactory::SerialLink:

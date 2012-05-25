@@ -213,7 +213,8 @@ void add_links(const list<string> link_list, Setting &settings) {
 			default:
 				Logger::log("Adding of", *link_iter, "failed, due to unkwnown protocol type", Logger::LOGLEVEL_DEBUG);
 				break;
-		}
+		} // end switch
+		link_construction_plan.clear();
 	}
 }
 
