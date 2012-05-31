@@ -155,9 +155,9 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 	const std::vector<cv::DMatch>& matches,
 	const cv::Mat &camera_matrix,
 	const cv::Mat &distortion_coefficients,
-	const std::vector<char> &matches_mask,
 	std::vector<T> &parameter_vector,
-	unsigned int max_iterations = 100);
+	const std::vector<char> &matches_mask = std::vector<char>(),
+	const unsigned int max_iterations = 100);
 
 // ----------------------------------------------------------------------------
 // Implementations
@@ -544,26 +544,30 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 	const std::vector<cv::DMatch>& matches,
 	const cv::Mat &camera_matrix,
 	const cv::Mat &distortion_coefficients,
-	const std::vector<char> &matches_mask,
 	std::vector<T> &parameter_vector,
-	unsigned int max_iterations) {
+	const std::vector<char> &matches_mask,
+	const unsigned int max_iterations) {
 
-	if(parameter_vector.size() != 6)
-		return -1;
+	assert(parameter_vector.size() == 6);
+	if(matches.empty()) return 0;
+	if(object_points.empty()) return -1;
+	if(dst_keypoints.empty()) return -1;
 
 	unsigned int num_matches; //number of valid matches
 	if(matches_mask.empty()) { //empty mask => all matches are valid
 		num_matches = matches.size();
 	} else if(matches_mask.size() != matches.size()) { //mask doesn't fit the matches
 		return -2;
-	} else { //count number of valid matches
+	} else { //size of matches and mask are equal => count number of valid matches
 		num_matches = 0;
 		for(size_t i = 0; i < matches.size(); i++) {
 			if( matches_mask[i] == 0) continue;
 			num_matches++;
 		}
 	}
-
+	if(num_matches == 0) //no matches found
+		return 0;
+		
 	std::vector<T> matched_object_points(3*num_matches); // allocate matrix 3 x num_matches
 	std::vector< cv::Point_<T> > matched_image_points(num_matches);
 	
@@ -578,8 +582,8 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 
 		const int dst_index = matches[i].trainIdx;
 		const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
-		matched_image_points[i].x = dst_keypoint.pt.x;
-		matched_image_points[i].y = dst_keypoint.pt.y;
+		matched_image_points[next_point_index].x = dst_keypoint.pt.x;
+		matched_image_points[next_point_index].y = dst_keypoint.pt.y;
 
 		next_point_index++;
 	}

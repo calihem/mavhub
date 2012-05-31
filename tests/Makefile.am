@@ -6,6 +6,7 @@ include $(top_srcdir)/am/am_incl_common.am
 bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
 	brisk_test.cpp \
+	featurematching_test.cpp \
 	features_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
@@ -21,6 +22,7 @@ test_mavhub_LDADD = \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/sensor/libsensor.a \
 	$(top_builddir)/thirdparty/libbrisk.a \
+	$(top_builddir)/thirdparty/libagast.a \
 	$(top_builddir)/thirdparty/liblevmar.a \
 	$(OPENCV1_LIBS) \
 	$(OPENCV2_LIBS) \

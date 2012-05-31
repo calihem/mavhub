@@ -160,11 +160,22 @@ void SLAMApp::extract_features() {
 
 	std::vector<cv::DMatch> matches;
 	matcher.match(landmarks.descriptors, descriptors, matches);
-	std::vector<char> matches_mask(matches.size(), 1);
-
+	if(matches.empty()) {
+		log("no matches fount", Logger::LOGLEVEL_DEBUG);
+		return;
+	}
 	stop_time = get_time_ms();
 	log( "forward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
+
+	std::vector<char> matches_mask(matches.size(), 1);
+
+	// create mask for backward matching
+	cv::Mat bw_mask = matchesmask(landmarks.keypoints.size(),
+		keypoints.size(),
+		matches);
+	std::vector<cv::DMatch> backward_matches;
+	matcher.match(descriptors, landmarks.descriptors, backward_matches, bw_mask.t());
 
 // 	std::vector<cv::DMatch> backward_matches;
 // 	matcher.match(descriptors, landmarks.descriptors, backward_matches);
@@ -173,11 +184,11 @@ void SLAMApp::extract_features() {
 // 	log( "backward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
 // 	start_time = stop_time;
 
-// 	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
+	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
 
-// 	stop_time = get_time_ms();
-// 	log( "forward/backward filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
-// 	start_time = stop_time;
+	stop_time = get_time_ms();
+	log( "forward/backward filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
+	start_time = stop_time;
 
 	filter_matches_by_robust_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
 
@@ -269,13 +280,17 @@ void SLAMApp::extract_features() {
 	parameter_vector[3] = 0;
 	parameter_vector[4] = 0;
 	parameter_vector[5] = 0;
-	estimate_pose(landmarks.objectpoints,
+	int rc = estimate_pose(landmarks.objectpoints,
 		keypoints,
 		matches,
 		cam_matrix,
 		dist_coeffs,
-		matches_mask,
-		parameter_vector);
+		parameter_vector,
+		matches_mask);
+	if(rc <= 0) {
+		log("position estimation failed with return code", rc, Logger::LOGLEVEL_DEBUG);
+		return;
+	}
 // 	cv::Mat rotation_vector(3, 1, cv::DataType<double>::type);
 // 	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
 // 	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;

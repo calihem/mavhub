@@ -61,12 +61,6 @@ int egomotion(const std::vector<cv::Point3f> objectpoints,
 	std::vector<char> matches_mask = std::vector<char>() );
 
 
-/// Filter out landmarks which have a small counter value 
-void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask);
-
-/// Increase counter value of landmark if it was matched
-void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches);
-
 /// Filter out matches 
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
 
@@ -82,17 +76,10 @@ void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
 		const std::vector<cv::DMatch> &backward_matches,
 		std::vector<char> &mask);
 
-void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_keypoints,
-		const std::vector<cv::KeyPoint> dst_keypoints,
+void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> &src_keypoints,
+		const std::vector<cv::KeyPoint> &dst_keypoints,
 		const std::vector<cv::DMatch> &matches,
 		std::vector<char> &mask);
-
-void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoints,
-		const std::vector<cv::KeyPoint> dst_keypoints,
-		const std::vector<cv::DMatch> &matches,
-		std::vector<char> &mask);
-
-void filter_matches_by_landmarks(const landmarks_t &landmarks, std::vector<std::vector<cv::DMatch> > &matches);
 
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
@@ -103,12 +90,6 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const float delta_x, const float delta_y,
 	std::vector<uint8_t>& filter,
 	Distance distance_metric = Distance() );
-
-cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	int method=0,
-	double ransac_reproj_threshold=3);
 
 void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches,
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
@@ -138,6 +119,18 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 	std::vector<cv::Point3f>& objectpoints,
 	const cv::Mat& camera_matrix,
 	const cv::Mat& distortion_coefficients);
+
+/**
+ * \brief Get mask from matches
+ *
+ * \param[in] num_src_kps number of source (train) keypoints
+ * \param[in] num_dst_kps number of destination (query) keypoints
+ * \param[in] matches vector of matches
+ * \return Mask matrix 
+ */
+cv::Mat matchesmask(const int num_src_kps,
+	const int num_dst_kps,
+	const std::vector<cv::DMatch> &matches);
 
 /**
  * \brief Projects 3D point coordinates to their 2D image coordinates.

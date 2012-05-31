@@ -55,7 +55,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_test_mavhub_OBJECTS = brisk_test.$(OBJEXT) features_test.$(OBJEXT) \
+am_test_mavhub_OBJECTS = brisk_test.$(OBJEXT) \
+	featurematching_test.$(OBJEXT) features_test.$(OBJEXT) \
 	mavhub_test.$(OBJEXT) pose_test.$(OBJEXT) \
 	utility_test.$(OBJEXT) acc_calibration_app_test.$(OBJEXT)
 test_mavhub_OBJECTS = $(am_test_mavhub_OBJECTS)
@@ -68,6 +69,7 @@ test_mavhub_DEPENDENCIES = $(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/sensor/libsensor.a \
 	$(top_builddir)/thirdparty/libbrisk.a \
+	$(top_builddir)/thirdparty/libagast.a \
 	$(top_builddir)/thirdparty/liblevmar.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 test_mavhub_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
@@ -237,6 +239,7 @@ AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
 test_mavhub_SOURCES = \
 	brisk_test.cpp \
+	featurematching_test.cpp \
 	features_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
@@ -252,6 +255,7 @@ test_mavhub_LDADD = \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/sensor/libsensor.a \
 	$(top_builddir)/thirdparty/libbrisk.a \
+	$(top_builddir)/thirdparty/libagast.a \
 	$(top_builddir)/thirdparty/liblevmar.a \
 	$(OPENCV1_LIBS) \
 	$(OPENCV2_LIBS) \
@@ -342,6 +346,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acc_calibration_app_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/brisk_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/featurematching_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/features_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavhub_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pose_test.Po@am__quote@

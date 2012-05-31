@@ -128,15 +128,6 @@ void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
 // 	query_indicies.sort(); train_indicies.sort();
 }
 
-void filter_landmarks(const landmarks_t &landmarks, cv::Mat &mask) {
-	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
-		if(landmarks.counters[i] < 70)
-			//set complete row
-// 			mask.at<uint8_t>(i, 0) = 0;
-			mask.row(i) = cv::Scalar(0);
-	}
-}
-
 //FIXME: improve performance
 //TODO
 void filter_matches_by_lis(const std::vector<cv::KeyPoint> src_keypoints,
@@ -211,32 +202,28 @@ void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
 
 	if(matches.size() != mask.size()) return;
 
-// int counter = 0;
 	for(size_t i = 0; i < matches.size(); i++) {
 		if(mask[i] == 0) continue;
 
-		int src_index = matches[i].queryIdx;
-		int dst_index = matches[i].trainIdx;
+		const int src_index = matches[i].queryIdx;
+		const int dst_index = matches[i].trainIdx;
 
-		mask[i] = 0;
-// counter++;
+		mask[i] = 0; //default is to filter out
+
 		// begin inner loop
 		for(size_t j = 0; j<backward_matches.size(); j++) {
 			if(backward_matches[j].queryIdx == dst_index
 			&& backward_matches[j].trainIdx == src_index) {
 				mask[i] = 1;
-// counter--;
 				//stop inner loop
 				break;
 			}
 		}
 	}
-	
-// dout << "filtered " << counter << " matches by backward matching" << std::endl;
 }
 
-void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_keypoints,
-		const std::vector<cv::KeyPoint> dst_keypoints,
+void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> &src_keypoints,
+		const std::vector<cv::KeyPoint> &dst_keypoints,
 		const std::vector<cv::DMatch> &matches,
 		std::vector<char> &mask) {
 
@@ -251,7 +238,7 @@ void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_k
 		const unsigned int x_distance = abs(src_keypoints[src_index].pt.x - dst_keypoints[dst_index].pt.x);
 		x_distances.push_back(x_distance);
 	}
-	if(x_distances.size() == 0) return;
+	if(x_distances.empty()) return;
 
 	// calculate robust standard deviation
 	float median;
@@ -299,99 +286,6 @@ void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> src_k
 
 		distance_index++;
 	}
-}
-
-//FIXME: improve performance
-void filter_matches_by_distribution(const std::vector<cv::KeyPoint> src_keypoints,
-		const std::vector<cv::KeyPoint> dst_keypoints,
-		const std::vector<cv::DMatch> &matches,
-		std::vector<char> &mask) {
-
-	if(matches.size() != mask.size()) return;
-
-	std::vector<float> match_length;
-	std::vector<float> match_angle;
-	cv::L2<float> euclidean_distance;
-	cv::L1<float> manhattan_distance;
-
-	for(size_t i = 0; i < matches.size(); i++) {
-		if(mask[i] == 0) continue;
-		unsigned int src_index = matches[i].queryIdx;
-		unsigned int dst_index = matches[i].trainIdx;
-		float length = euclidean_distance(&(src_keypoints[src_index].pt.x), &(dst_keypoints[dst_index].pt.x), 2);
-		match_length.push_back(length);
-		float x_length = manhattan_distance(&(src_keypoints[src_index].pt.x), &(dst_keypoints[dst_index].pt.x), 1);
-		float y_length = manhattan_distance(&(src_keypoints[src_index].pt.y), &(dst_keypoints[dst_index].pt.y), 1);
-		float angle;
-		if (x_length > 0.0)
-			angle = std::atan(y_length/ x_length);
-		else
-			angle = 0.0;
-		match_angle.push_back(angle);
-	}
-
-	float mean_length = mean(match_length);
-	float mean_angle = mean(match_angle);
-	float s_dev_length = std_dev(match_length);
-	float s_dev_angle = std_dev(match_angle);
-
-int counter = 0;
-	size_t index = 0;
-	for(size_t i = 0; i < matches.size(); i++) {
-		if(mask[i] == 0) continue;
-
-		if( abs(match_length[index] - mean_length) > s_dev_length
-		|| abs(match_angle[index] - mean_angle) > s_dev_angle ) {
-			mask[i] = 0;
-counter++;
-		}
-		index++;
-	}
-dout << "filtered " << counter << " matches by distribution" << std::endl;
-}
-   
-void filter_matches_by_landmarks(const landmarks_t &landmarks, std::vector<std::vector<cv::DMatch> > &matches) {
-	std::vector<std::vector<cv::DMatch> > filtered_matches;
-
-	for(size_t i = 0; i < matches.size(); i++) {
-		std::vector<cv::DMatch> row_matches;
-		for(size_t j = 0; j < matches[i].size(); j++) {
-			unsigned int index = matches[i][j].queryIdx;
-			if(landmarks.counters[index] < 80) { // good match
-				row_matches.push_back(matches[i][j]);
-			} //else
-// 				std::cout << index << ": " << landmarks.counters[index] << std::endl;
-		}
-		if(!row_matches.empty())
-			filtered_matches.push_back(row_matches);
-	}
-
-	matches = filtered_matches;
-}
-
-cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	int method,
-	double ransac_reproj_threshold) {
-
-	std::vector<cv::Point2f> src_points, dst_points;
-
-	int index = 0;
-	for(size_t i = 0; i < matches.size(); i++) {
-		src_points.resize(src_points.size() + matches[i].size());
-		dst_points.resize(src_points.size());
-		for(size_t j = 0; j < matches[i].size(); j++) {
-			src_points[index] = src_keypoints[matches[i][j].queryIdx].pt; 
-			dst_points[index] = dst_keypoints[matches[i][j].trainIdx].pt; 
-
-			index++;
-		}
-	}
-
-	if(src_points.size() <= 3 || src_points.size() != dst_points.size())
-		return (cv::Mat_<double>(3,3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
-	return cv::findHomography(src_points, dst_points, method, ransac_reproj_threshold);
 }
 
 void find_lis(const std::vector<int> &sequence, std::vector<int> &lis) {
@@ -447,35 +341,6 @@ void fusion_matches(const std::vector<cv::DMatch> &forward_matches,
 				break;
 			}
 		}
-	}
-}
-
-//FIXME: improve performance
-void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches,
-		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
-		    std::vector<std::vector<cv::DMatch> > &matches) {
-
-	for(size_t i = 0; i < forward_matches.size(); i++) {
-		std::vector<cv::DMatch> row_matches;
-		for(size_t j = 0; j < forward_matches[i].size(); j++) {
-			int src_index = forward_matches[i][j].queryIdx;
-			int dst_index = forward_matches[i][j].trainIdx;
-
-			// begin inner loops
-			for(size_t ii = 0; ii < backward_matches.size(); ii++) {
-				for(size_t jj = 0; jj < backward_matches[ii].size(); jj++) {
-					if(backward_matches[ii][jj].queryIdx == dst_index
-					&& backward_matches[ii][jj].trainIdx == src_index) {
-						row_matches.push_back(forward_matches[i][j]); 
-						//stop inner loops
-						jj = backward_matches[ii].size();
-						ii = backward_matches.size() - 1;
-					}
-				}
-			}
-		}
-		if(!row_matches.empty())
-			matches.push_back(row_matches);
 	}
 }
 
@@ -546,6 +411,20 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 		camera_matrix,
 		distortion_coefficients,
 		objectpoints);
+}
+
+cv::Mat matchesmask(const int num_src_kps,
+	const int num_dst_kps,
+	const std::vector<cv::DMatch> &matches) {
+
+	cv::Mat mask(num_src_kps, num_dst_kps, CV_8UC1, cv::Scalar(0));
+	for(unsigned int i=0; i<matches.size(); i++) {
+		const int dst_index = matches[i].queryIdx;
+		const int src_index = matches[i].trainIdx;
+		mask.at<uchar>(dst_index, src_index) = 1;
+	}
+
+	return mask;
 }
 
 void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,

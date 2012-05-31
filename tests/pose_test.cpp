@@ -83,8 +83,8 @@ BOOST_AUTO_TEST_CASE(Test_estimate_pose)
 		matches,
 		camera_matrix,
 		distortion_coefficients,
-		matches_mask,
 		parameter_vector,
+		matches_mask,
 		20);
 	BOOST_CHECK(rc >= 0);
 
@@ -96,6 +96,40 @@ BOOST_AUTO_TEST_CASE(Test_estimate_pose)
 	std::cout << "dy:    " << parameter_vector[4] << " (" << translation_vector[1] << ")" << std::endl;
 	std::cout << "dz:    " << parameter_vector[5] << " (" << translation_vector[2] << ")" << std::endl;
 	std::cout << "error: " << estimation_error(rotation_vector, translation_vector, parameter_vector) << std::endl;
+
+	//test empty keypoints
+	rc = estimate_pose<PRECISION>(object_points,
+		std::vector<cv::KeyPoint>(),
+		matches,
+		camera_matrix,
+		distortion_coefficients,
+		parameter_vector,
+		matches_mask,
+		20);
+	BOOST_CHECK(rc < 0);
+
+	//test empty object_points
+	rc = estimate_pose<PRECISION>(std::vector< cv::Point3_<PRECISION> >(),
+		keypoints,
+		matches,
+		camera_matrix,
+		distortion_coefficients,
+		parameter_vector,
+		matches_mask,
+		20);
+	BOOST_CHECK(rc < 0);
+
+	//test empty matches
+	rc = estimate_pose<PRECISION>(object_points,
+		keypoints,
+		std::vector<cv::DMatch>(),
+		camera_matrix,
+		distortion_coefficients,
+		parameter_vector,
+		matches_mask,
+		20);
+	BOOST_CHECK(rc == 0);
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
