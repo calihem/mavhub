@@ -90,6 +90,8 @@ namespace mavhub {
 					pid_roll->setTd(params["roll_Td"]);
 					pid_pitch->setBias(params["pitch_bias"]);
 					pid_roll->setBias(params["roll_bias"]);
+					pid_pitch->setSp(params["pitch_sp"]);
+					pid_roll->setSp(params["roll_sp"]);
 
 					// if(!strcmp("prm_test_pitch", (const char *)param_id)) {
 					// 	prm_test_pitch = (int)mavlink_msg_param_set_get_param_value(&msg);
@@ -166,6 +168,9 @@ namespace mavhub {
 		pitch_test_dur = 0;
 		pitch_test_delay = 10;
 		my_cnt = 0;
+
+		pid_pitch->setSp(0.0);
+		pid_roll->setSp(0.0);
 
 		Logger::log("Ctrl_Lateral started:", name(), Logger::LOGLEVEL_INFO);
 		while(true) {
@@ -290,7 +295,7 @@ namespace mavhub {
 			// Logger::log("Ctrl_Lateral (psi_est, yaw1)", huch_visual_navigation.psi_vc, yaw1, Logger::LOGLEVEL_INFO);
 			//yaw = 0;
 			// pitch
-			pid_pitch->setSp(0.0);
+			// pid_pitch->setSp(0.0);
 			// pitch = pid_pitch->calc(dtf, y * huch_visual_navigation.ego_speed);
 			pitch = pid_pitch->calc(dtf, x);
 			// limit
@@ -299,14 +304,14 @@ namespace mavhub {
 			if(pitch < -params["pitch_limit"])
 				pitch = -params["pitch_limit"];
 
-			// debug pitch PID
-			send_debug(&msg, &dbg, 8, pid_pitch->getErr());
-			send_debug(&msg, &dbg, 9, pid_pitch->getIpart());
-			send_debug(&msg, &dbg, 10, pid_pitch->getDpart());
-			send_debug(&msg, &dbg, 11, dtf);
+			// // debug pitch PID
+			// send_debug(&msg, &dbg, 8, pid_pitch->getErr());
+			// send_debug(&msg, &dbg, 9, pid_pitch->getIpart());
+			// send_debug(&msg, &dbg, 10, pid_pitch->getDpart());
+			// send_debug(&msg, &dbg, 11, dtf);
 
 			// roll
-			pid_roll->setSp(0.0);
+			// pid_roll->setSp(0.0);
 			// roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
 			roll = pid_roll->calc(dtf, y);
 			if(roll > params["roll_limit"])
@@ -370,9 +375,11 @@ namespace mavhub {
 		params["pitch_Kc"] = 1.0;
 		params["pitch_Ti"] = 0.0;
 		params["pitch_Td"] = 0.0;
+		params["pitch_sp"] = 0.0;
 		params["roll_Kc"] = 1.0;
 		params["roll_Ti"] = 0.0;
 		params["roll_Td"] = 0.0;
+		params["roll_sp"] = 0.0;
 	}
 
 	void Ctrl_Lateral::read_conf(const map<string, string> args) {
@@ -426,6 +433,11 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> params["pitch_limit"];
 		}
+		iter = args.find("pitch_sp");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["pitch_sp"];
+		}
 
 		// controller params roll
 		iter = args.find("roll_bias");
@@ -452,6 +464,11 @@ namespace mavhub {
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
 			s >> params["roll_limit"];
+		}
+		iter = args.find("roll_sp");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["roll_sp"];
 		}
 
 		iter = args.find("reset_i");

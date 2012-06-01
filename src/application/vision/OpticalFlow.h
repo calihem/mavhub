@@ -14,7 +14,16 @@
 #if CV_MINOR_VERSION >= 2
 #include "oftypes.h"
 
-enum of_algorithm { UNKNOWN, FIRST_ORDER, HORN_SCHUNCK, CENSUS_TRANSFORM, LINE_SUM, LINE_CENSUS, LK};
+enum of_algorithm {
+	UNKNOWN,
+	FIRST_ORDER,
+	HORN_SCHUNCK,
+	CENSUS_TRANSFORM,
+	LINE_SUM,
+	LINE_CENSUS,
+	LK,
+	LK_PYR,
+};
 
 /// type representing sparse motion 
 // typedef std::list<Displacement> motion_list;

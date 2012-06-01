@@ -119,6 +119,9 @@ namespace mavhub {
 		float of_x;
 		float of_y;
 
+		// LK pyr init
+		bool needToInit;
+
 		of_algorithm algo;
 		OFModel *ofModel;
 		OpticalFlow *oFlow;
@@ -157,6 +160,7 @@ namespace mavhub {
 		cv::Mat old_image;
 		cv::Mat new_image;
 		cv::Mat new_image_raw;
+		cv::Mat img_display;
 		/* mavlink_attitude_t old_attitude; */
 		/* mavlink_attitude_t new_attitude; */
 		/* 		std::vector<cv::KeyPoint> old_features; */
@@ -181,6 +185,7 @@ namespace mavhub {
 		void getOF_FirstOrder2();
 		void getOF_FirstOrder_Omni();
 		void getOF_LK();
+		void getOF_LK_Pyr();
 		void preprocessImage(cv::Mat img);
 		UnwrapSettings& defaultSettings();
 		void unwrapImage(cv::Mat* inputImg, cv::Mat* outputImg, UnwrapSettings& opt);

@@ -128,6 +128,19 @@ namespace mavhub {
 						// Logger::log(name(), "sent param_set: gain", gain, Logger::LOGLEVEL_DEBUG);
 					}
 
+					else if(i == 5) {
+
+						gain = ((float)(a[5]) / 100.) - 5.12;
+						// dir = (float)((a[2] < 512) * 2 - 1);
+
+						param_request_set(system_id(),
+															28,
+															string("pitch_sp"),
+															gain);
+
+						// Logger::log(name(), "sent param_set: gain", gain, Logger::LOGLEVEL_DEBUG);
+					}
+
 					Logger::log(name(), "value changed, a-", i, a[i], a_new[i], param_val, Logger::LOGLEVEL_DEBUG);
 				}
 			}

@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <inttypes.h>
+#include <unistd.h>
 
 #include "sensor.h"
 
