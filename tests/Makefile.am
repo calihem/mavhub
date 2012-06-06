@@ -7,7 +7,8 @@ bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
 	brisk_test.cpp \
 	featurematching_test.cpp \
-	features_test.cpp \
+	featureposition_test.cpp \
+	featureprojection_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
 	utility_test.cpp \

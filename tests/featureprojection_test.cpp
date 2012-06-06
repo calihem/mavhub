@@ -77,13 +77,6 @@ BOOST_AUTO_TEST_CASE(Test_features)
 		distortion_coefficients,
 		image_points);
 
-// std::cout << "_Pojected image points_" << std::endl;
-// for(size_t i=0; i<image_points.size(); i++) {
-// 	std::cout << "(" << image_points[i].x
-// 		<< ", " << image_points[i].y
-// 		<< ")" << std::endl;
-// }
-
 	// get the object points out of the image points
 	std::vector< cv::Point3_<PRECISION> > reprojected_object_points;
 	imagepoints_to_objectpoints(image_points,
@@ -92,16 +85,8 @@ BOOST_AUTO_TEST_CASE(Test_features)
 		distortion_coefficients,
 		reprojected_object_points);
 
-// std::cout << "_Reprojected object points_" << std::endl;
-// for(size_t i=0; i<reprojected_object_points.size(); i++) {
-// 	std::cout << "(" << reprojected_object_points[i].x
-// 		<< ", " << reprojected_object_points[i].y
-// 		<< ", " << reprojected_object_points[i].z
-// 		<< ")" << std::endl;
-// }
-
 	PRECISION err = error<cv::Point3_<PRECISION>, PRECISION>(object_points, reprojected_object_points);
-	std::cout << "feature reprojection errror: " << err << std::endl;
+	BOOST_TEST_MESSAGE("feature reprojection errror: " << err);
 // 	BOOST_CHECK(err <= 100*std::numeric_limits<PRECISION>::min());
 	BOOST_CHECK(err <= 0.01);
 
@@ -130,7 +115,7 @@ BOOST_AUTO_TEST_CASE(Test_features)
 		ctrl_image_points);
 
 	err = error<cv::Point_<PRECISION>, PRECISION>(image_points, ctrl_image_points);
-	std::cout << "feature projection errror: " << err << std::endl;
+	BOOST_TEST_MESSAGE("feature projection errror: " << err);
 	BOOST_CHECK(err <= 0.0001);
 }
 

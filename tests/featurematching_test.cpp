@@ -9,10 +9,13 @@
 #include <cstdlib>
 #include <limits>	//epsilon
 
+#include "utility.h"
+
 #define VISUAL_OUTPUT 0
 
 using namespace boost::unit_test;
 using namespace hub::slam;
+using namespace mavhub;
 
 double match_ratio(const std::vector<cv::KeyPoint> &src_keypoints,
 	const std::vector<cv::KeyPoint> &dst_keypoints,
@@ -47,10 +50,8 @@ double match_ratio(const std::vector<cv::KeyPoint> &src_keypoints,
 
 BOOST_AUTO_TEST_SUITE(FeatureMatchingTestSuite)
 
-BOOST_AUTO_TEST_CASE(Test_featurematching)
+BOOST_AUTO_TEST_CASE(test_featurematching)
 {
-	unit_test_log.set_threshold_level( log_messages );
-
 	//FIXME: avoid static filenames
 	cv::Mat left_image = cv::imread("../tests/images/allgaeu_left.jpg", 0);
 	cv::Mat right_image = cv::imread("../tests/images/allgaeu_right.jpg", 0);
@@ -73,48 +74,65 @@ BOOST_AUTO_TEST_CASE(Test_featurematching)
 	// match descriptors
 	cv::BruteForceMatcher<cv::HammingSse> matcher;
 	std::vector<cv::DMatch> matches;
+	uint64_t start_time = get_time_us();
 	matcher.match(left_descriptors, right_descriptors, matches);
+	uint64_t stop_time = get_time_us();
 	BOOST_CHECK( !matches.empty() );
 
-//TODO: time analysis
 	std::vector<char> matches_mask(matches.size(), 1);
-	BOOST_TEST_MESSAGE("match ratio (raw): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	BOOST_TEST_MESSAGE("[   brute    ] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
 
+	start_time = get_time_us();
 	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (robust distribution): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
-
-	//reset mask
-	std::fill(matches_mask.begin(), matches_mask.end(), 1);
-	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
-	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (2x robust distribution): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	stop_time = get_time_us();
+	BOOST_TEST_MESSAGE("[robust distr] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
 
 	//reset mask
 	std::fill(matches_mask.begin(), matches_mask.end(), 1);
+	start_time = get_time_us();
+	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
+	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
+	stop_time = get_time_us();
+	BOOST_TEST_MESSAGE("[2x rob distr] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
+
+	//reset mask
+	std::fill(matches_mask.begin(), matches_mask.end(), 1);
+	start_time = get_time_us();
 	std::vector<cv::DMatch> backward_matches;
 	matcher.match(right_descriptors, left_descriptors, backward_matches);
 	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (backward matching): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	stop_time = get_time_us();
+	BOOST_TEST_MESSAGE("[  backward  ] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
 
 	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (bw+rd): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	BOOST_TEST_MESSAGE("[   bw+rd    ] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
 
 	//reset mask
 	std::fill(matches_mask.begin(), matches_mask.end(), 1);
 	// create mask for backward matching
+	start_time = get_time_us();
 	cv::Mat bw_mask = matchesmask(left_keypoints.size(),
 		right_keypoints.size(),
 		matches);
 	backward_matches.clear();
 	matcher.match(right_descriptors, left_descriptors, backward_matches, bw_mask.t());
 	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (subset backward matching): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	stop_time = get_time_us();
+	BOOST_TEST_MESSAGE("[ subset bw  ] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
 
+	stop_time = get_time_us();
 	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (sbw+rd): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	BOOST_TEST_MESSAGE("[   sbw+rd   ] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
 
 	//reset mask
 	std::fill(matches_mask.begin(), matches_mask.end(), 1);
+	start_time = get_time_us();
 	filter_matches_by_robust_distribution(left_keypoints, right_keypoints, matches, matches_mask);
 	bw_mask = matchesmask(left_keypoints.size(),
 		right_keypoints.size(),
@@ -122,7 +140,9 @@ BOOST_AUTO_TEST_CASE(Test_featurematching)
 	backward_matches.clear();
 	matcher.match(right_descriptors, left_descriptors, backward_matches, bw_mask.t());
 	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
-	BOOST_TEST_MESSAGE("match ratio (rd+sbw): " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask) );
+	stop_time = get_time_us();
+	BOOST_TEST_MESSAGE("[   rd+sbw   ] ratio " << match_ratio(left_keypoints, right_keypoints, matches, matches_mask)
+		<< " | time " << stop_time-start_time) << "us";
 
 #if VISUAL_OUTPUT
 	cv::Mat match_img;

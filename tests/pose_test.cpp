@@ -88,14 +88,14 @@ BOOST_AUTO_TEST_CASE(Test_estimate_pose)
 		20);
 	BOOST_CHECK(rc >= 0);
 
-	std::cout << "_Pose Estimation_ (" << rc << ")" << std::endl;
-	std::cout << "phi:   " << parameter_vector[0] << " (" << rotation_vector[0] << ")" << std::endl;
-	std::cout << "theta: " << parameter_vector[1] << " (" << rotation_vector[1] << ")" << std::endl;
-	std::cout << "psi:   " << parameter_vector[2] << " (" << rotation_vector[2] << ")" << std::endl;
-	std::cout << "dx:    " << parameter_vector[3] << " (" << translation_vector[0] << ")" << std::endl;
-	std::cout << "dy:    " << parameter_vector[4] << " (" << translation_vector[1] << ")" << std::endl;
-	std::cout << "dz:    " << parameter_vector[5] << " (" << translation_vector[2] << ")" << std::endl;
-	std::cout << "error: " << estimation_error(rotation_vector, translation_vector, parameter_vector) << std::endl;
+	BOOST_TEST_MESSAGE("_Pose Estimation_ (" << rc << ")" );
+	BOOST_TEST_MESSAGE("phi:   " << parameter_vector[0] << " (" << rotation_vector[0] << ")" );
+	BOOST_TEST_MESSAGE("theta: " << parameter_vector[1] << " (" << rotation_vector[1] << ")" );
+	BOOST_TEST_MESSAGE("psi:   " << parameter_vector[2] << " (" << rotation_vector[2] << ")" );
+	BOOST_TEST_MESSAGE("dx:    " << parameter_vector[3] << " (" << translation_vector[0] << ")" );
+	BOOST_TEST_MESSAGE("dy:    " << parameter_vector[4] << " (" << translation_vector[1] << ")" );
+	BOOST_TEST_MESSAGE("dz:    " << parameter_vector[5] << " (" << translation_vector[2] << ")" );
+	BOOST_TEST_MESSAGE("error: " << estimation_error(rotation_vector, translation_vector, parameter_vector) );
 
 	//test empty keypoints
 	rc = estimate_pose<PRECISION>(object_points,

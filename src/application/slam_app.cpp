@@ -170,38 +170,11 @@ void SLAMApp::extract_features() {
 
 	std::vector<char> matches_mask(matches.size(), 1);
 
-	// create mask for backward matching
-	cv::Mat bw_mask = matchesmask(landmarks.keypoints.size(),
-		keypoints.size(),
-		matches);
-	std::vector<cv::DMatch> backward_matches;
-	matcher.match(descriptors, landmarks.descriptors, backward_matches, bw_mask.t());
-
-// 	std::vector<cv::DMatch> backward_matches;
-// 	matcher.match(descriptors, landmarks.descriptors, backward_matches);
-
-// 	stop_time = get_time_ms();
-// 	log( "backward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
-// 	start_time = stop_time;
-
-	filter_matches_by_backward_matches(matches, backward_matches, matches_mask);
-
-	stop_time = get_time_ms();
-	log( "forward/backward filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_INFO);
-	start_time = stop_time;
-
 	filter_matches_by_robust_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
 
 	stop_time = get_time_ms();
 	log( "distribution filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
-
-// 	filter_matches_by_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
-
-// 	filter_matches_by_lis(landmarks.keypoints, keypoints, matches, matches_mask);
-
-// 	update_landmarks(landmarks, matches);
-// 	filter_matches_by_landmarks(landmarks, matches);
 
 	// get change of attitude
 	//TODO: time check of attitude
