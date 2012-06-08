@@ -18,6 +18,7 @@
 #include <levmar/levmar.h>
 
 #include "lib/hub/math.h"
+#include "lib/slam/features.h"
 
 namespace hub {
 namespace slam {
@@ -38,6 +39,18 @@ struct pinhole_model_data_t {
 	std::vector< cv::Point_<Precision> > &image_points;
 	const cv::Mat &camera_matrix;
 };
+
+/**
+ * Approximate 3D camera translation from matched object- and keypoints.
+ */ 
+template<typename T>
+cv::Point3_<T> camera_translation(const std::vector< cv::Point3_<T> >& objectpoints,
+	const std::vector<cv::KeyPoint>& keypoints,
+	const T distance,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients,
+	const std::vector<char>& mask);
 
 /**
  * \brief Pinhole model function to calculate the residuals.
@@ -162,6 +175,45 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
+
+template<typename T>
+cv::Point3_<T> camera_translation(const std::vector< cv::Point3_<T> >& objectpoints,
+	const std::vector<cv::KeyPoint>& keypoints,
+	const T distance,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients,
+	const std::vector<char>& mask) {
+
+	if(matches.empty()) return cv::Point3_<T>(0, 0, 0);
+	assert(matches.size() == mask.size());
+
+	std::vector<T> x_differences,
+		y_differences,
+		z_differences;
+	x_differences.reserve( matches.size() );
+	y_differences.reserve( matches.size() );
+	z_differences.reserve( matches.size() );
+
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		
+		const unsigned int fi = matches[i].queryIdx;
+		const unsigned int si = matches[i].trainIdx;
+
+		cv::Point2f undist_point = undistort_n2i(keypoints[si].pt, camera_matrix, distortion_coefficients);
+		x_differences.push_back( objectpoints[fi].x - (undist_point.x*distance) );
+		y_differences.push_back( objectpoints[fi].y - (undist_point.y*distance) );
+		z_differences.push_back(objectpoints[fi].z - distance);
+	}
+
+	cv::Point3_<T> translation;
+	translation.x = hub::_median(x_differences);
+	translation.y = hub::_median(y_differences);
+	translation.z = hub::_median(z_differences);
+	
+	return translation;
+}
 
 template<typename T>
 void pinhole_model(T *p, T *hx, int m, int n, void *data) {

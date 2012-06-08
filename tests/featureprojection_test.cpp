@@ -77,6 +77,21 @@ BOOST_AUTO_TEST_CASE(Test_features)
 		distortion_coefficients,
 		image_points);
 
+/*
+	std::vector< cv::Point_<PRECISION> > one_image_point;
+	std::vector< cv::Point_<PRECISION> > one_undist_point(1);
+	one_image_point.push_back(image_points[2]);
+	CvMat oip = cvMat(1, 1, CV_32FC2, &one_image_point[0]);
+	CvMat oup = cvMat(1, 1, CV_32FC2, &one_undist_point[0]);
+	CvMat cam = camera_matrix;
+	CvMat dist = distortion_coefficients;
+	myUndistortPoints(&oip, &oup, &cam, &dist);
+std::cout << "myUndistortPoints: (" << one_undist_point[0].x << ", " << one_undist_point[0].y << ")" << std::endl;
+
+	cv::Point2f up = undistort(image_points[2], camera_matrix, distortion_coefficients);
+std::cout << "undistort: (" << up.x << ", " << up.y << ")" << std::endl;
+*/
+
 	// get the object points out of the image points
 	std::vector< cv::Point3_<PRECISION> > reprojected_object_points;
 	imagepoints_to_objectpoints(image_points,

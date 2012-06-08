@@ -60,6 +60,13 @@ int egomotion(const std::vector<cv::Point3f> objectpoints,
 	const bool use_extrinsic_guess = false,
 	std::vector<char> matches_mask = std::vector<char>() );
 
+/**
+ * Estimate 3D motion from inverse projected image points
+ */
+cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<cv::DMatch>& matches,
+	std::vector<char> mask);
 
 /// Filter out matches 
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
@@ -100,19 +107,6 @@ void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const cv::Mat& camera_matrix,
 	const cv::Mat& distortion_coefficients,
 	std::vector<cv::Point3f>& objectpoints);
-
-//FIXME: remove
-void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
-	const float distance,
-	std::vector<cv::Point3f>& objectpoints,
-	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients);
-
-void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
-	const std::vector<float>& distances,
-	std::vector<cv::Point3f>& objectpoints,
-	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients);
 
 void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 	const float distance,
@@ -169,24 +163,27 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix);
 
+/**
+ * Undistort 2D image point using camera matrix and distotion coefficients.
+ */ 
+cv::Point2f undistort(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
+
+cv::Point2f undistort_n2n(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
+
+cv::Point2f undistort_n2i(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
+
+cv::Point2f undistort_i2i(const cv::Point2f &point,
+	const cv::Mat& distortion_coefficients);
+
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
-inline void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
-	const float distance,
-	std::vector<cv::Point3f>& objectpoints,
-	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients) {
-	
-	//FIXME: vector is waste of memory
-	std::vector<float> distances(imagepoints.size(), distance);
-	imagepoints_to_objectpoints(imagepoints,
-		distances,
-		objectpoints,
-		camera_matrix,
-		distortion_coefficients);
-}
-
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
@@ -270,6 +267,71 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	//thus we have used unscaled version to calculate derivatives, we have to do it now
 	int num_pixels = (2*box_radius+1)*(2*box_radius+1);
 	return min_lambda / (4.0*num_pixels);
+}
+
+inline cv::Point2f undistort_i2i(const cv::Point2f &point,
+	const cv::Mat& distortion_coefficients) {
+
+	//check vector dimension
+	assert(distortion_coefficients.total() == 5);
+	const double *k = distortion_coefficients.ptr<double>();
+
+	double x = point.x;
+	double y = point.y;
+	const double x0 = x, y0 = y;
+
+	//undistort points using simplified iterative approach from OpenCV
+	for(uint8_t j=0; j<5; j++) {
+		const double xx = x*x;
+		const double xy = x*y;
+		const double yy = y*y;
+		const double r2 = xx+yy;
+
+		const double radial_factor = 1.0/(1 + ((k[4]*r2 + k[1])*r2 + k[0])*r2);
+		const double tang_x = 2*k[2]*xy + k[3]*(r2 + 2*xx);
+		const double tang_y = k[2]*(r2 + 2*yy) + 2*k[3]*xy;
+
+		x = (x0 - tang_x)*radial_factor;
+		y = (y0 - tang_y)*radial_factor;
+	}
+
+	return cv::Point2f(x, y);
+}
+
+inline cv::Point2f undistort_n2i(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+
+	return undistort_i2i(cv::Point2f((point.x - cx) / fx, (point.y - cy) / fy), distortion_coefficients);
+}
+
+inline cv::Point2f undistort_n2n(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	cv::Point2f undist_point = undistort_n2i(point, camera_matrix, distortion_coefficients);
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+
+	undist_point.x = undist_point.x * fx + cx;
+	undist_point.y = undist_point.y * fy + cy;
+
+	return undist_point;
+}
+
+inline cv::Point2f undistort(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	return undistort_n2n(point, camera_matrix, distortion_coefficients);
 }
 
 } // namespace slam

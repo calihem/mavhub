@@ -91,6 +91,17 @@ int egomotion(const std::vector<cv::Point3f> objectpoints,
 	return 0;
 }
 
+cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<cv::DMatch>& matches,
+	std::vector<char> mask) {
+	
+	//TODO: implement
+	
+	//FIXME
+	return cv::Point3f(0, 0, 0);
+}
+
 //FIXME: improve performance
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
 	std::vector<std::vector<cv::DMatch> > filtered_matches;
@@ -353,43 +364,9 @@ void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	if( imagepoints.size() == 0) return;
 	objectpoints.resize( imagepoints.size() );
 
-	std::vector<cv::Point2f> undistorted_points( imagepoints.size() );
-	// undistortPoints returns ideal point coordinates, i.e. x = undistorted_x * fx + cx and y = undistorted_y * fy + cy 
-	undistortPoints(imagepoints, undistorted_points, camera_matrix, distortion_coefficients);
-
-	for(unsigned int i = 0; i < undistorted_points.size(); i++) {
-		//for ideal point coordinates it is enough to multiply with the distance
-		const float x = undistorted_points[i].x * distance;
-		const float y = undistorted_points[i].y * distance;
-		objectpoints[i] = cv::Point3f(x, y, distance);
-	}
-
-	imagepoints_to_objectpoints(imagepoints,
-		distance,
-		objectpoints,
-		camera_matrix,
-		distortion_coefficients);
-}
-
-void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
-	const std::vector<float>& distances,
-	std::vector<cv::Point3f>& objectpoints,
-	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients) {
-
-	if( imagepoints.size() == 0) return;
-	if( imagepoints.size() != distances.size() ) return;
-
-	objectpoints.resize( imagepoints.size() );
-	std::vector<cv::Point2f> undistorted_points( imagepoints.size() );
-
-	// undistortPoints returns ideal point coordinates, i.e. x = undistorted_x * fx + cx and y = undistorted_y * fy + cy 
-	undistortPoints(imagepoints, undistorted_points, camera_matrix, distortion_coefficients);
-	for(unsigned int i = 0; i < undistorted_points.size(); i++) {
-		//for ideal point coordinates it is enough to multiply with the distance
-		const float x = undistorted_points[i].x * distances[i];
-		const float y = undistorted_points[i].y * distances[i];
-		objectpoints[i] = cv::Point3f(x, y, distances[i]);
+	for(unsigned int i = 0; i < imagepoints.size(); i++) {
+		cv::Point2f up = undistort_n2i(imagepoints[i], camera_matrix, distortion_coefficients);
+		objectpoints[i] = cv::Point3f(up.x * distance, up.y * distance, distance);
 	}
 }
 
@@ -399,18 +376,40 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 	const cv::Mat& camera_matrix,
 	const cv::Mat& distortion_coefficients) {
 
-	std::vector<cv::Point2f> imagepoints( keypoints.size() );
-	for(std::vector<cv::KeyPoint>::const_iterator kp_iter = keypoints.begin();
-		kp_iter != keypoints.end();
-		++kp_iter) {
+	if(keypoints.empty()) return;
+	//check vector dimension
+	assert(distortion_coefficients.total() == 5);
+
+	const double *k = distortion_coefficients.ptr<double>();
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double ifx = 1./camera_matrix.at<double>(0, 0);
+	const double ify = 1./camera_matrix.at<double>(1, 1);
+
+	objectpoints.resize( keypoints.size() );
+	for(size_t i = 0; i<keypoints.size(); i++) {
+		double x = (keypoints[i].pt.x - cx) * ifx;
+		double y = (keypoints[i].pt.y - cy) * ify;
+		const double x0 = x, y0 = y;
+
+		//undistort points using simplified iterative approach from OpenCV
+		for(uint8_t j=0; j<5; j++) {
+			const double xx = x*x;
+			const double xy = x*y;
+			const double yy = y*y;
+			const double r2 = xx+yy;
+
+			const double radial_factor = 1/(1 + ((k[4]*r2 + k[1])*r2 + k[0])*r2);
+			const double tang_x = 2*k[2]*xy + k[3]*(r2 + 2*xx);
+			const double tang_y = k[2]*(r2 + 2*yy) + 2*k[3]*xy;
+			
+			x = (x0 - tang_x)*radial_factor;
+			y = (y0 - tang_y)*radial_factor;
+		}
 		
-		imagepoints.push_back(kp_iter->pt);
+		//for ideal point coordinates it is enough to multiply with the distance
+		objectpoints[i] = cv::Point3f(x*distance, y*distance, distance);
 	}
-	imagepoints_to_objectpoints(imagepoints,
-		distance,
-		camera_matrix,
-		distortion_coefficients,
-		objectpoints);
 }
 
 cv::Mat matchesmask(const int num_src_kps,
