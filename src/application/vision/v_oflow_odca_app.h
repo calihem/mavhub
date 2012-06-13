@@ -1,5 +1,5 @@
-#ifndef _V_OFLOW_APP_H_
-#define _V_OFLOW_APP_H_
+#ifndef _V_OFLOW_ODCA_APP_H_
+#define _V_OFLOW_ODCA_APP_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -39,12 +39,12 @@
 
 namespace mavhub {
 
-	class V_OFLOWApp : public AppLayer<mavlink_message_t>,
+	class V_OFLOWOdcaApp : public AppLayer<mavlink_message_t>,
 		public hub::gstreamer::VideoClient {
 
 	public:
-		V_OFLOWApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
-		virtual ~V_OFLOWApp();
+		V_OFLOWOdcaApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+		virtual ~V_OFLOWOdcaApp();
 
 		virtual void handle_input(const mavlink_message_t &msg);
 		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
@@ -116,6 +116,7 @@ namespace mavhub {
 
 		mavlink_huch_imu_raw_adc_t raw_adc_imu; /// for Gyro values
 		mavlink_huch_ctrl_hover_state_t hover_state; /// for altitude estimate
+		mavlink_huch_sensor_array_t sensor_array;
 
 		/// gyro moving average filter
 		MA *ma_pitch;
@@ -161,6 +162,7 @@ namespace mavhub {
 		UnwrapSettings& defaultSettings();
 		void unwrapImage(cv::Mat* inputImg, cv::Mat* outputImg, UnwrapSettings& opt);
 		void visualize(cv::Mat img);
+		void visualizeSectors(cv::Mat img);
 		// uint8_t getInterpolation(cv:Mat* inputImg, int im, double x, double y);
 
 		void ctrlLateral();

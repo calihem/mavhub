@@ -10,6 +10,7 @@
 
 #ifdef HAVE_OPENCV2
 #include "opencv/cv.h"
+//#include "opencv2/opencv.hpp"
 
 #if CV_MINOR_VERSION >= 2
 #include "oftypes.h"
@@ -23,6 +24,25 @@ enum of_algorithm {
 	LINE_CENSUS,
 	LK,
 	LK_PYR,
+};
+
+struct UnwrapSettings {
+	int cx;		// x-coordinate of center point
+	int cy;		// y-coordinate of center point
+	int ri;		// inner radius
+	int ro;		// outer radius
+	int im;		// interpolation mode
+	double sx;	// scaling in x-direction
+	double sy;	// scaling in y-direction
+	int fw;		// fixed width 
+	int fh;		// fixed height 
+	UnwrapSettings(int cx, int cy, int ri, int ro, int im, double sx, double sy, int fw, int fh);
+};
+
+/// Enumeration of camera types
+enum cam_type_t {
+	CAM_TYPE_PLANAR, /// planar camera image
+	CAM_TYPE_OMNI	/// Omnidirectional camera image
 };
 
 /// type representing sparse motion 

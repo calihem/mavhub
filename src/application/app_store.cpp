@@ -29,6 +29,7 @@
 #include "opengl_app.h"
 #include "slam_app.h"
 #include "vision/v_oflow_app.h"
+#include "vision/v_oflow_odca_app.h"
 
 #include <iostream>
 #include <sstream> //istringstream
@@ -146,7 +147,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "ctrl_yaw_app") {
 #ifdef HAVE_MAVLINK_H
 		// pass only configuration map into constructor
-		Ctrl_Yaw *ctrl_yaw_app = new Ctrl_Yaw(args);
+		Ctrl_Yaw *ctrl_yaw_app = new Ctrl_Yaw(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_yaw_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_zrate_app") {
@@ -218,6 +219,17 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #if CV_MINOR_VERSION >= 2
 		V_OFLOWApp *v_oflow_app = new V_OFLOWApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(v_oflow_app);
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "v_oflow_odca_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION >= 2
+		V_OFLOWOdcaApp *v_oflow_odca_app = new V_OFLOWOdcaApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(v_oflow_odca_app);
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER

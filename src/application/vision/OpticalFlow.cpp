@@ -12,6 +12,18 @@ int alt=0, hor=0,vertical=0, rot=0;
 
 FILE *logg=fopen("log.log","w") ;
 
+UnwrapSettings::UnwrapSettings(int cx, int cy, int ri, int ro, int im, double sx = 1, double sy = 1, int fw = 0, int fh = 0) {
+	this->cx = cx;
+	this->cy = cy;
+	this->ri = ri;
+	this->ro = ro;
+	this->im = im;
+	this->sx = sx;
+	this->sy = sy;
+	this->fw = fw;
+	this->fh = fh;
+}
+
 void OpticalFlow::visualizeMean(int sectors, cv::Mat &image) const {
 	CvPoint p,q;
 	int dx, dy;
@@ -219,7 +231,7 @@ void DenseOpticalFlow::visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &ima
 
 	int sectorHeight = image.rows / sectorsy;
 	int sectorWidth = image.cols / sectorsx;
-	const int8_t scaleFactor = max(3, image.cols/50);
+	const int8_t scaleFactor = max(5, image.cols/50);
 	const int lineThickness = max(2, image.cols/300);
 
 	// cout << "visualizeMeanXY: log gehts: " << sectorHeight << ", " << sectorWidth << endl;

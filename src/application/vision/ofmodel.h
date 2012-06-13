@@ -1,8 +1,14 @@
 #ifndef _OFMODEL_H_
 #define _OFMODEL_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif // HAVE_CONFIG_H
+
 #include <stdint.h>
-//#include <cv.h>
+
+#ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
 
 #include "OpticalFlow.h"
 
@@ -21,4 +27,5 @@ class OFModel {
 		OpticalFlow *oFlow;
 };
 
+#endif // HAVE_OPENCV2
 #endif

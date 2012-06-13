@@ -1070,7 +1070,7 @@ namespace mavhub {
 		params["ir1_ulim"] = 300.0;
 		params["ir2_llim"] = 300.0;
 		params["ir2_ulim"] = 600.0;
-		params["stream"] = 0.;
+		params["streams"] = 0.;
 	}
 
 	void Ctrl_Hover::kal_setRFromParams() {

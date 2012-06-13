@@ -1,4 +1,4 @@
-#include "v_oflow_app.h"
+#include "v_oflow_odca_app.h"
 
 #ifdef HAVE_MAVLINK_H
 
@@ -28,12 +28,13 @@ using namespace cv;
 
 namespace mavhub {
 
-	V_OFLOWApp::V_OFLOWApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
-		AppInterface("v_oflow_app", loglevel),
-		AppLayer<mavlink_message_t>("v_oflow_app", loglevel),
+	V_OFLOWOdcaApp::V_OFLOWOdcaApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
+		AppInterface("v_oflow_odca_app", loglevel),
+		AppLayer<mavlink_message_t>("v_oflow_odca_app", loglevel),
 		hub::gstreamer::VideoClient(),
 		with_out_stream(false),
 		take_new_image(1),
+		new_video_data(false),
 		target_system(7),
 		target_component(1),
 		imu_rate(10),
@@ -126,16 +127,20 @@ namespace mavhub {
 		ma_pitch = new MA(1200, 0.);
 		ma_roll = new MA(1200, 0.);
 
+		// init sensor_array structure
+		for(int i = 0; i < 16; i++)
+			sensor_array.data[i] = 0.;
 	}
 
-	V_OFLOWApp::~V_OFLOWApp() {}
+	V_OFLOWOdcaApp::~V_OFLOWOdcaApp() {}
 
-	int V_OFLOWApp::initModel(of_algorithm algo) {
+	int V_OFLOWOdcaApp::initModel(of_algorithm algo) {
 		int width;
 		int height;
 		// this is for omni case
 		width = static_cast<int>(params["unwrap_w"]);
 		height = static_cast<int>(params["unwrap_h"]);
+		Logger::log(name(), "initModel (w,h)", width, height, Logger::LOGLEVEL_DEBUG);
 		switch(algo) {
 		case FIRST_ORDER:
 			// cout << "pre ofModel = new FirstOrder: w: " << width << ", h: " << height << endl;
@@ -173,7 +178,7 @@ namespace mavhub {
 		return 0;
 	}
 
-	void V_OFLOWApp::calcFlow() {
+	void V_OFLOWOdcaApp::calcFlow() {
 		//FIXME: remove benchmark
 		//uint64_t start_time = get_time_ms();
 		// cv::Mat flip_image;
@@ -298,8 +303,16 @@ namespace mavhub {
 			}
 		}
 		else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
-			getOF_FirstOrder_Omni();
-			// Logger::log("blub", Logger::LOGLEVEL_DEBUG);
+			switch(algo) {
+			case FIRST_ORDER:
+				getOF_FirstOrder_Omni();
+				break;
+			case LK:
+				getOF_LK();
+				break;
+			default:
+				break;
+			}
 		}
 
 		// end = get_time_us();
@@ -307,7 +320,8 @@ namespace mavhub {
 
 		if(with_out_stream && Core::video_server) {
 			img_display = new_image.clone();
-			visualize(img_display);
+			// visualize(img_display);
+			visualizeSectors(img_display);
 			// cv::Mat match_img;
 			// cv::drawMatches(old_image, old_features,
 			// 	new_image, new_features,
@@ -334,7 +348,7 @@ namespace mavhub {
 		//Logger::log(name(), ": needed calcFlow", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
 	}
 
-	void V_OFLOWApp::handle_input(const mavlink_message_t &msg) {
+	void V_OFLOWOdcaApp::handle_input(const mavlink_message_t &msg) {
 		static int8_t param_id[15];
 		int rc2;
 		int rc5;
@@ -439,7 +453,19 @@ namespace mavhub {
 		}
 	}
 
-	void V_OFLOWApp::visualize(cv::Mat img) {
+	void V_OFLOWOdcaApp::visualizeSectors(cv::Mat img) {
+		static DenseOpticalFlow *oFlow;
+		oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+		oFlow->visualizeMeanXYf(8, 1, img);
+		// draw circle for finding the correct center + radius in
+		// non-unwrapped mode
+		// cv::Point p((int)params["center_x"], (int)params["center_y"]);
+		// circle(img, p, (int)params["radius_inner"], Scalar(255,255,0), 2, 8);
+		// circle(img, p, (int)params["radius_outer"], Scalar(255,255,0), 2, 8);
+
+	}
+
+	void V_OFLOWOdcaApp::visualize(cv::Mat img) {
 		cv::Scalar color = CV_RGB(255,255,255);
 		const double scaleFactor = 2*img.cols/100;
 		const int lineThickness = max(2, img.cols/300);
@@ -457,7 +483,7 @@ namespace mavhub {
 		cv::line(img, q, q, color, lineThickness*3, CV_AA, 0 );
 	}
 
-	void V_OFLOWApp::getOF_FirstOrder() {
+	void V_OFLOWOdcaApp::getOF_FirstOrder() {
 		int8_t sgn_u, sgn_v;
 		int16_t diff;
 		uint32_t abs_grad_x, abs_grad_y, abs_grad_t, grad_magn;
@@ -538,7 +564,7 @@ namespace mavhub {
 		// cvCopy(frame1, frame0, NULL);
 	}
 
-	void V_OFLOWApp::getOF_FirstOrder2() {
+	void V_OFLOWOdcaApp::getOF_FirstOrder2() {
 		// static int of_comp_x[4];
 		// static int of_comp_y[4];
 		// static float of_u_m = 0.;
@@ -623,7 +649,7 @@ namespace mavhub {
 	}
 
 
-	void V_OFLOWApp::getOF_FirstOrder_Omni() {
+	void V_OFLOWOdcaApp::getOF_FirstOrder_Omni() {
 		static int of_comp_x[4];
 		static int of_comp_y[4];
 		int i;
@@ -690,8 +716,15 @@ namespace mavhub {
 		// cout << "of_y = " << of_y << endl;
 	}
 
-	void V_OFLOWApp::getOF_LK() {
+	void V_OFLOWOdcaApp::getOF_LK() {
 		static DenseOpticalFlow *oFlow;
+		int i, j;
+		int sectorsx = 8;
+		int sectorHeight = is_height; // / sectorsy;
+		int sectorWidth = is_width / sectorsx;
+		float dx, dy;
+
+		j = 0;
 
 		preprocessImage(new_image);
 
@@ -700,20 +733,43 @@ namespace mavhub {
 
 		// // visualize secotrized mean flow
 		oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
-		oFlow->visualizeMeanXYf(1, 1, new_image);
+		// oFlow->visualizeMeanXYf(1, 1, new_image);
 
-		// Logger::log(name(), "LK", Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "LK", is_width, is_height, Logger::LOGLEVEL_DEBUG);
 		// of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
 		// of_v = iirFilter(of_v, oFlow->getMeanVelYf(1, 99, 1, 99));
 
-		of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
-		of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
+		of_u = 0.;
+		of_v = 0.;
 
-		// of_u = 0.;
-		// of_v = 0.;
+		for (i = 0; i < sectorsx; i++) {
+			dx = oFlow->getMeanVelXf(max(sectorWidth*i, 1),
+															 sectorWidth*(i+1)-1,
+															 max(sectorHeight*j, 1),
+															 sectorHeight*(j+1)-1);
+			dy = oFlow->getMeanVelYf(max(sectorWidth*i, 1),
+															 sectorWidth*(i+1)-1,
+															 max(sectorHeight*j, 1),
+															 sectorHeight*(j+1)-1);
+			sensor_array.data[i] = iirFilter(
+																			 sensor_array.data[i],
+																			 powf(dx, 2) + powf(dy, 2));
+			of_u += dx;
+			of_v += dy;
+				// sensor_array.data[i+8] = 
+		}
+
+		// sum it up for directions
+		sensor_array.data[8] = sensor_array.data[0] + sensor_array.data[1] - sensor_array.data[4] - sensor_array.data[5];
+		sensor_array.data[9] = sensor_array.data[2] + sensor_array.data[3] - sensor_array.data[6] - sensor_array.data[7];
+		// sensor_array.data[10] = sensor_array.data[4] + sensor_array.data[5] - sensor_array.data[6] - sensor_array.data[7];
+		// Logger::log(name(), "LK", of_u, of_v, Logger::LOGLEVEL_DEBUG);
+
+		// of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
+		// of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
 	}
 
-	void V_OFLOWApp::getOF_LK_Pyr() {
+	void V_OFLOWOdcaApp::getOF_LK_Pyr() {
 		// static DenseOpticalFlow *oFlow;
     static vector<Point2f> points[2];
     static const int MAX_COUNT = 500;
@@ -835,7 +891,7 @@ namespace mavhub {
 		std::swap(points[1], points[0]);
 	}
 
-	UnwrapSettings& V_OFLOWApp::defaultSettings() {
+	UnwrapSettings& V_OFLOWOdcaApp::defaultSettings() {
 		return *(new UnwrapSettings(
 																static_cast<int>(params["center_x"]),
 																static_cast<int>(params["center_y"]),
@@ -853,7 +909,7 @@ namespace mavhub {
 	//
 	// create a panoramic view 
 	//
-	void V_OFLOWApp::unwrapImage(cv::Mat* inputImg,
+	void V_OFLOWOdcaApp::unwrapImage(cv::Mat* inputImg,
 															 cv::Mat* outputImg,
 															 UnwrapSettings& opt) {
 		
@@ -905,7 +961,7 @@ namespace mavhub {
 	}
 
 
-	void V_OFLOWApp::preprocessImage(cv::Mat img) {
+	void V_OFLOWOdcaApp::preprocessImage(cv::Mat img) {
 		int smoothSize = static_cast<int>(params["smoothSize"]);
 		// fix use of smoothSize argument
 		if(smoothSize > 0)
@@ -916,11 +972,11 @@ namespace mavhub {
 		// return 0;
 	}
 
-	void V_OFLOWApp::ctrlLateral() {
+	void V_OFLOWOdcaApp::ctrlLateral() {
 		
 	}
 
-	void V_OFLOWApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
+	void V_OFLOWOdcaApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
 		if(!data) return;
 
 		//uint64_t start_time = get_time_ms();
@@ -937,8 +993,14 @@ namespace mavhub {
 		static int counter = 0;
 		if(counter < 10) {
 			counter++;
-			if(width != is_width) is_width = width;
-			if(height != is_height) is_height = height;
+			if (static_cast<int>(params["cam_type"]) == CAM_TYPE_PLANAR) {
+				if(width != is_width) is_width = width;
+				if(height != is_height) is_height = height;
+			}
+			else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
+				is_width = static_cast<int>(params["unwrap_w"]);
+				is_height = static_cast<int>(params["unwrap_h"]);
+			}
 			return;
 		}
 
@@ -978,6 +1040,7 @@ namespace mavhub {
 		}
 		else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
 			new_image.copyTo(old_image);
+			video_data.copyTo(new_image);
 			unwrapImage(&video_data, &new_image, defaultSettings());
 		}
 
@@ -1001,7 +1064,7 @@ namespace mavhub {
 		// Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
 	}
 
-	// void V_OFLOWApp::load_calibration_data(const std::string &filename) {
+	// void V_OFLOWOdcaApp::load_calibration_data(const std::string &filename) {
 	// 	cv::FileStorage fs(filename, cv::FileStorage::READ);
 	// 	if( !fs.isOpened() ) {
 	// 		log("Can't open calibration data", filename, Logger::LOGLEVEL_DEBUG);
@@ -1012,11 +1075,11 @@ namespace mavhub {
 	// 	fs["distortion_coefficients"] >> dist_coeffs;
 	// }
 
-	void V_OFLOWApp::print(std::ostream &os) const {
+	void V_OFLOWOdcaApp::print(std::ostream &os) const {
 		AppLayer<mavlink_message_t>::print(os);
 	}
 
-	void V_OFLOWApp::run() {
+	void V_OFLOWOdcaApp::run() {
 		Logger::log(name(), ": running", Logger::LOGLEVEL_DEBUG);
 
 		static mavlink_message_t msg;
@@ -1033,7 +1096,7 @@ namespace mavhub {
 
 		if(Core::video_server) {
 			int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str());
-			Logger::log(name(), ": binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG, _loglevel);
+			Logger::log(name(), ": bound to", sink_name, rc, Logger::LOGLEVEL_DEBUG, _loglevel);
 		} else {
 			log(name(), ": video server not running", Logger::LOGLEVEL_WARN);
 			return;
@@ -1068,6 +1131,7 @@ namespace mavhub {
 
 			wait_time = exec_tmr->calcSleeptime();
 			// Logger::log(name(), "wait_time", wait_time, Logger::LOGLEVEL_DEBUG);
+			// Logger::log(name(), "new_video_data", (int)new_video_data, Logger::LOGLEVEL_DEBUG);
 		
 			/* wait */
 			usleep(wait_time);
@@ -1077,7 +1141,7 @@ namespace mavhub {
 			dt = exec_tmr->updateExecStats();
 
 			if(param_request_list) {
-				Logger::log("V_OFLOWApp::run: param request", Logger::LOGLEVEL_DEBUG);
+				Logger::log("V_OFLOWOdcaApp::run: param request", Logger::LOGLEVEL_DEBUG);
 				param_request_list = 0;
 
 				typedef map<string, double>::const_iterator ci;
@@ -1242,12 +1306,20 @@ namespace mavhub {
 																							of_v_i);
 					}
 					else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
+
+						mavlink_msg_huch_sensor_array_encode(system_id(),
+																								 component_id,
+																								 &msg,
+																								 &sensor_array
+																								 );
+						AppLayer<mavlink_message_t>::send(msg);
+
 						mavlink_msg_huch_visual_flow_pack(system_id(),
 																							component_id,
 																							&msg,
 																							0, // get_time_us(),
-																							of_x,
-																							of_y,
+																							of_u, // of_x,
+																							of_v, // of_y,
 																							of_yaw,
 																							of_alt);
 					}
@@ -1266,7 +1338,7 @@ namespace mavhub {
 	}
 
 	// send debug
-	void V_OFLOWApp::send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value) {
+	void V_OFLOWOdcaApp::send_debug(mavlink_message_t* msg, mavlink_debug_t* dbg, int index, double value) {
 		dbg->ind = index;
 		dbg->value = value;
 		mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), msg, dbg);
@@ -1274,7 +1346,7 @@ namespace mavhub {
 	}
 
 	// read config
-	void V_OFLOWApp::read_conf(const map<string, string> args) {
+	void V_OFLOWOdcaApp::read_conf(const map<string, string> args) {
 		map<string,string>::const_iterator iter;
 
 		iter = args.find("leak_f");
@@ -1539,7 +1611,7 @@ namespace mavhub {
 			// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
 			// if(!strcmp(p->first.data(), (const char *)param_id)) {
 			// params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
-			Logger::log("v_oflow_app::read_conf", p->first, params[p->first], Logger::LOGLEVEL_INFO);
+			Logger::log("v_oflow_odca_app::read_conf", p->first, params[p->first], Logger::LOGLEVEL_INFO);
 			// Logger::log(name(), "handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_DEBUG);
 		}
 
