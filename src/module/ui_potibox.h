@@ -29,8 +29,8 @@ namespace mavhub {
 	private:
 			int a[6];
 			int d[4];
-			int16_t a_new[6];
-			int16_t d_new[4];
+			int a_new[6];
+			int d_new[4];
 			mavlink_message_t msg_l;
 			mavlink_param_set_t param_set;
 			mavlink_action_t action;
