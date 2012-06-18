@@ -86,6 +86,8 @@ AC_CHECK_LIB([GLU], [gluPerspective])
 AC_CHECK_LIB([ivy], [IvyInit])
 AC_CHECK_LIB([lapack], [catlas_cset], [AM_CONDITIONAL(COND_LIBLAPACK, true) LIBS+="-llapack "], AM_CONDITIONAL(COND_LIBLAPACK, false) )
 AC_CHECK_LIB([blas], [catlas_cset], [AM_CONDITIONAL(COND_LIBBLAS, true) LIBS+="-lblas "], AM_CONDITIONAL(COND_LIBBLAS, false))
+AC_CHECK_LIB([fann], [fann_create_standard])
+AC_CHECK_LIB([oscpack], [InterruptSignalHandler]) #_ZN3osc20OutboundPacketStreamlsERKNS_12BeginMessageE])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
@@ -95,6 +97,7 @@ AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory fo
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
 AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AM_CONDITIONAL(COND_OPENGL, false) AC_MSG_WARN([OpenGL headers not found])])
 AC_CHECK_HEADERS([Ivy/ivy.h], , [AC_MSG_WARN( [Please specify header directory for ivy, e.g. configure CPPFLAGS="-I/home/user/ivy-c"] )])
+AC_CHECK_HEADERS([osc/OscTypes.h], , [AC_MSG_WARN([Please specify header directory for oscpack, e.g. configure CPPFLAGS="-I/usr/include/oscpack"])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

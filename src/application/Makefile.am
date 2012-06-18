@@ -14,4 +14,10 @@ libapp_a_SOURCES = \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
 	opengl_app.cpp \
-	slam_app.cpp
+	slam_app.cpp \
+	vision/v_oflow_app.cpp \
+	vision/v_oflow_odca_app.cpp \
+	vision/ofdifferential.cpp \
+	vision/OpticalFlow.cpp \
+	vision/ofmodel.cpp
+

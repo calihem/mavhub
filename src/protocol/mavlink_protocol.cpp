@@ -15,6 +15,10 @@ int serialize<mavlink_message_t>(const mavlink_message_t &msg, uint8_t *buffer, 
 
 template <>
 int parse_byte<mavlink_message_t>(const uint8_t input, uint16_t &index, mavlink_message_t &msg) {
+#if MAVLINK_CRC_EXTRA
+        static const uint8_t mavlink_message_crcs[256] = MAVLINK_MESSAGE_CRCS;
+#endif
+
 	switch(index) {
 		case 0: //sync
 			if(input != MAVLINK_STX) {
@@ -22,6 +26,7 @@ int parse_byte<mavlink_message_t>(const uint8_t input, uint16_t &index, mavlink_
 			}
 			mavlink_start_checksum(&msg);
 			index++;
+			// magic field is set after msg is validated by crc
 			break;
 		case 1: //length
 			msg.len = input;
@@ -48,29 +53,39 @@ int parse_byte<mavlink_message_t>(const uint8_t input, uint16_t &index, mavlink_
 			mavlink_update_checksum(&msg, input);
 			index++;
 			break;
-		default: //payload + crc
+		default: { //payload + crc
+			uint8_t *payload = &(msg.magic); //magic has position index-6 in mavlink_message_t
 			if(index < msg.len + 6) { //payload
 				assert(MAVLINK_MAX_PAYLOAD_LEN == 255);
-				msg.payload[index-6] = input;
+				payload[index++] = input;
 				mavlink_update_checksum(&msg, input);
-				index++;
 			} else if(index == msg.len + 6) { //crc_a
-				if(msg.ck_a != input) {
+#if MAVLINK_CRC_EXTRA
+				mavlink_update_checksum(&msg, mavlink_message_crcs[msg.msgid]);
+#endif
+				if( input != (msg.checksum & 0xff) ) {
 					index = 0;
 					return -2;
 				}
-				index++;
+				// copy crc at the end of payload for using memcpy
+				payload[index++] = input;
 			} else if(index == msg.len + 7) { //crc_b
-				index = 0;
-				if(msg.ck_b != input) {
+				if( input != (msg.checksum >> 8) ) {
+					index = 0;
 					return -2;
 				}
+				// got valid message
+				msg.magic = MAVLINK_STX;
+				// copy crc at the end of payload for using memcpy
+				payload[index] = input;
+				index = 0;
 				return 0;
 			} else { //index error
 				index = 0;
 				return -3;
 			}
 			break;
+		}
 	}
 
 	return index;
@@ -85,15 +100,12 @@ std::istream& operator >>(std::istream &is, enum MAV_TYPE &type) {
 	return is;
 }
 
-std::istream& operator >>(std::istream &is, enum MAV_AUTOPILOT_TYPE &type) {
+std::istream& operator >>(std::istream &is, enum MAV_AUTOPILOT &type) {
 	int int_type;
 	is >> int_type;
-#ifdef MAVLINK_ENABLED_HUCH
-	if(int_type >= 0 && int_type <= 4) {
-#else
-	if(int_type >= 0 && int_type <= 3) {
-#endif
-		type = static_cast<enum MAV_AUTOPILOT_TYPE>(int_type);
+
+	if(int_type >= 0 && int_type < MAV_AUTOPILOT_ENUM_END) {
+		type = static_cast<enum MAV_AUTOPILOT>(int_type);
 	}
 	return is;
 }

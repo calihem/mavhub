@@ -179,7 +179,8 @@ void SenExpCtrl::run() {
 		status = STRANGE;
 
 		string s(message);
-		throw ("ExpCtrl::run(): " + s).c_str();
+		Logger::log("senExpCtrl: would-be exception:", s, Logger::LOGLEVEL_DEBUG);
+		// throw ("senExpCtrl::run(): " + s).c_str();
 	}
 
 	Logger::debug("exp_ctrl: stopped");

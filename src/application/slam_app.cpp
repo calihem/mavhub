@@ -4,7 +4,7 @@
 
 #ifdef HAVE_GSTREAMER
 
-#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION >= 2)
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION >= 3)
 
 #include "core/logger.h"
 #include "core/datacenter.h"
@@ -357,10 +357,10 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 		Logger::LOGLEVEL_DEBUG, _loglevel);
 
 	switch(msg.msgid) {
-		case MAVLINK_MSG_ID_ACTION:
-			if( (mavlink_msg_action_get_target(&msg) == system_id()) ) {
+		case MAVLINK_MSG_ID_HUCH_ACTION:
+			if( (mavlink_msg_huch_action_get_target(&msg) == system_id()) ) {
 // 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
-				uint8_t action_id = mavlink_msg_action_get_action(&msg);
+				uint8_t action_id = mavlink_msg_huch_action_get_action(&msg);
 				if(action_id == MAV_ACTION_GET_IMAGE) {
 					Lock sync_lock(sync_mutex);
 					// new image with ACK
@@ -373,7 +373,7 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 				Lock sync_lock(sync_mutex);
 				mavlink_msg_attitude_decode(&msg, &attitude);
 				// take system time for attitude
-				attitude.usec = get_time_us();
+				attitude.time_boot_ms = get_time_ms();
 			}
 			break;
 		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:

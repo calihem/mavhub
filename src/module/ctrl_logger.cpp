@@ -100,7 +100,7 @@ namespace mavhub {
 		// fc state
 		datafields[30] = "fcs_rssi";
 		datafields[31] = "fcs_batt";
-		datafields[32] = "fcs_nick";
+		datafields[32] = "fcs_pitch";
 		datafields[33] = "fcs_roll";
 		datafields[34] = "fcs_yaw";
 		datafields[35] = "fcs_gas";

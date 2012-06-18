@@ -11,7 +11,27 @@ namespace mavhub {
 		bump_run(false),
 		bump_delay(3.0)
 	{
-		
+	}
+
+	Bumper::Bumper(double thr_low_, double thr_high_, double dur_) :
+		thr_low(thr_low_),
+		thr_high(thr_high_),
+		bump_dur(dur_),
+		bump_now(0.0),
+		bump_run(false),
+		bump_delay(3.0)
+	{
+	}
+
+	Bumper::Bumper(double thr_low_, double thr_high_,
+								 double dur_, double delay_) :
+		thr_low(thr_low_),
+		thr_high(thr_high_),
+		bump_dur(dur_),
+		bump_now(0.0),
+		bump_run(false),
+		bump_delay(delay_)
+	{
 	}
 
 	Bumper::~Bumper() {}
@@ -22,6 +42,14 @@ namespace mavhub {
 
 	void Bumper::set_thr_high(double val) {
 		thr_high = val;
+	}
+
+	void Bumper::set_bump_dur(double val) {
+		bump_dur = val;
+	}
+
+	void Bumper::set_bump_delay(double val) {
+		bump_delay = val;
 	}
 
 	double Bumper::calc(double dt) {

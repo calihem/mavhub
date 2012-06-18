@@ -62,6 +62,9 @@ int main(int argc, char **argv) {
 
 	parse_argv(argc, argv);
 
+	// emit Version and compile timestamp
+	Logger::log("MAVHUB Version:", VERSION, __DATE__,  __TIME__, Logger::LOGLEVEL_INFO);
+
 	// open config file and read settings
 	try {
 		Setting settings(cfg_filename, std::ios_base::in);
@@ -81,7 +84,7 @@ int main(int argc, char **argv) {
 		mav_shell->join();
 	}
 	catch(const std::exception& e) {
-		cout << e.what() << endl;
+		cout << "Error: MAVShell failed with " << e.what() << endl;
 	}
 
 	// join stack thread
@@ -210,7 +213,8 @@ void add_links(const list<string> link_list, Setting &settings) {
 			default:
 				Logger::log("Adding of", *link_iter, "failed, due to unkwnown protocol type", Logger::LOGLEVEL_DEBUG);
 				break;
-		}
+		} // end switch
+		link_construction_plan.clear();
 	}
 }
 

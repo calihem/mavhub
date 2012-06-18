@@ -34,7 +34,7 @@ void cb_DlSetting (IvyClientPtr app, void *data, int argc, char **argv)
 
 	if(argc == 4) {
 		param_set.target_system = 43; //atoi(argv[1]);
-		param_set.target_component = 27; // FIXME: HUCH_COMPID_SIM_CRRCSIM
+		param_set.target_component = 27; // FIXME: HUCH_COMPID_PLAT_LINK_CRRCSIM
 		switch(atoi(argv[2])) {
 		case 38: // ctl_mode
 			//param_set.param_id = (int8_t*)strdup("ctl_mode");
@@ -44,12 +44,12 @@ void cb_DlSetting (IvyClientPtr app, void *data, int argc, char **argv)
 			mavlink_msg_param_set_encode(43, 27, &msg, &param_set);
 			break;
 		case 39:
-			mavlink_action_t action;
+			mavlink_huch_action_t action;
 			action.target = 43;
 			action.target_component = 27;
 			action.action = 0;
 			printf("bump activate action request\n");
-			mavlink_msg_action_encode(43, 27, &msg, &action);
+			mavlink_msg_huch_action_encode(43, 27, &msg, &action);
 			break;
 		case 40:
 			strncpy((char*)param_set.param_id, "bump_thr_low", 13);
@@ -159,7 +159,7 @@ void cb_DlValue (TimerId id, void *data, unsigned long delta) {
 }
 
 namespace mavhub {
-	Bridge_Ivy::Bridge_Ivy(const map<string, string> args) : AppInterface("crrcsim"), AppLayer("crrcsim") {
+	Bridge_Ivy::Bridge_Ivy(const map<string, string> args) : AppInterface("bridge_ivy"), AppLayer("bridge_ivy") {
 		//, phi(0.0), theta(0.0), psi(0.0) 
 		// initialize mod parameters from conf
 		read_conf(args);
@@ -217,7 +217,7 @@ namespace mavhub {
 			break;
 		case MAVLINK_MSG_ID_PARAM_VALUE:
 			Logger::log("Bridge_Ivy got ml param value: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
-			static int8_t param_id[15];
+			static char param_id[16];
 			float param_value;
 			int setting_id;
 			mavlink_msg_param_value_get_param_id(&msg, param_id);

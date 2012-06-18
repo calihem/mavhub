@@ -2,17 +2,24 @@
 
 #include "protocol/protocolstack.h"
 
+#include "module/modulebase.h"
 #include "module/testcore.h"
 #include "module/fc_mpkg.h"
+#include "module/ctrl_alt_simple.h"
 #include "module/ctrl_hover.h"
 #include "module/ctrl_lateral.h"
+#include "module/ctrl_yaw.h"
 #include "module/ctrl_zrate.h"
 #include "module/ctrl_bump.h"
+#include "module/ctrl_lat_bump.h"
 #include "module/ctrl_logfileplayer.h"
 #include "module/ctrl_logger.h"
 #include "module/ctrl_wifimeter.h"
-#include "module/sim_crrcsim.h"
+#include "module/plat_link_crrcsim.h"
+#include "module/plat_link_mk.h"
 #include "module/bridge_ivy.h"
+#include "module/bridge_osc.h"
+#include "module/ui_potibox.h"
 #include "core_app.h"
 #include "mavlink_mk_app.h"
 #include "mavlink_mkhuch_app.h"
@@ -21,6 +28,8 @@
 #include "attitude_filter_app/attitude_filter_app.h"
 #include "opengl_app.h"
 #include "slam_app.h"
+#include "vision/v_oflow_app.h"
+#include "vision/v_oflow_odca_app.h"
 
 #include <iostream>
 #include <sstream> //istringstream
@@ -123,11 +132,23 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_OPENCV
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "ctrl_alt_simple_app") {
+#ifdef HAVE_MAVLINK_H
+		// pass only configuration map into constructor
+		Ctrl_Alt_Simple *ctrl_alt_simple_app = new Ctrl_Alt_Simple(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_alt_simple_app);
+#endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_lateral_app") {
 #ifdef HAVE_MAVLINK_H
 		// pass only configuration map into constructor
 		Ctrl_Lateral *ctrl_lateral_app = new Ctrl_Lateral(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_lateral_app);
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "ctrl_yaw_app") {
+#ifdef HAVE_MAVLINK_H
+		// pass only configuration map into constructor
+		Ctrl_Yaw *ctrl_yaw_app = new Ctrl_Yaw(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_yaw_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_zrate_app") {
 #ifdef HAVE_MAVLINK_H
@@ -157,6 +178,12 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_bump_app);
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "ctrl_lat_bump_app") {
+#ifdef HAVE_MAVLINK_H
+		// pass only configuration map into constructor
+		Ctrl_Lat_Bump *ctrl_lat_bump_app = new Ctrl_Lat_Bump(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(ctrl_lat_bump_app);
+#endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_wifimeter_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_LIBGSMM_H
@@ -178,18 +205,52 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
 #ifdef HAVE_OPENCV2
-#if CV_MINOR_VERSION >= 2
+#if CV_MINOR_VERSION >= 3
 		SLAMApp *slam_app = new SLAMApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
-	} else if(lowercase_name == "sim_crrcsim_app") {
+	} else if(lowercase_name == "v_oflow_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_LIBFANN
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION >= 2
+		V_OFLOWApp *v_oflow_app = new V_OFLOWApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(v_oflow_app);
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
+#endif // HAVE_LIBFANN
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "v_oflow_odca_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_LIBFANN
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION >= 2
+		V_OFLOWOdcaApp *v_oflow_odca_app = new V_OFLOWOdcaApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(v_oflow_odca_app);
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
+#endif // HAVE_LIBFANN
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "plat_link_crrcsim_app") {
 #ifdef HAVE_MAVLINK_H
 		// pass only configuration map into constructor
-		Sim_Crrcsimule * sim_crrcsim_app = new Sim_Crrcsimule(args);
-		return ProtocolStack<mavlink_message_t>::instance().add_application(sim_crrcsim_app);
+		Plat_Link_Crrcsim *plat_link_crrcsim_app = new Plat_Link_Crrcsim(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(plat_link_crrcsim_app);
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "plat_link_mk_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKHUCHLINK_H
+		// pass only configuration map into constructor
+		Plat_Link_Mk *plat_link_mk_app = new Plat_Link_Mk(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(plat_link_mk_app);
+#endif // HAVE_MKHUCHLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "bridge_ivy_app") {
 #ifdef HAVE_MAVLINK_H
@@ -198,6 +259,19 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		Bridge_Ivy * bridge_ivy_app = new Bridge_Ivy(args);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(bridge_ivy_app);
 #endif // HAVE_IVY_IVY_H
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "bridge_osc_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_LIBOSCPACK
+		// pass only configuration map into constructor
+		Bridge_Osc * bridge_osc_app = new Bridge_Osc(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(bridge_osc_app);
+#endif // HAVE_LIBOSCPACK
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "ui_potibox_app") {
+#ifdef HAVE_MAVLINK_H
+		UI_Potibox *ui_potibox_app = new UI_Potibox(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(ui_potibox_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "mavlink_mk_app") {
 #ifdef HAVE_MAVLINK_H

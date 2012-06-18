@@ -61,7 +61,9 @@ am_libapp_a_OBJECTS = acc_calibration_app.$(OBJEXT) \
 	attitude_filter_app.$(OBJEXT) app_store.$(OBJEXT) \
 	core_app.$(OBJEXT) mavlink_mk_app.$(OBJEXT) \
 	mavlink_mkhuch_app.$(OBJEXT) mk_app.$(OBJEXT) \
-	opengl_app.$(OBJEXT) slam_app.$(OBJEXT)
+	opengl_app.$(OBJEXT) slam_app.$(OBJEXT) v_oflow_app.$(OBJEXT) \
+	v_oflow_odca_app.$(OBJEXT) ofdifferential.$(OBJEXT) \
+	OpticalFlow.$(OBJEXT) ofmodel.$(OBJEXT)
 libapp_a_OBJECTS = $(am_libapp_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -239,7 +241,12 @@ libapp_a_SOURCES = \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
 	opengl_app.cpp \
-	slam_app.cpp
+	slam_app.cpp \
+	vision/v_oflow_app.cpp \
+	vision/v_oflow_odca_app.cpp \
+	vision/ofdifferential.cpp \
+	vision/OpticalFlow.cpp \
+	vision/ofmodel.cpp
 
 all: all-am
 
@@ -290,6 +297,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpticalFlow.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acc_calibration_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/app_store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attitude_filter_app.Po@am__quote@
@@ -297,8 +305,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mk_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mkhuch_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofdifferential.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofmodel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opengl_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slam_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/v_oflow_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/v_oflow_odca_app.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -341,6 +353,76 @@ attitude_filter_app.obj: attitude_filter_app/attitude_filter_app.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='attitude_filter_app/attitude_filter_app.cpp' object='attitude_filter_app.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o attitude_filter_app.obj `if test -f 'attitude_filter_app/attitude_filter_app.cpp'; then $(CYGPATH_W) 'attitude_filter_app/attitude_filter_app.cpp'; else $(CYGPATH_W) '$(srcdir)/attitude_filter_app/attitude_filter_app.cpp'; fi`
+
+v_oflow_app.o: vision/v_oflow_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT v_oflow_app.o -MD -MP -MF $(DEPDIR)/v_oflow_app.Tpo -c -o v_oflow_app.o `test -f 'vision/v_oflow_app.cpp' || echo '$(srcdir)/'`vision/v_oflow_app.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/v_oflow_app.Tpo $(DEPDIR)/v_oflow_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/v_oflow_app.cpp' object='v_oflow_app.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o v_oflow_app.o `test -f 'vision/v_oflow_app.cpp' || echo '$(srcdir)/'`vision/v_oflow_app.cpp
+
+v_oflow_app.obj: vision/v_oflow_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT v_oflow_app.obj -MD -MP -MF $(DEPDIR)/v_oflow_app.Tpo -c -o v_oflow_app.obj `if test -f 'vision/v_oflow_app.cpp'; then $(CYGPATH_W) 'vision/v_oflow_app.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/v_oflow_app.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/v_oflow_app.Tpo $(DEPDIR)/v_oflow_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/v_oflow_app.cpp' object='v_oflow_app.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o v_oflow_app.obj `if test -f 'vision/v_oflow_app.cpp'; then $(CYGPATH_W) 'vision/v_oflow_app.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/v_oflow_app.cpp'; fi`
+
+v_oflow_odca_app.o: vision/v_oflow_odca_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT v_oflow_odca_app.o -MD -MP -MF $(DEPDIR)/v_oflow_odca_app.Tpo -c -o v_oflow_odca_app.o `test -f 'vision/v_oflow_odca_app.cpp' || echo '$(srcdir)/'`vision/v_oflow_odca_app.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/v_oflow_odca_app.Tpo $(DEPDIR)/v_oflow_odca_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/v_oflow_odca_app.cpp' object='v_oflow_odca_app.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o v_oflow_odca_app.o `test -f 'vision/v_oflow_odca_app.cpp' || echo '$(srcdir)/'`vision/v_oflow_odca_app.cpp
+
+v_oflow_odca_app.obj: vision/v_oflow_odca_app.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT v_oflow_odca_app.obj -MD -MP -MF $(DEPDIR)/v_oflow_odca_app.Tpo -c -o v_oflow_odca_app.obj `if test -f 'vision/v_oflow_odca_app.cpp'; then $(CYGPATH_W) 'vision/v_oflow_odca_app.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/v_oflow_odca_app.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/v_oflow_odca_app.Tpo $(DEPDIR)/v_oflow_odca_app.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/v_oflow_odca_app.cpp' object='v_oflow_odca_app.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o v_oflow_odca_app.obj `if test -f 'vision/v_oflow_odca_app.cpp'; then $(CYGPATH_W) 'vision/v_oflow_odca_app.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/v_oflow_odca_app.cpp'; fi`
+
+ofdifferential.o: vision/ofdifferential.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ofdifferential.o -MD -MP -MF $(DEPDIR)/ofdifferential.Tpo -c -o ofdifferential.o `test -f 'vision/ofdifferential.cpp' || echo '$(srcdir)/'`vision/ofdifferential.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/ofdifferential.Tpo $(DEPDIR)/ofdifferential.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/ofdifferential.cpp' object='ofdifferential.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ofdifferential.o `test -f 'vision/ofdifferential.cpp' || echo '$(srcdir)/'`vision/ofdifferential.cpp
+
+ofdifferential.obj: vision/ofdifferential.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ofdifferential.obj -MD -MP -MF $(DEPDIR)/ofdifferential.Tpo -c -o ofdifferential.obj `if test -f 'vision/ofdifferential.cpp'; then $(CYGPATH_W) 'vision/ofdifferential.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/ofdifferential.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/ofdifferential.Tpo $(DEPDIR)/ofdifferential.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/ofdifferential.cpp' object='ofdifferential.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ofdifferential.obj `if test -f 'vision/ofdifferential.cpp'; then $(CYGPATH_W) 'vision/ofdifferential.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/ofdifferential.cpp'; fi`
+
+OpticalFlow.o: vision/OpticalFlow.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT OpticalFlow.o -MD -MP -MF $(DEPDIR)/OpticalFlow.Tpo -c -o OpticalFlow.o `test -f 'vision/OpticalFlow.cpp' || echo '$(srcdir)/'`vision/OpticalFlow.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/OpticalFlow.Tpo $(DEPDIR)/OpticalFlow.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/OpticalFlow.cpp' object='OpticalFlow.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o OpticalFlow.o `test -f 'vision/OpticalFlow.cpp' || echo '$(srcdir)/'`vision/OpticalFlow.cpp
+
+OpticalFlow.obj: vision/OpticalFlow.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT OpticalFlow.obj -MD -MP -MF $(DEPDIR)/OpticalFlow.Tpo -c -o OpticalFlow.obj `if test -f 'vision/OpticalFlow.cpp'; then $(CYGPATH_W) 'vision/OpticalFlow.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/OpticalFlow.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/OpticalFlow.Tpo $(DEPDIR)/OpticalFlow.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/OpticalFlow.cpp' object='OpticalFlow.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o OpticalFlow.obj `if test -f 'vision/OpticalFlow.cpp'; then $(CYGPATH_W) 'vision/OpticalFlow.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/OpticalFlow.cpp'; fi`
+
+ofmodel.o: vision/ofmodel.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ofmodel.o -MD -MP -MF $(DEPDIR)/ofmodel.Tpo -c -o ofmodel.o `test -f 'vision/ofmodel.cpp' || echo '$(srcdir)/'`vision/ofmodel.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/ofmodel.Tpo $(DEPDIR)/ofmodel.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/ofmodel.cpp' object='ofmodel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ofmodel.o `test -f 'vision/ofmodel.cpp' || echo '$(srcdir)/'`vision/ofmodel.cpp
+
+ofmodel.obj: vision/ofmodel.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ofmodel.obj -MD -MP -MF $(DEPDIR)/ofmodel.Tpo -c -o ofmodel.obj `if test -f 'vision/ofmodel.cpp'; then $(CYGPATH_W) 'vision/ofmodel.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/ofmodel.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/ofmodel.Tpo $(DEPDIR)/ofmodel.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='vision/ofmodel.cpp' object='ofmodel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ofmodel.obj `if test -f 'vision/ofmodel.cpp'; then $(CYGPATH_W) 'vision/ofmodel.cpp'; else $(CYGPATH_W) '$(srcdir)/vision/ofmodel.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

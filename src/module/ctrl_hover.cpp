@@ -59,7 +59,9 @@ namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {
   Ctrl_Hover::Ctrl_Hover(const map<string, string> args) : 
 		AppInterface("ctrl_hover"), 
-		AppLayer<mavlink_message_t>("ctrl_hover"),
+		ModuleBase(args, "ctrl_hover"),
+		// AppLayer<mavlink_message_t>("ctrl_hover"),
+		// AppLayer<mkhuch_message_t>("ctrl_hover"),
 		// AppLayer<mk_message_t>("ctrl_hover"),
 		uss_win(WINSIZE, 0.0),
 		uss_win_sorted(WINSIZE, 0.0),
@@ -67,7 +69,9 @@ namespace mavhub {
 		uss_win_idx_m1(0),
 		uss_med(0.0),
 		d_uss(0.0),
-		uss_plaus(0)
+		uss_plaus(0),
+		thrust(0.0),
+		ac_active(0)
 	{
 		// sensible pre-config defaults
 		conf_defaults();
@@ -124,13 +128,17 @@ namespace mavhub {
 				break;
 			case IR_SHARP_30_5V:
 				// sigma, beta, k
-				premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-08, 3.7778e-5, 0.42);
+				//premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-08, 3.7778e-5, 0.42);
+				premod[i] = new PreProcessorIR(40.0, 350.0, 7.2710e-07, 3.0e-5, 0.42);
 				break;
 			case IR_SHARP_150_5V:
 				// sigma, beta, k
-				premod[i] = new PreProcessorIR(250.0, 1500.0, 1.5369e-07, 8.8526e-06, 0.42);
+				//premod[i] = new PreProcessorIR(250.0, 1500.0, 1.5369e-07, 8.8526e-06, 0.42);
+				premod[i] = new PreProcessorIR(250.0, 1500.0, 1.54e-08, 5.8e-06, 0.42);
 				break;
-			}	
+			}
+			pre[i].first = 0.0;
+			pre[i].second = 0.0;
 			premean[i] = 0.0;
 			precov[i] = 1.0;
 			stats[i] = new Stat_MeanVar(64);
@@ -144,6 +152,10 @@ namespace mavhub {
 			Logger::log("Ctrl_Hover chanmap", i, chanmap[i], Logger::LOGLEVEL_DEBUG);
 			iter++;
 		}
+
+		pthread_mutex_init(&tx_mav_mutex, NULL);
+		pthread_mutex_init(&tx_mkhuch_mutex, NULL);
+		mkhuchlink_msg_init(&tx_mkhuch_msg);
   }
 
   Ctrl_Hover::~Ctrl_Hover() {
@@ -153,7 +165,7 @@ namespace mavhub {
 
   void Ctrl_Hover::handle_input(const mavlink_message_t &msg) {
 		static vector<int> v(16);
-		static int8_t param_id[15];
+		static char param_id[16];
 		// hover needs:
 		// huch_attitude
 		// huch_altitude
@@ -247,9 +259,9 @@ namespace mavhub {
 					}	else if(!strcmp("gs_en", (const char *)param_id)) {
 						params["gs_en"] = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en", params["gs_en"], Logger::LOGLEVEL_INFO);
-					}	else if(!strcmp("gs_en_dbg", (const char *)param_id)) {
-						params["gs_en_dbg"] = (double)mavlink_msg_param_set_get_param_value(&msg);
-						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_INFO);
+					}	else if(!strcmp("gs_en_dbg_ac", (const char *)param_id)) {
+						params["gs_en_dbg_ac"] = (double)mavlink_msg_param_set_get_param_value(&msg);
+						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_dbg_ac", params["gs_en_dbg_ac"], Logger::LOGLEVEL_INFO);
 					}	else if(!strcmp("gs_en_stats", (const char *)param_id)) {
 						params["gs_en_stats"] = (double)mavlink_msg_param_set_get_param_value(&msg);
 						Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_INFO);
@@ -272,6 +284,31 @@ namespace mavhub {
 				}
 			}
 			break;
+		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+			man_thrust = mavlink_msg_rc_channels_raw_get_chan2_raw(&msg);
+			man_thrust -= 1345;
+			man_thrust *= 0.66;
+			// Logger::log("Ctrl_Hover::handle_input: man_thrust", man_thrust, Logger::LOGLEVEL_INFO);
+			break;
+
+		case MAVLINK_MSG_ID_HUCH_ACTION:
+			Logger::log(name(), "handle_input: received action request", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
+			if(mavlink_msg_huch_action_get_target(&msg) == system_id()){
+				if(mavlink_msg_huch_action_get_target_component(&msg) == component_id) {
+					switch(mavlink_msg_huch_action_get_action(&msg)) {
+					case ACTION_TOGGLE_AC:
+						ac_active = !ac_active;
+						params["ctl_setpoint"] = ctrl_hover_state.kal_s0;
+						params["output_enable"] = (float)ac_active;
+						Logger::log(name(), "handle_input: action request done", (int)ac_active, params["output_enable"], Logger::LOGLEVEL_INFO);
+						break;
+					default:
+						break;
+					}
+				}
+			}
+			break;
+
 		default:
 			break;
 		}
@@ -280,11 +317,12 @@ namespace mavhub {
 		}
   }
 
-  //void Ctrl_Hover::handle_input(const mk_message_t &msg) { }
+	void Ctrl_Hover::handle_input(const mkhuch_message_t& msg) {
+	}
 
   void Ctrl_Hover::run() {
-		int buf[1]; // to MK buffer
-		uint8_t flags = 0;
+		// int buf[1]; // to MK buffer
+		// uint8_t flags = 0;
 		ostringstream o;
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
@@ -343,17 +381,20 @@ namespace mavhub {
 		// relative
 		//flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_HEIGHT_CTRL1 );
 		// absolute
-		flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
-		extctrl.remote_buttons = 0;	/* for lcd menu */
-		extctrl.nick = 0; //nick;
-		extctrl.roll = 0; //roll;
-		extctrl.yaw = 0; //yaw;
-		extctrl.gas = 0; //gas;	/* MotorGas = min(ExternControl.Gas, StickGas) */
+		// flags |= (APFLAG_GENERAL_ON | APFLAG_KEEP_VALUES | APFLAG_FULL_CTRL );
+		// extctrl.remote_buttons = 0;	/* for lcd menu */
 
-		// for autopilot
-		extctrl.AP_flags = flags;
-		extctrl.frame = 'E';	/* get ack from flightctrl */
-		extctrl.config = 0;	/* activate external control via serial iface in FlightCtrl */
+		// initialize extern control structure for MK imu
+		extctrl.pitch   = 0; // pitch
+		extctrl.roll   = 0; // roll
+		extctrl.yaw    = 0; // yaw
+		extctrl.thrust = 0; // thrust
+		extctrl.mask   = 0; // control mask: select control channels
+
+		// // for autopilot
+		// extctrl.AP_flags = flags;
+		// extctrl.frame = 'E';	/* get ack from flightctrl */
+		// extctrl.config = 0;	/* activate external control via serial iface in FlightCtrl */
 
 		// init position stuff
 		C = cvCreateMat(3,3, CV_32FC1);
@@ -371,7 +412,7 @@ namespace mavhub {
 		Logger::log("Ctrl_Hover started:", name(), Logger::LOGLEVEL_INFO);
 		
 		// request debug msgs
-		buf[0] = 10;
+		// buf[0] = 10;
 		/* FIXME: MK_MSG
 		mk_message_t msg_debug_on;
 		mklink_msg_pack(&msg_debug_on, MK_FC_ADDRESS, MK_MSG_TYPE_POLL_DEBUG, buf, 1);
@@ -381,8 +422,7 @@ namespace mavhub {
 		*/
 
 		// subscribe to data streams
-		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, 50);
-		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, 50);
+		send_stream_request_all();
 
 		while(true) {
 
@@ -415,7 +455,8 @@ namespace mavhub {
 			// dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
 			// tkm1 = tk; // save current time
 
-			exec_tmr->updateExecStats();
+			// get effective dt
+			dt = exec_tmr->updateExecStats();
 			
 			// FIXME: do timing
 
@@ -446,7 +487,7 @@ namespace mavhub {
 			// double tmp = tmp;
 			raw[0] = (int)DataCenter::get_sensor(chanmap[0]); //ranger.ranger1; // USS
 			//raw[1] = altitude.baro; // barometer
-			raw[1] = raw_pressure.press_abs;
+			raw[1] = raw_pressure.press_abs * 20.43;
 			//raw[2] = attitude.zacc; // z-acceleration
 			raw[2] = huch_mk_imu.zacc; // z-acceleration
 			raw[3] = (int)DataCenter::get_sensor(chanmap[3]); //ranger.ranger2; // ir ranger 1
@@ -522,7 +563,10 @@ namespace mavhub {
 
 			//&& pre[3].first > params["uss_llim"]
 			if(in_range(pre[0].first, params["uss_llim"], params["uss_hlim"])
+				 && pre[3].first > params["uss_llim"]
 				 && uss_plaus)
+			// if(in_range(pre[0].first, params["uss_llim"], params["uss_hlim"])
+			// 	 && pre[3].first > 200.0)
 				tmp_valid = 1.0;
 			else {
 				// pre[0].first = uss_win[uss_win_idx_m1];
@@ -563,7 +607,7 @@ namespace mavhub {
 			// 39, 300
 			if(in_range(pre[3].first, params["ir1_llim"], params["ir1_ulim"])
 				 && pre[4].first < 600.0) // carpet problem: ir1 freaks out on carpet FIXME
-				tmp_valid = 0.0;
+				tmp_valid = 1.0;
 			else
 				tmp_valid = 0.0;
 			precov[3] = filt_valid_ir1.calc(tmp_valid);
@@ -576,11 +620,11 @@ namespace mavhub {
 			 // if(in_range(pre[4].first, 300.0, 560.0))
 			// 300, 600
 			 if(in_range(pre[4].first, params["ir2_llim"], params["ir2_ulim"])
-					//&& pre[3].first > 300.0
+					&& pre[3].first > params["ir2_llim"]
 					)
-				 tmp_valid = 1;
+				 tmp_valid = 1.;
 			 else
-				 tmp_valid = 0;
+				 tmp_valid = 0.;
 			 precov[4] = filt_valid_ir2.calc(tmp_valid);
 			 pre[4].second = (precov[4] >= 0.99) ? 1 : 0;
 
@@ -693,7 +737,7 @@ namespace mavhub {
 			 // send(msg);
 
 			 // set attitude
-			 ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
+			 ml_attitude.time_boot_ms = 0; // get_time_us(); XXX: qgc bug
 			 ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
 			 ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
 			 ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;
@@ -739,19 +783,20 @@ namespace mavhub {
 			gas = pid_alt->calc((double)dt * 1e-6, ctrl_hover_state.kal_s0);
 			// printf("gas 1: %f\n", gas);
 
-			// enforce more limits
+			// limit altctl thrust to stick thrust
 			if(params["ctl_sticksp"] < 1.0 &&
 				 params["physical"] > 0) {
-				if(gas > (manual_control.thrust * 4)) { // 4 <- stick_gain
+				if(gas > (man_thrust * 4)) { // 4 <- stick_gain
 					pid_alt->setIntegralM1();
-					gas = manual_control.thrust * 4;
+					gas = man_thrust * 4;
 				}
 			}
-			//printf("gas 2: %f, man: %f\n", gas, manual_control.thrust);
+			// printf("gas 2: %f, man: %f\n", gas, manual_control.thrust);
 
 			// reset integral
-			if(manual_control.thrust < params["ctl_mingas"]) // reset below threshold
+			if(man_thrust < params["ctl_mingas"]) { // reset below threshold
 				pid_alt->setIntegral(0.0);
+			}
 
 			// limit integral
 			if(gas > params["ctl_maxgas"])
@@ -760,23 +805,43 @@ namespace mavhub {
 			// min/max limits
 			gas = limit_gas(gas);
 
-			extctrl.gas = (int16_t)gas;
-			// nick, roll, yaw are computed in a separate controller,
+			// extctrl.thrust = (int16_t)gas >> 2;
+			// FIXME: 
+			thrust = (float)(((int16_t)gas) >> 2);
+
+			// pitch, roll, yaw are computed in a separate controller,
 			// fused here and sent to the flightctrl for execution
-			extctrl.nick = (int16_t)DataCenter::get_extctrl_nick();
-			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
-			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
-			// Logger::log("Ctrl_Hover nick", , Logger::LOGLEVEL_INFO);
+
+			// extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+			// extctrl.pitch = (int16_t)DataCenter::get_extctrl_pitch();
+			// extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
+
+			// Logger::log("Ctrl_Hover cmp", DataCenter::get_sensor(6), Logger::LOGLEVEL_DEBUG);
+			// extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
+			// extctrl.mask = ROLL_MANUAL_MASK | PITCH_MANUAL_MASK | YAW_MANUAL_MASK | THRUST_MANUAL_MASK;
+
+			extctrl.mask = THRUST_MANUAL_MASK;
+
+			// extctrl.mask = 0;
+			// Logger::log(name(), "pitch, roll", extctrl.pitch, extctrl.roll, Logger::LOGLEVEL_DEBUG);
 			// extctrl.gas = 255 * (double)rand()/RAND_MAX;
 
-			// send control output to FC
-			// Logger::log("Ctrl_Hover: ctl out", extctrl.gas, Logger::LOGLEVEL_INFO);
+			// send control output to (onboard) attitude controller
 			if(params["output_enable"] > 0) {
-				/* FIXME: MK_MSG
-				mk_message_t msg_extctrl;
-				mklink_msg_pack(&msg_extctrl, MK_FC_ADDRESS, MK_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(extctrl));
-				AppLayer<mk_message_t>::send(msg_extctrl);
-				*/
+				// Logger::log("Ctrl_Hover: thrust:", thrust, Logger::LOGLEVEL_INFO);
+
+				// mkhuchlink_msg_encode(&tx_mkhuch_msg, MKHUCH_MSG_TYPE_EXT_CTRL, &extctrl, sizeof(mkhuch_extern_control_t));
+				// AppLayer<mkhuch_message_t>::send(tx_mkhuch_msg);
+
+				chan.usec = get_time_us();
+				chan.index = CHAN_THRUST;
+				chan.value = thrust;
+				mavlink_msg_huch_generic_channel_encode(system_id(),
+																								component_id,
+																								&msg,
+																								&chan);
+				AppLayer<mavlink_message_t>::send(msg);
+
 			}
 
 			// send data to groundstation
@@ -791,7 +856,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					AppLayer<mavlink_message_t>::send(msg);
 				}
 
@@ -802,22 +867,22 @@ namespace mavhub {
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
 				// trigger setneutral
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "set_neutral_rq", set_neutral_rq, MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
-				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_dbg", params["gs_en_dbg"], 1, 0);
+				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_dbg_ac", params["gs_en_dbg_ac"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
 				// PID params
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_bias", pid_alt->getBias(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Kc", pid_alt->getKc(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_Kc", pid_alt->getKc(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Ti", pid_alt->getTi(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_Ti", pid_alt->getTi(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_Td", pid_alt->getTd(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
 			}
 
@@ -841,15 +906,17 @@ namespace mavhub {
 			// huch_fc_altitude
 			// mavlink_msg_huch_fc_altitude_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &altitude);
 			// send(msg);
-			// mk_fc_status
-			mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
-			AppLayer<mavlink_message_t>::send(msg);
+
+			// // mk_fc_status
+			// mavlink_msg_mk_fc_status_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &mk_fc_status);
+			// AppLayer<mavlink_message_t>::send(msg);
+
 			// huch ctrl_hover
 			mavlink_msg_huch_ctrl_hover_state_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &ctrl_hover_state);
 			AppLayer<mavlink_message_t>::send(msg);
 
 			// send debug signals to groundstation
-			if(params["gs_en_dbg"]) {
+			if(params["gs_en_dbg_ac"]) {
 				// gas out
 				send_debug(&msg, &dbg, ALT_GAS, gas);
 				// // PID error
@@ -862,6 +929,8 @@ namespace mavhub {
 				send_debug(&msg, &dbg, ALT_PID_SP, pid_alt->getSp());
 				// VALID USS
 				send_debug(&msg, &dbg, DBG_VALID_USS, pre[0].second * 256);
+				// VALID BARO
+				send_debug(&msg, &dbg, DBG_VALID_BAR, pre[1].second * 256);
 				// VALID IR1
 				send_debug(&msg, &dbg, DBG_VALID_IR1, pre[3].second * 256);
 				// VALID IR2
@@ -893,12 +962,11 @@ namespace mavhub {
 				send_debug(&msg, &dbg, DBG_KAL_VAR4, ((1.0 - precov[4]) * 10.0 + 1) * params["kal_R4"]);
 			}
 
-			// XXX: does this make problems with time / qgc?
-			// XXX: see qgc/src/uas/UAS.cc -> attitude_control
-			// attitude_controller_output.thrust = extctrl.gas / 4 - 128;
-			// mavlink_msg_attitude_controller_output_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &attitude_controller_output);
-			// send(msg);
-			
+			if(params["streams"] > 0.0) {
+				params["streams"] = 0.;
+				send_stream_request_all();
+			}
+
 			// stats
 			run_cnt += 1;
 			run_cnt_cyc = run_cnt % 10;
@@ -918,6 +986,16 @@ namespace mavhub {
 		dbg->value = value;
 		mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), msg, dbg);
 		AppLayer<mavlink_message_t>::send(*msg);
+	}
+
+	void Ctrl_Hover::send_stream_request_all() {
+		// mavlink_message_t msg;
+		send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_EXTENDED_STATUS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_RAW_CONTROLLER, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_RC_CHANNELS, ctl_update_rate);
+		send_stream_request(&msg, MAV_DATA_STREAM_EXTRA1, ctl_update_rate);
 	}
 
 	void Ctrl_Hover::preproc() {
@@ -992,6 +1070,7 @@ namespace mavhub {
 		params["ir1_ulim"] = 300.0;
 		params["ir2_llim"] = 300.0;
 		params["ir2_ulim"] = 600.0;
+		params["streams"] = 0.;
 	}
 
 	void Ctrl_Hover::kal_setRFromParams() {
@@ -1115,10 +1194,10 @@ namespace mavhub {
 		}
 
 		// mavlink to groundstation debug data enable
-		iter = args.find("gs_en_dbg");
+		iter = args.find("gs_en_dbg_ac");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["gs_en_dbg"];
+			s >> params["gs_en_dbg_ac"];
 		}
 
 		// mavlink to groundstation debug data enable
@@ -1260,8 +1339,6 @@ namespace mavhub {
 			s >> params["ir2_ulim"];
 		}
 
-
-
 		// XXX
 		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: numchan", numchan, Logger::LOGLEVEL_DEBUG);
@@ -1278,7 +1355,7 @@ namespace mavhub {
 		Logger::log("ctrl_hover::read_conf: params[\"ctl_maxgas\"]", params["ctl_maxgas"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: output_enable", params["output_enable"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en", params["gs_en"], Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: gs_en_dbg", params["gs_en_dbg"], Logger::LOGLEVEL_DEBUG);
+		Logger::log("ctrl_hover::read_conf: gs_en_dbg_ac", params["gs_en_dbg_ac"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: gs_en_stats", params["gs_en_stats"], Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_update_rate", ctl_update_rate, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: usS_max_vz", params["uss_max_vz"], Logger::LOGLEVEL_DEBUG);
@@ -1388,7 +1465,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk raw_imu
 	void Ctrl_Hover::set_pxh_raw_imu() {
-		raw_imu.usec = 0; // get_time_us(); XXX: qgc bug
+		raw_imu.time_usec = 0; // get_time_us(); XXX: qgc bug
 		raw_imu.xacc = attitude.xacc;
 		raw_imu.yacc = attitude.yacc;
 		raw_imu.zacc = attitude.zaccraw;
@@ -1402,7 +1479,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk attitude
 	void Ctrl_Hover::set_pxh_attitude() {
-		ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
+		ml_attitude.time_boot_ms = 0; // get_time_us(); XXX: qgc bug
 		ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
 		ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
 		ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;
@@ -1469,4 +1546,3 @@ namespace mavhub {
 #endif // HAVE_OPENCV
 #endif // HAVE_MKLINK_H
 #endif // HAVE_MAVLINK_H
-

@@ -1,3 +1,8 @@
+// generate system identification signals
+// - step signal
+// - impulse
+// - frequencies
+
 #ifndef _BUMPER_H_
 #define _BUMPER_H_
 
@@ -7,6 +12,8 @@ namespace mavhub {
 	class Bumper {
 	public:
 		Bumper(double low, double high);
+		Bumper(double low, double high, double dur);
+		Bumper(double low, double high, double dur, double delay);
 		virtual ~Bumper();
 		/// calculation function
 		virtual double calc(double dt);
@@ -16,6 +23,10 @@ namespace mavhub {
 		virtual void set_thr_low(double val);
 		/// set thr high
 		virtual void set_thr_high(double val);
+		/// set bump duration
+		virtual void set_bump_dur(double val);
+		/// set pre-bump delay
+		virtual void set_bump_delay(double val);
 	private:
 		/// bump low throttle
 		double thr_low;

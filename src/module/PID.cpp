@@ -70,7 +70,7 @@ namespace mavhub {
 
 		// debug ipart
 		// Logger::log("pid: ", bias, Kc, Logger::LOGLEVEL_INFO);
-		// Logger::log("pid: ", Ti, Td, Logger::LOGLEVEL_INFO);
+		// Logger::log("PID: ", err, ipart, dpart, Logger::LOGLEVEL_INFO);
 		
 		// compute corrective (watch dpart sign)
 		return(bias + Kc * (err + ipart - dpart));

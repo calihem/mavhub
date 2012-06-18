@@ -32,9 +32,15 @@ void TestCore::run() {
 	}
 
 	Logger::debug("TestCore: running");
-	int system_type = MAV_FIXED_WING;
 	mavlink_message_t msg;
-	mavlink_msg_heartbeat_pack(100, 200, &msg, system_type, MAV_AUTOPILOT_GENERIC);
+	mavlink_msg_heartbeat_pack(100,
+		200,
+		&msg,
+		MAV_TYPE_QUADROTOR,
+		MAV_AUTOPILOT_GENERIC,
+		MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+		0,	//custom mode
+		MAV_STATE_ACTIVE);	//system status
 
 	while( !interrupted() ) {
 		send(msg);

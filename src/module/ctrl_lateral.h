@@ -1,4 +1,4 @@
-// control lateral components: nick, roll, yaw
+// control lateral components: pitch, roll, yaw
 
 #ifndef _CTRL_LATERAL_H_
 #define _CTRL_LATERAL_H_
@@ -10,13 +10,14 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
+#include "modulebase.h"
 #include "debug_channels.h"
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
 #include "PID.h"
 
 namespace mavhub {
-	class Ctrl_Lateral : public AppLayer<mavlink_message_t> {
+	class Ctrl_Lateral : public ModuleBase {
 	public:
 		/// Ctor: lateral controller
 		Ctrl_Lateral(const std::map<std::string, std::string>);
@@ -31,11 +32,13 @@ namespace mavhub {
 
 	private:
 		uint16_t component_id;
-		int16_t nick;
+		int16_t pitch;
 		int16_t roll;
 		int16_t yaw;
 #ifdef MAVLINK_ENABLED_HUCH
 		mavlink_huch_visual_navigation_t huch_visual_navigation;
+		mavlink_huch_visual_flow_t huch_visual_flow;
+		mavlink_huch_generic_channel_t chan;
 #endif // MAVLINK_ENABLED_HUCH	
 
 		// params
@@ -43,14 +46,14 @@ namespace mavhub {
 		int param_request_list;
 		// container
 		std::map<std::string, double>	params;
-		int prm_test_nick;
+		int prm_test_pitch;
 		double prm_yaw_P;
-		double prm_nick_P;
+		double prm_pitch_P;
 		double prm_roll_P;
 		//int prm_ni
 		// controller instances
 		PID* pid_yaw;
-		PID* pid_nick;
+		PID* pid_pitch;
 		PID* pid_roll;
 
 		/// set reasonable config defaults

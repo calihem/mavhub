@@ -39,6 +39,9 @@
 /* Define to 1 if you have the <Ivy/ivy.h> header file. */
 #undef HAVE_IVY_IVY_H
 
+/* Define to 1 if you have the `fann' library (-lfann). */
+#undef HAVE_LIBFANN
+
 /* Define to 1 if you have the `GL' library (-lGL). */
 #undef HAVE_LIBGL
 
@@ -59,6 +62,9 @@
 
 /* Define to 1 if you have the `ncurses' library (-lncurses). */
 #undef HAVE_LIBNCURSES
+
+/* Define to 1 if you have the `oscpack' library (-loscpack). */
+#undef HAVE_LIBOSCPACK
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
@@ -92,6 +98,9 @@
 
 /* Use OpenCV2 */
 #undef HAVE_OPENCV2
+
+/* Define to 1 if you have the <osc/OscTypes.h> header file. */
+#undef HAVE_OSC_OSCTYPES_H
 
 /* Define to 1 if you have the `pow' function. */
 #undef HAVE_POW

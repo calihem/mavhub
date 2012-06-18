@@ -179,7 +179,7 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 		assert(width != 0 && height != 0);
 		bpp = 8*GST_BUFFER_SIZE(buffer)/width/height;
 	} else {
-		assert(8*GST_BUFFER_SIZE(buffer) == (unsigned)width*height*bpp);
+		assert(8*GST_BUFFER_SIZE(buffer) >= (unsigned)width*height*bpp);
 	}
 
 	unsigned char *buf_data = GST_BUFFER_DATA(buffer);

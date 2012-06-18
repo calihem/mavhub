@@ -3,11 +3,13 @@
 #define _FILTER_N_FF_H_
 
 #ifdef _HAVE_OPENCV_2
+#ifdef HAVE_LIBFANN
 #include <sstream>
 
 #include "core/logger.h"
 
 #include "opencv2/opencv.hpp" // opencv headers
+#include "fann.h"
 
 namespace mavhub {
 	/// Kalman filter class: hover (altitude)
@@ -58,5 +60,6 @@ namespace mavhub {
   };
 }
 
-#endif
+#endif // HAVE_LIBFANN
+#endif // _HAVE_OPENCV_2
 #endif

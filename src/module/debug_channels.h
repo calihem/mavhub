@@ -26,7 +26,8 @@ enum debug_channel {
 	DBG_KAL_VAR1 = 34,
 	DBG_KAL_VAR2 = 35,
 	DBG_KAL_VAR3 = 36,
-	DBG_KAL_VAR4 = 37
+	DBG_KAL_VAR4 = 37,
+	DBG_VALID_BAR = 38,
 };
 
 // huch-FC/MK debugchannels

@@ -39,6 +39,9 @@
 //TODO #define MAVLINK_COMM_NUM_BUFFERS 1
 
 #include <inttypes.h> //uint8_t
+#ifndef MAVLINK_CRC_EXTRA
+#define MAVLINK_CRC_EXTRA 1
+#endif
 #include <mavlink.h>
 
 namespace mavhub {
@@ -65,7 +68,7 @@ std::istream& operator >>(std::istream &is, enum MAV_TYPE &type);
  * input stream is.
  * \return Reference to input stream is.
  */
-std::istream& operator >>(std::istream &is, enum MAV_AUTOPILOT_TYPE &type);
+std::istream& operator >>(std::istream &is, enum MAV_AUTOPILOT &type);
 
 } // namespace mavhub
 
