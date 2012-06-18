@@ -154,10 +154,6 @@ void SLAMApp::extract_features() {
 	log( "descriptors needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
-	// create filter mask
-// 	cv::Mat mask = cv::Mat::ones(landmarks.keypoints.size(), keypoints.size(), CV_8UC1);
-// 	filter_landmarks(landmarks, mask);
-
 	std::vector<cv::DMatch> matches;
 	matcher.match(landmarks.descriptors, descriptors, matches);
 	if(matches.empty()) {
@@ -176,83 +172,26 @@ void SLAMApp::extract_features() {
 	log( "distribution filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
 
-	// get change of attitude
-	//TODO: time check of attitude
-// 	mavlink_attitude_t attitude_change;
-// 	attitude_change.roll = new_attitude.roll - old_attitude.roll;
-// 	attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
-// 	attitude_change.yaw = new_attitude.yaw - old_attitude.yaw;
-// 	Logger::log(name(), "Changed attitude:",
-// 		rad2deg(attitude_change.roll),
-// 		rad2deg(attitude_change.pitch),
-// 		rad2deg(attitude_change.yaw),
-// 		Logger::LOGLEVEL_DEBUG, _loglevel);
-	
-	// calculate transformation matrix
-// 	double distance = 1.0; //FIXME: use altitude information
-// 	double factor = 300.0;
-// 	float delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
-// 	float delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
-	// rotate image
-// 	cv::Point center(new_image.cols/2, new_image.rows/2);
-// 	cv::Mat rotation_matrix = getRotationMatrix2D(center, -rad2deg(attitude_change.yaw), 1.0);
-// 	cv::Mat rotated_image;
-	//FIXME: warp features (not image)
-// 	cv::warpAffine(new_image, rotated_image, rotation_matrix, new_image.size());
-	// shift image
-// 	double m[2][3] = {{1, 0, -delta_x}, {0, 1, -delta_y}};
-// 	cv::Mat transform_matrix(2, 3, CV_64F, m);
-// 	cv::Mat transformed_image;
-// 	cv::warpAffine(rotated_image, transformed_image, transform_matrix, rotated_image.size());
+	std::vector<float> parameter_vector(6, 0);
 
-	// match descriptors
-// 	std::vector<std::vector<cv::DMatch> > matches;
-// 	std::vector<std::vector<cv::DMatch> > forward_matches;
-// 	std::vector<std::vector<cv::DMatch> > backward_matches;
-// 	matcher.radiusMatch(old_descriptors, new_descriptors, forward_matches, 100.0);	//0.21 for L2
-// 	matcher.radiusMatch(new_descriptors, old_descriptors, backward_matches, 100.0);	//0.21 for L2
-// 	fusion_matches(forward_matches, backward_matches, matches);
-// 	matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
-// 	if(matches.empty()) {
-// 		Logger::log("no matches were found", Logger::LOGLEVEL_DEBUG, _loglevel);
-// 		return;
-// 	}
-
-	//TODO: check for ambigous matches
-
-	// TODO: use RANSAC instead of IMU filter?
-// 	std::vector<uint8_t> filter;
-// 	int valid_matches = filter_matches_by_imu< cv::L1<float> >(old_features,
-// 		new_features,
-// 		matches,
-// 		center,
-// 		attitude_change.roll, attitude_change.pitch, attitude_change.yaw,
-// 		delta_x, delta_y,
-// 		filter);
-// 	float valid_rate = (float)valid_matches/filter.size();
-// 	Logger::log(name(), ": Valid match rate is", valid_rate, filter.size(), Logger::LOGLEVEL_INFO, _loglevel);
-
-// 	cv::Mat H = find_homography(old_features, new_features, matches, CV_RANSAC);
-// 	cv::Mat H = find_homography(old_features, new_features, matches, 0);
-// 	std::cout << H << std::endl;
-// 	double yaw = acos( (H.at<double>(0,0) + H.at<double>(1,1))/2.0 );
-// 	std::cout << "yaw = " << rad2deg(yaw) << " (" << H.at<double>(0,2) << ", " << H.at<double>(1,2) << std::endl;
-
-// 	const float _yaw = yaw(landmarks.keypoints,
-// 			       keypoints,
-// 				matches,
-// 				cam_matrix,
-// 				matches_mask);
-// 	log("yaw:", _yaw, Logger::LOGLEVEL_INFO);
-
-	// get change of attitude
-	vector<float> parameter_vector(6);
+	// get change of attitude as initial guess
 	parameter_vector[0] = attitudes.back().pitch - attitudes.front().pitch;	//phi
 	parameter_vector[1] = attitudes.back().roll - attitudes.front().roll;	//theta
 	parameter_vector[2] = attitudes.back().yaw - attitudes.front().yaw;	//psi
-	parameter_vector[3] = 0;
-	parameter_vector[4] = 0;
-	parameter_vector[5] = 0;
+
+	//get initial guess of translation
+	cv::Point3f translation = camera_translation<float>(landmarks.objectpoints,
+		keypoints,
+		altitude,
+		matches,
+		cam_matrix,
+		dist_coeffs,
+		matches_mask);
+	parameter_vector[3] = translation.y;
+	parameter_vector[4] = translation.x;
+	parameter_vector[5] = translation.z;
+
+	// get finer estimatation of pose
 	int rc = estimate_pose(landmarks.objectpoints,
 		keypoints,
 		matches,
@@ -264,24 +203,6 @@ void SLAMApp::extract_features() {
 		log("position estimation failed with return code", rc, Logger::LOGLEVEL_DEBUG);
 		return;
 	}
-// 	cv::Mat rotation_vector(3, 1, cv::DataType<double>::type);
-// 	rotation_vector.at<double>(0, 1) = attitudes.back().roll - attitudes.front().roll;
-// 	rotation_vector.at<double>(0, 0) = attitudes.back().pitch - attitudes.front().pitch;
-// 	rotation_vector.at<double>(0, 2) = attitudes.back().yaw - attitudes.front().yaw;
-// 	cv::Mat translation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
-// 	egomotion(landmarks.objectpoints,
-// 		keypoints,
-// 		matches,
-// 		cam_matrix,
-// 		dist_coeffs,
-// 		rotation_vector,
-// 		translation_vector,
-// 		use_extrinsic_guess,
-// 		matches_mask);
-// 	if(rotation_vector.empty() || translation_vector.empty()) {
-// 		log("determination of egomotion failed", Logger::LOGLEVEL_DEBUG);
-// 		return;
-// 	}
 	stop_time = get_time_ms();
 	log( "egomotion needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
 	start_time = stop_time;
