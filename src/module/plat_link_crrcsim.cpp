@@ -72,7 +72,7 @@ namespace mavhub {
 	void Plat_Link_Crrcsim::handle_input(const mavlink_message_t &msg) {
 		mavlink_huch_sensor_array_t sa;
 		//int i;
-		static int8_t param_id[15];
+		static char param_id[16];
 
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HEARTBEAT:
@@ -85,10 +85,10 @@ namespace mavhub {
 			psi = mavlink_msg_attitude_get_yaw(&msg);
 			break;
 
-		case MAVLINK_MSG_ID_LOCAL_POSITION:
-			x = mavlink_msg_local_position_get_x(&msg);
-			y = mavlink_msg_local_position_get_y(&msg);
-			z = mavlink_msg_local_position_get_z(&msg);
+		case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
+			x = mavlink_msg_local_position_ned_get_x(&msg);
+			y = mavlink_msg_local_position_ned_get_y(&msg);
+			z = mavlink_msg_local_position_ned_get_z(&msg);
 			break;
 
 		case MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY:

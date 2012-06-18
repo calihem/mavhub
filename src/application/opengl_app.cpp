@@ -104,7 +104,14 @@ void OpenGLApp::run() {
 
 void OpenGLApp::send_heartbeat() {
 	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_heartbeat_pack(system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
+	mavlink_msg_heartbeat_pack(system_id(),
+		component_id,
+		&tx_mav_msg,
+		MAV_TYPE_QUADROTOR,
+		MAV_AUTOPILOT_GENERIC,
+		MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+		0,	//custom mode
+		MAV_STATE_ACTIVE);	//system status
 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
 }
 

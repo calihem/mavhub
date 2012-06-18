@@ -221,7 +221,7 @@ void MAVLinkMKHUCHApp::handle_input(const mavlink_message_t &msg) {
 		// 	}
 		// 	break;
 
-		case MAVLINK_MSG_ID_ACTION:
+		case MAVLINK_MSG_ID_HUCH_ACTION:
 			//log("MAVLinkMKHUCHApp got mkhuch_message: MAVLINK_MSG_ID_ACTION", Logger::LOGLEVEL_DEBUG);
 			// if( (mavlink_msg_action_get_target(&msg) == owner()->system_id())
 			// && (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
@@ -326,7 +326,7 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 			AppLayer<mavlink_message_t>::send(tx_mav_msg);
 			//forward pressure
 			mavlink_raw_pressure_t raw_pressure;
-			raw_pressure.usec = mkhuch_msg_time;
+			raw_pressure.time_usec = mkhuch_msg_time;
 			raw_pressure.press_abs = mk_imu->press_abs;
 			raw_pressure.press_diff1 = 0;	//press_diff1
 			raw_pressure.press_diff2 = 0;	//press_diff2
@@ -374,30 +374,36 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 		const mkhuch_sticks_t *sticks = reinterpret_cast<const mkhuch_sticks_t*>(msg.data);
 		// log("MAVLinkMKHUCHApp got mkhuch_sticks msg", static_cast<int16_t>(sticks->roll), static_cast<int16_t>(sticks->pitch), Logger::LOGLEVEL_DEBUG);
 		// log("MAVLinkMKHUCHApp got mkhuch_sticks msg", static_cast<int16_t>(sticks->yaw), static_cast<int16_t>(sticks->thrust), Logger::LOGLEVEL_DEBUG);
+		//ALERT uint64_t -> uint32_t cast
+		uint32_t time_ms = get_time_ms();
 		Lock tx_lock(tx_mav_mutex);
 		mavlink_msg_named_value_int_pack(system_id(),
-																		 component_id,
-																		 &tx_mav_msg,
-																		 "stk_roll",
-																		 sticks->roll);
+			component_id,
+			&tx_mav_msg,
+			time_ms,
+			"stk_roll",
+			sticks->roll);
 		AppLayer<mavlink_message_t>::send(tx_mav_msg);
 		mavlink_msg_named_value_int_pack(system_id(),
-																		 component_id,
-																		 &tx_mav_msg,
-																		 "stk_pitch",
-																		 sticks->pitch);
+			component_id,
+			&tx_mav_msg,
+			time_ms,
+			"stk_pitch",
+			sticks->pitch);
 		AppLayer<mavlink_message_t>::send(tx_mav_msg);
 		mavlink_msg_named_value_int_pack(system_id(),
-																		 component_id,
-																		 &tx_mav_msg,
-																		 "stk_yaw",
-																		 sticks->yaw);
+			component_id,
+			&tx_mav_msg,
+			time_ms,
+			"stk_yaw",
+			sticks->yaw);
 		AppLayer<mavlink_message_t>::send(tx_mav_msg);
 		mavlink_msg_named_value_int_pack(system_id(),
-																		 component_id,
-																		 &tx_mav_msg,
-																		 "stk_thrust",
-																		 sticks->thrust);
+			component_id,
+			&tx_mav_msg,
+			time_ms,
+			"stk_thrust",
+			sticks->thrust);
 		AppLayer<mavlink_message_t>::send(tx_mav_msg);
 		break;
 	}
@@ -407,22 +413,25 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 		//log("MAVLinkMKHUCHApp got mkhuch_rc_channels_raw msg", static_cast<int16_t>(rc_channels_raw->channel_2), Logger::LOGLEVEL_DEBUG);
 		Lock tx_lock(tx_mav_mutex);
 		mavlink_msg_rc_channels_raw_pack(system_id(),
-																		 component_id,
-																		 &tx_mav_msg,
-																		 rc_channels_raw->channel_1,
-																		 rc_channels_raw->channel_2,
-																		 rc_channels_raw->channel_3,
-																		 rc_channels_raw->channel_4,
-																		 rc_channels_raw->channel_5,
-																		 rc_channels_raw->channel_6,
-																		 rc_channels_raw->channel_7,
-																		 rc_channels_raw->channel_8,
-																		 rc_channels_raw->rssi);
+			component_id,
+			&tx_mav_msg,
+			get_time_ms(),
+			0,	//FIXME
+			rc_channels_raw->channel_1,
+			rc_channels_raw->channel_2,
+			rc_channels_raw->channel_3,
+			rc_channels_raw->channel_4,
+			rc_channels_raw->channel_5,
+			rc_channels_raw->channel_6,
+			rc_channels_raw->channel_7,
+			rc_channels_raw->channel_8,
+			rc_channels_raw->rssi);
 		AppLayer<mavlink_message_t>::send(tx_mav_msg);
 		break;
 	}
 
 	case MKHUCH_MSG_TYPE_SYSTEM_STATUS: {
+/* FIXME
 			const mkhuch_system_status_t *sys_status = reinterpret_cast<const mkhuch_system_status_t*>(msg.data);
 			Lock tx_lock(tx_mav_mutex);
 			mavlink_msg_sys_status_pack(system_id(),
@@ -436,6 +445,7 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 				0,//motor block (unsupported)
 				sys_status->packet_drop);
 			AppLayer<mavlink_message_t>::send(tx_mav_msg);
+*/
 			break;
 		}
 /*		case MKHUCH_MSG_TYPE_BOOT:
@@ -444,7 +454,7 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 		case MKHUCH_MSG_TYPE_ATTITUDE: {
 			const mkhuch_attitude_t *mkhuch_attitude = reinterpret_cast<const mkhuch_attitude_t*>(msg.data);
 			mavlink_attitude_t mavlink_attitude;
-			mavlink_attitude.usec = mkhuch_msg_time;
+			mavlink_attitude.time_boot_ms = mkhuch_msg_time / 1000;
 			mavlink_attitude.roll = 0.001745329251994329577*(mkhuch_attitude->roll_angle);		//convert cdeg to rad with (pi/180)/10 
 			mavlink_attitude.pitch = 0.001745329251994329577*(mkhuch_attitude->pitch_angle);	//convert cdeg to rad with (pi/180)/10
 			mavlink_attitude.yaw = 0.001745329251994329577*(mkhuch_attitude->yaw_angle);		//convert cdeg to rad with (pi/180)/10
@@ -625,7 +635,14 @@ void MAVLinkMKHUCHApp::run() {
 
 void MAVLinkMKHUCHApp::send_heartbeat() {
 	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_heartbeat_pack(system_id(), component_id, &tx_mav_msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
+	mavlink_msg_heartbeat_pack(system_id(),
+		component_id,
+		&tx_mav_msg,
+		MAV_TYPE_QUADROTOR,
+		MAV_AUTOPILOT_GENERIC,
+		MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+		0,	//custom mode
+		MAV_STATE_ACTIVE);	//system status
 	AppLayer<mavlink_message_t>::send(tx_mav_msg);
 }
 

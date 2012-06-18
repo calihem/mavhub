@@ -38,7 +38,7 @@ namespace mavhub {
 
   void Ctrl_Bump::handle_input(const mavlink_message_t &msg) {
 		// static vector<int> v(16);
-		static int8_t param_id[15];
+		static char param_id[16];
 
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
@@ -83,13 +83,13 @@ namespace mavhub {
 		static mavlink_message_t msg;
 		// return params list
 		Logger::log("Ctrl_Bump::param_list", Logger::LOGLEVEL_INFO);
-		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gdt_enable", gdt_enable, 1, 0);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (char *)"gdt_enable", gdt_enable, MAVLINK_TYPE_FLOAT, 1, 0);
 		AppLayer<mavlink_message_t>::send(msg);
-		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gdt_delay", gdt_delay, 1, 0);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (char *)"gdt_delay", gdt_delay, MAVLINK_TYPE_FLOAT, 1, 0);
 		AppLayer<mavlink_message_t>::send(msg);
-		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gdt_gas", gdt_gas, 1, 0);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (char *)"gdt_gas", gdt_gas, MAVLINK_TYPE_FLOAT, 1, 0);
 		AppLayer<mavlink_message_t>::send(msg);
-		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
+		mavlink_msg_param_value_pack(system_id(), component_id, &msg, (char *)"output_enable", output_enable, MAVLINK_TYPE_FLOAT, 1, 0);
 		AppLayer<mavlink_message_t>::send(msg);
 	}
 

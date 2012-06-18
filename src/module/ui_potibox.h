@@ -33,7 +33,7 @@ namespace mavhub {
 			int16_t d_new[4];
 			mavlink_message_t msg_l;
 			mavlink_param_set_t param_set;
-			mavlink_action_t action;
+			mavlink_huch_action_t action;
 			virtual void read_conf(const std::map<std::string, std::string> args);
 
 	};

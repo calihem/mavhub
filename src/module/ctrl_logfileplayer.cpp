@@ -110,7 +110,7 @@ namespace mavhub {
 	}
 
   void Ctrl_LogfilePlayer::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		/*
 		 * - load logfile
 		 * - restart
@@ -176,9 +176,15 @@ namespace mavhub {
 		int status = 1;
 
 		// heartbeat
-		int system_type = MAV_QUADROTOR;
+		int system_type = MAV_TYPE_QUADROTOR;
 		mavlink_message_t msg_hb;
-		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		mavlink_msg_heartbeat_pack(system_id(),
+			component_id,
+			&msg_hb, system_type,
+			MAV_AUTOPILOT_GENERIC,
+			MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+			0,	//custom mode
+			MAV_STATE_ACTIVE);
 		// "check in"
 		AppLayer<mavlink_message_t>::send(msg_hb);
 
@@ -207,7 +213,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					AppLayer<mavlink_message_t>::send(msg);
 				}
 			}

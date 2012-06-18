@@ -39,7 +39,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Lat_Bump::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		// static mavlink_huch_sensor_array_t sa;
 		//Logger::log("Ctrl_Lat_Bump got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
@@ -90,11 +90,11 @@ namespace mavhub {
 			}
 			break;
 
-		case MAVLINK_MSG_ID_ACTION:
+		case MAVLINK_MSG_ID_HUCH_ACTION:
 			Logger::log(name(), "::handle_input: received action request", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_action_get_target(&msg) == system_id()){
-				if(mavlink_msg_action_get_target_component(&msg) == component_id) {
-					switch(mavlink_msg_action_get_action(&msg)) {
+			if(mavlink_msg_huch_action_get_target(&msg) == system_id()){
+				if(mavlink_msg_huch_action_get_target_component(&msg) == component_id) {
+					switch(mavlink_msg_huch_action_get_action(&msg)) {
 					case ACTION_BUMP_ROLL:
 						bump->bump(0.0);
 						break;

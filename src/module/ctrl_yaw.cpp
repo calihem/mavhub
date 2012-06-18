@@ -34,7 +34,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Yaw::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		int rc2;
 		int rc5;
 		//Logger::log("Ctrl_Yaw got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
@@ -174,7 +174,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), MAVLINK_TYPE_FLOAT, p->second, 1, 0);
 					send(msg);
 				}
 
@@ -221,10 +221,10 @@ namespace mavhub {
 			//yaw = 0;
 
 #endif // MAVLINK_ENABLED_HUCH	
-
-			mavlink_msg_debug_pack( system_id(), component_id, &msg, 108, yaw);
+			uint32_t time_boot_ms = get_time_ms();
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, time_boot_ms, 108, yaw);
 			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack( system_id(), component_id, &msg, 109, sp);
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, time_boot_ms, 109, sp);
 			AppLayer<mavlink_message_t>::send(msg);
 	
 			// write output to shared store

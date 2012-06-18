@@ -165,7 +165,7 @@ namespace mavhub {
 
   void Ctrl_Hover::handle_input(const mavlink_message_t &msg) {
 		static vector<int> v(16);
-		static int8_t param_id[15];
+		static char param_id[16];
 		// hover needs:
 		// huch_attitude
 		// huch_altitude
@@ -291,11 +291,11 @@ namespace mavhub {
 			// Logger::log("Ctrl_Hover::handle_input: man_thrust", man_thrust, Logger::LOGLEVEL_INFO);
 			break;
 
-		case MAVLINK_MSG_ID_ACTION:
+		case MAVLINK_MSG_ID_HUCH_ACTION:
 			Logger::log(name(), "handle_input: received action request", (int)msg.sysid, (int)msg.compid, Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_action_get_target(&msg) == system_id()){
-				if(mavlink_msg_action_get_target_component(&msg) == component_id) {
-					switch(mavlink_msg_action_get_action(&msg)) {
+			if(mavlink_msg_huch_action_get_target(&msg) == system_id()){
+				if(mavlink_msg_huch_action_get_target_component(&msg) == component_id) {
+					switch(mavlink_msg_huch_action_get_action(&msg)) {
 					case ACTION_TOGGLE_AC:
 						ac_active = !ac_active;
 						params["ctl_setpoint"] = ctrl_hover_state.kal_s0;
@@ -737,7 +737,7 @@ namespace mavhub {
 			 // send(msg);
 
 			 // set attitude
-			 ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
+			 ml_attitude.time_boot_ms = 0; // get_time_us(); XXX: qgc bug
 			 ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
 			 ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
 			 ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;
@@ -856,7 +856,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					AppLayer<mavlink_message_t>::send(msg);
 				}
 
@@ -867,7 +867,7 @@ namespace mavhub {
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"output_enable", output_enable, 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
 				// trigger setneutral
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"set_neutral_rq", set_neutral_rq, 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "set_neutral_rq", set_neutral_rq, MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en", params["gs_en"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
@@ -876,13 +876,13 @@ namespace mavhub {
 				// mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"gs_en_stats", params["gs_en_stats"], 1, 0);
 				// AppLayer<mavlink_message_t>::send(msg);
 				// PID params
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_bias", pid_alt->getBias(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_bias", pid_alt->getBias(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Kc", pid_alt->getKc(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_Kc", pid_alt->getKc(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Ti", pid_alt->getTi(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_Ti", pid_alt->getTi(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
-				mavlink_msg_param_value_pack(system_id(), component_id, &msg, (int8_t *)"PID_Td", pid_alt->getTd(), 1, 0);
+				mavlink_msg_param_value_pack(system_id(), component_id, &msg, "PID_Td", pid_alt->getTd(), MAVLINK_TYPE_FLOAT, 1, 0);
 				AppLayer<mavlink_message_t>::send(msg);
 			}
 
@@ -1465,7 +1465,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk raw_imu
 	void Ctrl_Hover::set_pxh_raw_imu() {
-		raw_imu.usec = 0; // get_time_us(); XXX: qgc bug
+		raw_imu.time_usec = 0; // get_time_us(); XXX: qgc bug
 		raw_imu.xacc = attitude.xacc;
 		raw_imu.yacc = attitude.yacc;
 		raw_imu.zacc = attitude.zaccraw;
@@ -1479,7 +1479,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk attitude
 	void Ctrl_Hover::set_pxh_attitude() {
-		ml_attitude.usec = 0; // get_time_us(); XXX: qgc bug
+		ml_attitude.time_boot_ms = 0; // get_time_us(); XXX: qgc bug
 		ml_attitude.roll  = attitude.xgyroint * MKGYRO2RAD;
 		ml_attitude.pitch = attitude.ygyroint * MKGYRO2RAD;
 		ml_attitude.yaw   = attitude.zgyroint * MKGYRO2RAD;

@@ -184,7 +184,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk raw_imu
 	void FC_Mpkg::set_pxh_raw_imu() {
-		raw_imu.usec = 0; // get_time_us(); XXX: qgc bug
+		raw_imu.time_usec = 0; // get_time_us(); XXX: qgc bug
 		raw_imu.xacc = huch_attitude.xacc;
 		raw_imu.yacc = huch_attitude.yacc;
 		raw_imu.zacc = huch_attitude.zaccraw;
@@ -198,7 +198,7 @@ namespace mavhub {
 
 	// copy huch data into std pixhawk attitude
 	void FC_Mpkg::set_pxh_attitude() {
-		attitude.usec = 0; // get_time_us(); XXX: qgc bug
+		attitude.time_boot_ms = 0; // get_time_us(); XXX: qgc bug
 		attitude.roll  = huch_attitude.xgyroint * MKGYRO2RAD;
 		attitude.pitch = huch_attitude.ygyroint * MKGYRO2RAD;
 		attitude.yaw   = huch_attitude.zgyroint * MKGYRO2RAD;
