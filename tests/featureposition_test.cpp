@@ -27,6 +27,9 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 	cv::Mat second_image = cv::imread("../tests/images/snap66_10.jpg", 0);
 	BOOST_REQUIRE(first_image.data && second_image.data);
 
+	// the descriptor constructor is expensive and shouldn't be part of the benchmark
+	cv::BriskDescriptorExtractor descriptor_extractor;
+
 	uint64_t start_time = get_time_us();
 	const uint64_t begin_time = start_time;
 
@@ -37,7 +40,10 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 	feature_detector.detect(second_image, second_keypoints);
 	BOOST_CHECK( !first_keypoints.empty() && !second_keypoints.empty() );
 	uint64_t stop_time = get_time_us();
-	BOOST_TEST_MESSAGE("[  keypoints ] " << stop_time-start_time) << "us";
+	BOOST_TEST_MESSAGE("[  keypoints ]"
+		<< " first image: " << first_keypoints.size()
+		<< " | second image: " << second_keypoints.size()
+		<< " | " << stop_time-start_time << "us");
 
 	cv::Mat camera_matrix = (cv::Mat_<double>(3,3) << 288.0,   0.0, 160.0,
 	                                                    0.0, 284.0, 120.0,
@@ -57,13 +63,12 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 	BOOST_TEST_MESSAGE("[objectpoints] " << stop_time-start_time) << "us";
 	start_time = get_time_us();
 
-	// calculate descriptors which can remove or add some of the keypoints
-	cv::BriskDescriptorExtractor descriptor_extractor;
 	cv::Mat first_descriptors, second_descriptors;
+	// calculate descriptors which can remove or add some of the keypoints
 	descriptor_extractor.compute(first_image, first_keypoints, first_descriptors);
 	descriptor_extractor.compute(second_image, second_keypoints, second_descriptors);
 	stop_time = get_time_us();
-	BOOST_TEST_MESSAGE("[descriptors ] " << stop_time-start_time) << "us";
+	BOOST_TEST_MESSAGE("[descriptors ] " << stop_time-start_time << "us");
 	BOOST_CHECK( !first_keypoints.empty() && !second_keypoints.empty() );
 	start_time = get_time_us();
 
@@ -96,7 +101,7 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 	parameter_vector[4] = translation.x;
 	parameter_vector[5] = translation.z;
 	stop_time = get_time_us();
-	BOOST_TEST_MESSAGE("[param estimat.] " << stop_time-start_time) << "us";
+	BOOST_TEST_MESSAGE("[param estim.] " << stop_time-start_time) << "us";
 	start_time = get_time_us();
 
 	int rc = estimate_pose(objectpoints,
@@ -107,7 +112,7 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 		parameter_vector,
 		matches_mask);
 	stop_time = get_time_us();
-	BOOST_TEST_MESSAGE("[pose estimat. ] " << stop_time-start_time) << "us";
+	BOOST_TEST_MESSAGE("[pose estim. ] " << stop_time-start_time) << "us";
 	BOOST_CHECK(rc > 0);
 
 	BOOST_TEST_MESSAGE("estimated pose (" << rc << "): "

@@ -143,6 +143,9 @@ void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
 	const cv::Mat& camera_matrix,
 	std::vector<cv::Point2f>& imagepoints);
 
+template <typename T>
+T min_eigenval(const T &dxx, const T &dxy, const T &dyy);
+
 /**
  * \brief Calculate the Shi-Tomasi score.
  *
@@ -240,6 +243,11 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 }
 
 template <typename T>
+inline T min_eigenval(const T &dxx, const T &dxy, const T &dyy) {
+	return 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ));
+}
+
+template <typename T>
 T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box_radius) {
 	//TODO: optional range check
 	//check coordinate range
@@ -247,7 +255,7 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	|| y <= box_radius || y >= image.rows-box_radius-1)
 		return 0.0;
 
-	int32_t dx, dy;
+	int16_t dx, dy;
 	int32_t dxx = 0, dxy = 0, dyy = 0;
 	//iterate through box (window)
 	for(int i=y-box_radius; i <= y+box_radius; i++) {
@@ -259,14 +267,12 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	}
 
 	//calculate minimal eigenvalue
-	T t_dxx = static_cast<T>(dxx);
-	T t_dxy = static_cast<T>(dxy);
-	T t_dyy = static_cast<T>(dyy);
-	T min_lambda = min_eigenval(t_dxx, t_dxy, t_dyy);
+	T min_lambda = min_eigenval<T>(dxx, dxy, dyy);
 
 	//thus we have used unscaled version to calculate derivatives, we have to do it now
-	int num_pixels = (2*box_radius+1)*(2*box_radius+1);
-	return min_lambda / (4.0*num_pixels);
+	int num_pixels = 4*( (2*box_radius+1)*(2*box_radius+1) );
+	//num_pixels is non zero, so it is safe to divide here
+	return min_lambda / static_cast<T>(num_pixels);
 }
 
 inline cv::Point2f undistort_i2i(const cv::Point2f &point,

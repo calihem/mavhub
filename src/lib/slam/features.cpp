@@ -24,7 +24,6 @@
 namespace hub {
 namespace slam {
 
-#define min_eigenval(dxx, dxy, dyy) 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ))
 brisk_landmark_t::brisk_landmark_t(const cv::KeyPoint &kp,
 	const cv::Point3f &op,
 	const uint8_t descr[16],
