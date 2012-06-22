@@ -762,6 +762,9 @@ namespace mavhub {
 		// sum it up for directions
 		sensor_array.data[8] = sensor_array.data[0] + sensor_array.data[1] - sensor_array.data[4] - sensor_array.data[5];
 		sensor_array.data[9] = sensor_array.data[2] + sensor_array.data[3] - sensor_array.data[6] - sensor_array.data[7];
+		// mapping
+		// MK: forward: +, backward: -, right: +, left: -
+
 		// sensor_array.data[10] = sensor_array.data[4] + sensor_array.data[5] - sensor_array.data[6] - sensor_array.data[7];
 		// Logger::log(name(), "LK", of_u, of_v, Logger::LOGLEVEL_DEBUG);
 

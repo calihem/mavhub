@@ -1,5 +1,5 @@
 component_id = 30
-replay_mode = 1
+replay_mode = 0
 timescale = 1.0
 play = 1.0
 # logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110426-132403.csv
@@ -9,8 +9,15 @@ play = 1.0
 #logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110516-173933-indoor.csv
 #offset = 19582
 # wiese ahof
-logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110520-100210.csv
-offset = 3600
+#logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110520-100210.csv
+#offset = 3600
+# oflow videos
+#logfilename = /home/src/QK/qgroundcontrol-huch/log/pixhawk-log-2012-06-14-145808-1.csv
+#logfilename = /home/src/QK/qgroundcontrol-huch/log/pixhawk-log-2012-06-14-150021-2.csv
+logfilename = /home/src/QK/qgroundcontrol-huch/log/pixhawk-log-2012-06-14-152548-3.csv
+#logfilename = /home/src/QK/qgroundcontrol-huch/log/pixhawk-log-2012-06-14-153318-4.csv
+
+offset = 0
 # foyer
 #logfilename = /home/src/QK/pixhawk/qgroundcontrol-huch/log/mavhub-log-20110520-144511.csv
 #offset = 0

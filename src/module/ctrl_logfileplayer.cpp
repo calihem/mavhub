@@ -170,6 +170,9 @@ namespace mavhub {
 		mavlink_mk_fc_status_t fc_state;
 		mavlink_mk_debugout_t debugout;
 		mavlink_huch_visual_navigation_t huch_vn;
+
+		mavlink_huch_visual_flow_t huch_flow;
+
 #endif // MAVLINK_ENABLED_HUCH
 		mavlink_message_t msg;
 
@@ -194,6 +197,8 @@ namespace mavhub {
 		bzero(&fc_state, sizeof(mavlink_mk_fc_status_t));
 		bzero(&debugout, sizeof(mavlink_mk_debugout_t));
 		bzero(&huch_vn, sizeof(mavlink_huch_visual_navigation_t));
+
+		bzero(&huch_flow, sizeof(mavlink_huch_visual_flow_t));
 #endif // MAVLINK_ENABLED_HUCH
 	
 		while (status != 0) {
@@ -229,7 +234,7 @@ namespace mavhub {
 					if(linecount < (int)params["offset"])
 						continue;
 
-					//Logger::log("Ctrl_LogfilePlayer: count, line", linecount, logline, Logger::LOGLEVEL_INFO);
+					// Logger::log("Ctrl_LogfilePlayer: count, line", linecount, logline, Logger::LOGLEVEL_INFO);
 
 					typedef string::const_iterator ci;
 					//iter = logline.begin();
@@ -267,6 +272,62 @@ namespace mavhub {
 								int tmp_offset;
 								d = atoi(tmp);
 								//printf("x1.1 tmp:'%s'\n", tmp);
+								if(in_range(tabcount, 2, 3)) {
+									tmp_offset = 2;
+									sprintf(dtype_s, "of");
+									if(tabcount == tmp_offset) {
+										huch_flow.u_i = atof(tmp);
+									}
+									else if(tabcount == tmp_offset+1) {
+										huch_flow.v_i = atof(tmp);
+										// printf("huch_flow: %f, %f, %f, %f\n",
+										// 			 huch_flow.u,
+										// 			 huch_flow.v,
+										// 			 huch_flow.u_i,
+										// 			 huch_flow.v_i);
+										mavlink_msg_huch_visual_flow_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &huch_flow);
+										ready_to_send = 1;
+										break; // terminate iteration over logline bytes
+									}
+								}
+								else if(in_range(tabcount, 4, 4)) {
+									tmp_offset = 4;
+									sprintf(dtype_s, "stk");
+									if(tabcount == tmp_offset) {
+										mavlink_msg_named_value_int_pack(system_id(),
+																										 component_id,
+																										 &msg,
+																										 "stk_pitch",
+																										 atof(tmp));
+										ready_to_send = 1;
+										break; // terminate iteration over logline bytes
+									}
+								}
+								else if(in_range(tabcount, 5, 5)) {
+									tmp_offset = 5;
+								 if(tabcount == tmp_offset) {
+										mavlink_msg_named_value_int_pack(system_id(),
+																										 component_id,
+																										 &msg,
+																										 "stk_roll",
+																										 atof(tmp));
+										ready_to_send = 1;
+										break; // terminate iteration over logline bytes
+									}
+								}
+								else if(in_range(tabcount, 6, 6)) {
+									tmp_offset = 6;
+								 if(tabcount == tmp_offset) {
+										mavlink_msg_named_value_int_pack(system_id(),
+																										 component_id,
+																										 &msg,
+																										 "stk_thrust",
+																										 atof(tmp));
+										ready_to_send = 1;
+										break; // terminate iteration over logline bytes
+									}
+								}
+#if 0
 								if(in_range(tabcount, 2, 6)) {
 #ifdef MAVLINK_ENABLED_HUCH
 									tmp_offset = 2;
@@ -478,7 +539,7 @@ namespace mavhub {
 										break;
 									}
 #endif // MAVLINK_ENABLED_HUCH
-								}
+#endif // temporary
 								else
 									sprintf(dtype_s, "blub");
 								tmpi = 0;
@@ -505,6 +566,7 @@ namespace mavhub {
 					usleep(dt * 1000 * params["timescale"]); // 100 Hz
 
 					if(params["replay_mode"] == QGC && ready_to_send > 0) {
+						// Logger::log("logfileplayer: sending msg", Logger::LOGLEVEL_DEBUG);
 						AppLayer<mavlink_message_t>::send(msg);
 						ready_to_send = 0;
 					}
