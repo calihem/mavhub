@@ -33,7 +33,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Zrate::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		//Logger::log("Ctrl_Zrate got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {
 		case MAVLINK_MSG_ID_HUCH_VISUAL_NAVIGATION:
@@ -97,9 +97,16 @@ namespace mavhub {
 		uint64_t usec;
 
 		// heartbeat
-		int system_type = MAV_QUADROTOR;
+		int system_type = MAV_TYPE_QUADROTOR;
 		mavlink_message_t msg_hb;
-		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg_hb, system_type, MAV_AUTOPILOT_HUCH);
+		mavlink_msg_heartbeat_pack(system_id(),
+			component_id,
+			&msg_hb,
+			system_type,
+			MAV_AUTOPILOT_GENERIC,
+			MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+			0,	//custom mode
+			MAV_STATE_ACTIVE);
 		// "check in"
 		//send(msg_hb);
 
@@ -168,7 +175,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					AppLayer<mavlink_message_t>::send(msg);
 				}
 			}
@@ -222,9 +229,10 @@ namespace mavhub {
 			extctrl.roll = (int16_t)DataCenter::get_extctrl_roll();
 			extctrl.yaw = (int16_t)DataCenter::get_extctrl_yaw();
 
-			mavlink_msg_debug_pack( system_id(), component_id, &msg, 103, DataCenter::get_extctrl_pitch() );
+			uint32_t time_boot_ms = get_time_ms();
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, time_boot_ms, 103, DataCenter::get_extctrl_pitch() );
 			AppLayer<mavlink_message_t>::send(msg);
-			mavlink_msg_debug_pack( system_id(), component_id, &msg, 104, DataCenter::get_extctrl_roll() );
+			mavlink_msg_debug_pack( system_id(), component_id, &msg, time_boot_ms, 104, DataCenter::get_extctrl_roll() );
 			AppLayer<mavlink_message_t>::send(msg);
 			//send_debug(&msg, &dbg, 103, DataCenter::get_extctrl_pitch(), component_id);
 			//send_debug(&msg, &dbg, 104, DataCenter::get_extctrl_roll(), component_id);

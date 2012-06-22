@@ -36,7 +36,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Lateral::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		int rc2;
 		int rc5;
 		//Logger::log("Ctrl_Lateral got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
@@ -104,11 +104,11 @@ namespace mavhub {
 			}
 			break;
 
-		case MAVLINK_MSG_ID_ACTION:
-			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
-			if( (mavlink_msg_action_get_target(&msg) == system_id()) ) {
+		case MAVLINK_MSG_ID_HUCH_ACTION:
+			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_huch_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
+			if( (mavlink_msg_huch_action_get_target(&msg) == system_id()) ) {
 				// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
-				uint8_t action_id = mavlink_msg_action_get_action(&msg);
+				uint8_t action_id = mavlink_msg_huch_action_get_action(&msg);
 				// if(action_id == MAV_ACTION_GET_IMAGE) {
 				// 	Lock sync_lock(sync_mutex);
 				// 	// new image with ACK
@@ -206,7 +206,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					send(msg);
 				}
 

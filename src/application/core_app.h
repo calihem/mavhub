@@ -26,7 +26,7 @@ namespace mavhub {
 		private:
 			enum MAV_TYPE mav_type;
 			int component_id;
-			enum MAV_AUTOPILOT_TYPE autopilot;
+			enum MAV_AUTOPILOT autopilot;
 
 	};
 	

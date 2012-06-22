@@ -72,7 +72,7 @@ namespace mavhub {
 		/// parameter setting
 		mavlink_param_set_t param_set;
 		/// mavlink action
-		mavlink_action_t action;
+		mavlink_huch_action_t action;
 		/// mavlink action
 		mavlink_huch_generic_channel_t chan;
 
@@ -84,7 +84,7 @@ namespace mavhub {
 				typedef std::map<std::string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					Logger::log(name(), "param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					AppLayer<mavlink_message_t>::send(msg);
 				}
 			}
@@ -133,7 +133,8 @@ namespace mavhub {
 																 param_set.target_system, 
 																 param_set.target_component, 
 																 param_set.param_id,
-																 param_set.param_value);
+																 param_set.param_value,
+																 MAVLINK_TYPE_FLOAT);
 			AppLayer<mavlink_message_t>::send(msg);
 
 			Logger::log(name(), "sent param_set", (int)param_set.target_system, param_set.param_id, param_set.param_value, Logger::LOGLEVEL_DEBUG);
@@ -147,7 +148,7 @@ namespace mavhub {
 			action.target = target_system;
 			action.target_component = target_component; // roll bump
 			action.action = action_id;
-			mavlink_msg_action_encode(system_id(), component_id,
+			mavlink_msg_huch_action_encode(system_id(), component_id,
 																&msg,
 																&action);
 			AppLayer<mavlink_message_t>::send(msg);

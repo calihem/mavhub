@@ -12,7 +12,7 @@ namespace mavhub {
 CoreApp::CoreApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) : 
 	AppInterface("coreapp", loglevel),
 	AppLayer<mavlink_message_t>("coreapp"),
-	mav_type(MAV_GENERIC),
+	mav_type(MAV_TYPE_GENERIC),
 	component_id(0),
 	autopilot(MAV_AUTOPILOT_GENERIC) {
 
@@ -54,7 +54,14 @@ void CoreApp::run() {
 	}
 
 	mavlink_message_t heartbeat_msg;
-	mavlink_msg_heartbeat_pack(system_id(), component_id, &heartbeat_msg, mav_type, autopilot);
+	mavlink_msg_heartbeat_pack(system_id(),
+		component_id,
+		&heartbeat_msg,
+		mav_type,
+		autopilot,
+		MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+		0,	//custom mode
+		MAV_STATE_ACTIVE);	//system status
 
 	log("CoreApp started", Logger::LOGLEVEL_DEBUG);
 

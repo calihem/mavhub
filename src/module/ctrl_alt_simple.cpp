@@ -38,7 +38,7 @@ namespace mavhub {
 	}
 
   void Ctrl_Alt_Simple::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		static mavlink_huch_sensor_array_t sa;
 		//Logger::log("Ctrl_Alt_Simple got mavlink_message [len, msgid]:", (int)msg.len, (int)msg.msgid, Logger::LOGLEVEL_DEBUG);
 		switch(msg.msgid) {

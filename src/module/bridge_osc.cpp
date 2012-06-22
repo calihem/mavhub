@@ -182,14 +182,14 @@ namespace mavhub {
 			// // OscSendMsg("%d DL_VALUE %d %f", 42, 39, 0.0);
 			break;
 
-		case MAVLINK_MSG_ID_LOCAL_POSITION:
+		case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
 			// Logger::log("Bridge_Osc got mavlink local position: (msgid, sysid)", (int)msg.msgid, (int)msg.sysid, Logger::LOGLEVEL_INFO);
 			p << osc::BeginBundleImmediate
         << osc::BeginMessage( "/local_position" ) 
 				<< static_cast<int>(msg.sysid)
-				<< mavlink_msg_local_position_get_x(&msg)
-				<< mavlink_msg_local_position_get_y(&msg)
-				<< mavlink_msg_local_position_get_z(&msg)
+				<< mavlink_msg_local_position_ned_get_x(&msg)
+				<< mavlink_msg_local_position_ned_get_y(&msg)
+				<< mavlink_msg_local_position_ned_get_z(&msg)
 				<< osc::EndMessage
 				<< osc::EndBundle;
 

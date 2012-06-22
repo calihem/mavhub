@@ -63,7 +63,7 @@ namespace mavhub {
 		
 		pthread_mutex_init(&sync_mutex, NULL);
 		// invalidate attitude
-		attitude.usec = 0;
+		attitude.time_boot_ms = 0;
 		attitude.roll = 0.;
 		attitude.pitch = 0.;
 		attitude.yaw = 0.;
@@ -178,8 +178,8 @@ namespace mavhub {
 		//uint64_t start_time = get_time_ms();
 		// cv::Mat flip_image;
 
-		uint64_t start, end;
-		start = 0; end = 0;
+		// uint64_t start, end;
+		// start = 0; end = 0;
 
 		// get change of attitude
 		//TODO: time check of attitude
@@ -335,7 +335,7 @@ namespace mavhub {
 	}
 
 	void V_OFLOWApp::handle_input(const mavlink_message_t &msg) {
-		static int8_t param_id[15];
+		static char param_id[16];
 		int rc2;
 		int rc5;
 
@@ -377,11 +377,11 @@ namespace mavhub {
 			}
 			break;
 
-		case MAVLINK_MSG_ID_ACTION:
-			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
-			if( (mavlink_msg_action_get_target(&msg) == system_id()) ) {
+		case MAVLINK_MSG_ID_HUCH_ACTION:
+			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_huch_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
+			if( (mavlink_msg_huch_action_get_target(&msg) == system_id()) ) {
 				// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
-				uint8_t action_id = mavlink_msg_action_get_action(&msg);
+				uint8_t action_id = mavlink_msg_huch_action_get_action(&msg);
 				// if(action_id == MAV_ACTION_GET_IMAGE) {
 				// 	Lock sync_lock(sync_mutex);
 				// 	// new image with ACK
@@ -403,7 +403,7 @@ namespace mavhub {
 				Lock sync_lock(sync_mutex);
 				mavlink_msg_attitude_decode(&msg, &attitude);
 				// take system time for attitude
-				attitude.usec = get_time_us();
+				attitude.time_boot_ms = get_time_ms();
 			}
 			break;
 
@@ -721,8 +721,8 @@ namespace mavhub {
 		static bool addRemovePt = false;
     TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03);
     Size subPixWinSize(10,10), winSize(31,31);
-		uint64_t start, end;
-		start = end = 0;
+		// uint64_t start, end;
+		// start = end = 0;
 
 		// preprocessImage(new_image);
 
@@ -1023,7 +1023,7 @@ namespace mavhub {
 		static mavlink_debug_t dbg;
 		static mavlink_huch_visual_flow_t flow;
 		double pitch, roll;
-		double imu_pitch, imu_roll, imu_pitchm1, imu_rollm1;
+		// double imu_pitch, imu_roll, imu_pitchm1, imu_rollm1;
 		float imu_pitch_speed, imu_roll_speed;
 		int imu_pitch_ma, imu_roll_ma;
 		double imu_pitch_derot, imu_roll_derot;
@@ -1051,12 +1051,19 @@ namespace mavhub {
 		// leak_f = 0.995;
 		flow.u = flow.v = flow.u_i = flow.v_i = 0.0f;
 		pitch = roll = 0.0;
-		imu_pitch = imu_roll = imu_pitchm1 = imu_rollm1 = 0.0;
+		// imu_pitch = imu_roll = imu_pitchm1 = imu_rollm1 = 0.0;
 		imu_pitch_speed = imu_roll_speed = 0.0;
 		imu_pitch_ma = imu_roll_ma = 0;
 		imu_pitch_derot = imu_roll_derot = 0.0;
 
-		mavlink_msg_heartbeat_pack(system_id(), component_id, &msg, MAV_QUADROTOR, MAV_AUTOPILOT_HUCH);
+		mavlink_msg_heartbeat_pack(system_id(),
+															 component_id,
+															 &msg,
+															 MAV_TYPE_QUADROTOR,
+															 MAV_AUTOPILOT_GENERIC,
+															 MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
+															 0,	//custom mode
+															 MAV_STATE_ACTIVE);	//system status
 		AppLayer<mavlink_message_t>::send(msg);
 
 		// doesnt work for some unknown reason
@@ -1083,7 +1090,7 @@ namespace mavhub {
 				typedef map<string, double>::const_iterator ci;
 				for(ci p = params.begin(); p!=params.end(); ++p) {
 					// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const int8_t*) p->first.data(), p->second, 1, 0);
+					mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
 					AppLayer<mavlink_message_t>::send(msg);
 				}
 			}

@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 	parse_argv(argc, argv);
 
 	// emit Version and compile timestamp
-	Logger::log("MAVHUB Version:", VERSION, __DATE__,  __TIME__, Logger::LOGLEVEL_WARN);
+	Logger::log("MAVHUB Version:", VERSION, __DATE__,  __TIME__, Logger::LOGLEVEL_INFO);
 
 	// open config file and read settings
 	try {

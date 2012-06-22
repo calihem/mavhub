@@ -1,5 +1,7 @@
 #include "modulebase.h"
 
+#ifdef HAVE_MAVLINK_H
+
 using namespace std;
 
 namespace mavhub {
@@ -11,3 +13,5 @@ namespace mavhub {
 	ModuleBase::~ModuleBase() {
 	}
 }
+
+#endif // HAVE_MAVLINK_H
