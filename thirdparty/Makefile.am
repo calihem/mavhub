@@ -24,3 +24,20 @@ noinst_LIBRARIES += libbrisk.a
 libbrisk_a_SOURCES = \
 	brisk/brisk.cpp
 endif
+
+if COND_LIBLAPACK
+if COND_LIBBLAS
+
+noinst_LIBRARIES += liblevmar.a
+
+liblevmar_a_SOURCES = \
+	levmar/lm.c \
+	levmar/Axb.c \
+	levmar/misc.c \
+	levmar/lmlec.c \
+	levmar/lmbc.c \
+	levmar/lmblec.c \
+	levmar/lmbleic.c
+
+endif
+endif

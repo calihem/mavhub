@@ -4,87 +4,460 @@
 
 #include <iostream>     // cout
 #include <iomanip>	//setprecision
+#include <cmath>	//sin, cos
+#include <limits>	//epsilon
+
+#include "lib/hub/math.h"
+
+#define VERBOSE 1
+
+// little debug makro
+#if VERBOSE >= 1
+#define dout if(1) std::cout
+#else
+#define dout if(0) std::cout
+#endif
+
+#define rad2deg(r) ((r) * 180) / M_PI
+#define deg2rad(d) ((d) * M_PI) / 180
 
 namespace hub {
 namespace slam {
 
-#define min_eigenval(dxx, dxy, dyy) 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ))
+brisk_landmark_t::brisk_landmark_t(const cv::KeyPoint &kp,
+	const cv::Point3f &op,
+	const uint8_t descr[16],
+	const unsigned int counter,
+	const int fc) {
+	//TODO
+}
 
-void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+void landmarks_t::clear() {
+	keypoints.clear();
+	objectpoints.clear();
+	descriptors.resize(0);
+	counters.clear();
+	scene_ids.clear();
+}
+
+int egomotion(const std::vector<cv::Point3f> objectpoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	cv::Mat &camera_matrix,
-	cv::Mat &distortion_coefficients,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat &camera_matrix,
+	const cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
-	cv::Mat &translation_vector) {
+	cv::Mat &translation_vector,
+	const bool use_extrinsic_guess,
+	std::vector<char> matches_mask) {
 
-	double fx = camera_matrix.at<double>(0, 0);
-	double fy = camera_matrix.at<double>(1, 1);
-	//FIXME: check for |fx| <= 0+eps
-	if(fx == 0.0) fx = 1.0;
-	if(fy == 0.0) fy = 1.0;
+	if(matches_mask.empty()) {
+		matches_mask.assign(matches.size(), 1);
+	} else if(matches_mask.size() != matches.size()) {
+		return -1;
+	}
 
-	std::vector<cv::Point3f> object_points;
-	object_points.reserve(src_keypoints.size());
-	std::vector<cv::Point2f> image_points;
-	image_points.reserve(dst_keypoints.size());
+	std::vector<cv::Point3f> object_points; //matched object points
+	object_points.reserve( objectpoints.size() );
+	std::vector<cv::Point2f> image_points; //matched destination image points
+	image_points.reserve( dst_keypoints.size() );
 	for(size_t i = 0; i < matches.size(); i++) {
-		for(size_t j = 0; j < matches[i].size(); j++) {
-			//FIXME
-			// determine (wrong) object points
-			int src_index = matches[i][j].queryIdx;
-			const cv::KeyPoint& src_keypoint = src_keypoints[src_index];
-			object_points.push_back( cv::Point3f(src_keypoint.pt.x/fx, src_keypoint.pt.y/fy, 0.0) );
+		if( matches_mask[i] == 0) continue;
 
-			// add destination image points of matched points
-			int dst_index = matches[i][j].trainIdx;
-			const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
-			image_points.push_back(dst_keypoint.pt);
-		}
+		const int src_index = matches[i].queryIdx;
+		object_points.push_back( objectpoints[src_index] );
+
+		const int dst_index = matches[i].trainIdx;
+		const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
+		image_points.push_back(dst_keypoint.pt);
 	}
 
 	try {
-		cv::solvePnPRansac(object_points,
-// 		cv::solvePnP(object_points,
+// 		cv::solvePnPRansac(object_points,
+		cv::solvePnP(object_points,
 			image_points,
 			camera_matrix,
 			distortion_coefficients,
 			rotation_vector,
 			translation_vector,
-// 			true ); //use extrinsic guess
-			false ); //use extrinsic guess
+			use_extrinsic_guess );
 	}
 	catch(cv::Exception &e) {
+		return -2;
 // 		rotation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
 // 		rotation_vector.copyTo(translation_vector);
 	}
+	
+	return 0;
 }
 
-void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches,
-		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
-		    std::vector<std::vector<cv::DMatch> > &matches) {
+cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<cv::DMatch>& matches,
+	std::vector<char> mask) {
+	
+	//TODO: implement
+	
+	//FIXME
+	return cv::Point3f(0, 0, 0);
+}
 
-	for(size_t i = 0; i < forward_matches.size(); i++) {
+//FIXME: improve performance
+void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
+	std::vector<std::vector<cv::DMatch> > filtered_matches;
+
+// 	std::list<int> query_indicies, train_indicies;
+	int query_index, train_index;
+	for(size_t i = 0; i < matches.size(); i++) {
 		std::vector<cv::DMatch> row_matches;
-		for(size_t j = 0; j < forward_matches[i].size(); j++) {
-			int src_index = forward_matches[i][j].queryIdx;
-			int dst_index = forward_matches[i][j].trainIdx;
-
-			// begin inner loops
-			for(size_t ii = 0; ii < backward_matches.size(); ii++) {
-				for(size_t jj = 0; jj < backward_matches[ii].size(); jj++) {
-					if(backward_matches[ii][jj].queryIdx == dst_index) {
-						if(backward_matches[ii][jj].trainIdx == src_index)
-							row_matches.push_back(forward_matches[i][j]); 
-						//stop inner loops
-						jj = backward_matches[ii].size();
-						ii = backward_matches.size() - 1;
-					}
+		for(size_t j = 0; j < matches[i].size(); j++) {
+			query_index = matches[i][j].queryIdx;
+			train_index = matches[i][j].trainIdx;
+			bool is_ambigous = false;
+			for(size_t ii = 0; ii < matches.size(); ii++) {
+				for(size_t jj = 0; jj < matches[ii].size(); jj++) {
+					if (train_index == matches[ii][jj].trainIdx
+					&& query_index != matches[ii][jj].queryIdx)
+						is_ambigous = true;
+					if (query_index == matches[ii][jj].queryIdx
+					&& train_index != matches[ii][jj].trainIdx)
+						is_ambigous = true;
 				}
 			}
+// 			if(is_ambigous) {
+			if(!is_ambigous) {
+				row_matches.push_back(matches[i][j]);
+			}
+// 			query_indicies.push_back(matches[i][j].queryIdx);
+// 			train_indicies.push_back(matches[i][j].trainIdx);
 		}
 		if(!row_matches.empty())
-			matches.push_back(row_matches);
+			filtered_matches.push_back(row_matches);
+	}
+
+	matches = filtered_matches;
+// 	query_indicies.sort(); train_indicies.sort();
+}
+
+//FIXME: improve performance
+//TODO
+void filter_matches_by_lis(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask) {
+
+	if(matches.size() != mask.size()) return;
+
+	int valid_before = 0;
+	for(size_t i=0; i<mask.size(); i++) {
+		if(mask[i]) valid_before++;
+	}
+
+	std::vector<int> sequence(matches.size());
+	//determine horizontal order of matches (with respect to src_keypoints)
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) {
+			continue;
+		}
+		const float x_min = src_keypoints[matches[i].queryIdx].pt.x; // minimum of current match
+		size_t x_min_counter = 0; // how many matches are smaller than current match
+		for(size_t j = 0; j < matches.size(); j++) {
+			size_t kp_index = matches[j].queryIdx;
+			if(src_keypoints[kp_index].pt.x < x_min) {
+				x_min_counter++;
+			}
+		}
+		sequence[i] = x_min_counter;
+	}
+
+	float last_min = 0.0;
+	std::vector<int> sorted_sequence;
+	sorted_sequence.reserve(matches.size());
+	std::map<int,int> seq2index_map; //maps sequence index to matches index
+	//sort matches (with respect to dst_keypoints)
+	for(size_t i = 0; i < matches.size(); i++) {
+		float x_min = std::numeric_limits<float>::max();
+		size_t x_min_index = 0;
+		for(size_t j = 0; j < matches.size(); j++) {
+			if(mask[j] == 0) continue;
+			size_t kp_index = matches[j].trainIdx;
+			if(dst_keypoints[kp_index].pt.x < x_min
+			&& dst_keypoints[kp_index].pt.x > last_min) {
+				x_min = dst_keypoints[kp_index].pt.x;
+				x_min_index = j;
+			}
+		}
+		sorted_sequence.push_back(sequence[x_min_index]);
+		seq2index_map.insert( std::make_pair(sequence[x_min_index], x_min_index));
+		last_min = x_min;
+	}
+
+	std::vector<int> lis;
+	find_lis(sorted_sequence, lis);
+	
+	mask.assign(mask.size(), 0);
+	for(size_t i = 0; i < lis.size(); i++) {
+		mask[ seq2index_map[lis[i]] ] = 1;
+	}
+
+	int valid_after = 0;
+	for(size_t i=0; i<mask.size(); i++) {
+		if(mask[i]) valid_after++;
+	}
+	dout << "filtered " << valid_before - valid_after << " matches by lis" << std::endl;
+}
+
+void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
+		const std::vector<cv::DMatch> &backward_matches,
+		std::vector<char> &mask) {
+
+	if(matches.size() != mask.size()) return;
+
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		const int src_index = matches[i].queryIdx;
+		const int dst_index = matches[i].trainIdx;
+
+		mask[i] = 0; //default is to filter out
+
+		// begin inner loop
+		for(size_t j = 0; j<backward_matches.size(); j++) {
+			if(backward_matches[j].queryIdx == dst_index
+			&& backward_matches[j].trainIdx == src_index) {
+				mask[i] = 1;
+				//stop inner loop
+				break;
+			}
+		}
+	}
+}
+
+void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> &src_keypoints,
+		const std::vector<cv::KeyPoint> &dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask) {
+
+	if(matches.size() != mask.size()) return;
+
+	// filter in horizontal direction first (reduces the computation cost of vertical filter)
+	std::vector<float> x_distances;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const unsigned int x_distance = abs(src_keypoints[src_index].pt.x - dst_keypoints[dst_index].pt.x);
+		x_distances.push_back(x_distance);
+	}
+	if(x_distances.empty()) return;
+
+	// calculate robust standard deviation
+	float median;
+	float sigma = robust_sigma(x_distances, median);
+	if( sigma <= std::numeric_limits<float>::min() )
+		return;
+
+	size_t distance_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		// scale distance to fit standard normal distribution
+		const float z = abs(x_distances[distance_index] - median) / sigma;
+		//use 0,95 interval for z
+		if(z > 1.96)
+			mask[i] = 0;
+		distance_index++;
+	}
+
+	// filter in vertical direction
+	std::vector<float> y_distances;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const unsigned int y_distance = abs(src_keypoints[src_index].pt.y - dst_keypoints[dst_index].pt.y);
+		y_distances.push_back(y_distance);
+	}
+	if(y_distances.size() == 0) return;
+
+	// calculate robust standard deviation
+	sigma = robust_sigma(y_distances, median);
+	if( sigma <= std::numeric_limits<float>::min() )
+		return;
+
+	distance_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		// scale distance to fit standard normal distribution
+		const float z = abs(y_distances[distance_index] - median) / sigma;
+		//use 0,95 interval for z
+		if(z > 1.96)
+			mask[i] = 0;
+
+		distance_index++;
+	}
+}
+
+void find_lis(const std::vector<int> &sequence, std::vector<int> &lis) {
+
+	lis.clear();
+	lis.push_back(0);
+
+	std::vector<int> tmp_vec(sequence.size());
+	int lower, upper;
+	for(size_t i = 0; i < sequence.size(); i++) {
+		// if next element is greater than last element of longest subseq
+		if( sequence[lis.back()] < sequence[i] ) {
+			tmp_vec[i] = lis.back();
+			lis.push_back(i);
+			continue;
+		}
+		
+		// binary search to find smallest element
+		for(lower = 0, upper = lis.size()-1; lower < upper;) {
+			int bin_index = (lower + upper) / 2;
+			if(sequence[lis[bin_index]] < sequence[i])
+				lower = bin_index + 1;
+			else
+				upper = bin_index;
+		}
+		
+		// update lis if new value is smaller then previously
+		if(sequence[i] < sequence[lis[lower]]) {
+			if(lower > 0)
+				tmp_vec[i] = lis[lower-1];
+			lis[lower] = i;
+		}
+	}
+	
+	for(lower = lis.size(), upper = lis.back(); lower--; upper = tmp_vec[upper])
+		lis[lower] = upper;
+}
+
+void fusion_matches(const std::vector<cv::DMatch> &forward_matches,
+		    const std::vector<cv::DMatch> &backward_matches,
+		    std::vector<cv::DMatch> &matches) {
+
+	for(size_t i = 0; i < forward_matches.size(); i++) {
+		int src_index = forward_matches[i].queryIdx;
+		int dst_index = forward_matches[i].trainIdx;
+
+		// begin inner loop
+		for(size_t j = 0; j<backward_matches.size(); j++) {
+			if(backward_matches[j].queryIdx == dst_index
+			&& backward_matches[j].trainIdx == src_index) {
+				matches.push_back(forward_matches[i]);
+				//stop inner loop
+				break;
+			}
+		}
+	}
+}
+
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
+	const float distance,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients,
+	std::vector<cv::Point3f>& objectpoints) {
+
+	if( imagepoints.size() == 0) return;
+	objectpoints.resize( imagepoints.size() );
+
+	for(unsigned int i = 0; i < imagepoints.size(); i++) {
+		cv::Point2f up = undistort_n2i(imagepoints[i], camera_matrix, distortion_coefficients);
+		objectpoints[i] = cv::Point3f(up.x * distance, up.y * distance, distance);
+	}
+}
+
+void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
+	const float distance,
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	if(keypoints.empty()) return;
+	//check vector dimension
+	assert(distortion_coefficients.total() == 5);
+
+	const double *k = distortion_coefficients.ptr<double>();
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double ifx = 1./camera_matrix.at<double>(0, 0);
+	const double ify = 1./camera_matrix.at<double>(1, 1);
+
+	objectpoints.resize( keypoints.size() );
+	for(size_t i = 0; i<keypoints.size(); i++) {
+		double x = (keypoints[i].pt.x - cx) * ifx;
+		double y = (keypoints[i].pt.y - cy) * ify;
+		const double x0 = x, y0 = y;
+
+		//undistort points using simplified iterative approach from OpenCV
+		for(uint8_t j=0; j<5; j++) {
+			const double xx = x*x;
+			const double xy = x*y;
+			const double yy = y*y;
+			const double r2 = xx+yy;
+
+			const double radial_factor = 1/(1 + ((k[4]*r2 + k[1])*r2 + k[0])*r2);
+			const double tang_x = 2*k[2]*xy + k[3]*(r2 + 2*xx);
+			const double tang_y = k[2]*(r2 + 2*yy) + 2*k[3]*xy;
+			
+			x = (x0 - tang_x)*radial_factor;
+			y = (y0 - tang_y)*radial_factor;
+		}
+		
+		//for ideal point coordinates it is enough to multiply with the distance
+		objectpoints[i] = cv::Point3f(x*distance, y*distance, distance);
+	}
+}
+
+cv::Mat matchesmask(const int num_src_kps,
+	const int num_dst_kps,
+	const std::vector<cv::DMatch> &matches) {
+
+	cv::Mat mask(num_src_kps, num_dst_kps, CV_8UC1, cv::Scalar(0));
+	for(unsigned int i=0; i<matches.size(); i++) {
+		const int dst_index = matches[i].queryIdx;
+		const int src_index = matches[i].trainIdx;
+		mask.at<uchar>(dst_index, src_index) = 1;
+	}
+
+	return mask;
+}
+
+void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
+	const std::vector<float>& rotation_vector,
+	const std::vector<float>& translation_vector,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& imagepoints) {
+
+	if(objectpoints.size() == 0) return;
+	imagepoints.resize( objectpoints.size() );
+
+	cv::Mat rotation_matrix(3,3, CV_32FC1);
+	Rodrigues(rotation_vector, rotation_matrix);
+	const float r11 = rotation_matrix.at<float>(0,0);
+	const float r12 = rotation_matrix.at<float>(0,1);
+	const float r13 = rotation_matrix.at<float>(0,2);
+	const float r21 = rotation_matrix.at<float>(1,0);
+	const float r22 = rotation_matrix.at<float>(1,1);
+	const float r23 = rotation_matrix.at<float>(1,2);
+	const float r31 = rotation_matrix.at<float>(2,0);
+	const float r32 = rotation_matrix.at<float>(2,1);
+	const float r33 = rotation_matrix.at<float>(2,2);
+
+	const float cx = camera_matrix.at<double>(0, 2);
+	const float cy = camera_matrix.at<double>(1, 2);
+	const float fx = camera_matrix.at<double>(0, 0);
+	const float fy = camera_matrix.at<double>(1, 1);
+
+	for(unsigned int i = 0; i < objectpoints.size(); i++) {
+		const float x = r11*objectpoints[i].x + r12*objectpoints[i].y + r13*objectpoints[i].z + translation_vector[0];
+		const float y = r21*objectpoints[i].x + r22*objectpoints[i].y + r23*objectpoints[i].z + translation_vector[1];
+		const float z = r31*objectpoints[i].x + r32*objectpoints[i].y + r33*objectpoints[i].z + translation_vector[2];
+		
+		imagepoints[i].x = cx + (fx*x)/z;
+		imagepoints[i].y = cy + (fy*y)/z;
 	}
 }
 
@@ -101,54 +474,25 @@ cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_
 	return transformed;
 }
 
-cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	int method,
-	double ransac_reproj_threshold) {
-
-	std::vector<cv::Point2f> src_points, dst_points;
-
-	int index = 0;
+void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches) {
+	// increment all counters by 1
+/*	for(std::vector<int>::iterator iter = landmarks.counters.begin(); iter != landmarks.counters.end(); ++iter)
+	{
+		(*iter)++;
+	}*/
+	std::vector<uint8_t> mask(landmarks.counters.size(), 0);
 	for(size_t i = 0; i < matches.size(); i++) {
-		src_points.resize(src_points.size() + matches[i].size());
-		dst_points.resize(src_points.size());
 		for(size_t j = 0; j < matches[i].size(); j++) {
-			src_points[index] = src_keypoints[matches[i][j].queryIdx].pt; 
-			dst_points[index] = dst_keypoints[matches[i][j].trainIdx].pt; 
-
-			index++;
+			unsigned int index = matches[i][j].queryIdx;
+			landmarks.counters[index] = (landmarks.counters[index] + 101) / 2;
+			mask[index] = 1;
 		}
 	}
 
-	if(src_points.size() <= 3 || src_points.size() != dst_points.size())
-		return (cv::Mat_<double>(3,3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
-	return cv::findHomography(src_points, dst_points, method, ransac_reproj_threshold);
-}
-
-void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
-	const cv::Mat& camera_matrix,
-	const float distance,
-	std::vector<cv::Point3f>& objectpoints) {
-
-	//TODO: test camera_matrix for beeing 3x3 double
-	//TODO: have a look at cvConvertPointsHomogenious
-
-	double fx = camera_matrix.at<double>(0, 0);
-	double fy = camera_matrix.at<double>(1, 1);
-	//FIXME: check for |fx| <= 0+eps
-	if(fx == 0.0) fx = 1.0;
-	if(fy == 0.0) fy = 1.0;
-	for(std::vector<cv::KeyPoint>::const_iterator kp_iter = keypoints.begin();
-		kp_iter != keypoints.end();
-		++kp_iter) {
-
-		//TODO: use distance for z
-		objectpoints.push_back( cv::Point3f( (kp_iter->pt).x/fx, (kp_iter->pt).y/fy, 0) );
+	for(unsigned int i = 0; i < landmarks.counters.size(); i++) {
+		if(mask[i] == 0)
+			landmarks.counters[i] /= 2;
 	}
-
-// 	cv::Mat point_matrix = cv::Mat(image_points).reshape(1).t();
-// 	cv::Mat object_matrix = inv_cam_matrix*point_matrix;
 }
 
 

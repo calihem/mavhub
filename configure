@@ -631,6 +631,10 @@ COND_OPENGL_TRUE
 EGREP
 GREP
 CXXCPP
+COND_LIBBLAS_FALSE
+COND_LIBBLAS_TRUE
+COND_LIBLAPACK_FALSE
+COND_LIBLAPACK_TRUE
 COND_USE_GSTREAMER_FALSE
 COND_USE_GSTREAMER_TRUE
 GSTREAMER_LIBS
@@ -8101,6 +8105,8 @@ fi
 
 
 # Checks for libraries.
+# To list the function names of a library run:
+# nm -D /lib/libfoo.so
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for newwin in -lncurses" >&5
 $as_echo_n "checking for newwin in -lncurses... " >&6; }
 if ${ac_cv_lib_ncurses_newwin+:} false; then :
@@ -8413,6 +8419,118 @@ if test "x$ac_cv_lib_ivy_IvyInit" = xyes; then :
 _ACEOF
 
   LIBS="-livy $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for catlas_cset in -llapack" >&5
+$as_echo_n "checking for catlas_cset in -llapack... " >&6; }
+if ${ac_cv_lib_lapack_catlas_cset+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-llapack  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char catlas_cset ();
+int
+main ()
+{
+return catlas_cset ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_lapack_catlas_cset=yes
+else
+  ac_cv_lib_lapack_catlas_cset=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_lapack_catlas_cset" >&5
+$as_echo "$ac_cv_lib_lapack_catlas_cset" >&6; }
+if test "x$ac_cv_lib_lapack_catlas_cset" = xyes; then :
+   if true; then
+  COND_LIBLAPACK_TRUE=
+  COND_LIBLAPACK_FALSE='#'
+else
+  COND_LIBLAPACK_TRUE='#'
+  COND_LIBLAPACK_FALSE=
+fi
+ LIBS+="-llapack "
+else
+   if false; then
+  COND_LIBLAPACK_TRUE=
+  COND_LIBLAPACK_FALSE='#'
+else
+  COND_LIBLAPACK_TRUE='#'
+  COND_LIBLAPACK_FALSE=
+fi
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for catlas_cset in -lblas" >&5
+$as_echo_n "checking for catlas_cset in -lblas... " >&6; }
+if ${ac_cv_lib_blas_catlas_cset+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lblas  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char catlas_cset ();
+int
+main ()
+{
+return catlas_cset ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_blas_catlas_cset=yes
+else
+  ac_cv_lib_blas_catlas_cset=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_blas_catlas_cset" >&5
+$as_echo "$ac_cv_lib_blas_catlas_cset" >&6; }
+if test "x$ac_cv_lib_blas_catlas_cset" = xyes; then :
+   if true; then
+  COND_LIBBLAS_TRUE=
+  COND_LIBBLAS_FALSE='#'
+else
+  COND_LIBBLAS_TRUE='#'
+  COND_LIBBLAS_FALSE=
+fi
+ LIBS+="-lblas "
+else
+   if false; then
+  COND_LIBBLAS_TRUE=
+  COND_LIBBLAS_FALSE='#'
+else
+  COND_LIBBLAS_TRUE='#'
+  COND_LIBBLAS_FALSE=
+fi
 
 fi
 
@@ -9580,6 +9698,22 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_USE_GSTREAMER_TRUE}" && test -z "${COND_USE_GSTREAMER_FALSE}"; then
   as_fn_error $? "conditional \"COND_USE_GSTREAMER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_LIBLAPACK_TRUE}" && test -z "${COND_LIBLAPACK_FALSE}"; then
+  as_fn_error $? "conditional \"COND_LIBLAPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_LIBLAPACK_TRUE}" && test -z "${COND_LIBLAPACK_FALSE}"; then
+  as_fn_error $? "conditional \"COND_LIBLAPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_LIBBLAS_TRUE}" && test -z "${COND_LIBBLAS_FALSE}"; then
+  as_fn_error $? "conditional \"COND_LIBBLAS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_LIBBLAS_TRUE}" && test -z "${COND_LIBBLAS_FALSE}"; then
+  as_fn_error $? "conditional \"COND_LIBBLAS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_OPENGL_TRUE}" && test -z "${COND_OPENGL_FALSE}"; then

@@ -16,13 +16,77 @@
 namespace hub {
 namespace slam {
 
-void determine_egomotion(const std::vector<cv::KeyPoint>& src_keypoints,
+struct brisk_landmark_t {
+	brisk_landmark_t(const cv::KeyPoint &kp,
+		const cv::Point3f &op,
+		const uint8_t descr[16],
+		const unsigned int counter,
+		const int fc);
+	cv::KeyPoint keypoint;	// 2D coordinate, octave, ...
+	cv::Point3f object_point;	// 3D coordinate
+	uint8_t descriptor[16];	// 128 bit value
+	unsigned int counter;	// how often occured this landmark in a scene
+	int first_occurence;	// index of first scene in which the landmark occured
+};
+
+struct landmarks_t {
+	void clear();
+	std::vector<cv::KeyPoint> keypoints;
+	std::vector<cv::Point3f> objectpoints;
+	cv::Mat descriptors;
+	std::vector<int> counters; //FIXME: needed?
+	std::vector<int> scene_ids; //FIXME: needed?
+};
+
+/**
+ * \brief Determine egomotion based on feature matches.
+ * \param[in] objectpoints
+ * \param[in] dst_keypoints
+ * \param[in] matches
+ * \param[in] camera_matrix
+ * \param[in] distortion_coefficients
+ * \param[in,out] rotation_vector
+ * \param[in,out] translation_vector
+ * \param[in] use_extrinsic_guess Use \a rotation_vector and \a translation_vector as initial guess.
+ * \param[in] matches_mask matches.at(i) will only be considered if matches_mask.at(i) is non-zero
+ */
+int egomotion(const std::vector<cv::Point3f> objectpoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	cv::Mat &camera_matrix,
-	cv::Mat &distortion_coefficients,
+	const std::vector<cv::DMatch>& matches,
+	const cv::Mat &camera_matrix,
+	const cv::Mat &distortion_coefficients,
 	cv::Mat &rotation_vector,
-	cv::Mat &translation_vector);
+	cv::Mat &translation_vector,
+	const bool use_extrinsic_guess = false,
+	std::vector<char> matches_mask = std::vector<char>() );
+
+/**
+ * Estimate 3D motion from inverse projected image points
+ */
+cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
+	const std::vector<cv::KeyPoint>& dst_keypoints,
+	const std::vector<cv::DMatch>& matches,
+	std::vector<char> mask);
+
+/// Filter out matches 
+void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
+
+void find_lis(const std::vector<int> &sequence, std::vector<int> &lis);
+
+void filter_matches_by_lis(const std::vector<cv::KeyPoint> src_keypoints,
+		const std::vector<cv::KeyPoint> dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask);
+
+/// Filter out matches which have no corresponding backward match.
+void filter_matches_by_backward_matches(const std::vector<cv::DMatch> &matches,
+		const std::vector<cv::DMatch> &backward_matches,
+		std::vector<char> &mask);
+
+void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> &src_keypoints,
+		const std::vector<cv::KeyPoint> &dst_keypoints,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask);
 
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
@@ -34,20 +98,53 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	std::vector<uint8_t>& filter,
 	Distance distance_metric = Distance() );
 
-cv::Mat find_homography(const std::vector<cv::KeyPoint>& src_keypoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<std::vector<cv::DMatch> >& matches,
-	int method=0,
-	double ransac_reproj_threshold=3);
-
 void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches,
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
 		    std::vector<std::vector<cv::DMatch> > &matches);
 
-void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
-	const cv::Mat& camera_matrix,
+void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const float distance,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients,
 	std::vector<cv::Point3f>& objectpoints);
+
+void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
+	const float distance,
+	std::vector<cv::Point3f>& objectpoints,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
+
+/**
+ * \brief Get mask from matches
+ *
+ * \param[in] num_src_kps number of source (train) keypoints
+ * \param[in] num_dst_kps number of destination (query) keypoints
+ * \param[in] matches vector of matches
+ * \return Mask matrix 
+ */
+cv::Mat matchesmask(const int num_src_kps,
+	const int num_dst_kps,
+	const std::vector<cv::DMatch> &matches);
+
+/**
+ * \brief Projects 3D point coordinates to their 2D image coordinates.
+ * 
+ * This function is almost similar to cv::projectPoints except that it doesn't
+ * support distorted image points.
+ * \param[in] objectpoints Vector of 3D object points.
+ * \param[in] rotation_vector 3D rotation vector containing euler angles (rad).
+ * \param[in] translation_vector 3D translation vector.
+ * \param[in] camera_matrix Matrix of intrinsic parameters
+ * \param[out] imagepoints Outputvector containing the 2D projected object points.
+ */
+void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
+	const std::vector<float>& rotation_vector,
+	const std::vector<float>& translation_vector,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& imagepoints);
+
+template <typename T>
+T min_eigenval(const T &dxx, const T &dxy, const T &dyy);
 
 /**
  * \brief Calculate the Shi-Tomasi score.
@@ -69,30 +166,26 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix);
 
-template <class DescriptorDistance, class RadiusDistance>
-class RadiusMatcher : public cv::DescriptorMatcher {
-public:
-	RadiusMatcher( DescriptorDistance dd = DescriptorDistance(), RadiusDistance rd = RadiusDistance() );
-	virtual ~RadiusMatcher() {}
-	virtual bool isMaskSupported() const { return false; }
-	virtual cv::Ptr<cv::DescriptorMatcher> clone(bool emptyTrainData=false) const;
+/**
+ * Undistort 2D image point using camera matrix and distotion coefficients.
+ */ 
+cv::Point2f undistort(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
 
-private:
-	DescriptorDistance descr_distance;
-	RadiusDistance radius_distance;
-};
+cv::Point2f undistort_n2n(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
 
-template <typename Distance>
-int test_foo(const std::vector<cv::KeyPoint>& src_keypoints, Distance distance_metric = Distance());
+cv::Point2f undistort_n2i(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients);
 
-template <typename Distance>
-int test_foo(const std::vector<cv::KeyPoint>& src_keypoints, Distance distance_metric) {
-	if(src_keypoints.size() < 2) return 0;
-	return distance_metric(&(src_keypoints[0].pt.x), &(src_keypoints[1].pt.x), 2);
-}
+cv::Point2f undistort_i2i(const cv::Point2f &point,
+	const cv::Mat& distortion_coefficients);
 
 // ----------------------------------------------------------------------------
-// IMU Filter
+// Implementations
 // ----------------------------------------------------------------------------
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
@@ -150,6 +243,11 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 }
 
 template <typename T>
+inline T min_eigenval(const T &dxx, const T &dxy, const T &dyy) {
+	return 0.5 * (dxx + dyy - sqrt( (dxx + dyy) * (dxx + dyy) - 4 * (dxx * dyy - dxy * dxy) ));
+}
+
+template <typename T>
 T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box_radius) {
 	//TODO: optional range check
 	//check coordinate range
@@ -157,7 +255,7 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	|| y <= box_radius || y >= image.rows-box_radius-1)
 		return 0.0;
 
-	int32_t dx, dy;
+	int16_t dx, dy;
 	int32_t dxx = 0, dxy = 0, dyy = 0;
 	//iterate through box (window)
 	for(int i=y-box_radius; i <= y+box_radius; i++) {
@@ -169,29 +267,77 @@ T shi_tomasi_score(const cv::Mat &image, const int x, const int y, const int box
 	}
 
 	//calculate minimal eigenvalue
-	T t_dxx = static_cast<T>(dxx);
-	T t_dxy = static_cast<T>(dxy);
-	T t_dyy = static_cast<T>(dyy);
-	T min_lambda = min_eigenval(t_dxx, t_dxy, t_dyy);
+	T min_lambda = min_eigenval<T>(dxx, dxy, dyy);
 
 	//thus we have used unscaled version to calculate derivatives, we have to do it now
-	int num_pixels = (2*box_radius+1)*(2*box_radius+1);
-	return min_lambda / (4.0*num_pixels);
+	int num_pixels = 4*( (2*box_radius+1)*(2*box_radius+1) );
+	//num_pixels is non zero, so it is safe to divide here
+	return min_lambda / static_cast<T>(num_pixels);
 }
 
-// ----------------------------------------------------------------------------
-// RadiusMatcher
-// ----------------------------------------------------------------------------
-template <class DescriptorDistance, class RadiusDistance>
-RadiusMatcher<DescriptorDistance, RadiusDistance>::RadiusMatcher( DescriptorDistance dd, RadiusDistance rd ) :
-	descr_distance(dd),
-	radius_distance(rd) {
+inline cv::Point2f undistort_i2i(const cv::Point2f &point,
+	const cv::Mat& distortion_coefficients) {
+
+	//check vector dimension
+	assert(distortion_coefficients.total() == 5);
+	const double *k = distortion_coefficients.ptr<double>();
+
+	double x = point.x;
+	double y = point.y;
+	const double x0 = x, y0 = y;
+
+	//undistort points using simplified iterative approach from OpenCV
+	for(uint8_t j=0; j<5; j++) {
+		const double xx = x*x;
+		const double xy = x*y;
+		const double yy = y*y;
+		const double r2 = xx+yy;
+
+		const double radial_factor = 1.0/(1 + ((k[4]*r2 + k[1])*r2 + k[0])*r2);
+		const double tang_x = 2*k[2]*xy + k[3]*(r2 + 2*xx);
+		const double tang_y = k[2]*(r2 + 2*yy) + 2*k[3]*xy;
+
+		x = (x0 - tang_x)*radial_factor;
+		y = (y0 - tang_y)*radial_factor;
+	}
+
+	return cv::Point2f(x, y);
 }
 
-template <class DescriptorDistance, class RadiusDistance>
-cv::Ptr<cv::DescriptorMatcher> RadiusMatcher<DescriptorDistance, RadiusDistance>::clone(bool emptyTrainData) const {
-	//FIXME
-	return cv::Ptr<cv::DescriptorMatcher>();
+inline cv::Point2f undistort_n2i(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+
+	return undistort_i2i(cv::Point2f((point.x - cx) / fx, (point.y - cy) / fy), distortion_coefficients);
+}
+
+inline cv::Point2f undistort_n2n(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	cv::Point2f undist_point = undistort_n2i(point, camera_matrix, distortion_coefficients);
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+
+	undist_point.x = undist_point.x * fx + cx;
+	undist_point.y = undist_point.y * fy + cy;
+
+	return undist_point;
+}
+
+inline cv::Point2f undistort(const cv::Point2f &point,
+	const cv::Mat& camera_matrix,
+	const cv::Mat& distortion_coefficients) {
+
+	return undistort_n2n(point, camera_matrix, distortion_coefficients);
 }
 
 } // namespace slam
