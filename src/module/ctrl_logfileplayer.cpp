@@ -178,6 +178,8 @@ namespace mavhub {
 
 		int status = 1;
 
+		uint32_t time_ms = get_time_ms();
+
 		// heartbeat
 		int system_type = MAV_TYPE_QUADROTOR;
 		mavlink_message_t msg_hb;
@@ -303,6 +305,7 @@ namespace mavhub {
 										mavlink_msg_named_value_int_pack(system_id(),
 																										 component_id,
 																										 &msg,
+																										 time_ms,
 																										 "stk_pitch",
 																										 atof(tmp));
 										ready_to_send = 1;
@@ -311,10 +314,11 @@ namespace mavhub {
 								}
 								else if(in_range(tabcount, 5, 5)) {
 									tmp_offset = 5;
-								 if(tabcount == tmp_offset) {
+									if(tabcount == tmp_offset) {
 										mavlink_msg_named_value_int_pack(system_id(),
 																										 component_id,
 																										 &msg,
+																										 time_ms,
 																										 "stk_roll",
 																										 atof(tmp));
 										ready_to_send = 1;
@@ -327,6 +331,7 @@ namespace mavhub {
 										mavlink_msg_named_value_int_pack(system_id(),
 																										 component_id,
 																										 &msg,
+																										 time_ms,
 																										 "stk_thrust",
 																										 atof(tmp));
 										ready_to_send = 1;

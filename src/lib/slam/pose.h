@@ -5,7 +5,7 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
-#ifdef HAVE_OPENCV2
+#if defined HAVE_OPENCV2 && CV_MINOR_VERSION >= 2
 
 #include <vector>
 #include <cmath>	//sin, cos
