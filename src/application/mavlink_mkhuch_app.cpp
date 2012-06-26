@@ -372,39 +372,54 @@ void MAVLinkMKHUCHApp::handle_input(const mkhuch_message_t& msg) {
 		}*/
 	case MKHUCH_MSG_TYPE_STICKS: {
 		const mkhuch_sticks_t *sticks = reinterpret_cast<const mkhuch_sticks_t*>(msg.data);
+		mavlink_huch_attitude_control_t attitude_control;
+		attitude_control.roll = (float)sticks->roll;
+		attitude_control.pitch = (float)sticks->pitch;
+		attitude_control.yaw = (float)sticks->yaw;
+		attitude_control.thrust = (float)sticks->thrust;
+		attitude_control.target = system_id();
+		attitude_control.mask = 0;
 		// log("MAVLinkMKHUCHApp got mkhuch_sticks msg", static_cast<int16_t>(sticks->roll), static_cast<int16_t>(sticks->pitch), Logger::LOGLEVEL_DEBUG);
 		// log("MAVLinkMKHUCHApp got mkhuch_sticks msg", static_cast<int16_t>(sticks->yaw), static_cast<int16_t>(sticks->thrust), Logger::LOGLEVEL_DEBUG);
-		//ALERT uint64_t -> uint32_t cast
+		// ALERT uint64_t -> uint32_t cast
 		uint32_t time_ms = get_time_ms();
 		Lock tx_lock(tx_mav_mutex);
-		mavlink_msg_named_value_int_pack(system_id(),
-			component_id,
-			&tx_mav_msg,
-			time_ms,
-			"stk_roll",
-			sticks->roll);
+		mavlink_msg_huch_attitude_control_encode(
+																					 system_id(),
+																					 component_id,
+																					 &tx_mav_msg,
+																					 &attitude_control
+																					 );
 		AppLayer<mavlink_message_t>::send(tx_mav_msg);
-		mavlink_msg_named_value_int_pack(system_id(),
-			component_id,
-			&tx_mav_msg,
-			time_ms,
-			"stk_pitch",
-			sticks->pitch);
-		AppLayer<mavlink_message_t>::send(tx_mav_msg);
-		mavlink_msg_named_value_int_pack(system_id(),
-			component_id,
-			&tx_mav_msg,
-			time_ms,
-			"stk_yaw",
-			sticks->yaw);
-		AppLayer<mavlink_message_t>::send(tx_mav_msg);
-		mavlink_msg_named_value_int_pack(system_id(),
-			component_id,
-			&tx_mav_msg,
-			time_ms,
-			"stk_thrust",
-			sticks->thrust);
-		AppLayer<mavlink_message_t>::send(tx_mav_msg);
+
+		// mavlink_msg_named_value_int_pack(system_id(),
+		// 	component_id,
+		// 	&tx_mav_msg,
+		// 	time_ms,
+		// 	"stk_roll",
+		// 	sticks->roll);
+		// AppLayer<mavlink_message_t>::send(tx_mav_msg);
+		// mavlink_msg_named_value_int_pack(system_id(),
+		// 	component_id,
+		// 	&tx_mav_msg,
+		// 	time_ms,
+		// 	"stk_pitch",
+		// 	sticks->pitch);
+		// AppLayer<mavlink_message_t>::send(tx_mav_msg);
+		// mavlink_msg_named_value_int_pack(system_id(),
+		// 	component_id,
+		// 	&tx_mav_msg,
+		// 	time_ms,
+		// 	"stk_yaw",
+		// 	sticks->yaw);
+		// AppLayer<mavlink_message_t>::send(tx_mav_msg);
+		// mavlink_msg_named_value_int_pack(system_id(),
+		// 	component_id,
+		// 	&tx_mav_msg,
+		// 	time_ms,
+		// 	"stk_thrust",
+		// 	sticks->thrust);
+		// AppLayer<mavlink_message_t>::send(tx_mav_msg);
 		break;
 	}
 
