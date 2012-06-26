@@ -8467,6 +8467,8 @@ else
   COND_LIBLAPACK_FALSE=
 fi
  LIBS+="-llapack "
+$as_echo "#define HAVE_LIBLAPACK 1" >>confdefs.h
+
 else
    if false; then
   COND_LIBLAPACK_TRUE=
@@ -8523,6 +8525,8 @@ else
   COND_LIBBLAS_FALSE=
 fi
  LIBS+="-lblas "
+$as_echo "#define HAVE_LIBBLAS 1" >>confdefs.h
+
 else
    if false; then
   COND_LIBBLAS_TRUE=
