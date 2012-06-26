@@ -1,5 +1,7 @@
 #include "lib/slam/pose.h"
 
+#if defined HAVE_OPENCV2 && CV_MINOR_VERSION >= 2
+
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
 
@@ -133,3 +135,5 @@ BOOST_AUTO_TEST_CASE(Test_estimate_pose)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // HAVE_OPENCV2 && CV_MINOR_VERSION >= 2

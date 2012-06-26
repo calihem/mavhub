@@ -206,8 +206,10 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #ifdef HAVE_GSTREAMER
 #ifdef HAVE_OPENCV2
 #if CV_MINOR_VERSION >= 3
+#if defined HAVE_LIBBLAS && defined HAVE_LIBLAPACK
 		SLAMApp *slam_app = new SLAMApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(slam_app);
+#endif // HAVE_LIBBLAS && HAVE_LIBLAPACK
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER

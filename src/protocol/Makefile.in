@@ -275,9 +275,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/am/am_incl_common.am
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/protocol/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/protocol/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/protocol/Makefile
+	  $(AUTOMAKE) --foreign src/protocol/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
