@@ -1,6 +1,7 @@
 #include "plat_link_mk.h"
 
 #ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MKHUCHLINK_H
 
 #include "core/logger.h"
 #include "utility.h"
@@ -425,5 +426,6 @@ namespace mavhub {
 
 } // namespace mavhub
 
+#endif // HAVE_MKHUCHLINK_H
 #endif // HAVE_MAVLINK_H
 

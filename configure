@@ -8422,9 +8422,9 @@ _ACEOF
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for catlas_cset in -llapack" >&5
-$as_echo_n "checking for catlas_cset in -llapack... " >&6; }
-if ${ac_cv_lib_lapack_catlas_cset+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cgesvd_ in -llapack" >&5
+$as_echo_n "checking for cgesvd_ in -llapack... " >&6; }
+if ${ac_cv_lib_lapack_cgesvd_+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -8438,27 +8438,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char catlas_cset ();
+char cgesvd_ ();
 int
 main ()
 {
-return catlas_cset ();
+return cgesvd_ ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_lapack_catlas_cset=yes
+  ac_cv_lib_lapack_cgesvd_=yes
 else
-  ac_cv_lib_lapack_catlas_cset=no
+  ac_cv_lib_lapack_cgesvd_=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_lapack_catlas_cset" >&5
-$as_echo "$ac_cv_lib_lapack_catlas_cset" >&6; }
-if test "x$ac_cv_lib_lapack_catlas_cset" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_lapack_cgesvd_" >&5
+$as_echo "$ac_cv_lib_lapack_cgesvd_" >&6; }
+if test "x$ac_cv_lib_lapack_cgesvd_" = xyes; then :
    if true; then
   COND_LIBLAPACK_TRUE=
   COND_LIBLAPACK_FALSE='#'
@@ -8467,6 +8467,8 @@ else
   COND_LIBLAPACK_FALSE=
 fi
  LIBS+="-llapack "
+$as_echo "#define HAVE_LIBLAPACK 1" >>confdefs.h
+
 else
    if false; then
   COND_LIBLAPACK_TRUE=
@@ -8478,9 +8480,9 @@ fi
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for catlas_cset in -lblas" >&5
-$as_echo_n "checking for catlas_cset in -lblas... " >&6; }
-if ${ac_cv_lib_blas_catlas_cset+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cblas_caxpy in -lblas" >&5
+$as_echo_n "checking for cblas_caxpy in -lblas... " >&6; }
+if ${ac_cv_lib_blas_cblas_caxpy+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -8494,27 +8496,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char catlas_cset ();
+char cblas_caxpy ();
 int
 main ()
 {
-return catlas_cset ();
+return cblas_caxpy ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_blas_catlas_cset=yes
+  ac_cv_lib_blas_cblas_caxpy=yes
 else
-  ac_cv_lib_blas_catlas_cset=no
+  ac_cv_lib_blas_cblas_caxpy=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_blas_catlas_cset" >&5
-$as_echo "$ac_cv_lib_blas_catlas_cset" >&6; }
-if test "x$ac_cv_lib_blas_catlas_cset" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_blas_cblas_caxpy" >&5
+$as_echo "$ac_cv_lib_blas_cblas_caxpy" >&6; }
+if test "x$ac_cv_lib_blas_cblas_caxpy" = xyes; then :
    if true; then
   COND_LIBBLAS_TRUE=
   COND_LIBBLAS_FALSE='#'
@@ -8523,6 +8525,8 @@ else
   COND_LIBBLAS_FALSE=
 fi
  LIBS+="-lblas "
+$as_echo "#define HAVE_LIBBLAS 1" >>confdefs.h
+
 else
    if false; then
   COND_LIBBLAS_TRUE=

@@ -11,7 +11,7 @@ AC_CONFIG_AUX_DIR([auxdir])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -84,8 +84,14 @@ AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
 AC_CHECK_LIB([ivy], [IvyInit])
-AC_CHECK_LIB([lapack], [catlas_cset], [AM_CONDITIONAL(COND_LIBLAPACK, true) LIBS+="-llapack "], AM_CONDITIONAL(COND_LIBLAPACK, false) )
-AC_CHECK_LIB([blas], [catlas_cset], [AM_CONDITIONAL(COND_LIBBLAS, true) LIBS+="-lblas "], AM_CONDITIONAL(COND_LIBBLAS, false))
+AC_CHECK_LIB([lapack],
+	[cgesvd_],
+	[AM_CONDITIONAL(COND_LIBLAPACK, true) LIBS+="-llapack " AC_DEFINE(HAVE_LIBLAPACK, [1], [Define to 1 if you have the `lapack' library (-llapack).])],
+	AM_CONDITIONAL(COND_LIBLAPACK, false))
+AC_CHECK_LIB([blas],
+	[cblas_caxpy],
+	[AM_CONDITIONAL(COND_LIBBLAS, true) LIBS+="-lblas " AC_DEFINE(HAVE_LIBBLAS, [1], [Define to 1 if you have the `blas' library (-lblas).])],
+	AM_CONDITIONAL(COND_LIBBLAS, false))
 AC_CHECK_LIB([fann], [fann_create_standard])
 AC_CHECK_LIB([oscpack], [InterruptSignalHandler]) #_ZN3osc20OutboundPacketStreamlsERKNS_12BeginMessageE])
 

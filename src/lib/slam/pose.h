@@ -6,12 +6,13 @@
 #endif // HAVE_CONFIG_H
 
 #ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
+#if CV_MINOR_VERSION >= 2
 
 #include <vector>
 #include <cmath>	//sin, cos
 #include <iostream>     // cout
 
-#include <opencv/cv.h>
 //FIXME: remove TooN dependency
 #include <TooN/TooN.h>
 #include <TooN/se3.h>
@@ -671,5 +672,6 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 } // namespace slam
 } // namespace hub
 
+#endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // _HUB_POSE_H_
