@@ -58,7 +58,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 # AM_CPPFLAGS += $(SIMD_FLAGS)
 @COND_OPENCV2_TRUE@am__append_1 = $(OPENCV2_CFLAGS)
 @COND_OPENCV2_TRUE@am__append_2 = libagast.a libbrisk.a
-@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@am__append_3 = liblevmar.a
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@am__append_3 = liblevmar.a libsba.a
 subdir = thirdparty
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_boost_base.m4 \
@@ -110,6 +110,17 @@ am__liblevmar_a_SOURCES_DIST = levmar/lm.c levmar/Axb.c levmar/misc.c \
 @COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	lmblec.$(OBJEXT) \
 @COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	lmbleic.$(OBJEXT)
 liblevmar_a_OBJECTS = $(am_liblevmar_a_OBJECTS)
+libsba_a_AR = $(AR) $(ARFLAGS)
+libsba_a_LIBADD =
+am__libsba_a_SOURCES_DIST = sba/sba_levmar.c sba/sba_levmar_wrap.c \
+	sba/sba_lapack.c sba/sba_crsm.c sba/sba_chkjac.c
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@am_libsba_a_OBJECTS =  \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba_levmar.$(OBJEXT) \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba_levmar_wrap.$(OBJEXT) \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba_lapack.$(OBJEXT) \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba_crsm.$(OBJEXT) \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba_chkjac.$(OBJEXT)
+libsba_a_OBJECTS = $(am_libsba_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -124,9 +135,10 @@ CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 SOURCES = $(libagast_a_SOURCES) $(libbrisk_a_SOURCES) \
-	$(liblevmar_a_SOURCES)
+	$(liblevmar_a_SOURCES) $(libsba_a_SOURCES)
 DIST_SOURCES = $(am__libagast_a_SOURCES_DIST) \
-	$(am__libbrisk_a_SOURCES_DIST) $(am__liblevmar_a_SOURCES_DIST)
+	$(am__libbrisk_a_SOURCES_DIST) $(am__liblevmar_a_SOURCES_DIST) \
+	$(am__libsba_a_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -309,6 +321,13 @@ noinst_LIBRARIES = $(am__append_2) $(am__append_3)
 @COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	levmar/lmblec.c \
 @COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	levmar/lmbleic.c
 
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@libsba_a_SOURCES = \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba/sba_levmar.c \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba/sba_levmar_wrap.c \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba/sba_lapack.c \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba/sba_crsm.c \
+@COND_LIBBLAS_TRUE@@COND_LIBLAPACK_TRUE@	sba/sba_chkjac.c
+
 all: all-am
 
 .SUFFIXES:
@@ -359,6 +378,10 @@ liblevmar.a: $(liblevmar_a_OBJECTS) $(liblevmar_a_DEPENDENCIES) $(EXTRA_liblevma
 	-rm -f liblevmar.a
 	$(liblevmar_a_AR) liblevmar.a $(liblevmar_a_OBJECTS) $(liblevmar_a_LIBADD)
 	$(RANLIB) liblevmar.a
+libsba.a: $(libsba_a_OBJECTS) $(libsba_a_DEPENDENCIES) $(EXTRA_libsba_a_DEPENDENCIES) 
+	-rm -f libsba.a
+	$(libsba_a_AR) libsba.a $(libsba_a_OBJECTS) $(libsba_a_LIBADD)
+	$(RANLIB) libsba.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -383,6 +406,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nonMaximumSuppression.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oast9_16.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oast9_16_nms.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sba_chkjac.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sba_crsm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sba_lapack.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sba_levmar.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sba_levmar_wrap.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -495,6 +523,76 @@ lmbleic.obj: levmar/lmbleic.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='levmar/lmbleic.c' object='lmbleic.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lmbleic.obj `if test -f 'levmar/lmbleic.c'; then $(CYGPATH_W) 'levmar/lmbleic.c'; else $(CYGPATH_W) '$(srcdir)/levmar/lmbleic.c'; fi`
+
+sba_levmar.o: sba/sba_levmar.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_levmar.o -MD -MP -MF $(DEPDIR)/sba_levmar.Tpo -c -o sba_levmar.o `test -f 'sba/sba_levmar.c' || echo '$(srcdir)/'`sba/sba_levmar.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_levmar.Tpo $(DEPDIR)/sba_levmar.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_levmar.c' object='sba_levmar.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_levmar.o `test -f 'sba/sba_levmar.c' || echo '$(srcdir)/'`sba/sba_levmar.c
+
+sba_levmar.obj: sba/sba_levmar.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_levmar.obj -MD -MP -MF $(DEPDIR)/sba_levmar.Tpo -c -o sba_levmar.obj `if test -f 'sba/sba_levmar.c'; then $(CYGPATH_W) 'sba/sba_levmar.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_levmar.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_levmar.Tpo $(DEPDIR)/sba_levmar.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_levmar.c' object='sba_levmar.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_levmar.obj `if test -f 'sba/sba_levmar.c'; then $(CYGPATH_W) 'sba/sba_levmar.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_levmar.c'; fi`
+
+sba_levmar_wrap.o: sba/sba_levmar_wrap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_levmar_wrap.o -MD -MP -MF $(DEPDIR)/sba_levmar_wrap.Tpo -c -o sba_levmar_wrap.o `test -f 'sba/sba_levmar_wrap.c' || echo '$(srcdir)/'`sba/sba_levmar_wrap.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_levmar_wrap.Tpo $(DEPDIR)/sba_levmar_wrap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_levmar_wrap.c' object='sba_levmar_wrap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_levmar_wrap.o `test -f 'sba/sba_levmar_wrap.c' || echo '$(srcdir)/'`sba/sba_levmar_wrap.c
+
+sba_levmar_wrap.obj: sba/sba_levmar_wrap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_levmar_wrap.obj -MD -MP -MF $(DEPDIR)/sba_levmar_wrap.Tpo -c -o sba_levmar_wrap.obj `if test -f 'sba/sba_levmar_wrap.c'; then $(CYGPATH_W) 'sba/sba_levmar_wrap.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_levmar_wrap.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_levmar_wrap.Tpo $(DEPDIR)/sba_levmar_wrap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_levmar_wrap.c' object='sba_levmar_wrap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_levmar_wrap.obj `if test -f 'sba/sba_levmar_wrap.c'; then $(CYGPATH_W) 'sba/sba_levmar_wrap.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_levmar_wrap.c'; fi`
+
+sba_lapack.o: sba/sba_lapack.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_lapack.o -MD -MP -MF $(DEPDIR)/sba_lapack.Tpo -c -o sba_lapack.o `test -f 'sba/sba_lapack.c' || echo '$(srcdir)/'`sba/sba_lapack.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_lapack.Tpo $(DEPDIR)/sba_lapack.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_lapack.c' object='sba_lapack.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_lapack.o `test -f 'sba/sba_lapack.c' || echo '$(srcdir)/'`sba/sba_lapack.c
+
+sba_lapack.obj: sba/sba_lapack.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_lapack.obj -MD -MP -MF $(DEPDIR)/sba_lapack.Tpo -c -o sba_lapack.obj `if test -f 'sba/sba_lapack.c'; then $(CYGPATH_W) 'sba/sba_lapack.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_lapack.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_lapack.Tpo $(DEPDIR)/sba_lapack.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_lapack.c' object='sba_lapack.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_lapack.obj `if test -f 'sba/sba_lapack.c'; then $(CYGPATH_W) 'sba/sba_lapack.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_lapack.c'; fi`
+
+sba_crsm.o: sba/sba_crsm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_crsm.o -MD -MP -MF $(DEPDIR)/sba_crsm.Tpo -c -o sba_crsm.o `test -f 'sba/sba_crsm.c' || echo '$(srcdir)/'`sba/sba_crsm.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_crsm.Tpo $(DEPDIR)/sba_crsm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_crsm.c' object='sba_crsm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_crsm.o `test -f 'sba/sba_crsm.c' || echo '$(srcdir)/'`sba/sba_crsm.c
+
+sba_crsm.obj: sba/sba_crsm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_crsm.obj -MD -MP -MF $(DEPDIR)/sba_crsm.Tpo -c -o sba_crsm.obj `if test -f 'sba/sba_crsm.c'; then $(CYGPATH_W) 'sba/sba_crsm.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_crsm.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_crsm.Tpo $(DEPDIR)/sba_crsm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_crsm.c' object='sba_crsm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_crsm.obj `if test -f 'sba/sba_crsm.c'; then $(CYGPATH_W) 'sba/sba_crsm.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_crsm.c'; fi`
+
+sba_chkjac.o: sba/sba_chkjac.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_chkjac.o -MD -MP -MF $(DEPDIR)/sba_chkjac.Tpo -c -o sba_chkjac.o `test -f 'sba/sba_chkjac.c' || echo '$(srcdir)/'`sba/sba_chkjac.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_chkjac.Tpo $(DEPDIR)/sba_chkjac.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_chkjac.c' object='sba_chkjac.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_chkjac.o `test -f 'sba/sba_chkjac.c' || echo '$(srcdir)/'`sba/sba_chkjac.c
+
+sba_chkjac.obj: sba/sba_chkjac.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sba_chkjac.obj -MD -MP -MF $(DEPDIR)/sba_chkjac.Tpo -c -o sba_chkjac.obj `if test -f 'sba/sba_chkjac.c'; then $(CYGPATH_W) 'sba/sba_chkjac.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_chkjac.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sba_chkjac.Tpo $(DEPDIR)/sba_chkjac.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sba/sba_chkjac.c' object='sba_chkjac.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sba_chkjac.obj `if test -f 'sba/sba_chkjac.c'; then $(CYGPATH_W) 'sba/sba_chkjac.c'; else $(CYGPATH_W) '$(srcdir)/sba/sba_chkjac.c'; fi`
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
