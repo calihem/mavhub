@@ -39,6 +39,7 @@ class FiducalApp : public MavlinkAppLayer,
 		std::string sink_name; ///< Sink name of video server input.
 		cv::Mat cam_matrix; ///< Camera matrix of intrinsic parameters.
 		cv::Mat dist_coeffs; ///< distortion coefficients of camera.
+    cv::Mat video_data;
     bool new_video_data;
     void load_calibration_data(const std::string &filename);
     cv::Point calcCentroid(std::vector<cv::Point> points);

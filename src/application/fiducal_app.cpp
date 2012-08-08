@@ -89,11 +89,54 @@ void FiducalApp::handle_video_data(const unsigned char *data, const int width, c
 
 	// make a matrix header for captured data
 	unsigned char *image_data = const_cast<unsigned char*>(data);
-	cv::Mat video_data(height, width, CV_8UC1, image_data);
+	cv::Mat frame(height, width, CV_8UC1, image_data);
 
 	Lock sync_lock(sync_mutex);
-  // TODO: new video data handling after mutex
+  frame.copyTo(video_data);
 	new_video_data = true;
+}
+
+void FiducalApp::run()
+{
+	log(name(), ": running", Logger::LOGLEVEL_DEBUG);
+
+	if(Core::video_server) {
+		int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str());
+		Logger::log(name(), ": binded to", sink_name, rc, Logger::LOGLEVEL_DEBUG, _loglevel);
+	} else {
+		log(name(), ": video server not running", Logger::LOGLEVEL_WARN);
+		return;
+	}
+
+	while( !interrupted() ) {
+    if(new_video_data)
+    {
+	    Lock sync_lock(sync_mutex);
+      std::vector<std::vector<cv::Point> > markers;
+      findTwoRectangles(video_data, markers);
+
+      std::vector<cv::Point2f> outerMarkers;
+      std::vector<cv::Point2f> innerMarkers;
+      if(markers.size() == 2)
+      {
+        refineMarkers(video_data, markers, outerMarkers, innerMarkers);
+        orderMarkers(video_data, outerMarkers, innerMarkers);
+
+        cv::Mat rvec;
+        cv::Mat tvec;
+        doGeometry(outerMarkers, innerMarkers, cameraMatrix, distCoeffs, rvec, tvec);
+        
+        cv::Mat rmat;
+        cv::Rodrigues(-rvec, rmat);
+        cv::Mat finalVec = rmat*tvec;
+        std::cout << finalVec << std::endl;
+      }
+      
+      new_video_data = false;
+    }
+    //FIXME: remove usleep
+    usleep(5000);
+  }
 }
 
 cv::Point calcCentroid(std::vector<cv::Point> points)
