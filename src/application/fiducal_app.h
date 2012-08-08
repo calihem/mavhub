@@ -41,6 +41,8 @@ class FiducalApp : public MavlinkAppLayer,
     cv::Mat video_data;
     bool new_video_data;
     double resizeFactor;
+    double outer_tag_size;
+    double inner_tag_size;
     cv::Mat rvec;
     cv::Mat tvec;
     cv::Mat fvec;

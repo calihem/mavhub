@@ -23,6 +23,8 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
   new_video_data(false),
   resizeFactor(0.2),
+  outer_tag_size(15.0),
+  inner_tag_size(9.0),
 #ifdef FIDUCAL_LOG
 	, log_file("fiducal_log.data")
 #endif
@@ -39,9 +41,10 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
 		sink_name.assign("sink0");
 	}
 
-	get_value_from_args("out_stream", with_out_stream);
-
-	// get calibration data of camera
+	get_value_from_args("outer_tag_size", outer_tag_size);
+	get_value_from_args("inner_tag_size", inner_tag_size);
+	
+  // get calibration data of camera
 	//FIXME: use image dimensions for default camera matrix
 	cam_matrix = (cv::Mat_<double>(3,3) << 1.0, 0.0, 160.0, 0.0, 1.0, 120.0, 0.0, 0.0, 1.0);
 	string calib_filename;
@@ -399,14 +402,14 @@ void FiducalApp::doGeometry(const std::vector<cv::Point2f> &outerMarkers, const 
   for(int i = 0; i < 4; i++)
     imagePoints.push_back(innerMarkers[i]);
   std::vector<cv::Point3f> objectPoints;
-  objectPoints.push_back(cv::Point3f(7.5, 7.5, 0.0));
-  objectPoints.push_back(cv::Point3f(7.5, -7.5, 0.0));
-  objectPoints.push_back(cv::Point3f(-7.5, -7.5, 0.0));
-  objectPoints.push_back(cv::Point3f(-7.5, 7.5, 0.0));
-  objectPoints.push_back(cv::Point3f(4.5, 4.5, 0.0));
-  objectPoints.push_back(cv::Point3f(4.5, -4.5, 0.0));
-  objectPoints.push_back(cv::Point3f(-4.5, -4.5, 0.0));
-  objectPoints.push_back(cv::Point3f(-4.5, 4.5, 0.0));
+  objectPoints.push_back(cv::Point3f(outer_tag_size/2, outer_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(outer_tag_size/2, -outer_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(-outer_tag_size/2, -outer_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(-outer_tag_size/2, outer_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(inner_tag_size/2, inner_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(inner_tag_size/2, -inner_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(-inner_tag_size/2, -inner_tag_size/2, 0.0));
+  objectPoints.push_back(cv::Point3f(-inner_tag_size/2, inner_tag_size/2, 0.0));
   cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
 }
 
