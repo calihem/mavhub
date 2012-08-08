@@ -14,7 +14,6 @@
 #ifdef HAVE_OPENCV2
 #include <opencv/cv.h>
 
-#include <inttypes.h> //uint8_t
 #include <vector>
 
 #define FIDUCAL_LOG 1
@@ -41,6 +40,10 @@ class FiducalApp : public MavlinkAppLayer,
 		cv::Mat dist_coeffs; ///< distortion coefficients of camera.
     cv::Mat video_data;
     bool new_video_data;
+    double resizeFactor;
+    cv::Mat rvec;
+    cv::Mat tvec;
+    cv::Mat fvec;
     void load_calibration_data(const std::string &filename);
     cv::Point calcCentroid(std::vector<cv::Point> points);
     void findTwoRectangles(const cv::Mat &grayscale, std::vector< std::vector<cv::Point> > &markers);

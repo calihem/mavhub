@@ -21,6 +21,8 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
 	hub::gstreamer::VideoClient(),
 	cam_matrix(3, 3, CV_32FC1),
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
+  new_video_data(false),
+  resizeFactor(0.2),
 #ifdef FIDUCAL_LOG
 	, log_file("fiducal_log.data")
 #endif
@@ -49,11 +51,9 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
 
 #ifdef FIDUCAL_LOG
 	log_file << "# time [ms]"
-		<< " | IMU roll angle [rad] | IMU pitch angle [rad] | IMU yaw angle [rad]"
-		<< " | roll angular speed [rad/s] | pitch angular speed [rad/s] | yaw angular speed [rad/s]"
-		<< " | altitude [cm]"
-		<< " | Cam roll angle [rad] | Cam pitch angle [rad] | Cam yaw angle [rad]"
-		<< " | Cam x position [cm] | Cam y positionn [cm] | Cam z position [cm]"
+    << " | tag_rotation[0] | tag_rotation[1] | tag_rotation[2]"
+    << " | tag_translation[0] | tag_translation[1] | tag_translation[2]"
+    << " | camera_position[0] | camera_position[1] | camera_position[2]"
 		<< std::endl;
 	log_file << "#" << std::endl;
 	log_file << setprecision(5) << fixed << setfill(' ');
@@ -111,25 +111,37 @@ void FiducalApp::run()
 	while( !interrupted() ) {
     if(new_video_data)
     {
-	    Lock sync_lock(sync_mutex);
+      cv::Mat grayscale;
+      {
+        Lock sync_lock(sync_mutex);
+        video_data.copyTo(grayscale);
+      }
       std::vector<std::vector<cv::Point> > markers;
-      findTwoRectangles(video_data, markers);
+      findTwoRectangles(grayscale, markers);
 
       std::vector<cv::Point2f> outerMarkers;
       std::vector<cv::Point2f> innerMarkers;
       if(markers.size() == 2)
       {
-        refineMarkers(video_data, markers, outerMarkers, innerMarkers);
-        orderMarkers(video_data, outerMarkers, innerMarkers);
+        refineMarkers(grayscale, markers, outerMarkers, innerMarkers);
+        orderMarkers(grayscale, outerMarkers, innerMarkers);
 
-        cv::Mat rvec;
-        cv::Mat tvec;
         doGeometry(outerMarkers, innerMarkers, cameraMatrix, distCoeffs, rvec, tvec);
         
         cv::Mat rmat;
         cv::Rodrigues(-rvec, rmat);
-        cv::Mat finalVec = rmat*tvec;
-        std::cout << finalVec << std::endl;
+        fvec = rmat*tvec;
+        log_file << setw(13) << get_time_ms()
+          << setw(10) << setprecision(7) << right << rvec.at<double>(0)
+          << setw(10) << setprecision(7) << right << rvec.at<double>(1)
+          << setw(10) << setprecision(7) << right << rvec.at<double>(2)
+          << setw(10) << setprecision(7) << right << tvec.at<double>(0)
+          << setw(10) << setprecision(7) << right << tvec.at<double>(1)
+          << setw(10) << setprecision(7) << right << tvec.at<double>(2)
+          << setw(10) << setprecision(7) << right << fvec.at<double>(0)
+          << setw(10) << setprecision(7) << right << fvec.at<double>(1)
+          << setw(10) << setprecision(7) << right << fvec.at<double>(2)
+          << std::endl;
       }
       
       new_video_data = false;
@@ -273,7 +285,6 @@ void FiducalApp::refineMarkers(const cv::Mat &grayscale, std::vector<std::vector
 
 void FiducalApp::orderMarkers(const cv::Mat &grayscale, std::vector<cv::Point2f> &outerMarkers, std::vector<cv::Point2f> &innerMarkers)
 {
-  double resizeFactor = 0.2;
   cv::Mat grayscaleSmall;
   cv::resize(grayscale, grayscaleSmall, cv::Size(0, 0), resizeFactor, resizeFactor);
 
