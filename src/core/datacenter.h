@@ -11,6 +11,11 @@
 #include <mavlink.h>
 #endif // HAVE_MAVLINK_H
 
+#ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
+#endif // HAVE_OPENCV2
+
+
 #define DC_NUMSENS 10 // FIXME: get from config
 
 namespace mavhub {
@@ -62,6 +67,13 @@ namespace mavhub {
 
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
+#ifdef HAVE_OPENCV2
+      // fiducal data
+      static void set_fiducal_rot_raw(const cv::Mat &rvec);
+      static void set_fiducal_trans_raw(const cv::Mat &tvec);
+      static cv::Mat get_fiducal_rot_raw();
+      static cv::Mat get_fiducal_trans_raw();
+#endif // HAVE_OPENCV2
 			/// set FC legacy extctrl components
 			static void set_extctrl_pitch(const double pitch);
 			static void set_extctrl_roll(const double roll);
@@ -99,6 +111,12 @@ namespace mavhub {
 			/// Magnetic kompass
 			static mavlink_huch_magnetic_kompass_t huch_magnetic_kompass;
 #endif // MAVLINK_ENABLED_HUCH
+#ifdef HAVE_OPENCV2
+      // fiducal data structures
+      static cv::Mat fiducal_rot_raw;
+      static cv::Mat fiducal_trans_raw;
+      static pthread_mutex_t fiducal_raw_mutex;
+#endif // HAVE_OPENCV2
 
 			//sync data
 			static pthread_mutex_t raw_imu_mutex;
@@ -288,6 +306,38 @@ namespace mavhub {
 	}
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
+
+#ifdef HAVE_OPENCV2
+   // fiducal data
+  inline void DataCenter::set_fiducal_rot_raw(const cv::Mat &rvec) {
+		using namespace cpp_pthread;
+    
+    Lock fiducal_lock(fiducal_raw_mutex);
+    rvec.copyTo(fiducal_rot_raw);
+  }
+  inline void DataCenter::set_fiducal_trans_raw(const cv::Mat &tvec) {
+		using namespace cpp_pthread;
+    
+    Lock fiducal_lock(fiducal_raw_mutex);
+    tvec.copyTo(fiducal_rot_raw);
+  }
+  inline cv::Mat DataCenter::get_fiducal_rot_raw() {
+		using namespace cpp_pthread;
+    
+    cv::Mat rvec;
+    Lock fiducal_lock(fiducal_raw_mutex);
+    fiducal_rot_raw.copyTo(rvec);
+    return rvec;
+  }
+  inline cv::Mat DataCenter::get_fiducal_trans_raw(){
+		using namespace cpp_pthread;
+    
+    cv::Mat tvec;
+    Lock fiducal_lock(fiducal_raw_mutex);
+    fiducal_rot_raw.copyTo(tvec);
+    return tvec;
+  }
+#endif // HAVE_OPENCV2
 
 	// extctrl component setters
 	inline void DataCenter::set_extctrl_pitch(const double pitch) {
