@@ -145,6 +145,8 @@ void FiducalApp::run()
           << setw(10) << setprecision(7) << right << fvec.at<double>(1)
           << setw(10) << setprecision(7) << right << fvec.at<double>(2)
           << std::endl;
+        Datacenter::set_fiducal_rot_raw(rvec);
+        Datacenter::set_fiducal_trans_raw(tvec);
       }
       
       new_video_data = false;
