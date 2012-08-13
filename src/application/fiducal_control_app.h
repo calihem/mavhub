@@ -17,7 +17,43 @@
 namespace mavhub {
 
 class FiducalControlApp : public MavlinkAppLayer{
+  class PIDController{
+    public:
+      PIDController(double kp, double ki, double kp, double imax, double eps, double setpoint) Kp(kp), Ki(ki), Kp(kp), iMax(imax), epsilon(eps), setPoint(setpoint), prevError(0.0), integral(0.0) { }
+      double operator(double dt) {
+        float error;
+        float derivative;
+        float output;
 
+        error = setpoint - actual_position;
+        
+        if(abs(error) > epsilon) {
+          integral = integral + error*dt;
+        }
+        if(integral > iMax) {
+          integral = iMax;
+        }
+        else if(integral < -iMax) {
+          integral = -iMax;
+        }
+        derivative = (error - prevError)/dt;
+        output = Kp*error + Ki*integral + Kd*derivative;
+
+        //Update error
+        prevError = error;
+
+        return output;
+      }
+    private:
+      double Kp;
+      double Ki;
+      double Kd;
+      double iMax;
+      double epsilon;
+      double setPoint;
+      double prevError;
+      double integral;
+  };
 	public:
 		FiducalControlApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
 		virtual ~FiducalApp();
