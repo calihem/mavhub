@@ -83,4 +83,4 @@ class FiducalControlApp : public MavlinkAppLayer {
 
 #endif // HAVE_OPENCV2
 #endif // HAVE_MAVLINK_H
-#endif // _FIDUCAL_APP_CONTROL_H_
+#endif // _FIDUCAL_CONTROL_APP_H_

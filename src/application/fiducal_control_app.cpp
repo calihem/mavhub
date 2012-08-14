@@ -15,8 +15,8 @@ using namespace cpp_pthread;
 namespace mavhub {
 
 FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
-	AppInterface("slam_app", loglevel),
-	MavlinkAppLayer("slam_app", loglevel),
+	AppInterface("fiducal_control_app", loglevel),
+	MavlinkAppLayer("fiducal_control_app", loglevel),
   rvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   tvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   fvec(cv::Mat::zeros(3, 1, CV_32FC1)),
