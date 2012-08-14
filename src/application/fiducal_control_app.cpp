@@ -74,6 +74,6 @@ void FiducalControlApp::run()
 
 } // namespace mavhub
 
-#endif // HAVE_OPENCV2 && CV_MINOR_VERSION > 1
+#endif // HAVE_OPENCV2
 
 #endif // HAVE_MAVLINK_H
