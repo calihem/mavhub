@@ -11,7 +11,7 @@ libapp_a_SOURCES = \
 	app_store.cpp \
 	core_app.cpp \
   fiducal_app.cpp \
-  fiducal_control_app \
+  fiducal_control_app.cpp \
 	mavlink_mk_app.cpp \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
