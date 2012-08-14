@@ -1,5 +1,5 @@
 #ifndef _FIDUCAL_CONTROL_APP_H_
-#define _FIDUCAL_APP_H_
+#define _FIDUCAL_CONTROL_APP_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
