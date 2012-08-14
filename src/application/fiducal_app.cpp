@@ -4,10 +4,12 @@
 
 #ifdef HAVE_GSTREAMER
 
-#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION >= 3)
+//#ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
 
 #include "core/logger.h"
 #include "core/datacenter.h"
+#include "protocol/protocollayer.h"
 #include "utility.h"
 
 using namespace std;
@@ -24,7 +26,7 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
   new_video_data(false),
   resizeFactor(0.2),
   outer_tag_size(15.0),
-  inner_tag_size(9.0),
+  inner_tag_size(9.0)
 #ifdef FIDUCAL_LOG
 	, log_file("fiducal_log.data")
 #endif
@@ -129,7 +131,7 @@ void FiducalApp::run()
         refineMarkers(grayscale, markers, outerMarkers, innerMarkers);
         orderMarkers(grayscale, outerMarkers, innerMarkers);
 
-        doGeometry(outerMarkers, innerMarkers, cameraMatrix, distCoeffs, rvec, tvec);
+        doGeometry(outerMarkers, innerMarkers, cam_matrix, dist_coeffs, rvec, tvec);
         
         cv::Mat rmat;
         cv::Rodrigues(-rvec, rmat);
@@ -145,8 +147,8 @@ void FiducalApp::run()
           << setw(10) << setprecision(7) << right << fvec.at<double>(1)
           << setw(10) << setprecision(7) << right << fvec.at<double>(2)
           << std::endl;
-        Datacenter::set_fiducal_rot_raw(rvec);
-        Datacenter::set_fiducal_trans_raw(tvec);
+        DataCenter::set_fiducal_rot_raw(rvec);
+        DataCenter::set_fiducal_trans_raw(tvec);
       }
       
       new_video_data = false;
@@ -178,12 +180,12 @@ void FiducalApp::findTwoRectangles(const cv::Mat &grayscale, std::vector< std::v
   cv::findContours(binary, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
   std::vector<std::vector<cv::Point> > largeContours;
-  for(int i = 0; i < hierarchy.size(); i++)
+  for(unsigned int i = 0; i < hierarchy.size(); i++)
     if(std::fabs(cv::contourArea(contours[i])) > 100)
       largeContours.push_back(contours[i]);
   
   std::vector<std::vector<cv::Point> > rectangles;
-  for(int i = 0; i < largeContours.size(); i++)
+  for(unsigned int i = 0; i < largeContours.size(); i++)
   {
     cv::vector<cv::Point> approx;
     cv::approxPolyDP(cv::Mat(largeContours[i]), approx, cv::arcLength(cv::Mat(largeContours[i]), true)*0.02, true);
@@ -191,9 +193,9 @@ void FiducalApp::findTwoRectangles(const cv::Mat &grayscale, std::vector< std::v
       rectangles.push_back(approx);
   }
   
-  for(int i = 0; i < rectangles.size(); i++)
+  for(unsigned int i = 0; i < rectangles.size(); i++)
   {
-    for(int j = 0; j < i; j++)
+    for(unsigned int j = 0; j < i; j++)
     {
       std::vector<cv::Point> marker1;
       std::vector<cv::Point> marker2;
@@ -417,8 +419,6 @@ void FiducalApp::doGeometry(const std::vector<cv::Point2f> &outerMarkers, const 
 
 } // namespace mavhub
 
-#endif // HAVE_OPENCV2 && CV_MINOR_VERSION > 1
-
+//#endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
-
 #endif // HAVE_MAVLINK_H

@@ -15,6 +15,7 @@
 #include <opencv/cv.h>
 
 #include <vector>
+#include "protocol/protocollayer.h"
 
 #define FIDUCAL_LOG 1
 
@@ -52,7 +53,7 @@ class FiducalApp : public MavlinkAppLayer,
     void refineMarkers(const cv::Mat &grayscale, std::vector<std::vector<cv::Point> > &markers, std::vector<cv::Point2f> &outerMarkers, std::vector<cv::Point2f> &innerMarkers);
     void orderMarkers(const cv::Mat &grayscale, std::vector<cv::Point2f> &outerMarkers, std::vector<cv::Point2f> &innerMarkers);
     void doGeometry(const std::vector<cv::Point2f> &outerMarkers, const std::vector<cv::Point2f> &innerMarkers, const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs, cv::Mat &rvec, cv::Mat &tvec);
-#ifdef _LOG
+#ifdef FIDUCAL_LOG
 		std::ofstream log_file;
 #endif
 };
