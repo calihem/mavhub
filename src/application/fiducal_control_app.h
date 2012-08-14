@@ -66,6 +66,8 @@ class FiducalControlApp : public MavlinkAppLayer {
 		virtual void run();
 
 	private:
+		unsigned int target_system;
+		unsigned int target_component;
     cv::Mat rvec;
     cv::Mat tvec;
     cv::Mat fvec;

@@ -17,6 +17,8 @@ namespace mavhub {
 FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
 	AppInterface("fiducal_control_app", loglevel),
 	MavlinkAppLayer("fiducal_control_app", loglevel),
+  target_system(1),
+  target_component(1),
   rvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   tvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   fvec(cv::Mat::zeros(3, 1, CV_32FC1)),
@@ -29,6 +31,9 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 	, logFile("fiducal_control_log.data")
 #endif
 	{
+	
+  assign_variable_from_args(target_system);
+	assign_variable_from_args(target_component);
 
 #ifdef FIDUCAL_CONTROL_LOG
 	logFile << "# time [ms]"
@@ -69,10 +74,25 @@ void FiducalControlApp::run()
     double ctrlLatX = pidLatX.step(fvec.at<double>(1), dt);
     double ctrlLatY = pidLatY.step(fvec.at<double>(2), dt);
     double ctrlAlt = pidAlt.step(fvec.at<double>(3), dt); 
+
+    mavlink_message_t ctrlMsg;
+    mavlink_msg_huch_ext_ctrl_pack(
+      system_id(),
+      component_id,
+      &ctrlMsg,
+      target_system,
+      target_component,
+      0, // mask
+      ctrlLatY * 100, // roll
+      ctrlLatX * 100, // pitch
+      ctrlYaw * 100, // yaw
+      ctrlAlt * 100 // thrust 0..1000
+    );
+    send(ctrlMsg);
   }
 }
 
-} // namespace mavhub
+}
 
 #endif // HAVE_OPENCV2
 
