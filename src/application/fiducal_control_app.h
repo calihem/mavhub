@@ -11,21 +11,23 @@
 #include <opencv/cv.h>
 
 #include <vector>
+#include "protocol/protocollayer.h"
+#include "module/exec_timing.h"
 
-#define FIDUCAL_LOG 1
+#define FIDUCAL_CONTROL_LOG 1
 
 namespace mavhub {
 
-class FiducalControlApp : public MavlinkAppLayer{
+class FiducalControlApp : public MavlinkAppLayer {
   class PIDController{
     public:
-      PIDController(double kp, double ki, double kp, double imax, double eps, double setpoint) Kp(kp), Ki(ki), Kp(kp), iMax(imax), epsilon(eps), setPoint(setpoint), prevError(0.0), integral(0.0) { }
-      double operator(double dt) {
+      PIDController(double kp, double ki, double kd, double imax, double eps, double setpoint) : Kp(kp), Ki(ki), Kd(kd), iMax(imax), epsilon(eps), setPoint(setpoint), prevError(0.0), integral(0.0) { }
+      double step(double processValue, double dt) {
         float error;
         float derivative;
         float output;
 
-        error = setpoint - actual_position;
+        error = setPoint - processValue;
         
         if(abs(error) > epsilon) {
           integral = integral + error*dt;
@@ -44,7 +46,6 @@ class FiducalControlApp : public MavlinkAppLayer{
 
         return output;
       }
-    private:
       double Kp;
       double Ki;
       double Kd;
@@ -56,7 +57,7 @@ class FiducalControlApp : public MavlinkAppLayer{
   };
 	public:
 		FiducalControlApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
-		virtual ~FiducalApp();
+		virtual ~FiducalControlApp();
 
 		virtual void handle_input(const mavlink_message_t &msg);
 		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
@@ -68,9 +69,13 @@ class FiducalControlApp : public MavlinkAppLayer{
     cv::Mat rvec;
     cv::Mat tvec;
     cv::Mat fvec;
-    cv::Mat setpoint;
-#ifdef _LOG
-		std::ofstream log_file;
+    PIDController pidYaw;
+    PIDController pidLatX;
+    PIDController pidLatY;
+    PIDController pidAlt;
+    Exec_Timing execTiming;
+#ifdef FIDUCAL_CONTROL_LOG
+		std::ofstream logFile;
 #endif
 };
 
