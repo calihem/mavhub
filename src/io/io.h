@@ -92,6 +92,9 @@ inline const std::string& IOInterface::description() const {
 }
 
 inline int IOInterface::enable_blocking_mode(bool enabled) {
+	//TODO: check return code
+	if(!is_open()) return -1;
+
 	int mode = fcntl(fd, F_GETFL, 0);
 	
 	if(enabled) {
@@ -126,10 +129,12 @@ inline void IOInterface::close() {
 }
 
 inline ssize_t IOInterface::read(void *buf, size_t nbyte) const {
+	if(!is_open()) return 0;
 	return ::read(fd, buf, nbyte);
 }
 
 inline ssize_t IOInterface::write(const void *buf, size_t nbyte) const {
+	if(!is_open()) return 0;
 	return ::write(fd, buf, nbyte);
 }
 
