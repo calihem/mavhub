@@ -18,8 +18,8 @@ using namespace cpp_pthread;
 namespace mavhub {
 
 FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
-	AppInterface("slam_app", loglevel),
-	MavlinkAppLayer("slam_app", loglevel),
+	AppInterface("fiducal_app", loglevel),
+	MavlinkAppLayer("fiducal_app", loglevel),
 	hub::gstreamer::VideoClient(),
 	cam_matrix(3, 3, CV_32FC1),
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
@@ -31,7 +31,6 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
 	, log_file("fiducal_log.data")
 #endif
 	{
-
 	pthread_mutex_init(&sync_mutex, NULL);
 
 	// set sink name
