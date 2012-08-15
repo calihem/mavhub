@@ -157,7 +157,7 @@ void FiducalApp::run()
   }
 }
 
-cv::Point calcCentroid(std::vector<cv::Point> points)
+cv::Point FiducalApp::calcCentroid(std::vector<cv::Point> points)
 {
   cv::Point centroid;
   for(std::vector<cv::Point>::iterator it = points.begin(); it != points.end(); it++)
