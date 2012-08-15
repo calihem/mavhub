@@ -136,15 +136,15 @@ void FiducalApp::run()
         cv::Rodrigues(-rvec, rmat);
         fvec = rmat*tvec;
         log_file << setw(13) << get_time_ms()
-          << setw(10) << setprecision(7) << right << rvec.at<double>(0)
-          << setw(10) << setprecision(7) << right << rvec.at<double>(1)
-          << setw(10) << setprecision(7) << right << rvec.at<double>(2)
-          << setw(10) << setprecision(7) << right << tvec.at<double>(0)
-          << setw(10) << setprecision(7) << right << tvec.at<double>(1)
-          << setw(10) << setprecision(7) << right << tvec.at<double>(2)
-          << setw(10) << setprecision(7) << right << fvec.at<double>(0)
-          << setw(10) << setprecision(7) << right << fvec.at<double>(1)
-          << setw(10) << setprecision(7) << right << fvec.at<double>(2)
+          << setw(10) << setprecision(6) << right << rvec.at<double>(0)
+          << setw(10) << setprecision(6) << right << rvec.at<double>(1)
+          << setw(10) << setprecision(6) << right << rvec.at<double>(2)
+          << setw(10) << setprecision(6) << right << tvec.at<double>(0)
+          << setw(10) << setprecision(6) << right << tvec.at<double>(1)
+          << setw(10) << setprecision(6) << right << tvec.at<double>(2)
+          << setw(10) << setprecision(6) << right << fvec.at<double>(0)
+          << setw(10) << setprecision(6) << right << fvec.at<double>(1)
+          << setw(10) << setprecision(6) << right << fvec.at<double>(2)
           << std::endl;
         DataCenter::set_fiducal_rot_raw(rvec);
         DataCenter::set_fiducal_trans_raw(tvec);
@@ -153,7 +153,7 @@ void FiducalApp::run()
       new_video_data = false;
     }
     //FIXME: remove usleep
-    usleep(5000);
+    usleep(1000);
   }
 }
 
