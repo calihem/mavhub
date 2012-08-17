@@ -35,5 +35,11 @@ mavlink_mk_fc_status_t DataCenter::mk_fc_status = {};
 mavlink_huch_exp_ctrl_rx_t DataCenter::exp_ctrl_rx_data = {};
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
+
+#ifdef HAVE_OPENCV2
+pthread_mutex_t DataCenter::fiducal_raw_mutex = PTHREAD_MUTEX_INITIALIZER;
+cv::Mat DataCenter::fiducal_rot_raw = cv::Mat();
+cv::Mat DataCenter::fiducal_trans_raw = cv::Mat();
+#endif // HAVE_OPENCV2
 	
 } //namespace mavhub

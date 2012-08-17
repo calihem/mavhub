@@ -21,6 +21,8 @@
 #include "module/bridge_osc.h"
 #include "module/ui_potibox.h"
 #include "core_app.h"
+#include "fiducal_app.h"
+#include "fiducal_control_app.h"
 #include "mavlink_mk_app.h"
 #include "mavlink_mkhuch_app.h"
 #include "mk_app.h"
@@ -121,6 +123,22 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		FC_Mpkg *fc_mpkg_app = new FC_Mpkg(component_id);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(fc_mpkg_app);
 #endif // HAVE_MKLINK_H
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "fiducal_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_OPENCV2
+		FiducalApp *f_app = new FiducalApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(f_app);
+#endif // HAVE_OPENCV2
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "fiducal_control_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_OPENCV2
+		FiducalControlApp *f_app = new FiducalControlApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(f_app);
+#endif // HAVE_OPENCV2
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "ctrl_hover_app") {
 #ifdef HAVE_MAVLINK_H
