@@ -5,6 +5,8 @@
 #ifdef HAVE_OPENCV2
 #include <opencv/cv.h>
 
+#include <sstream>
+
 #include "core/logger.h"
 #include "core/datacenter.h"
 #include "utility.h"
@@ -22,10 +24,10 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   rvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   tvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   fvec(cv::Mat::zeros(3, 1, CV_32FC1)),
-  pidYaw(0.1, 0.01, 0.001, 100.0, 0.1, 0.0),
-  pidLatX(0.1, 0.01, 0.001, 100.0, 0.1, 0.0),
-  pidLatY(0.1, 0.01, 0.001, 100.0, 0.1, 0.0),
-  pidAlt(0.1, 0.01, 0.001, 100.0, 0.1, 100.0),
+  pidYaw(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
+  pidLatX(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
+  pidLatY(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
+  pidAlt(1e-1, 0.0, 0.0, 1e1, 1.0, 50.0),
 	execTiming(100)
 #ifdef FIDUCAL_CONTROL_LOG
 	, logFile("fiducal_control_log.data")
@@ -37,9 +39,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 
 #ifdef FIDUCAL_CONTROL_LOG
 	logFile << "# time [ms]"
-    << " | tag_rotation[0] | tag_rotation[1] | tag_rotation[2]"
-    << " | tag_translation[0] | tag_translation[1] | tag_translation[2]"
-    << " | camera_position[0] | camera_position[1] | camera_position[2]"
+    << " | ctrlYaw | ctrlLatX | ctrlLatY | ctrlAlt"
 		<< std::endl;
 	logFile << "#" << std::endl;
 	logFile << setprecision(5) << fixed << setfill(' ');
@@ -66,29 +66,51 @@ void FiducalControlApp::run()
     // do stuff
     rvec = DataCenter::get_fiducal_rot_raw();
     tvec = DataCenter::get_fiducal_trans_raw();
-    cv::Mat rmat;
-    cv::Rodrigues(-rvec, rmat);
-    fvec = rmat*tvec;
-    // now control:
-    double ctrlYaw = pidYaw.step(rvec.at<double>(3), dt);
-    double ctrlLatX = pidLatX.step(fvec.at<double>(1), dt);
-    double ctrlLatY = pidLatY.step(fvec.at<double>(2), dt);
-    double ctrlAlt = pidAlt.step(fvec.at<double>(3), dt); 
 
-    mavlink_message_t ctrlMsg;
-    mavlink_msg_huch_ext_ctrl_pack(
-      system_id(),
-      component_id,
-      &ctrlMsg,
-      target_system,
-      target_component,
-      0, // mask
-      ctrlLatY * 100, // roll
-      ctrlLatX * 100, // pitch
-      ctrlYaw * 100, // yaw
-      ctrlAlt * 100 // thrust 0..1000
-    );
-    send(ctrlMsg);
+    if(!rvec.empty() && !tvec.empty())
+    {
+      cv::Mat rmat;
+      cv::Rodrigues(-rvec, rmat);
+      fvec = rmat*tvec;
+      // now control:
+      double ctrlYaw = pidYaw.step(rvec.at<double>(1), dt);
+      double ctrlLatX = pidLatX.step(fvec.at<double>(0), dt);
+      double ctrlLatY = pidLatY.step(fvec.at<double>(1), dt);
+      double ctrlAlt = pidAlt.step(fvec.at<double>(2), dt); 
+
+      std::stringstream ss;
+      ss 
+        << std::setw(8) << std::setprecision(6) << ctrlYaw << " "
+        << std::setw(8) << std::setprecision(6) << ctrlLatX << " "
+        << std::setw(8) << std::setprecision(6) << ctrlLatY << " "
+        << std::setw(8) << std::setprecision(6) << ctrlAlt << " "
+        << std::endl;
+      std::cout << ss.str() << std::endl;
+#ifdef FIDUCAL_CONTROL_LOG
+      logFile 
+	      << std::setw(14) << get_time_ms()
+        << std::setw(10) << std::setprecision(6) << ctrlYaw << " "
+        << std::setw(10) << std::setprecision(6) << ctrlLatX << " "
+        << std::setw(10) << std::setprecision(6) << ctrlLatY << " "
+        << std::setw(10) << std::setprecision(6) << ctrlAlt << " "
+        << std::endl;
+#endif
+
+      mavlink_message_t ctrlMsg;
+      mavlink_msg_huch_ext_ctrl_pack(
+        system_id(),
+        component_id,
+        &ctrlMsg,
+        target_system,
+        target_component,
+        0, // mask
+        ctrlLatY * 100, // roll
+        ctrlLatX * 100, // pitch
+        ctrlYaw * 100, // yaw
+        ctrlAlt * 100 // thrust 0..1000
+      );
+      send(ctrlMsg);
+    }
   }
 }
 
