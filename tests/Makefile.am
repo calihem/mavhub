@@ -11,20 +11,45 @@ test_mavhub_SOURCES =  \
 	featureprojection_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
+	sba_test.cpp \
 	utility_test.cpp \
 	application/acc_calibration_app_test.cpp
+
+SRC_EXTRA_LIBS = 
+if COND_USE_GSTREAMER
+SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libgstreamer.a
+endif
+
+if COND_OPENGL
+SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libopengl.a
+endif
+
+if COND_OPENCV2
+SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libslam.a
+endif
+
+THIRDPARTY_EXTRA_LIBS =
+if COND_OPENCV2
+THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/libbrisk.a \
+	$(top_builddir)/thirdparty/libagast.a
+endif
+
+if COND_LIBLAPACK
+if COND_LIBBLAS
+THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/liblevmar.a \
+	$(top_builddir)/thirdparty/libsba.a
+endif
+endif
 
 test_mavhub_LDADD = \
 	$(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/core/libcore.a \
 	$(top_builddir)/src/io/libio.a \
-	$(top_builddir)/src/lib/libslam.a \
 	$(top_builddir)/src/module/libmodule.a \
 	$(top_builddir)/src/protocol/libprotocol.a \
 	$(top_builddir)/src/sensor/libsensor.a \
-	$(top_builddir)/thirdparty/libbrisk.a \
-	$(top_builddir)/thirdparty/libagast.a \
-	$(top_builddir)/thirdparty/liblevmar.a \
+	$(SRC_EXTRA_LIBS) \
+	$(THIRDPARTY_EXTRA_LIBS) \
 	$(OPENCV1_LIBS) \
 	$(OPENCV2_LIBS) \
 	$(AM_LDFLAGS)

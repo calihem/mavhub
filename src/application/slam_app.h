@@ -80,4 +80,4 @@ class SLAMApp : public MavlinkAppLayer,
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
-#endif // _OPENGL_APP_H_
+#endif // _SLAM_APP_H_
