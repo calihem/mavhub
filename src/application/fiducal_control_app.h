@@ -60,7 +60,6 @@ class FiducalControlApp : public MavlinkAppLayer {
 		virtual ~FiducalControlApp();
 
 		virtual void handle_input(const mavlink_message_t &msg);
-		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
 
 	protected:
 		virtual void run();
