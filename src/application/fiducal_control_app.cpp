@@ -49,6 +49,30 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 FiducalControlApp::~FiducalControlApp() {}
 
 void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
+	Logger::log(name(), "got mavlink_message", static_cast<int>(msg.msgid),
+		"from", static_cast<int>(msg.sysid),
+		static_cast<int>(msg.compid),
+		Logger::LOGLEVEL_DEBUG, _loglevel);
+
+	switch(msg.msgid) {
+		case MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT:
+			if( (mavlink_msg_set_local_position_setpoint_get_target_system(&msg) == system_id()) ) {
+        if(mavlink_msg_local_position_setpoint_get_coordinate_frame(&msg) == MAV_FRAME_LOCAL_ENU) {
+          double setYaw = mavlink_msg_set_local_position_setpoint_get_yaw(&msg);
+          double setLatX = mavlink_msg_set_local_position_setpoint_get_x(&msg);
+          double setLatY = mavlink_msg_set_local_position_setpoint_get_y(&msg);
+          double setAlt = mavlink_msg_set_local_position_setpoint_get_z(&msg);
+          
+          Lock input_lock(input_mutex);
+         
+          pidYaw.setPoint = setYaw;
+          pidLatX.setPoint = setLatX;
+          pidLatY.setPoint = setLatY;
+          pidAlt.setPoint = setAlt;
+        }
+      }
+      break;
+  }
 }
 
 void FiducalControlApp::run()
@@ -69,6 +93,7 @@ void FiducalControlApp::run()
 
     if(!rvec.empty() && !tvec.empty())
     {
+			Lock input_lock(input_mutex);
       cv::Mat rmat;
       cv::Rodrigues(-rvec, rmat);
       fvec = rmat*tvec;

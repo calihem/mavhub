@@ -65,6 +65,7 @@ class FiducalControlApp : public MavlinkAppLayer {
 		virtual void run();
 
 	private:
+		pthread_mutex_t input_mutex; ///< Mutex to sync between application thread and input calls
 		unsigned int target_system;
 		unsigned int target_component;
     cv::Mat rvec;
