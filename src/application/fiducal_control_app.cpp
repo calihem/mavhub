@@ -71,7 +71,14 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
           pidAlt.setPoint = setAlt;
         }
       }
-      break;
+    break;
+		case MAVLINK_MSG_ID_HUCH_POTIBOX:
+			int16_t analogPoti[6];
+			int16_t digitalPoti[4];
+			mavlink_msg_huch_potibox_get_a(&msg, analogPoti);
+			mavlink_msg_huch_potibox_get_d(&msg, digitalPoti);
+      // TODO: handle actual poti values
+    break;
   }
 }
 
