@@ -30,7 +30,8 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   pidAlt(1e-1, 0.0, 0.0, 1e1, 1.0, 50.0),
 	execTiming(100)
 #ifdef FIDUCAL_CONTROL_LOG
-	, logFile("fiducal_control_log.data")
+	, posLogFile("fiducal_control_pos_log.data")
+	, potiLogFile("fiducal_control_poti_log.data")
 #endif
 	{
 	
@@ -38,11 +39,17 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 	assign_variable_from_args(target_component);
 
 #ifdef FIDUCAL_CONTROL_LOG
-	logFile << "# time [ms]"
+	posLogFile << "# time [ms]"
     << " | ctrlYaw | ctrlLatX | ctrlLatY | ctrlAlt"
 		<< std::endl;
-	logFile << "#" << std::endl;
-	logFile << setprecision(5) << fixed << setfill(' ');
+	posLogFile << "#" << std::endl;
+	posLogFile << setprecision(5) << fixed << setfill(' ');
+	
+  potiLogFile << "# time [ms]"
+    << " | a[0] | a[1] | a[2] | a[3] | a[4] | a[5]"
+    << " | d[0] | d[1] | d[2] | d[3]"
+		<< std::endl;
+	potiLogFile << "#" << std::endl;
 #endif
 }
 
@@ -78,6 +85,21 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
 			mavlink_msg_huch_potibox_get_a(&msg, analogPoti);
 			mavlink_msg_huch_potibox_get_d(&msg, digitalPoti);
       // TODO: handle actual poti values
+#ifdef FIDUCAL_CONTROL_LOG
+      potiLogFile 
+	      << std::setw(14) << get_time_ms()
+        << std::setw(6) << analogPoti[0]  << " "
+        << std::setw(6) << analogPoti[1]  << " "
+        << std::setw(6) << analogPoti[2]  << " "
+        << std::setw(6) << analogPoti[3]  << " "
+        << std::setw(6) << analogPoti[4]  << " "
+        << std::setw(6) << analogPoti[5]  << " "
+        << std::setw(6) << digitalPoti[0]  << " "
+        << std::setw(6) << digitalPoti[1]  << " "
+        << std::setw(6) << digitalPoti[2]  << " "
+        << std::setw(6) << digitalPoti[3]  << " "
+        << std::endl;
+#endif
     break;
   }
 }
@@ -119,7 +141,7 @@ void FiducalControlApp::run()
         << std::endl;
       std::cout << ss.str() << std::endl;
 #ifdef FIDUCAL_CONTROL_LOG
-      logFile 
+      posLogFile 
 	      << std::setw(14) << get_time_ms()
         << std::setw(10) << std::setprecision(6) << ctrlYaw << " "
         << std::setw(10) << std::setprecision(6) << ctrlLatX << " "

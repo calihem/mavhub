@@ -77,7 +77,8 @@ class FiducalControlApp : public MavlinkAppLayer {
     PIDController pidAlt;
     Exec_Timing execTiming;
 #ifdef FIDUCAL_CONTROL_LOG
-		std::ofstream logFile;
+		std::ofstream posLogFile;
+		std::ofstream potiLogFile;
 #endif
 };
 
