@@ -201,7 +201,7 @@ void FiducalControlApp::run()
       {
         struct timeval currTime;
 		    gettimeofday(&currTime, NULL);
-        double diffTime = (lastMesTime.tv_sec + lastMesTime.tv_usec*1e-6) - (currTime.tv_sec + currTime.tv_usec*1e-6);
+        double diffTime = (currTime.tv_sec + currTime.tv_usec*1e-6) - (lastMesTime.tv_sec + lastMesTime.tv_usec*1e-6);
         if(diffTime > 1.5)
         {
           mavlink_message_t ctrlMsg;
