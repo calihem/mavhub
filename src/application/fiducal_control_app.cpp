@@ -103,18 +103,18 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
         << std::setw(6) << digitalPoti[3]  << " "
         << std::endl;
 #endif
-      pidYaw.Kp;
-      pidYaw.Ki;
-      pidYaw.Kd;
-      pidYaw.setPoint;
-      pidLatX.Kp;
-      pidLatX.Ki;
-      pidLatX.Kd;
-      pidLatX.setPoint;
-      pidLatY.Kp;
-      pidLatY.Ki;
-      pidLatY.Kd;
-      pidLatY.setPoint;
+//      pidYaw.Kp;
+//      pidYaw.Ki;
+//      pidYaw.Kd;
+//      pidYaw.setPoint;
+//      pidLatX.Kp;
+//      pidLatX.Ki;
+//      pidLatX.Kd;
+//      pidLatX.setPoint;
+//      pidLatY.Kp;
+//      pidLatY.Ki;
+//      pidLatY.Kd;
+//      pidLatY.setPoint;
       pidAlt.Kp = double(analogPoti[0]) / 1024 * 1e-1;
       pidAlt.Ki = double(analogPoti[1]) / 1024 * 2e-2;
       pidAlt.Kd = double(analogPoti[2]) / 1024 * 5e-3;
