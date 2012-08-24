@@ -174,6 +174,14 @@ void FiducalControlApp::run()
           << std::endl;
 #endif
 
+        int msgRoll = ctrlLatX * 100;
+        int msgPitch = ctrlLatY * 100;
+        int msgYaw = ctrlYaw * 100;
+        int msgThrust = ctrlAlt * 100; // 0..1000
+
+        msgRoll = msgRoll > maxRollPitch ? maxRollPitch : msgRoll;
+        msgPitch = msgPitch > maxRollPitch ? maxRollPitch : msgPitch;
+
         mavlink_message_t ctrlMsg;
         mavlink_msg_huch_ext_ctrl_pack(
           system_id(),
@@ -182,10 +190,10 @@ void FiducalControlApp::run()
           target_system,
           target_component,
           0, // mask
-          ctrlLatY * 100, // roll
-          ctrlLatX * 100, // pitch
-          ctrlYaw * 100, // yaw
-          ctrlAlt * 100 // thrust 0..1000
+          msgRoll,
+          msgPitch,
+          msgYaw,
+          msgThrust
         );
         send(ctrlMsg);
       }else
