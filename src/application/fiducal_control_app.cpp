@@ -29,6 +29,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   pidLatX(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidLatY(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidAlt(0.0, 0.0, 0.0, 1e1, 1.0, 50.0),
+  systemGain(100),
   hooverThrust(300),
   maxRollPitch(1000),
 	execTiming(100)
@@ -120,7 +121,8 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.Kd = double(analogPoti[2]) / 1024 * 5e-3;
       pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2;
 
-      maxRollPitch = int(double(analogPoti[4]) / 1024 * 3000);
+      systemGain = int(double(analogPoti[4]) / 1024 * 500);
+      maxRollPitch = int(double(analogPoti[5]) / 1024 * 3000);
       
     break;
   }
@@ -174,11 +176,10 @@ void FiducalControlApp::run()
           << std::setw(10) << std::setprecision(6) << ctrlAlt << " "
           << std::endl;
 #endif
-
-        int msgRoll = ctrlLatX * 100;
-        int msgPitch = ctrlLatY * 100;
-        int msgYaw = ctrlYaw * 100;
-        int msgThrust = ctrlAlt * 100 + hooverThrust; // 0..1000
+        int msgRoll = ctrlLatX * systemGain;
+        int msgPitch = ctrlLatY * systemGain;
+        int msgYaw = ctrlYaw * systemGain;
+        int msgThrust = ctrlAlt * systemGain + hooverThrust; // 0..systemGain0
 
         msgRoll = msgRoll > maxRollPitch ? maxRollPitch : msgRoll;
         msgPitch = msgPitch > maxRollPitch ? maxRollPitch : msgPitch;
