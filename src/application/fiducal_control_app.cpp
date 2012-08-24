@@ -6,6 +6,7 @@
 #include <opencv/cv.h>
 
 #include <sstream>
+#include <sys/time.h>
 
 #include "core/logger.h"
 #include "core/datacenter.h"
@@ -111,6 +112,10 @@ void FiducalControlApp::run()
   uint64_t dt = 0;
   int wait_time;
 
+  cv::Mat fvecOld;
+  struct timeval lastMesTime;
+	gettimeofday(&lastMesTime, NULL);
+
 	while( !interrupted() ) {
     // get correct timings
     wait_time = execTiming.calcSleeptime();
@@ -126,44 +131,66 @@ void FiducalControlApp::run()
       cv::Mat rmat;
       cv::Rodrigues(-rvec, rmat);
       fvec = rmat*tvec;
-      // now control:
-      double ctrlYaw = pidYaw.step(rvec.at<double>(1), dt);
-      double ctrlLatX = pidLatX.step(fvec.at<double>(0), dt);
-      double ctrlLatY = pidLatY.step(fvec.at<double>(1), dt);
-      double ctrlAlt = pidAlt.step(fvec.at<double>(2), dt); 
 
-      std::stringstream ss;
-      ss 
-        << std::setw(8) << std::setprecision(6) << ctrlYaw << " "
-        << std::setw(8) << std::setprecision(6) << ctrlLatX << " "
-        << std::setw(8) << std::setprecision(6) << ctrlLatY << " "
-        << std::setw(8) << std::setprecision(6) << ctrlAlt << " "
-        << std::endl;
-      std::cout << ss.str() << std::endl;
+      cv::Scalar fvecDiff = cv::sum(cv::abs(fvec-fvecOld));
+      if(fvecDiff[0] > 1e-5)
+      {
+	      gettimeofday(&lastMesTime, NULL);
+        fvec.copyTo(fvecOld);
+
+        // now control:
+        double ctrlYaw = pidYaw.step(rvec.at<double>(1), dt);
+        double ctrlLatX = pidLatX.step(fvec.at<double>(0), dt);
+        double ctrlLatY = pidLatY.step(fvec.at<double>(1), dt);
+        double ctrlAlt = pidAlt.step(fvec.at<double>(2), dt); 
+
 #ifdef FIDUCAL_CONTROL_LOG
-      posLogFile 
-	      << std::setw(14) << get_time_ms()
-        << std::setw(10) << std::setprecision(6) << ctrlYaw << " "
-        << std::setw(10) << std::setprecision(6) << ctrlLatX << " "
-        << std::setw(10) << std::setprecision(6) << ctrlLatY << " "
-        << std::setw(10) << std::setprecision(6) << ctrlAlt << " "
-        << std::endl;
+        posLogFile 
+          << std::setw(14) << get_time_ms()
+          << std::setw(10) << std::setprecision(6) << ctrlYaw << " "
+          << std::setw(10) << std::setprecision(6) << ctrlLatX << " "
+          << std::setw(10) << std::setprecision(6) << ctrlLatY << " "
+          << std::setw(10) << std::setprecision(6) << ctrlAlt << " "
+          << std::endl;
 #endif
 
-      mavlink_message_t ctrlMsg;
-      mavlink_msg_huch_ext_ctrl_pack(
-        system_id(),
-        component_id,
-        &ctrlMsg,
-        target_system,
-        target_component,
-        0, // mask
-        ctrlLatY * 100, // roll
-        ctrlLatX * 100, // pitch
-        ctrlYaw * 100, // yaw
-        ctrlAlt * 100 // thrust 0..1000
-      );
-      send(ctrlMsg);
+        mavlink_message_t ctrlMsg;
+        mavlink_msg_huch_ext_ctrl_pack(
+          system_id(),
+          component_id,
+          &ctrlMsg,
+          target_system,
+          target_component,
+          0, // mask
+          ctrlLatY * 100, // roll
+          ctrlLatX * 100, // pitch
+          ctrlYaw * 100, // yaw
+          ctrlAlt * 100 // thrust 0..1000
+        );
+        send(ctrlMsg);
+      }else
+      {
+        struct timeval currTime;
+		    gettimeofday(&currTime, NULL);
+        double diffTime = (lastMesTime.tv_sec + lastMesTime.tv_usec*1e-6) - (currTime.tv_sec + currTime.tv_usec*1e-6);
+        if(diffTime > 0.5)
+        {
+          mavlink_message_t ctrlMsg;
+          mavlink_msg_huch_ext_ctrl_pack(
+            system_id(),
+            component_id,
+            &ctrlMsg,
+            target_system,
+            target_component,
+            0, // mask
+            0, // roll
+            0, // pitch
+            0, // yaw
+            0 // thrust 0..1000
+          );
+          send(ctrlMsg);
+        }
+      }
     }
   }
 }
