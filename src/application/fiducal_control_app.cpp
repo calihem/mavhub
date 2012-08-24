@@ -33,7 +33,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   maxRollPitch(1000),
 	execTiming(100)
 #ifdef FIDUCAL_CONTROL_LOG
-	, posLogFile("fiducal_control_pos_log.data")
+	, ctrlLogFile("fiducal_control_ctrl_log.data")
 	, potiLogFile("fiducal_control_poti_log.data")
 #endif
 	{
@@ -42,11 +42,11 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 	assign_variable_from_args(target_component);
 
 #ifdef FIDUCAL_CONTROL_LOG
-	posLogFile << "# time [ms]"
+	ctrlLogFile << "# time [ms]"
     << " | ctrlYaw | ctrlLatX | ctrlLatY | ctrlAlt"
 		<< std::endl;
-	posLogFile << "#" << std::endl;
-	posLogFile << setprecision(5) << fixed << setfill(' ');
+	ctrlLogFile << "#" << std::endl;
+	ctrlLogFile << setprecision(5) << fixed << setfill(' ');
 	
   potiLogFile << "# time [ms]"
     << " | a[0] | a[1] | a[2] | a[3] | a[4] | a[5]"
@@ -166,7 +166,7 @@ void FiducalControlApp::run()
         double ctrlAlt = pidAlt.step(fvec.at<double>(2), dt); 
 
 #ifdef FIDUCAL_CONTROL_LOG
-        posLogFile 
+        ctrlLogFile 
           << std::setw(14) << get_time_ms()
           << std::setw(10) << std::setprecision(6) << ctrlYaw << " "
           << std::setw(10) << std::setprecision(6) << ctrlLatX << " "

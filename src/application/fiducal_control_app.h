@@ -79,7 +79,7 @@ class FiducalControlApp : public MavlinkAppLayer {
     int maxRollPitch;
     Exec_Timing execTiming;
 #ifdef FIDUCAL_CONTROL_LOG
-		std::ofstream posLogFile;
+		std::ofstream ctrlLogFile;
 		std::ofstream potiLogFile;
 #endif
 };
