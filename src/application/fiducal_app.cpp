@@ -135,6 +135,7 @@ void FiducalApp::run()
         cv::Mat rmat;
         cv::Rodrigues(-rvec, rmat);
         fvec = rmat*tvec;
+#ifdef FIDUCAL_LOG
         log_file << setw(13) << get_time_ms()
           << setw(10) << setprecision(6) << right << rvec.at<double>(0)
           << setw(10) << setprecision(6) << right << rvec.at<double>(1)
@@ -146,6 +147,7 @@ void FiducalApp::run()
           << setw(10) << setprecision(6) << right << fvec.at<double>(1)
           << setw(10) << setprecision(6) << right << fvec.at<double>(2)
           << std::endl;
+#endif
         DataCenter::set_fiducal_rot_raw(rvec);
         DataCenter::set_fiducal_trans_raw(tvec);
       }
