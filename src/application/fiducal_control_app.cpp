@@ -29,6 +29,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   pidLatX(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidLatY(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidAlt(1e-1, 0.0, 0.0, 1e1, 1.0, 50.0),
+  maxRollPitch(1000),
 	execTiming(100)
 #ifdef FIDUCAL_CONTROL_LOG
 	, posLogFile("fiducal_control_pos_log.data")
@@ -116,7 +117,9 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.Kp = double(analogPoti[0]) / 1024 * 1e-1;
       pidAlt.Ki = double(analogPoti[1]) / 1024 * 2e-2;
       pidAlt.Kd = double(analogPoti[2]) / 1024 * 5e-3;
-      pidAlt.setPoint = double(analogPoti[0]) / 1024 * 5e2;
+      pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2;
+
+      maxRollPitch = int(double(analogPoti[4]) / 1024 * 3000);
       
     break;
   }
