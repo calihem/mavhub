@@ -75,6 +75,8 @@ class FiducalControlApp : public MavlinkAppLayer {
     PIDController pidLatX;
     PIDController pidLatY;
     PIDController pidAlt;
+    int hooverThrust;
+    int maxRollPitch;
     Exec_Timing execTiming;
 #ifdef FIDUCAL_CONTROL_LOG
 		std::ofstream posLogFile;

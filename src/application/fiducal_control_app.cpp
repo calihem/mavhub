@@ -25,10 +25,11 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   rvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   tvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   fvec(cv::Mat::zeros(3, 1, CV_32FC1)),
-  pidYaw(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
-  pidLatX(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
-  pidLatY(1e-1, 0.0, 0.0, 1e1, 1.0, 0.0),
-  pidAlt(1e-1, 0.0, 0.0, 1e1, 1.0, 50.0),
+  pidYaw(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
+  pidLatX(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
+  pidLatY(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
+  pidAlt(0.0, 0.0, 0.0, 1e1, 1.0, 50.0),
+  hooverThrust(300),
   maxRollPitch(1000),
 	execTiming(100)
 #ifdef FIDUCAL_CONTROL_LOG
@@ -177,7 +178,7 @@ void FiducalControlApp::run()
         int msgRoll = ctrlLatX * 100;
         int msgPitch = ctrlLatY * 100;
         int msgYaw = ctrlYaw * 100;
-        int msgThrust = ctrlAlt * 100; // 0..1000
+        int msgThrust = ctrlAlt * 100 + hooverThrust; // 0..1000
 
         msgRoll = msgRoll > maxRollPitch ? maxRollPitch : msgRoll;
         msgPitch = msgPitch > maxRollPitch ? maxRollPitch : msgPitch;
@@ -214,7 +215,7 @@ void FiducalControlApp::run()
             0, // roll
             0, // pitch
             0, // yaw
-            0 // thrust 0..1000
+            hooverThrust // thrust 0..1000
           );
           send(ctrlMsg);
         }
