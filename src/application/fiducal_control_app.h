@@ -75,6 +75,7 @@ class FiducalControlApp : public MavlinkAppLayer {
     PIDController pidLatX;
     PIDController pidLatY;
     PIDController pidAlt;
+    int minimalThrust;
     int systemGain;
     int hooverThrust;
     int maxRollPitch;

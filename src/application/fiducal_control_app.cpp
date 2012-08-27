@@ -29,6 +29,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   pidLatX(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidLatY(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidAlt(0.0, 0.0, 0.0, 1e1, 1.0, 50.0),
+  minimalThrust(150),
   systemGain(100),
   hooverThrust(300),
   maxRollPitch(1000),
@@ -183,6 +184,7 @@ void FiducalControlApp::run()
 
         msgRoll = msgRoll > maxRollPitch ? maxRollPitch : msgRoll;
         msgPitch = msgPitch > maxRollPitch ? maxRollPitch : msgPitch;
+        msgThrust = msgThrust < minimalThrust? minimalThrust : msgThrust;
 
         mavlink_message_t ctrlMsg;
         mavlink_msg_huch_ext_ctrl_pack(
