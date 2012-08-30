@@ -23,7 +23,7 @@ class VideoClient {
 		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) = 0;
 
 	protected:
-		VideoServer *server;
+// 		VideoServer *server;
 
 	private:
 };
