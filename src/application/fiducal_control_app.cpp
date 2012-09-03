@@ -33,7 +33,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   systemGain(100),
   hooverThrust(300),
   maxRollPitch(1000),
-	execTiming(100)
+	execTiming(25)
 #ifdef FIDUCAL_CONTROL_LOG
 	, ctrlLogFile("fiducal_control_ctrl_log.data")
 	, potiLogFile("fiducal_control_poti_log.data")
@@ -139,6 +139,11 @@ void FiducalControlApp::run()
   cv::Mat fvecOld;
   struct timeval lastMesTime;
 	gettimeofday(&lastMesTime, NULL);
+    
+  int msgRoll   = 0;
+  int msgPitch  = 0;
+  int msgYaw    = 0;
+  int msgThrust = hooverThrust;
 
 	while( !interrupted() ) {
     // get correct timings
@@ -148,7 +153,7 @@ void FiducalControlApp::run()
     // do stuff
     rvec = DataCenter::get_fiducal_rot_raw();
     tvec = DataCenter::get_fiducal_trans_raw();
-
+        
     if(!rvec.empty() && !tvec.empty())
     {
 			Lock input_lock(input_mutex);
@@ -177,29 +182,15 @@ void FiducalControlApp::run()
           << std::setw(10) << std::setprecision(6) << ctrlAlt << " "
           << std::endl;
 #endif
-        int msgRoll = ctrlLatX * systemGain;
-        int msgPitch = ctrlLatY * systemGain;
-        int msgYaw = ctrlYaw * systemGain;
-        int msgThrust = ctrlAlt * systemGain + hooverThrust; // 0..systemGain0
+        msgRoll = ctrlLatX * systemGain;
+        msgPitch = ctrlLatY * systemGain;
+        msgYaw = ctrlYaw * systemGain;
+        msgThrust = ctrlAlt * systemGain + hooverThrust; // 0..systemGain0
 
         msgRoll = msgRoll > maxRollPitch ? maxRollPitch : msgRoll;
         msgPitch = msgPitch > maxRollPitch ? maxRollPitch : msgPitch;
         msgThrust = msgThrust < minimalThrust? minimalThrust : msgThrust;
 
-        mavlink_message_t ctrlMsg;
-        mavlink_msg_huch_ext_ctrl_pack(
-          system_id(),
-          component_id,
-          &ctrlMsg,
-          target_system,
-          target_component,
-          0, // mask
-          msgRoll,
-          msgPitch,
-          msgYaw,
-          msgThrust
-        );
-        send(ctrlMsg);
       }else
       {
         struct timeval currTime;
@@ -207,23 +198,27 @@ void FiducalControlApp::run()
         double diffTime = (currTime.tv_sec + currTime.tv_usec*1e-6) - (lastMesTime.tv_sec + lastMesTime.tv_usec*1e-6);
         if(diffTime > 1.5)
         {
-          mavlink_message_t ctrlMsg;
-          mavlink_msg_huch_ext_ctrl_pack(
-            system_id(),
-            component_id,
-            &ctrlMsg,
-            target_system,
-            target_component,
-            0, // mask
-            0, // roll
-            0, // pitch
-            0, // yaw
-            hooverThrust // thrust 0..1000
-          );
-          send(ctrlMsg);
+          msgRoll   = 0;
+          msgPitch  = 0;
+          msgYaw    = 0;
+          msgThrust = hooverThrust;
         }
       }
     }
+    mavlink_message_t ctrlMsg;
+    mavlink_msg_huch_ext_ctrl_pack(
+      system_id(),
+      component_id,
+      &ctrlMsg,
+      target_system,
+      target_component,
+      0, // mask
+      msgRoll,
+      msgPitch,
+      msgYaw,
+      msgThrust
+    );
+    send(ctrlMsg);
   }
 }
 
