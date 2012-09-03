@@ -123,7 +123,7 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2;
 
       systemGain = int(double(analogPoti[4]) / 1024 * 500);
-      hooverThrust = int(double(analogPoti[5]) / 1024 * 800) + 200;
+      hooverThrust = int(double(analogPoti[5]) / 1024 * 1000);
       
     break;
   }
@@ -153,6 +153,11 @@ void FiducalControlApp::run()
     // do stuff
     rvec = DataCenter::get_fiducal_rot_raw();
     tvec = DataCenter::get_fiducal_trans_raw();
+  
+    msgRoll   = 0;
+    msgPitch  = 0;
+    msgYaw    = 0;
+    msgThrust = hooverThrust;
         
     if(!rvec.empty() && !tvec.empty())
     {
@@ -212,7 +217,7 @@ void FiducalControlApp::run()
       &ctrlMsg,
       target_system,
       target_component,
-      0, // mask
+      8, // mask
       msgRoll,
       msgPitch,
       msgYaw,
