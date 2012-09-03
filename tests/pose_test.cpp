@@ -5,9 +5,12 @@
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
 
+#include "utility.h"
+
 #define PRECISION float
 // #define PRECISION double
 
+using namespace mavhub;
 using namespace hub::slam;
 
 PRECISION estimation_error(const std::vector<PRECISION> &rotation,
@@ -79,7 +82,9 @@ BOOST_AUTO_TEST_CASE(Test_estimate_pose)
 	std::vector<char> matches_mask;
 
 	std::vector<PRECISION> parameter_vector(6, 0);
+	PRECISION info[LM_INFO_SZ];
 
+	uint64_t start_time = get_time_us();
 	int rc = estimate_pose<PRECISION>(object_points,
 		keypoints,
 		matches,
@@ -87,8 +92,18 @@ BOOST_AUTO_TEST_CASE(Test_estimate_pose)
 		distortion_coefficients,
 		parameter_vector,
 		matches_mask,
-		20);
+		100,
+		info);
+	uint64_t stop_time = get_time_us();
+	BOOST_TEST_MESSAGE("levmar returned " << rc
+		<< " in " << info[5]
+		<< " iterations, reason " << info[6]
+		<< ", error " << info[1] / object_points.size()
+		<< " [initial " << info[0] / object_points.size()
+		<< "], " << (int)info[7] << "/" << (int)info[8]
+		<< " func/fjac evals, " << (int)info[9] << " lin. systems.");
 	BOOST_CHECK(rc >= 0);
+	BOOST_TEST_MESSAGE("Elapsed time: " << (stop_time-start_time) << "us");
 
 	BOOST_TEST_MESSAGE("_Pose Estimation_ (" << rc << ")" );
 	BOOST_TEST_MESSAGE("phi:   " << parameter_vector[0] << " (" << rotation_vector[0] << ")" );

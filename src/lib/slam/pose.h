@@ -161,6 +161,7 @@ inline int wrap_levmar_der(
  *                                 the 3 translations. The values given are used as a starting
  *                                 point for the iteration process.
  * \param[in] max_iterations Maximum number of iterations.
+ * \param[out] info Information regarding the minimization
  * \return Number of iterations. A negative value means an error occured.
  */
 template<typename T>
@@ -171,7 +172,8 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 	const cv::Mat &distortion_coefficients,
 	std::vector<T> &parameter_vector,
 	const std::vector<char> &matches_mask = std::vector<char>(),
-	const unsigned int max_iterations = 100);
+	const unsigned int max_iterations = 100,
+	T info[LM_INFO_SZ] = NULL);
 
 // ----------------------------------------------------------------------------
 // Implementations
@@ -296,92 +298,24 @@ void ideal_pinhole_model(T *p, T *hx, int m, int n, void *data) {
 
 template<typename T>
 void jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
-	using namespace TooN;
-	assert(p);
-	assert(jac);
-	assert(m == 6);
+	ideal_jac_pinhole_model(p, jac, m, n, data);
 
 	const pinhole_model_data_t<T> *pinhole_model_data = static_cast< pinhole_model_data_t<T>* >(data);
 	if(!pinhole_model_data) return;
-	std::vector<T> &object_points_vector = pinhole_model_data->object_points;
-	const cv::Mat &camera_matrix = pinhole_model_data->camera_matrix;
 
+	const cv::Mat &camera_matrix = pinhole_model_data->camera_matrix;
 	const T fx = camera_matrix.at<double>(0, 0);
 	const T fy = camera_matrix.at<double>(1, 1);
-	const T phi = p[0];
-	const T theta = p[1];
-	const T psi = p[2];
-	const T t1 = p[3];
-	const T t2 = p[4];
-	const T t3 = p[5];
-
-	const T cphi = cos(phi);
-	const T cpsi = cos(psi);
-	const T ctheta = cos(theta);
-	const T sphi = sin(phi);
-	const T spsi = sin(psi);
-	const T stheta = sin(theta);
-
-	const T cphi_cpsi = cphi*cpsi;
-	const T cphi_ctheta = cphi*ctheta;
-	const T cphi_stheta = cphi*stheta;
-	const T cphi_spsi = cphi*spsi;
-	const T cpsi_ctheta = cpsi*ctheta;
-	const T cpsi_sphi = cpsi*sphi;
-	const T cpsi_stheta = cpsi*stheta;
-	const T ctheta_sphi = ctheta*sphi;
-	const T ctheta_spsi = ctheta*spsi;
-	const T sphi_spsi = sphi*spsi;
-	const T sphi_stheta = sphi*stheta;
-	const T spsi_stheta = spsi*stheta;
-
-	const T cphi_cpsi_ctheta = cphi_cpsi*ctheta;
-	const T cphi_cpsi_stheta = cphi_cpsi*stheta;
-	const T cphi_ctheta_spsi = cphi_ctheta*spsi;
-	const T cphi_spsi_stheta = cphi_spsi*stheta;
-	const T cpsi_ctheta_sphi = cpsi_ctheta*sphi;
-	const T cpsi_sphi_stheta = cpsi_sphi*stheta;
-	const T ctheta_sphi_spsi = ctheta_sphi*spsi;
-	const T sphi_spsi_stheta = sphi_spsi*stheta;
 
 	const int num_points = n/2;
-	Matrix<3,Dynamic,T,Reference::RowMajor> object_points(&(object_points_vector[0]), 3, num_points);
-
-	int j = 0;
 	const unsigned int v_offset = m*num_points;
-	for(int i=0; i<num_points; i++) {
-		const T x1 = object_points[0][i];
-		const T x2 = object_points[1][i];
-		const T x3 = object_points[2][i];
-
-		const T y1 = t1 - x2*(cphi_spsi - cpsi_sphi_stheta) + x3*(sphi_spsi + cphi_cpsi_stheta) + x1*cpsi_ctheta;
-		const T y2 = t2 + x2*(cphi_cpsi + sphi_spsi_stheta) - x3*(cpsi_sphi - cphi_spsi_stheta) + x1*ctheta_spsi;
-		const T y3 = t3 - x1*stheta + x3*cphi_ctheta + x2*ctheta_sphi;
-		const T y3_square = y3*y3;
-		// partial u / partial phi
-		jac[j] = -(fx*(x2*(sphi_spsi + cphi_cpsi_stheta) + x3*(cphi_spsi - cpsi_sphi_stheta)))/y3 + (fx*(x2*cphi_ctheta - x3*ctheta_sphi)*y1)/y3_square;
-		// partial v / partial phi
-		jac[v_offset+j++] = (fy*(x2*(cpsi_sphi - cphi_spsi_stheta) + x3*(cphi_cpsi + sphi_spsi_stheta)))/y3 + (fy*(x2*cphi_ctheta - x3*ctheta_sphi)*y2)/y3_square;
-		// partial u / partial theta
-		jac[j] = -(fx*(x3*cphi_cpsi_ctheta - x1*cpsi_stheta + x2*cpsi_ctheta_sphi))/y3 - (fx*(x1*ctheta + x3*cphi_stheta + x2*sphi_stheta)*y1)/y3_square;
-		// partial v / partial theta
-		jac[v_offset+j++] = -(fy*(x3*cphi_ctheta_spsi - x1*spsi_stheta + x2*ctheta_sphi_spsi))/y3 - (fy*(x1*ctheta + x3*cphi_stheta + x2*sphi_stheta)*y2)/y3_square;
-		// partial u / partial psi
-		jac[j] = (fx*(x2*(cphi_cpsi + sphi_spsi_stheta) - x3*(cpsi_sphi - cphi_spsi_stheta) + x1*ctheta_spsi))/y3;
-		// partial v / partial psi
-		jac[v_offset+j++] = -(fy*(x3*(sphi_spsi + cphi_cpsi_stheta) - x2*(cphi_spsi - cpsi_sphi_stheta) + x1*cpsi_ctheta))/y3;
-		// partial u / partial x
-		jac[j] = -fx/y3;
-		// partial v / partial x
-		jac[v_offset+j++] = 0;
-		// partial u / partial y
-		jac[j] = 0;
-		// partial v / partial y
-		jac[v_offset+j++] = -fy/y3;
-		// partial u / partial z
-		jac[j] = (fx*y1)/y3_square;
-		// partial v / partial z
-		jac[v_offset+j++] = (fy*y2)/y3_square;
+	// multiply partial u / partial p with fx
+	for(int i=0; i<v_offset; i++) {
+		jac[i] *= fx;
+	}
+	// multiply partial v / partial p with fy
+	for(int i=v_offset; i<2*v_offset; i++) {
+		jac[i] *= fy;
 	}
 }
 
@@ -412,7 +346,6 @@ void ideal_jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 
 	const T cphi_cpsi = cphi*cpsi;
 	const T cphi_ctheta = cphi*ctheta;
-	const T cphi_stheta = cphi*stheta;
 	const T cphi_spsi = cphi*spsi;
 	const T cpsi_ctheta = cpsi*ctheta;
 	const T cpsi_sphi = cpsi*sphi;
@@ -432,6 +365,11 @@ void ideal_jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 	const T ctheta_sphi_spsi = ctheta_sphi*spsi;
 	const T sphi_spsi_stheta = sphi_spsi*stheta;
 
+	const T a1 = sphi_spsi + cphi_cpsi_stheta;
+	const T a2 = cphi_spsi - cpsi_sphi_stheta;
+	const T a3 = cphi_cpsi + sphi_spsi_stheta;
+	const T a4 = cpsi_sphi - cphi_spsi_stheta;
+
 	const int num_points = n/2;
 	Matrix<3,Dynamic,T,Reference::RowMajor> object_points(&(object_points_vector[0]), 3, num_points);
 
@@ -442,77 +380,66 @@ void ideal_jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 		const T x2 = object_points[1][i];
 		const T x3 = object_points[2][i];
 
+		const T b1 = x2*a4 + x3*a3;
+		const T b2 = x2*a1 + x3*a2;
+		const T b3 = x2*cphi_ctheta - x3*ctheta_sphi;
+		const T b4 = x3*cphi_cpsi_ctheta - x1*cpsi_stheta + x2*cpsi_ctheta_sphi;
+		const T b5 = x1*ctheta + x3*ctheta_sphi + x2*sphi_stheta;
+		const T b6 = x3*cphi_ctheta_spsi - x1*spsi_stheta + x2*ctheta_sphi_spsi;
+
 		const T y1 = t1 - x2*(cphi_spsi - cpsi_sphi_stheta) + x3*(sphi_spsi + cphi_cpsi_stheta) + x1*cpsi_ctheta;
 		const T y2 = t2 + x2*(cphi_cpsi + sphi_spsi_stheta) - x3*(cpsi_sphi - cphi_spsi_stheta) + x1*ctheta_spsi;
-		const T y3 = t3 - x1*stheta + x3*cphi_ctheta + x2*ctheta_sphi;
-		const T y3_square = y3*y3;
+		const T inv_y3 = 1.0/(t3 - x1*stheta + x3*cphi_ctheta + x2*ctheta_sphi);
+		const T inv_y3_square = inv_y3*inv_y3;
+
 		// partial u / partial phi
-		jac[j] = -((x2*(sphi_spsi + cphi_cpsi_stheta) + x3*(cphi_spsi - cpsi_sphi_stheta)))/y3 + ((x2*cphi_ctheta - x3*ctheta_sphi)*y1)/y3_square;
+		jac[j] = -b2*inv_y3 + b3*y1*inv_y3_square;
 		// partial v / partial phi
-		jac[v_offset+j++] = ((x2*(cpsi_sphi - cphi_spsi_stheta) + x3*(cphi_cpsi + sphi_spsi_stheta)))/y3 + ((x2*cphi_ctheta - x3*ctheta_sphi)*y2)/y3_square;
+		jac[v_offset+j++] = b1*inv_y3 + b3*y2*inv_y3_square;
 		// partial u / partial theta
-		jac[j] = -((x3*cphi_cpsi_ctheta - x1*cpsi_stheta + x2*cpsi_ctheta_sphi))/y3 - ((x1*ctheta + x3*cphi_stheta + x2*sphi_stheta)*y1)/y3_square;
+		jac[j] = -(b4*inv_y3 + b5*y1*inv_y3_square);
 		// partial v / partial theta
-		jac[v_offset+j++] = -((x3*cphi_ctheta_spsi - x1*spsi_stheta + x2*ctheta_sphi_spsi))/y3 - ((x1*ctheta + x3*cphi_stheta + x2*sphi_stheta)*y2)/y3_square;
+		jac[v_offset+j++] = -(b6*inv_y3 + b5*y2*inv_y3_square);
 		// partial u / partial psi
-		jac[j] = ((x2*(cphi_cpsi + sphi_spsi_stheta) - x3*(cpsi_sphi - cphi_spsi_stheta) + x1*ctheta_spsi))/y3;
+		jac[j] = (y2-t2)*inv_y3;
 		// partial v / partial psi
-		jac[v_offset+j++] = -((x3*(sphi_spsi + cphi_cpsi_stheta) - x2*(cphi_spsi - cpsi_sphi_stheta) + x1*cpsi_ctheta))/y3;
+		jac[v_offset+j++] = (t1-y1)*inv_y3;
 		// partial u / partial x
-		jac[j] = -1.0/y3;
+		jac[j] = -inv_y3;
 		// partial v / partial x
 		jac[v_offset+j++] = 0;
 		// partial u / partial y
 		jac[j] = 0;
 		// partial v / partial y
-		jac[v_offset+j++] = -1.0/y3;
+		jac[v_offset+j++] = -inv_y3;
 		// partial u / partial z
-		jac[j] = y1/y3_square;
+		jac[j] = y1*inv_y3_square;
 		// partial v / partial z
-		jac[v_offset+j++] = y2/y3_square;
+		jac[v_offset+j++] = y2*inv_y3_square;
+
 	}
 }
 
 template<typename T>
 void approx_jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
-	using namespace TooN;
-	assert(m >= 6);
-	const int num_points = n/2;
+	ideal_approx_jac_pinhole_model(p, jac, m, n, data);
 
 	const pinhole_model_data_t<T> *pinhole_model_data = static_cast< pinhole_model_data_t<T>* >(data);
 	if(!pinhole_model_data) return;
-	std::vector<T> &object_points_vector = pinhole_model_data->object_points;
-	Matrix<3,Dynamic,T,Reference::RowMajor> object_points(&(object_points_vector[0]), 3, num_points);
+
 	const cv::Mat &camera_matrix = pinhole_model_data->camera_matrix;
-
-	Vector<3,T,Reference> rotation_vector(p);
-	Vector<3,T,Reference> translation_vector(p+3);
-	SE3<> transformation_matrix(rotation_vector, translation_vector);
-	Matrix<3,Dynamic> rotated_points = transformation_matrix.get_rotation() * object_points;
-
 	const T fx = camera_matrix.at<double>(0, 0);
 	const T fy = camera_matrix.at<double>(1, 1);
 
+	const int num_points = n/2;
 	const unsigned int v_offset = m*num_points;
-	int j = 0;
-	for(int i=0; i<num_points; i++) {
-		const T y1 = rotated_points[0][i] + translation_vector[0];
-		const T y2 = rotated_points[1][i] + translation_vector[1];
-		const T y3 = rotated_points[2][i] + translation_vector[2];
-		const T y3_square = y3*y3;
-
-		jac[j] = (fx*y1*y2)/y3_square;
-		jac[v_offset+j++] = fy*(1+(y2*y2)/y3_square);
-		jac[j] = -fx*(1+(y1*y1)/y3_square);
-		jac[v_offset+j++] = -(fy*y1*y2)/y3_square;
-		jac[j] = (fx*y2)/y3;
-		jac[v_offset+j++] = -(fy*y1)/y3;
-		jac[j] = -fx/y3;
-		jac[v_offset+j++] = 0;
-		jac[j] = 0;
-		jac[v_offset+j++] = -fy/y3;
-		jac[j] = (fx*y1)/y3_square;
-		jac[v_offset+j++] = (fy*y2)/y3_square;
+	// multiply partial u / partial p with fx
+	for(int i=0; i<v_offset; i++) {
+		jac[i] *= fx;
+	}
+	// multiply partial v / partial p with fy
+	for(int i=v_offset; i<2*v_offset; i++) {
+		jac[i] *= fy;
 	}
 }
 
@@ -537,21 +464,21 @@ void ideal_approx_jac_pinhole_model(T *p, T *jac, int m, int n, void *data) {
 	for(int i=0; i<num_points; i++) {
 		const T y1 = rotated_points[0][i] + translation_vector[0];
 		const T y2 = rotated_points[1][i] + translation_vector[1];
-		const T y3 = rotated_points[2][i] + translation_vector[2];
-		const T y3_square = y3*y3;
+		const T inv_y3 = 1.0/(rotated_points[2][i] + translation_vector[2]);
+		const T inv_y3_square = inv_y3*inv_y3;
 
-		jac[j] = (y1*y2)/y3_square;
-		jac[v_offset+j++] = 1+(y2*y2)/y3_square;
-		jac[j] = -(1+(y1*y1)/y3_square);
-		jac[v_offset+j++] = -(y1*y2)/y3_square;
-		jac[j] = y2/y3;
-		jac[v_offset+j++] = -y1/y3;
-		jac[j] = -1/y3;
+		jac[j] = y1*y2*inv_y3_square;
+		jac[v_offset+j++] = 1+y2*y2*inv_y3_square;
+		jac[j] = -(1+y1*y1*inv_y3_square);
+		jac[v_offset+j++] = -y1*y2*inv_y3_square;
+		jac[j] = y2*inv_y3;
+		jac[v_offset+j++] = -y1*inv_y3;
+		jac[j] = -inv_y3;
 		jac[v_offset+j++] = 0;
 		jac[j] = 0;
-		jac[v_offset+j++] = -1/y3;
-		jac[j] = y1/y3_square;
-		jac[v_offset+j++] = y2/y3_square;
+		jac[v_offset+j++] = -inv_y3;
+		jac[j] = y1*inv_y3_square;
+		jac[v_offset+j++] = y2*inv_y3_square;
 	}
 }
 
@@ -599,7 +526,8 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 	const cv::Mat &distortion_coefficients,
 	std::vector<T> &parameter_vector,
 	const std::vector<char> &matches_mask,
-	const unsigned int max_iterations) {
+	const unsigned int max_iterations,
+	T info[LM_INFO_SZ]) {
 
 	assert(parameter_vector.size() == 6);
 	if(matches.empty()) return 0;
@@ -649,19 +577,17 @@ int estimate_pose(const std::vector< cv::Point3_<T> > &object_points,
 		undistorted_points,
 		camera_matrix);
 
-// 	T info[LM_INFO_SZ];
-
 	int rc = wrap_levmar_der<T>(
 		ideal_pinhole_model<T>,
-// 		ideal_jac_pinhole_model<T>,
-		ideal_approx_jac_pinhole_model<T>,
+		ideal_jac_pinhole_model<T>,
+// 		ideal_approx_jac_pinhole_model<T>,
 		&(parameter_vector[0]),	//parameter vector
 		NULL,	//measurement vector (is part of pinhole_model_data)
 		6,	//parameter vector dimension
 		2*num_matches,	//measurement vector dimension
 		max_iterations,	//max. number of iterations
 		NULL,	//opts
-		NULL,	//info
+		info,	//info
 		NULL,	//work
 		NULL,	//covar
 		(void*)&pinhole_model_data);	//data
