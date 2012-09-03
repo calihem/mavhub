@@ -123,7 +123,7 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2;
 
       systemGain = int(double(analogPoti[4]) / 1024 * 500);
-      maxRollPitch = int(double(analogPoti[5]) / 1024 * 3000);
+      hooverThrust = int(double(analogPoti[5]) / 1024 * 800) + 200;
       
     break;
   }
