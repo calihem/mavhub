@@ -30,6 +30,9 @@
  */
 
 // play back logfile and simulate kopter inputs
+// FIXME: consider proper logfileplayer concepts
+//  - what is out there
+//  - binary mavlink dumping / replay (QGC)
 
 #include "ctrl_logfileplayer.h"
 

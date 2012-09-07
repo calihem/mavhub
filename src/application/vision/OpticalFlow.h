@@ -17,12 +17,12 @@
 
 enum of_algorithm {
 	UNKNOWN,
-	FIRST_ORDER,
+	FIRST_ORDER, // 1
 	HORN_SCHUNCK,
 	CENSUS_TRANSFORM,
 	LINE_SUM,
 	LINE_CENSUS,
-	LK,
+	LK, //  6
 	LK_PYR,
 };
 

@@ -109,8 +109,10 @@ namespace mavhub {
 
 					else if(i == 4) {
 
-						gain = (float)(a[4]) / 200.;
+						gain = (float)(a[4]) / 68.;
 						// dir = (float)((a[2] < 512) * 2 - 1);
+						// horst: pitch pos, roll neg
+						// qk01: inverted
 
 						param_request_set(system_id(),
 															28,

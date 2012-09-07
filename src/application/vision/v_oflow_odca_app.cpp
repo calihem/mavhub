@@ -1312,6 +1312,11 @@ namespace mavhub {
 																							of_v_i);
 					}
 					else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
+						// include yaw and climb information
+						sensor_array.data[10] = of_u;
+						sensor_array.data[11] = of_v;
+						sensor_array.data[12] = of_u_i;
+						sensor_array.data[13] = of_v_i;
 
 						mavlink_msg_huch_sensor_array_encode(system_id(),
 																								 component_id,
@@ -1320,14 +1325,14 @@ namespace mavhub {
 																								 );
 						AppLayer<mavlink_message_t>::send(msg);
 
-						mavlink_msg_huch_visual_flow_pack(system_id(),
-																							component_id,
-																							&msg,
-																							0, // get_time_us(),
-																							of_u, // of_x,
-																							of_v, // of_y,
-																							of_yaw,
-																							of_alt);
+						// mavlink_msg_huch_visual_flow_pack(system_id(),
+						// 																	component_id,
+						// 																	&msg,
+						// 																	0, // get_time_us(),
+						// 																	of_u, // of_x,
+						// 																	of_v, // of_y,
+						// 																	of_yaw,
+						// 																	of_alt);
 					}
 
 					AppLayer<mavlink_message_t>::send(msg);

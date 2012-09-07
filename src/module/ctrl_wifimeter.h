@@ -7,6 +7,9 @@
 
 #ifdef HAVE_LIBGPSMM_H
 
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #include "protocol/protocollayer.h"
 #include <string>
 
@@ -45,5 +48,6 @@ namespace mavhub
   };
 }
 
+#endif // HAVE_MAVLINK_H
 #endif // HAVE_GPSMM_H
 #endif // _CTRL_WIFIMETER_H_

@@ -30,6 +30,10 @@ namespace mavhub {
 											 params["pitch_Ti"], params["pitch_Td"]);
 		pid_roll = new PID(params["roll_bias"], params["roll_Kc"],
 											 params["roll_Ti"], params["roll_Td"]);
+
+		// init sensor_array structure
+		for(int i = 0; i < 16; i++)
+			sensor_array.data[i] = 0.;
 	}
 
 	Ctrl_Lateral::~Ctrl_Lateral() {
@@ -54,6 +58,32 @@ namespace mavhub {
 			// Logger::log("Ctrl_Lateral: got visual_flow msg", Logger::LOGLEVEL_INFO);
 			mavlink_msg_huch_visual_flow_decode(&msg, (mavlink_huch_visual_flow_t *)&huch_visual_flow);
 			//Logger::log("psi_est:", huch_visual_flow.psi_estimate, Logger::LOGLEVEL_INFO);
+			break;
+
+		case MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY:
+			// Logger::log("Ctrl_Lateral: got visual_flow msg", Logger::LOGLEVEL_INFO);
+			mavlink_msg_huch_sensor_array_decode(&msg, (mavlink_huch_sensor_array_t *)&sensor_array);
+			//Logger::log("psi_est:", huch_visual_flow.psi_estimate, Logger::LOGLEVEL_INFO);
+			break;
+
+		case MAVLINK_MSG_ID_HUCH_ACTION:
+			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_huch_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
+			if( (mavlink_msg_huch_action_get_target(&msg) == system_id()) ) {
+				// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
+				uint8_t action_id = mavlink_msg_huch_action_get_action(&msg);
+				// if(action_id == MAV_ACTION_GET_IMAGE) {
+				// 	Lock sync_lock(sync_mutex);
+				// 	// new image with ACK
+				// 	take_new_image = 3;
+				// }
+				switch(action_id) {
+				case ACTION_TOGGLE_LC:
+					params["reset_i"] = 1.;
+					Logger::log(name(), "action done: reset_i", params["reset_i"], Logger::LOGLEVEL_DEBUG);
+				default:
+					break;
+				}
+			}
 			break;
 
 #endif // MAVLINK_ENABLED_HUCH	
@@ -104,26 +134,6 @@ namespace mavhub {
 			}
 			break;
 
-		case MAVLINK_MSG_ID_HUCH_ACTION:
-			Logger::log(name(), "handle_input: action request", (int)mavlink_msg_huch_action_get_target(&msg), system_id(), Logger::LOGLEVEL_DEBUG);
-			if( (mavlink_msg_huch_action_get_target(&msg) == system_id()) ) {
-				// 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
-				uint8_t action_id = mavlink_msg_huch_action_get_action(&msg);
-				// if(action_id == MAV_ACTION_GET_IMAGE) {
-				// 	Lock sync_lock(sync_mutex);
-				// 	// new image with ACK
-				// 	take_new_image = 3;
-				// }
-				switch(action_id) {
-				case ACTION_TOGGLE_LC:
-					params["reset_i"] = 1.;
-					Logger::log(name(), "action done: reset_i", params["reset_i"], Logger::LOGLEVEL_DEBUG);
-				default:
-					break;
-				}
-			}
-			break;
-
 		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
 			rc2 = mavlink_msg_rc_channels_raw_get_chan2_raw(&msg);
 			rc5 = mavlink_msg_rc_channels_raw_get_chan5_raw(&msg);
@@ -144,7 +154,7 @@ namespace mavhub {
 		uint64_t dt = 0;
 		double dtf = 0.0;
 		struct timeval tk, tkm1; // timevals
-		int update_rate = 60; // 100 Hz
+		int update_rate = 100; // 100 Hz
 		int wait_freq = update_rate? 1000000 / update_rate: 0;
 		int wait_time = wait_freq;
 		uint64_t frequency = wait_time;
@@ -310,6 +320,8 @@ namespace mavhub {
 			// send_debug(&msg, &dbg, 10, pid_pitch->getDpart());
 			// send_debug(&msg, &dbg, 11, dtf);
 
+			send_debug(&msg, &dbg, 1, params["pitch_Kc"]);
+
 			// roll
 			// pid_roll->setSp(0.0);
 			// roll = pid_roll->calc(dtf, x * huch_visual_navigation.ego_speed);
@@ -318,6 +330,14 @@ namespace mavhub {
 				roll = params["roll_limit"];
 			if(roll < -params["roll_limit"])
 				roll = -params["roll_limit"];
+
+
+			// if module v_oflow_odca is active, add its opinion as well
+			if(sensor_array.data[0] != 0.) {
+				Logger::log(name(), sensor_array.data[8], sensor_array.data[9], Logger::LOGLEVEL_INFO);
+				pitch -= sensor_array.data[8] * params["pitch_obst"];
+				roll  += sensor_array.data[9] * params["roll_obst"];
+			}
 
 #endif // MAVLINK_ENABLED_HUCH	
 
@@ -380,6 +400,8 @@ namespace mavhub {
 		params["roll_Ti"] = 0.0;
 		params["roll_Td"] = 0.0;
 		params["roll_sp"] = 0.0;
+		params["roll_obst"] = 20.0;
+		params["pitch_obst"] = 20.0;
 	}
 
 	void Ctrl_Lateral::read_conf(const map<string, string> args) {

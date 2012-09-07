@@ -116,11 +116,12 @@ namespace mavhub {
 		// ann = fann_create_from_file("n_lateral_control.net");
 
 		// cout << "set OF algo" << endl;
-		// algo = (of_algorithm)FIRST_ORDER;
-		algo = (of_algorithm)LK;
+		algo = (of_algorithm)FIRST_ORDER;
+		//algo = (of_algorithm)LK;
 		// algo = (of_algorithm)LK_PYR;
 		// cout << "pre initModel()" << endl;
 		initModel(algo);
+		initModels();
 		// cout << "post initModel()" << endl;
 
 		ma_pitch = new MA(1200, 0.);
@@ -165,11 +166,22 @@ namespace mavhub {
 			ofModel = new LucasKanade(height, width);
 			break;
 
-		default:
+		default: // LKPyr, no model used
 			ofModel = 0;
 			break;
 		}
 
+		return 0;
+	}
+
+	int V_OFLOWApp::initModels() {
+		int width;
+		int height;
+		// this is for omni case
+		width = static_cast<int>(params["unwrap_w"]);
+		height = static_cast<int>(params["unwrap_h"]);
+		ofModels[0] = new FirstOrder(height, width);
+		ofModels[1] = new LucasKanade(height, width);
 		return 0;
 	}
 
@@ -372,6 +384,8 @@ namespace mavhub {
 							params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
 							Logger::log(name(), "handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_DEBUG);
 						}
+
+						algo = (of_algorithm)(params["of_algo"]);
 					}
 				}
 			}
@@ -558,17 +572,23 @@ namespace mavhub {
 		// cout << "getOF_FirstOrder_Omni()" << endl;
 		preprocessImage(new_image);
 		// calculate X and Y flow matrices
-		ofModel->calcOpticalFlow(new_image);
+		// ofModel->calcOpticalFlow(new_image);
+		ofModels[0]->calcOpticalFlow(new_image);
+		
+
 		// visualize secotrized mean flow
-		ofModel->getOpticalFlow().visualizeMeanXY(1, 1, new_image);
+		// ofModel->getOpticalFlow().visualizeMeanXY(1, 1, new_image);
 
 		// of_u = ofModel->getOpticalFlow()
 		// 	.getMeanVelX(1, 99, 1, 99);
 		// of_v = ofModel->getOpticalFlow()
 		// 	.getMeanVelY(1, 99, 1, 99);
 
-		of_u = iirFilter(of_u, ofModel->getOpticalFlow().getMeanVelX(1, 99, 1, 99));
-		of_v = iirFilter(of_v, ofModel->getOpticalFlow().getMeanVelY(1, 99, 1, 99));
+		// of_u = iirFilter(of_u, ofModel->getOpticalFlow().getMeanVelX(1, is_width-1, 1, is_height-1));
+		// of_v = iirFilter(of_v, ofModel->getOpticalFlow().getMeanVelY(1, is_width-1, 1, is_height-1));
+
+		of_u = iirFilter(of_u, ofModels[0]->getOpticalFlow().getMeanVelX(1, is_width-1, 1, is_height-1));
+		of_v = iirFilter(of_v, ofModels[0]->getOpticalFlow().getMeanVelY(1, is_width-1, 1, is_height-1));
 
 
 		// for(i = 0; i < 4; i++) {
@@ -693,14 +713,19 @@ namespace mavhub {
 	void V_OFLOWApp::getOF_LK() {
 		static DenseOpticalFlow *oFlow;
 
-		preprocessImage(new_image);
+		// don't need this either for LK
+		// preprocessImage(new_image);
 
-		// // calculate X and Y flow matrices
-		ofModel->calcOpticalFlow(new_image);
+		// calculate X and Y flow matrices
+		//ofModel->calcOpticalFlow(new_image);
+		ofModels[1]->calcOpticalFlow(new_image);
+		// get oFlow object ref
+		//oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+		oFlow = (DenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
 
-		// // visualize secotrized mean flow
-		oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
-		oFlow->visualizeMeanXYf(1, 1, new_image);
+		// visualize secotrized mean flow
+		// this isn't necessary anymore
+		// oFlow->visualizeMeanXYf(1, 1, new_image);
 
 		// Logger::log(name(), "LK", Logger::LOGLEVEL_DEBUG);
 		// of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
@@ -1147,10 +1172,11 @@ namespace mavhub {
 					// attitude.rollspeed = imu_roll_speed;
 
 					if(params["dbg_en"] > 0.0) {
-						send_debug(&msg, &dbg, 0, of_u - imu_pitch_derot);
-						send_debug(&msg, &dbg, 1, of_v - imu_roll_derot);
-						send_debug(&msg, &dbg, 2, imu_pitch_derot);
-						send_debug(&msg, &dbg, 3, imu_roll_derot);
+						// send_debug(&msg, &dbg, 0, of_u - imu_pitch_derot);
+						// send_debug(&msg, &dbg, 1, of_v - imu_roll_derot);
+						// send_debug(&msg, &dbg, 2, imu_pitch_derot);
+						// send_debug(&msg, &dbg, 3, imu_roll_derot);
+						send_debug(&msg, &dbg, 0, lc_active);
 						// send_debug(&msg, &dbg, 2, imu_pitch_speed);
 						// send_debug(&msg, &dbg, 3, imu_roll_speed);
 					}
@@ -1162,18 +1188,20 @@ namespace mavhub {
 					// leaky integral / position estimate
 					of_u_i = (of_u_i * params["leak_f"]) + ((of_u - imu_pitch_derot) * 0.033); /// one over framerate
 					of_v_i = (of_v_i * params["leak_f"]) + ((of_v - imu_roll_derot)  * 0.033);
-					// derotate integral with IMU integral
-					of_u_i_derot = params["derot_pit_g"] * attitude.pitch;
-					of_v_i_derot = params["derot_rol_g"] * attitude.roll;
+
+					// // derotate integral with IMU integral
 					// of_u_i_derot = params["derot_pit_g"] * attitude.pitch;
 					// of_v_i_derot = params["derot_rol_g"] * attitude.roll;
 
-					if(params["dbg_en"] > 0.0) {
-						send_debug(&msg, &dbg, 4, of_u_i);
-						send_debug(&msg, &dbg, 5, of_v_i);
-						send_debug(&msg, &dbg, 6, of_u_i_derot);
-						send_debug(&msg, &dbg, 7, of_v_i_derot);
-					}
+					// of_u_i_derot = params["derot_pit_g"] * attitude.pitch;
+					// of_v_i_derot = params["derot_rol_g"] * attitude.roll;
+
+					// if(params["dbg_en"] > 0.0) {
+					// 	send_debug(&msg, &dbg, 4, of_u_i);
+					// 	send_debug(&msg, &dbg, 5, of_v_i);
+					// 	send_debug(&msg, &dbg, 6, of_u_i_derot);
+					// 	send_debug(&msg, &dbg, 7, of_v_i_derot);
+					// }
 
 					// calculate control signals
 					// pitch

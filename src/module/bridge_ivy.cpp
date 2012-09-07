@@ -1,11 +1,11 @@
 #include "bridge_ivy.h"
 
+#ifdef HAVE_MAVLINK_H
 #ifdef HAVE_IVY_IVY_H
 
 #include "core/logger.h"
 #include "utility.h"
 #include "protocol/protocolstack.h"
-#include <mavlink.h>
 
 #include <iostream> //cout
 #include <stdlib.h>
@@ -336,3 +336,4 @@ namespace mavhub {
 } // namespace mavhub
 
 #endif // HAVE_IVY_IVY_H
+#endif // HAVE_MAVLINK_H

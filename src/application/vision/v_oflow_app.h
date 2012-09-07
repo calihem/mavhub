@@ -95,7 +95,8 @@ namespace mavhub {
 
 		of_algorithm algo;
 		OFModel *ofModel;
-		OpticalFlow *oFlow;
+		OFModel* ofModels[2];
+		// OpticalFlow *oFlow;
 
 		/// input stream parameters
 		int is_width;
@@ -150,6 +151,7 @@ namespace mavhub {
 		/* 		cv::Mat translation_vector; */
 
 		int initModel(of_algorithm algo);
+		int initModels();
 		void calcFlow();
 		// void load_calibration_data(const std::string &filename);
 		void getOF_FirstOrder();

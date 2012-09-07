@@ -5,6 +5,9 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#ifdef HAVE_MAVLINK_H
+#include <mavlink.h>
+
 #ifdef HAVE_IVY_IVY_H
 
 #include "Ivy/ivy.h"
@@ -53,5 +56,5 @@ namespace mavhub {
 } // namespace mavhub
 
 #endif // HAVE_IVY_IVY_H
-
+#endif // HAVE_MAVLINK_H
 #endif

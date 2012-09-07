@@ -39,6 +39,7 @@ namespace mavhub {
 		mavlink_huch_visual_navigation_t huch_visual_navigation;
 		mavlink_huch_visual_flow_t huch_visual_flow;
 		mavlink_huch_generic_channel_t chan;
+		mavlink_huch_sensor_array_t sensor_array;
 #endif // MAVLINK_ENABLED_HUCH	
 
 		// params

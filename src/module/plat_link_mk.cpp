@@ -292,6 +292,9 @@ namespace mavhub {
 				break;
 			}
 
+			// FIXME: performance killer
+			send_debug(&msg_l, &dbg, 0, lc_active);
+
 			// send control output to (onboard) controller
 			if(params["output_enable"] > 0) {
 
