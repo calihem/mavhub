@@ -185,7 +185,8 @@ void FiducalApp::findTwoRectangles(const cv::Mat &grayscale, std::vector< std::v
   int ysize = grayscale.size().height;
   
   cv::Mat binary;
-  cv::threshold(grayscale, binary, cv::mean(grayscale)[0], 255, cv::THRESH_BINARY);
+//  cv::threshold(grayscale, binary, cv::mean(grayscale)[0], 255, cv::THRESH_BINARY);
+  cv::threshold(grayscale, binary, 127, 255, cv::THRESH_BINARY);
 
   std::vector<std::vector<cv::Point> > contours;
   std::vector<cv::Vec4i> hierarchy;
