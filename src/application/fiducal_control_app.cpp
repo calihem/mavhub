@@ -168,7 +168,8 @@ void FiducalControlApp::run()
         
     if(!rvec.empty() && !tvec.empty())
     {
-			Lock input_lock(input_mutex);
+      std:: cout << "loaded vectors successfully" << std::endl;
+//			Lock input_lock(input_mutex);
       cv::Mat rmat;
       cv::Rodrigues(-rvec, rmat);
       fvec = rmat*tvec;
@@ -176,6 +177,11 @@ void FiducalControlApp::run()
       cv::Scalar fvecDiff = cv::sum(cv::abs(fvec-fvecOld));
       if(fvecDiff[0] > 1e-5)
       {
+        std:: cout << "got new vectors: " 
+          << fvec.at<double>(0) << " "
+          << fvec.at<double>(1) << " "
+          << fvec.at<double>(2) << " "
+          << std::endl;
 	      gettimeofday(&lastMesTime, NULL);
         fvec.copyTo(fvecOld);
 
@@ -226,6 +232,13 @@ void FiducalControlApp::run()
           << std::setw(10) << std::setprecision(6) << msgThrust << " "
           << std::endl;
 #endif
+    std::cout
+      << get_time_ms() << " "
+      << msgYaw << " "
+      << msgRoll << " "
+      << msgPitch << " "
+      << msgThrust << " "
+      << std::endl;
     mavlink_message_t ctrlMsg;
     mavlink_msg_huch_ext_ctrl_pack(
       system_id(),

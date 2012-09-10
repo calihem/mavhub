@@ -25,8 +25,8 @@ FiducalApp::FiducalApp(const std::map<std::string, std::string> &args, const Log
 	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
   new_video_data(false),
   resizeFactor(0.2),
-  outer_tag_size(15.0),
-  inner_tag_size(9.0)
+  outer_tag_size(25.0),
+  inner_tag_size(15.0)
 #ifdef FIDUCAL_LOG
 	, log_file("fiducal_log.data")
 #endif
@@ -83,7 +83,8 @@ void FiducalApp::load_calibration_data(const std::string &filename) {
 }
 
 void FiducalApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
-	if(!data) return;
+	std::cout << "handle_video_data" << std::endl;
+  if(!data) return;
 
 	Logger::log(name(), ": got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG, _loglevel);
 	if(bpp != 8) {
@@ -115,6 +116,7 @@ void FiducalApp::run()
 	while( !interrupted() ) {
     if(new_video_data)
     {
+	    std::cout << "new video data" << std::endl;
       cv::Mat grayscale;
       {
         Lock sync_lock(sync_mutex);
@@ -148,10 +150,19 @@ void FiducalApp::run()
           << setw(10) << setprecision(6) << right << fvec.at<double>(2)
           << std::endl;
 #endif
+        std::cout
+          << "tag at: "
+          << fvec.at<double>(0) << " "
+          << fvec.at<double>(1) << " "
+          << fvec.at<double>(2) << " "
+          << std::endl;
         DataCenter::set_fiducal_rot_raw(rvec);
         DataCenter::set_fiducal_trans_raw(tvec);
+      } else
+      {
+	      std::cout << "no tag found" << std::endl;
       }
-      
+
       new_video_data = false;
     }
     //FIXME: remove usleep
