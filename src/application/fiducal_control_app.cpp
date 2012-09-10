@@ -29,13 +29,14 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   pidLatX(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidLatY(0.0, 0.0, 0.0, 1e1, 1.0, 0.0),
   pidAlt(0.0, 0.0, 0.0, 1e1, 1.0, 50.0),
-  minimalThrust(150),
+  minimalThrust(250),
   systemGain(100),
-  hooverThrust(300),
+  hooverThrust(530),
   maxRollPitch(1000),
 	execTiming(25)
 #ifdef FIDUCAL_CONTROL_LOG
 	, ctrlLogFile("fiducal_control_ctrl_log.data")
+	, msgLogFile("fiducal_control_msg_log.data")
 	, potiLogFile("fiducal_control_poti_log.data")
 #endif
 	{
@@ -49,6 +50,12 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 		<< std::endl;
 	ctrlLogFile << "#" << std::endl;
 	ctrlLogFile << setprecision(5) << fixed << setfill(' ');
+	
+  msgLogFile << "# time [ms]"
+    << " | msgYaw | msgRoll | msgPitch | msgThrust"
+		<< std::endl;
+	msgLogFile << "#" << std::endl;
+	msgLogFile << setprecision(5) << fixed << setfill(' ');
 	
   potiLogFile << "# time [ms]"
     << " | a[0] | a[1] | a[2] | a[3] | a[4] | a[5]"
@@ -120,10 +127,9 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.Kp = double(analogPoti[0]) / 1024 * 1e-1;
       pidAlt.Ki = double(analogPoti[1]) / 1024 * 2e-2;
       pidAlt.Kd = double(analogPoti[2]) / 1024 * 5e-3;
-      pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2;
+      pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2 + 30;
 
       systemGain = int(double(analogPoti[4]) / 1024 * 500);
-      hooverThrust = int(double(analogPoti[5]) / 1024 * 1000);
       
     break;
   }
@@ -153,11 +159,12 @@ void FiducalControlApp::run()
     // do stuff
     rvec = DataCenter::get_fiducal_rot_raw();
     tvec = DataCenter::get_fiducal_trans_raw();
-  
-    msgRoll   = 0;
-    msgPitch  = 0;
-    msgYaw    = 0;
-    msgThrust = hooverThrust;
+
+    // this is needed when controlling hooverThrust via poti without image input
+//    msgRoll   = 0;
+//    msgPitch  = 0;
+//    msgYaw    = 0;
+//    msgThrust = hooverThrust;
         
     if(!rvec.empty() && !tvec.empty())
     {
@@ -210,6 +217,15 @@ void FiducalControlApp::run()
         }
       }
     }
+#ifdef FIDUCAL_CONTROL_LOG
+        msgLogFile 
+          << std::setw(14) << get_time_ms()
+          << std::setw(10) << std::setprecision(6) << msgYaw << " "
+          << std::setw(10) << std::setprecision(6) << msgRoll << " "
+          << std::setw(10) << std::setprecision(6) << msgPitch << " "
+          << std::setw(10) << std::setprecision(6) << msgThrust << " "
+          << std::endl;
+#endif
     mavlink_message_t ctrlMsg;
     mavlink_msg_huch_ext_ctrl_pack(
       system_id(),
