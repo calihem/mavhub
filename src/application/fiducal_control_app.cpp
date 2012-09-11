@@ -124,13 +124,11 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
 //      pidLatY.Ki;
 //      pidLatY.Kd;
 //      pidLatY.setPoint;
-      pidAlt.Kp = double(analogPoti[0]) / 1024 * 1e-1;
-      pidAlt.Ki = double(analogPoti[1]) / 1024 * 5e-3;
-      pidAlt.Kd = double(analogPoti[2]) / 1024 * 2e-2;
-      pidAlt.setPoint = double(analogPoti[3]) / 1024 * 5e2 + 30;
+      pidAlt.Kp = double(analogPoti[0]) / 1024 * 1e-2;
+      pidAlt.Kd = double(analogPoti[1]) / 1024 * 1e-2;
+      pidAlt.Ki = double(analogPoti[2]) / 1024 * 1e-2;
+      pidAlt.setPoint = double(analogPoti[3]) / 1024 * 4e2 + 100;
 
-      systemGain = int(double(analogPoti[4]) / 1024 * 500);
-      
     break;
   }
 }
