@@ -79,6 +79,7 @@ class FiducalControlApp : public MavlinkAppLayer {
     int systemGain;
     int hooverThrust;
     int maxRollPitch;
+    double altitude;
     Exec_Timing execTiming;
 #ifdef FIDUCAL_CONTROL_LOG
 		std::ofstream ctrlLogFile;

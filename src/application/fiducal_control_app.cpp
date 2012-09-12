@@ -33,6 +33,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
   systemGain(100),
   hooverThrust(550),
   maxRollPitch(1000),
+  altitude(0.0),
 	execTiming(25)
 #ifdef FIDUCAL_CONTROL_LOG
 	, ctrlLogFile("fiducal_control_ctrl_log.data")
@@ -43,6 +44,10 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 	
   assign_variable_from_args(target_system);
 	assign_variable_from_args(target_component);
+
+  // request altitude information from APM
+	request_data_stream(target_system, target_component, MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 10);
+
 
 #ifdef FIDUCAL_CONTROL_LOG
 	ctrlLogFile << "# time [ms]"
@@ -128,7 +133,10 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.Kd = double(analogPoti[1]) / 1024 * 1e-2;
       pidAlt.Ki = double(analogPoti[2]) / 1024 * 1e-2;
       pidAlt.setPoint = double(analogPoti[3]) / 1024 * 4e2 + 100;
-
+    break;
+		case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+    int32_t alt = mavlink_msg_global_position_int_get_relative_alt(&msg);
+    altitude = double(alt)/10.0; // mm -> cm
     break;
   }
 }
@@ -163,8 +171,13 @@ void FiducalControlApp::run()
 //    msgPitch  = 0;
 //    msgYaw    = 0;
 //    msgThrust = hooverThrust;
-        
-    if(!rvec.empty() && !tvec.empty())
+
+    // temporary control via altitude from sonar
+    double ctrlAlt = pidAlt.step(altitude, dt); 
+    msgThrust = ctrlAlt * systemGain + hooverThrust; // 0..systemGain0
+    msgThrust = msgThrust < minimalThrust? minimalThrust : msgThrust;
+    if(false)
+//    if(!rvec.empty() && !tvec.empty())
     {
       std:: cout << "loaded vectors successfully" << std::endl;
 //			Lock input_lock(input_mutex);
