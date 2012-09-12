@@ -21,7 +21,7 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 	AppInterface("fiducal_control_app", loglevel),
 	MavlinkAppLayer("fiducal_control_app", loglevel),
   target_system(1),
-  target_component(1),
+  target_component(0),
   rvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   tvec(cv::Mat::zeros(3, 1, CV_32FC1)),
   fvec(cv::Mat::zeros(3, 1, CV_32FC1)),
@@ -44,10 +44,6 @@ FiducalControlApp::FiducalControlApp(const std::map<std::string, std::string> &a
 	
   assign_variable_from_args(target_system);
 	assign_variable_from_args(target_component);
-
-  // request altitude information from APM
-	request_data_stream(target_system, target_component, MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 10);
-
 
 #ifdef FIDUCAL_CONTROL_LOG
 	ctrlLogFile << "# time [ms]"
@@ -78,7 +74,7 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
 		static_cast<int>(msg.compid),
 		Logger::LOGLEVEL_DEBUG, _loglevel);
 
-	switch(msg.msgid) {
+  switch(msg.msgid) {
 		case MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT:
 			if( (mavlink_msg_set_local_position_setpoint_get_target_system(&msg) == system_id()) ) {
         if(mavlink_msg_local_position_setpoint_get_coordinate_frame(&msg) == MAV_FRAME_LOCAL_ENU) {
@@ -134,9 +130,9 @@ void FiducalControlApp::handle_input(const mavlink_message_t &msg) {
       pidAlt.Ki = double(analogPoti[2]) / 1024 * 1e-2;
       pidAlt.setPoint = double(analogPoti[3]) / 1024 * 4e2 + 100;
     break;
-		case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
-    int32_t alt = mavlink_msg_global_position_int_get_relative_alt(&msg);
-    altitude = double(alt)/10.0; // mm -> cm
+		case MAVLINK_MSG_ID_VFR_HUD:
+      double alt = mavlink_msg_vfr_hud_get_alt(&msg);
+      altitude = double(alt)*100.0; // m -> cm
     break;
   }
 }
@@ -156,6 +152,9 @@ void FiducalControlApp::run()
   int msgPitch  = 0;
   int msgYaw    = 0;
   int msgThrust = hooverThrust;
+  
+  // request altitude information from APM
+	request_data_stream(target_system, target_component, MAV_DATA_STREAM_EXTRA2, 10);
 
 	while( !interrupted() ) {
     // get correct timings
@@ -165,6 +164,7 @@ void FiducalControlApp::run()
     // do stuff
     rvec = DataCenter::get_fiducal_rot_raw();
     tvec = DataCenter::get_fiducal_trans_raw();
+    std::cout << altitude << std::endl;
 
     // this is needed when controlling hooverThrust via poti without image input
 //    msgRoll   = 0;
