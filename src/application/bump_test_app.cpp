@@ -31,8 +31,7 @@ BumpTestApp::BumpTestApp(const std::map<std::string, std::string> &args, const L
 
 #ifdef BUMP_TEST_LOG
   logFile << "# time [ms]"
-    << " | a[0] | a[1] | a[2] | a[3] | a[4] | a[5]"
-    << " | d[0] | d[1] | d[2] | d[3]"
+    << "| " << "msgThrust" << " | " << "altitude"
 		<< std::endl;
 	logFile << "#" << std::endl;
 #endif
@@ -53,6 +52,8 @@ void BumpTestApp::handle_input(const mavlink_message_t &msg) {
 			mavlink_msg_huch_potibox_get_a(&msg, analogPoti);
 			mavlink_msg_huch_potibox_get_d(&msg, digitalPoti);
       // TODO: handle actual poti values
+      if(analogPoti[0] > 100)
+        do_bump = true;
     break;
 		case MAVLINK_MSG_ID_VFR_HUD:
       double alt = mavlink_msg_vfr_hud_get_alt(&msg);
@@ -78,98 +79,45 @@ void BumpTestApp::run()
 
   std::cout << "foo" << std::endl;
 
+  double T = 0.0;
+
 	while( !interrupted() ) {
     wait_time = execTiming.calcSleeptime();
     usleep(wait_time);
     dt = execTiming.updateExecStats();
 
-    std::cout << dt << std::endl;
+    msgRoll   = 0;
+    msgPitch  = 0;
+    msgYaw    = 0;
+    msgThrust = 530;
 
     if(do_bump)
     {
-      
-      msgRoll   = 0;
-      msgPitch  = 0;
-      msgYaw    = 0;
-      msgThrust = 530;
-      
-      mavlink_message_t ctrlMsg;
-      
-      // first wait 1s
-      msgThrust = 530;
-      mavlink_msg_huch_ext_ctrl_pack(
-        system_id(),
-        component_id,
-        &ctrlMsg,
-        target_system,
-        target_component,
-        8, // mask
-        msgRoll,
-        msgPitch,
-        msgYaw,
-        msgThrust
-      );
-      send(ctrlMsg);
-      usleep(1000);
-      
-      // then hooverThrust + thrust for 1s
-      msgThrust = 530 + 50;
-      mavlink_msg_huch_ext_ctrl_pack(
-        system_id(),
-        component_id,
-        &ctrlMsg,
-        target_system,
-        target_component,
-        8, // mask
-        msgRoll,
-        msgPitch,
-        msgYaw,
-        msgThrust
-      );
-      send(ctrlMsg);
-      usleep(1000);
-      
-      // then hooverThrust - thrust for 1s
-      msgThrust = 530 - 50;
-      mavlink_msg_huch_ext_ctrl_pack(
-        system_id(),
-        component_id,
-        &ctrlMsg,
-        target_system,
-        target_component,
-        8, // mask
-        msgRoll,
-        msgPitch,
-        msgYaw,
-        msgThrust
-      );
-      send(ctrlMsg);
-      usleep(1000);
-      
-      // then wait 1s
-      msgThrust = 530;
-      mavlink_msg_huch_ext_ctrl_pack(
-        system_id(),
-        component_id,
-        &ctrlMsg,
-        target_system,
-        target_component,
-        8, // mask
-        msgRoll,
-        msgPitch,
-        msgYaw,
-        msgThrust
-      );
-      send(ctrlMsg);
-      usleep(1000);
-      
+      T += dt*1e-6;
+      if(T < 1.0)
+        msgThrust = 530;
+      if(T >= 1.0 && T < 2.0)
+        msgThrust = 530 + 50;
+      if(T >= 2.0 && T < 3.0)
+        msgThrust = 530 - 50;
+      if(T >= 3.0 && T < 4.0)
+        msgThrust = 530;
+      if(T > 4.0)
+      {
+        T = 0.0;
+        do_bump = false;
+      }
     }
     
-    int msgRoll   = 0;
-    int msgPitch  = 0;
-    int msgYaw    = 0;
-    int msgThrust = 530;
-    
+    std::cout << do_bump << " " << T << " " << msgThrust << std::endl;
+#ifdef BUMP_TEST_LOG
+    logFile 
+      << get_time_ms() << " "
+      << msgThrust << " "
+      << altitude  << " "
+      << std::endl;
+#endif
+
     mavlink_message_t ctrlMsg;
     mavlink_msg_huch_ext_ctrl_pack(
       system_id(),
