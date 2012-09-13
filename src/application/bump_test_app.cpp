@@ -20,7 +20,7 @@ BumpTestApp::BumpTestApp(const std::map<std::string, std::string> &args, const L
   target_component(0),
   altitude(0.0),
   do_bump(false),
-	execTiming(25)
+	execTiming(100)
 #ifdef BUMP_TEST_LOG
 	, logFile("bump_test_log.data")
 #endif
@@ -75,7 +75,7 @@ void BumpTestApp::run()
   int msgThrust = 530;
   
   // request altitude information from APM
-	request_data_stream(target_system, target_component, MAV_DATA_STREAM_EXTRA2, 25);
+	request_data_stream(target_system, target_component, MAV_DATA_STREAM_EXTRA2, 100);
 
   std::cout << "foo" << std::endl;
 
