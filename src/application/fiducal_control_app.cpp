@@ -173,6 +173,9 @@ void FiducalControlApp::run()
 //    msgThrust = hooverThrust;
 
     // temporary control via altitude from sonar
+    msgRoll   = 0;
+    msgPitch  = 0;
+    msgYaw    = 0;
     double ctrlAlt = pidAlt.step(altitude, dt); 
     msgThrust = ctrlAlt * systemGain + hooverThrust; // 0..systemGain0
     msgThrust = msgThrust < minimalThrust? minimalThrust : msgThrust;
