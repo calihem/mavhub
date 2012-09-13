@@ -76,6 +76,8 @@ void BumpTestApp::run()
   // request altitude information from APM
 	request_data_stream(target_system, target_component, MAV_DATA_STREAM_EXTRA2, 25);
 
+  std::cout << "foo" << std::endl;
+
 	while( !interrupted() ) {
     wait_time = execTiming.calcSleeptime();
     usleep(wait_time);
