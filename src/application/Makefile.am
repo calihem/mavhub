@@ -9,6 +9,7 @@ libapp_a_SOURCES = \
 	acc_calibration_app/acc_calibration_app.cpp \
 	attitude_filter_app/attitude_filter_app.cpp \
 	app_store.cpp \
+	bump_test_app.cpp \
 	core_app.cpp \
   fiducal_app.cpp \
   fiducal_control_app.cpp \
