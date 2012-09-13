@@ -20,6 +20,7 @@
 #include "module/bridge_ivy.h"
 #include "module/bridge_osc.h"
 #include "module/ui_potibox.h"
+#include "bump_test_app.h"
 #include "core_app.h"
 #include "fiducal_app.h"
 #include "fiducal_control_app.h"
@@ -61,6 +62,11 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #ifdef HAVE_MAVLINK_H
 		TestCore *test_app = new TestCore();
 		return ProtocolStack<mavlink_message_t>::instance().add_application(test_app);
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "bump_test_app") {
+#ifdef HAVE_MAVLINK_H
+		BumpTestApp *bump_test_app = new BumpTestApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(bump_test_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "core_app") {
 #ifdef HAVE_MAVLINK_H
