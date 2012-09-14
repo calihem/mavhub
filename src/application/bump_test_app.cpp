@@ -19,6 +19,7 @@ BumpTestApp::BumpTestApp(const std::map<std::string, std::string> &args, const L
   target_system(1),
   target_component(0),
   altitude(0.0),
+  hooverThrust(500),
   do_bump(false),
 	execTiming(100)
 #ifdef BUMP_TEST_LOG
@@ -73,7 +74,7 @@ void BumpTestApp::run()
   int msgRoll   = 0;
   int msgPitch  = 0;
   int msgYaw    = 0;
-  int msgThrust = hooverThrust;
+  int msgThrust = 0;
   
   // request altitude information from APM
 	request_data_stream(target_system, target_component, MAV_DATA_STREAM_EXTRA2, 100);
@@ -90,20 +91,20 @@ void BumpTestApp::run()
     msgRoll   = 0;
     msgPitch  = 0;
     msgYaw    = 0;
-    msgThrust = hooverThrust;
+    msgThrust = 0;
 
     if(do_bump)
     {
       T += dt*1e-6;
-      if(T < 1.0)
-        msgThrust = hooverThrust;
-      if(T >= 1.0 && T < 2.0)
+      if(T < 3.0)
+        msgThrust = 0.0;
+      if(T >= 4.0 && T < 5.0)
         msgThrust = hooverThrust + 50;
-      if(T >= 2.0 && T < 3.0)
+      if(T >= 5.0 && T < 6.0)
         msgThrust = hooverThrust - 50;
-      if(T >= 3.0 && T < 4.0)
-        msgThrust = hooverThrust;
-      if(T > 4.0)
+      if(T >= 6.0 && T < 7.0)
+        msgThrust = 0.0;
+      if(T > 7.0)
       {
         T = 0.0;
         do_bump = false;
