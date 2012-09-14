@@ -54,6 +54,7 @@ void BumpTestApp::handle_input(const mavlink_message_t &msg) {
       // TODO: handle actual poti values
       if(analogPoti[0] > 100)
         do_bump = true;
+      hooverThrust = 500 + int((analogPoti[4]-500)/10.0);
     break;
 		case MAVLINK_MSG_ID_VFR_HUD:
       double alt = mavlink_msg_vfr_hud_get_alt(&msg);
@@ -72,7 +73,7 @@ void BumpTestApp::run()
   int msgRoll   = 0;
   int msgPitch  = 0;
   int msgYaw    = 0;
-  int msgThrust = 530;
+  int msgThrust = hooverThrust;
   
   // request altitude information from APM
 	request_data_stream(target_system, target_component, MAV_DATA_STREAM_EXTRA2, 100);
@@ -89,19 +90,19 @@ void BumpTestApp::run()
     msgRoll   = 0;
     msgPitch  = 0;
     msgYaw    = 0;
-    msgThrust = 530;
+    msgThrust = hooverThrust;
 
     if(do_bump)
     {
       T += dt*1e-6;
       if(T < 1.0)
-        msgThrust = 530;
+        msgThrust = hooverThrust;
       if(T >= 1.0 && T < 2.0)
-        msgThrust = 530 + 50;
+        msgThrust = hooverThrust + 50;
       if(T >= 2.0 && T < 3.0)
-        msgThrust = 530 - 50;
+        msgThrust = hooverThrust - 50;
       if(T >= 3.0 && T < 4.0)
-        msgThrust = 530;
+        msgThrust = hooverThrust;
       if(T > 4.0)
       {
         T = 0.0;
@@ -109,7 +110,7 @@ void BumpTestApp::run()
       }
     }
     
-    std::cout << do_bump << " " << T << " " << msgThrust << std::endl;
+    std::cout << do_bump << " " << T << " " << msgThrust << " " << hooverThrust << std::endl;
 #ifdef BUMP_TEST_LOG
     logFile 
       << get_time_ms() << " "

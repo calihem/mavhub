@@ -28,6 +28,7 @@ class BumpTestApp : public MavlinkAppLayer {
 		unsigned int target_system;
 		unsigned int target_component;
     double altitude;
+    double hooverThrust;
     bool do_bump;
     Exec_Timing execTiming;
 #ifdef BUMP_TEST_LOG
