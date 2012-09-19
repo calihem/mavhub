@@ -22,7 +22,7 @@ enum of_algorithm {
 	CENSUS_TRANSFORM,
 	LINE_SUM,
 	LINE_CENSUS,
-	LK, //  6
+	LK, // 6
 	LK_PYR,
 };
 

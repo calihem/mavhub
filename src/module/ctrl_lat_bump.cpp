@@ -31,7 +31,7 @@ namespace mavhub {
 		// pid_roll->setSp(params["roll_sp"]);
 		// pid_roll->setPv_int_lim(params["roll_ilim"]);
 		tmr = new Exec_Timing((int)params["ctl_update_rate"]);
-		bump = new Bumper(0, 0.01, 2.0, 1.0);
+		bump = new Bumper(0, 0.01, 0.5, 0.2);
 		// bump = new Bumper(0, 0.01, 1.0);
 	}
 

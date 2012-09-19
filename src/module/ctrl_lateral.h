@@ -15,6 +15,7 @@
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
 #include "PID.h"
+#include "exec_timing.h"
 
 namespace mavhub {
 	class Ctrl_Lateral : public ModuleBase {
@@ -56,6 +57,8 @@ namespace mavhub {
 		PID* pid_yaw;
 		PID* pid_pitch;
 		PID* pid_roll;
+		/// execution timing
+		Exec_Timing* exec_tmr;
 
 		/// set reasonable config defaults
 		virtual void default_conf();

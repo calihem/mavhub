@@ -36,8 +36,8 @@ namespace mavhub {
 		ModuleBase(args, "ctrl_logger"),
 		logging(false)
 	{
-		char outstr[200];
-		struct timeval tv;
+		// char outstr[200];
+		// struct timeval tv;
 
 		read_conf(args);
 		Logger::log("Ctrl_Logger: created", Logger::LOGLEVEL_INFO);
@@ -71,7 +71,7 @@ namespace mavhub {
 	
   void Ctrl_Logger::handle_input(const mavlink_message_t &msg) {
 		static char param_id[16];
-		char outstr[200];
+		// char outstr[200];
 		// static int8_t param_id[15];
 		// int field_index_start;
 		// int field_index_end;
@@ -142,7 +142,7 @@ namespace mavhub {
 		if(!logging)
 			return;
 		// printf("blub\n");
-		int i;
+		// int i;
 		char outstr[200];
 
 		datavals[0] = (double)ms;
@@ -155,7 +155,7 @@ namespace mavhub {
 					datavals[1] = mavlink_msg_debug_get_value(&msg);
 				}
 			}
-			else if(msg.sysid == 39 && msg.compid == 44) { // component 44
+			else if(msg.sysid == 39 && msg.compid == 28) { // component 44
 				if(mavlink_msg_debug_get_ind(&msg) == 1) {
 					datavals[2] = mavlink_msg_debug_get_value(&msg);
 				}
@@ -166,6 +166,11 @@ namespace mavhub {
 			datavals[3] = mavlink_msg_global_vision_position_estimate_get_x(&msg);
 			datavals[4] = mavlink_msg_global_vision_position_estimate_get_y(&msg);//"M39:GLOBAL_VISION_POSITION_ESTIMATE.y";
 			datavals[5] = mavlink_msg_global_vision_position_estimate_get_z(&msg);//"M39:GLOBAL_VISION_POSITION_ESTIMATE.z";
+			break;
+		case MAVLINK_MSG_ID_ATTITUDE:
+			datavals[15] = mavlink_msg_attitude_get_roll(&msg);
+			datavals[16] = mavlink_msg_attitude_get_pitch(&msg);
+			datavals[17] = mavlink_msg_attitude_get_yaw(&msg);
 			break;
 #ifdef MAVLINK_ENABLED_HUCH
 		case MAVLINK_MSG_ID_HUCH_ATTITUDE_CONTROL:
@@ -180,6 +185,9 @@ namespace mavhub {
 		case MAVLINK_MSG_ID_HUCH_VISUAL_FLOW:
 			datavals[11] = mavlink_msg_huch_visual_flow_get_u_i(&msg); //"M39:HUCH_VISUAL_FLOW.u_i";
 			datavals[12] = mavlink_msg_huch_visual_flow_get_v_i(&msg); //"M39:HUCH_VISUAL_FLOW.v_i";
+			datavals[13] = mavlink_msg_huch_visual_flow_get_u(&msg); //"M39:HUCH_VISUAL_FLOW.u";
+			datavals[14] = mavlink_msg_huch_visual_flow_get_v(&msg); //"M39:HUCH_VISUAL_FLOW.v";
+			//Logger::log("Ctrl_Logger flow debug:", datavals[13], datavals[14], Logger::LOGLEVEL_INFO);
 			break;
 #endif
 		default:
@@ -187,7 +195,7 @@ namespace mavhub {
 		}		
 
 		logline_preamble(1, ms);
-		sprintf(outstr, "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
+		sprintf(outstr, "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
 						datavals[1],
 						datavals[2],
 						datavals[3],
@@ -199,7 +207,13 @@ namespace mavhub {
 						datavals[9],
 						datavals[10],
 						datavals[11],
-						datavals[12]);
+						datavals[12],
+						datavals[13],
+						datavals[14],
+						datavals[15],
+						datavals[16],
+						datavals[17]
+						);
 		fwrite(outstr, strlen(outstr), 1, fd);
 
 		// for(i = 0; i < 13; i++) {
@@ -465,9 +479,14 @@ namespace mavhub {
 			datafields[10] = "M39:HUCH_CTRL_HOVER_STATE.kal_s0";
 			datafields[11] = "M39:HUCH_VISUAL_FLOW.u_i";
 			datafields[12] = "M39:HUCH_VISUAL_FLOW.v_i";
+			datafields[13] = "M39:HUCH_VISUAL_FLOW.u";
+			datafields[14] = "M39:HUCH_VISUAL_FLOW.v";
+			datafields[15] = "M39:ATTITUDE.roll";
+			datafields[16] = "M39:ATTITUDE.pitch";
+			datafields[17] = "M39:ATTITUDE.yaw";
 
 			// initialize data to zero
-			for(i = 0; i < 13; i++)
+			for(i = 0; i < 18; i++)
 				datavals[i] = 0.;
 
 			break;
@@ -481,7 +500,7 @@ namespace mavhub {
 		char outstr[200];
 		time_t t;
 		struct tm *tmp;
-		struct timeval tv;
+		// struct timeval tv;
 
 		std::string datestr;
 		std::string logsuffix;

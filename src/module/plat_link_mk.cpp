@@ -36,6 +36,7 @@ namespace mavhub {
 		read_conf(args);
 
 		assign_variable_from_args(component_id);
+		// assign_variable_from_args(ctl_update_rate);
 		// assign_variable_from_args(output_enable);
 
 		// init execution timer

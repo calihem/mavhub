@@ -34,6 +34,10 @@ namespace mavhub {
 		// init sensor_array structure
 		for(int i = 0; i < 16; i++)
 			sensor_array.data[i] = 0.;
+
+		// init execution timer
+		Logger::log("Ctrl_Lateral ctl_update_rate", (int)params["ctl_update_rate"], Logger::LOGLEVEL_DEBUG);
+		exec_tmr = new Exec_Timing((int)params["ctl_update_rate"]);
 	}
 
 	Ctrl_Lateral::~Ctrl_Lateral() {
@@ -153,13 +157,14 @@ namespace mavhub {
 		// timing
 		uint64_t dt = 0;
 		double dtf = 0.0;
-		struct timeval tk, tkm1; // timevals
-		int update_rate = 100; // 100 Hz
-		int wait_freq = update_rate? 1000000 / update_rate: 0;
-		int wait_time = wait_freq;
-		uint64_t frequency = wait_time;
-		uint64_t start = get_time_us();
-		uint64_t usec;
+		// struct timeval tk, tkm1; // timevals
+		// int ctl_update_rate = (int)params["ctl_update_rate"]; // 100; // 100 Hz
+		// int wait_freq = ctl_update_rate ? 1000000 / ctl_update_rate: 0;
+		// int wait_time = wait_freq;
+		// uint64_t frequency = wait_time;
+		// uint64_t start = get_time_us();
+		// uint64_t usec;
+		int sleeptime;
 
 		// body variables
 		double tmp;
@@ -171,8 +176,8 @@ namespace mavhub {
 		// position
 		double x = 0.0, y = 0.0;
 
-		gettimeofday(&tk, NULL);
-		gettimeofday(&tkm1, NULL);
+		// gettimeofday(&tk, NULL);
+		// gettimeofday(&tkm1, NULL);
 
 		pitch = roll = yaw = yaw1 = 0;
 		pitch_test_dur = 0;
@@ -184,27 +189,37 @@ namespace mavhub {
 
 		Logger::log("Ctrl_Lateral started:", name(), Logger::LOGLEVEL_INFO);
 		while(true) {
-			/* wait time */
-			usec = get_time_us();
-			uint64_t end = usec;
-			wait_time = wait_freq - (end - start);
-			wait_time = (wait_time < 0)? 0: wait_time;
+
+			// run method exec timing stuff
+			sleeptime = exec_tmr->calcSleeptime();
+			//Logger::log("plat_link_mk.cpp: sleeptime: ", sleeptime, Logger::LOGLEVEL_INFO);
+			usleep(sleeptime);
+			dt = exec_tmr->updateExecStats();
+
+			// /* wait time */
+			// usec = get_time_us();
+			// uint64_t end = usec;
+			// wait_time = wait_freq - (end - start);
+			// wait_time = (wait_time < 0)? 0: wait_time;
 		
-			/* wait */
-			usleep(wait_time);
-			//usleep(10);
+			// /* wait */
+			// usleep(wait_time);
+			// //usleep(10);
 
-			/* calculate frequency */
-			end = get_time_us();
-			frequency = (15 * frequency + end - start) / 16;
-			start = end;
+			// /* calculate frequency */
+			// end = get_time_us();
+			// frequency = (15 * frequency + end - start) / 16;
+			// start = end;
 
-			// Logger::log("Ctrl_Lateral slept for", wait_time, component_id, Logger::LOGLEVEL_INFO);
+			// // Logger::log("Ctrl_Lateral slept for", wait_time, component_id, Logger::LOGLEVEL_INFO);
 
-			gettimeofday(&tk, NULL);
-			//timediff(tdiff, tkm1, tk);
-			dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
-			tkm1 = tk; // save current time
+			// gettimeofday(&tk, NULL);
+			// //timediff(tdiff, tkm1, tk);
+			// dt = (tk.tv_sec - tkm1.tv_sec) * 1000000 + (tk.tv_usec - tkm1.tv_usec);
+			// tkm1 = tk; // save current time
+			// // dt fractional in seconds
+			// dtf = (double)dt * 1e-6;
+
 			// dt fractional in seconds
 			dtf = (double)dt * 1e-6;
 
@@ -412,6 +427,14 @@ namespace mavhub {
 			istringstream s(iter->second);
 			s >> component_id;
 		}
+
+		// update rate
+		iter = args.find("ctl_update_rate");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ctl_update_rate"];
+		}
+
 		// controller params yaw
 		iter = args.find("yaw_Kc");
 		if( iter != args.end() ) {
