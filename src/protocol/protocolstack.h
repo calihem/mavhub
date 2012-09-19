@@ -332,6 +332,10 @@ template <class T>
 int ProtocolStack<T>::add_link(cpp_io::IOInterface *interface) {
 	if(!interface) return -1;
 
+	if(!interface->is_open()) {
+		Logger::log(typeid(*this).name(), "link", interface->name(), "is not ready", Logger::LOGLEVEL_WARN, loglevel());
+		return -2;
+	}
 	// stop execution of stack
 	join();
 

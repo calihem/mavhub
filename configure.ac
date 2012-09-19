@@ -87,7 +87,7 @@ AC_CHECK_LIB([ivy], [IvyInit])
 AC_CHECK_LIB([lapack],
 	[cgesvd_],
 	[AM_CONDITIONAL(COND_LIBLAPACK, true) LIBS+="-llapack " AC_DEFINE(HAVE_LIBLAPACK, [1], [Define to 1 if you have the `lapack' library (-llapack).])],
-	AM_CONDITIONAL(COND_LIBLAPACK, false) )
+	AM_CONDITIONAL(COND_LIBLAPACK, false))
 AC_CHECK_LIB([blas],
 	[cblas_caxpy],
 	[AM_CONDITIONAL(COND_LIBBLAS, true) LIBS+="-lblas " AC_DEFINE(HAVE_LIBBLAS, [1], [Define to 1 if you have the `blas' library (-lblas).])],

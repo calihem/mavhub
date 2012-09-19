@@ -28,7 +28,8 @@ endif
 
 if COND_LIBLAPACK
 if COND_LIBBLAS
-THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/liblevmar.a
+THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/liblevmar.a \
+	$(top_builddir)/thirdparty/libsba.a
 endif
 endif
 

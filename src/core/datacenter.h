@@ -11,12 +11,29 @@
 #include <mavlink.h>
 #endif // HAVE_MAVLINK_H
 
+#ifdef HAVE_OPENCV2
+#include <opencv/cv.h>
+#endif // HAVE_OPENCV2
+
+
 #define DC_NUMSENS 10 // FIXME: get from config
 
 namespace mavhub {
 
 	class DataCenter {
 		public:
+			/// set FC legacy extctrl components
+			static void set_extctrl_pitch(const double pitch);
+			static void set_extctrl_roll(const double roll);
+			static void set_extctrl_yaw(const double yaw);
+			static const double get_extctrl_pitch();
+			static const double get_extctrl_roll();
+			static const double get_extctrl_yaw();
+
+			// unified sensor array read/write
+			static void set_sensor(const int id, const double val);
+			static const double get_sensor(const int id);
+
 #ifdef HAVE_MAVLINK_H
 			// raw imu 
 			static const mavlink_raw_imu_t get_raw_imu();
@@ -59,20 +76,15 @@ namespace mavhub {
 			 */
 			static void set_huch_magnetic_kompass(const mavlink_huch_magnetic_kompass_t &huch_magnetic_kompass);
 			static const mavlink_huch_magnetic_kompass_t get_huch_magnetic_kompass();
-
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
-			/// set FC legacy extctrl components
-			static void set_extctrl_pitch(const double pitch);
-			static void set_extctrl_roll(const double roll);
-			static void set_extctrl_yaw(const double yaw);
-			static const double get_extctrl_pitch();
-			static const double get_extctrl_roll();
-			static const double get_extctrl_yaw();
-
-			// unified sensor array read/write
-			static void set_sensor(const int id, const double val);
-			static const double get_sensor(const int id);
+#ifdef HAVE_OPENCV2
+			// fiducal data
+			static void set_fiducal_rot_raw(const cv::Mat &rvec);
+			static void set_fiducal_trans_raw(const cv::Mat &tvec);
+			static cv::Mat get_fiducal_rot_raw();
+			static cv::Mat get_fiducal_trans_raw();
+#endif // HAVE_OPENCV2
 
 		private:
 			static double extctrl_pitch;
@@ -87,6 +99,10 @@ namespace mavhub {
 			//data structs
 			static mavlink_raw_imu_t raw_imu;
 			static mavlink_raw_pressure_t raw_pressure;
+
+			//sync data
+			static pthread_mutex_t raw_imu_mutex;
+			static pthread_mutex_t raw_pressure_mutex;
 #ifdef MAVLINK_ENABLED_HUCH
 			static mavlink_huch_imu_raw_adc_t huch_imu_raw_adc;
 			static mavlink_huch_mk_imu_t huch_mk_imu;
@@ -98,12 +114,7 @@ namespace mavhub {
 			static mavlink_huch_exp_ctrl_rx_t exp_ctrl_rx_data;
 			/// Magnetic kompass
 			static mavlink_huch_magnetic_kompass_t huch_magnetic_kompass;
-#endif // MAVLINK_ENABLED_HUCH
 
-			//sync data
-			static pthread_mutex_t raw_imu_mutex;
-			static pthread_mutex_t raw_pressure_mutex;
-#ifdef MAVLINK_ENABLED_HUCH
 			static pthread_mutex_t exp_ctrl_mutex;
 			static pthread_mutex_t huch_imu_raw_adc_mutex;
 			static pthread_mutex_t huch_mk_imu_mutex;
@@ -113,15 +124,86 @@ namespace mavhub {
 			static pthread_mutex_t huch_ranger_mutex;
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
-		
+#ifdef HAVE_OPENCV2
+			// fiducal data structures
+			static cv::Mat fiducal_rot_raw;
+			static cv::Mat fiducal_trans_raw;
+
+			static pthread_mutex_t fiducal_raw_mutex;
+#endif // HAVE_OPENCV2
+
 			DataCenter();
 			DataCenter(const DataCenter &data);
 			~DataCenter();
 			void operator=(const DataCenter &data);
 	};
-	// ----------------------------------------------------------------------------
-	// DataCenter
-	// ----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// DataCenter
+// ----------------------------------------------------------------------------
+// extctrl component setters
+inline void DataCenter::set_extctrl_pitch(const double pitch) {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	extctrl_pitch = pitch;
+}
+inline void DataCenter::set_extctrl_roll(const double roll) {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	extctrl_roll = roll;
+}
+inline void DataCenter::set_extctrl_yaw(const double yaw) {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	extctrl_yaw = yaw;
+}
+
+// extctrl component getters
+inline const double DataCenter::get_extctrl_pitch() {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	return extctrl_pitch;
+}
+inline const double DataCenter::get_extctrl_roll() {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	return extctrl_roll;
+}
+inline const double DataCenter::get_extctrl_yaw() {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	return extctrl_yaw;
+}
+
+// unified sensor array read/write
+inline void DataCenter::set_sensor(const int id, const double val) {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(sensors_mutex);
+	if(id >= 0 && id < DC_NUMSENS)
+		sensors[id] = val;
+	//else
+		//Logger::log("DC::set_sensor: invalid index", Logger::LOGLEVEL_DEBUG);
+	return;
+}
+inline const double DataCenter::get_sensor(const int id) {
+	using namespace cpp_pthread;
+
+	Lock ri_lock(extctrl_mutex);
+	if(id >= 0 && id < DC_NUMSENS)
+		return sensors[id];
+	else {
+		//Logger::log("DC::get_sensor: invalid index", Logger::LOGLEVEL_DEBUG);
+		return -1;
+	}
+}
+
 #ifdef HAVE_MAVLINK_H
 	inline const mavlink_raw_imu_t DataCenter::get_raw_imu() {
 		using namespace cpp_pthread;
@@ -289,68 +371,37 @@ namespace mavhub {
 #endif // MAVLINK_ENABLED_HUCH
 #endif // HAVE_MAVLINK_H
 
-	// extctrl component setters
-	inline void DataCenter::set_extctrl_pitch(const double pitch) {
-		using namespace cpp_pthread;
+#ifdef HAVE_OPENCV2
+// fiducal data
+inline void DataCenter::set_fiducal_rot_raw(const cv::Mat &rvec) {
+	using namespace cpp_pthread;
 
-		Lock ri_lock(extctrl_mutex);
-		extctrl_pitch = pitch;
-	}
-	inline void DataCenter::set_extctrl_roll(const double roll) {
-		using namespace cpp_pthread;
+	Lock fiducal_lock(fiducal_raw_mutex);
+	rvec.copyTo(fiducal_rot_raw);
+}
+inline void DataCenter::set_fiducal_trans_raw(const cv::Mat &tvec) {
+	using namespace cpp_pthread;
 
-		Lock ri_lock(extctrl_mutex);
-		extctrl_roll = roll;
-	}
-	inline void DataCenter::set_extctrl_yaw(const double yaw) {
-		using namespace cpp_pthread;
+	Lock fiducal_lock(fiducal_raw_mutex);
+	tvec.copyTo(fiducal_rot_raw);
+}
+inline cv::Mat DataCenter::get_fiducal_rot_raw() {
+	using namespace cpp_pthread;
 
-		Lock ri_lock(extctrl_mutex);
-		extctrl_yaw = yaw;
-	}
-	
-	// extctrl component getters
-	inline const double DataCenter::get_extctrl_pitch() {
-		using namespace cpp_pthread;
+	cv::Mat rvec;
+	Lock fiducal_lock(fiducal_raw_mutex);
+	fiducal_rot_raw.copyTo(rvec);
+	return rvec;
+}
+inline cv::Mat DataCenter::get_fiducal_trans_raw(){
+	using namespace cpp_pthread;
 
-		Lock ri_lock(extctrl_mutex);
-		return extctrl_pitch;
-	}
-	inline const double DataCenter::get_extctrl_roll() {
-		using namespace cpp_pthread;
-
-		Lock ri_lock(extctrl_mutex);
-		return extctrl_roll;
-	}
-	inline const double DataCenter::get_extctrl_yaw() {
-		using namespace cpp_pthread;
-
-		Lock ri_lock(extctrl_mutex);
-		return extctrl_yaw;
-	}
-
-	// unified sensor array read/write
-	inline void DataCenter::set_sensor(const int id, const double val) {
-		using namespace cpp_pthread;
-
-		Lock ri_lock(sensors_mutex);
-		if(id >= 0 && id < DC_NUMSENS)
-			sensors[id] = val;
-		//else
-			//Logger::log("DC::set_sensor: invalid index", Logger::LOGLEVEL_DEBUG);
-		return;
-	}
-	inline const double DataCenter::get_sensor(const int id) {
-		using namespace cpp_pthread;
-
-		Lock ri_lock(extctrl_mutex);
-		if(id >= 0 && id < DC_NUMSENS)
-			return sensors[id];
-		else {
-			//Logger::log("DC::get_sensor: invalid index", Logger::LOGLEVEL_DEBUG);
-			return -1;
-		}
-	}
+	cv::Mat tvec;
+	Lock fiducal_lock(fiducal_raw_mutex);
+	fiducal_rot_raw.copyTo(tvec);
+	return tvec;
+}
+#endif // HAVE_OPENCV2
 
 } // namespace mavhub
 

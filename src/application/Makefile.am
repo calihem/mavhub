@@ -10,6 +10,8 @@ libapp_a_SOURCES = \
 	attitude_filter_app/attitude_filter_app.cpp \
 	app_store.cpp \
 	core_app.cpp \
+  fiducal_app.cpp \
+  fiducal_control_app.cpp \
 	mavlink_mk_app.cpp \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \

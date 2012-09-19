@@ -28,7 +28,7 @@ endif
 if COND_LIBLAPACK
 if COND_LIBBLAS
 
-noinst_LIBRARIES += liblevmar.a
+noinst_LIBRARIES += liblevmar.a libsba.a
 
 liblevmar_a_SOURCES = \
 	levmar/lm.c \
@@ -38,6 +38,13 @@ liblevmar_a_SOURCES = \
 	levmar/lmbc.c \
 	levmar/lmblec.c \
 	levmar/lmbleic.c
+
+libsba_a_SOURCES = \
+	sba/sba_levmar.c \
+	sba/sba_levmar_wrap.c \
+	sba/sba_lapack.c \
+	sba/sba_crsm.c \
+	sba/sba_chkjac.c
 
 endif
 endif

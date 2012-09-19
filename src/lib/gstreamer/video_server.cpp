@@ -174,7 +174,7 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 		return;
 	}
 	
-	gint bpp;
+	gint bpp(8);
 	if( !gst_structure_get_int(struc, "bpp", &bpp) ) {
 		assert(width != 0 && height != 0);
 		bpp = 8*GST_BUFFER_SIZE(buffer)/width/height;
