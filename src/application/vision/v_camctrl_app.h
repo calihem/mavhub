@@ -1,5 +1,5 @@
-#ifndef _V_OFLOW_APP_H_
-#define _V_OFLOW_APP_H_
+#ifndef _V_CAMCTRL_APP_H_
+#define _V_CAMCTRL_APP_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -11,40 +11,42 @@
 #include "lib/gstreamer/video_server.h"
 #include "lib/gstreamer/video_client.h"
 
-#ifdef HAVE_LIBFANN
-#include "floatfann.h"
-
 #ifdef HAVE_OPENCV2
+#include <opencv2/opencv.hpp>
 /* #include <opencv2/core/core.hpp> */
 /* #include <opencv2/highgui/highgui.hpp> */
-#include <opencv/cv.h>
-//#include <opencv/highgui.h>
+/* #include <opencv2/imgproc/imgproc.hpp> */
+/* #include <opencv/cv.h> */
+/* #include <opencv/highgui.h> */
 
 #if CV_MINOR_VERSION >= 2
-#include <brisk/brisk.h>
-#include "lib/slam/features.h"
+/* #include <brisk/brisk.h> */
+/* #include "lib/slam/features.h" */
 #include "protocol/protocollayer.h"
 
-#include "ofmodel.h"
-#include "OpticalFlow.h"
-#include "ofdifferential.h"
+/* #include "ofmodel.h" */
+/* #include "OpticalFlow.h" */
+/* #include "ofdifferential.h" */
 
-#include "../../module/filter_ma.h"
+/* #include "../../module/filter_ma.h" */
 #include "../../module/exec_timing.h"
 
+#include <linux/types.h>          /* for videodev2.h */
+#include <linux/videodev2.h>
 #include <inttypes.h> //uint8_t
+#include <libv4l2.h>
 
 // #define ABS(x) ((x)<0?-(x):(x))
 #define SGN(x) ((x)==0?0:((x)>0?1:-1))
 
 namespace mavhub {
 
-	class V_OFLOWApp : public AppLayer<mavlink_message_t>,
+	class V_CAMCTRLApp : public AppLayer<mavlink_message_t>,
 		public hub::gstreamer::VideoClient {
 
 	public:
-		V_OFLOWApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
-		virtual ~V_OFLOWApp();
+		V_CAMCTRLApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+		virtual ~V_CAMCTRLApp();
 
 		virtual void handle_input(const mavlink_message_t &msg);
 		virtual void handle_video_data(const unsigned char *data, const int width, const int height, const int bpp);
@@ -68,35 +70,9 @@ namespace mavhub {
 		unsigned int target_component;
 		unsigned int imu_rate;
 		unsigned int en_heartbeat;
-		/// Current attitude of system
-		mavlink_attitude_t attitude;
-		/// raw imu data
-		// mavlink_huch_mk_imu_t huch_mk_imu;
 
 		/// update rate
 		int ctl_update_rate;
-
-		// oflow / planar-persprective
-		float of_u;
-		float of_v;
-		float of_u_i; /// integral
-		float of_v_i; /// integral
-		float of_u_i_derot; /// derotation
-		float of_v_i_derot; /// derotation
-
-		// oflow omni
-		float of_yaw;
-		float of_alt;
-		float of_x;
-		float of_y;
-
-		// LK pyr init
-		bool needToInit;
-
-		of_algorithm algo;
-		OFModel *ofModel;
-		OFModel* ofModels[2];
-		// OpticalFlow *oFlow;
 
 		/// input stream parameters
 		int is_width;
@@ -110,21 +86,6 @@ namespace mavhub {
 		/// parameters
 		std::map<std::string, double>	params;
 
-		// neural network
-		struct fann *ann;   /// the network
-		fann_type ann_x[8]; /// ann input
-		fann_type *ann_y;   /// ann output
-
-		mavlink_huch_imu_raw_adc_t raw_adc_imu; /// for Gyro values
-		mavlink_huch_ctrl_hover_state_t hover_state; /// for altitude estimate
-
-		/// gyro moving average filter
-		MA *ma_pitch;
-		MA *ma_roll;
-
-		/// lateral control active
-		uint8_t lc_active;
-
 		//FIXME: replace old_* by database of these informations
 		std::string sink_name;
 		/* cv::Mat cam_matrix; */
@@ -133,6 +94,25 @@ namespace mavhub {
 		cv::Mat new_image;
 		cv::Mat new_image_raw;
 		cv::Mat img_display;
+
+		// histogram
+		int histSize;
+		float range[]; //  = { 0, 256 } ;
+		const float* histRange; // = { range };
+		bool uniform; // = true;
+		bool accumulate; // = false;
+		int hist_w; // = 512;
+		int hist_h; // = 400;
+		int bin_w; //  = cvRound( (double) hist_w/histSize );
+		cv::Mat histImage;
+
+		// camera fd
+		int fd;
+		// cam controls
+		std::map<std::string, int> cam_ctrls;
+		/// internal exposure
+		int exposure;
+
 		/* mavlink_attitude_t old_attitude; */
 		/* mavlink_attitude_t new_attitude; */
 		/* 		std::vector<cv::KeyPoint> old_features; */
@@ -150,19 +130,9 @@ namespace mavhub {
 		/* 		cv::Mat rotation_vector; */
 		/* 		cv::Mat translation_vector; */
 
-		int initModel(of_algorithm algo);
-		int initModels();
-		void calcFlow();
-		// void load_calibration_data(const std::string &filename);
-		void getOF_FirstOrder();
-		void getOF_FirstOrder2();
-		void getOF_FirstOrder_Omni();
-		void getOF_LK();
-		void getOF_LK_Pyr();
+		void calcCamCtrl(); // main calculation
 		void preprocessImage(cv::Mat img);
-		UnwrapSettings& defaultSettings();
-		void unwrapImage(cv::Mat* inputImg, cv::Mat* outputImg, UnwrapSettings& opt);
-		void visualize(cv::Mat img);
+		void visualize(cv::Mat img_src, cv::Mat img);
 		// uint8_t getInterpolation(cv:Mat* inputImg, int im, double x, double y);
 
 		/// send debug data
@@ -170,28 +140,22 @@ namespace mavhub {
 		/// read data from config
 		virtual void read_conf(const std::map<std::string, std::string> args);
 
-		/* int iirFilter(int old_of, int new_of, int alpha); */
-		/* int iirFilter(int old_of, int new_of); */
-		inline float iirFilter(float old_of, float new_of, float alpha) {
-			return (old_of * alpha - old_of + new_of) / alpha;
-		}
-
-		inline float iirFilter(float old_of, float new_of) {
-			// return (7 * old_of + new_of) / 8;  // ((alpha-1) * old_of + new_of) / alpha
-			return (3. * old_of + new_of) / 4.;  // ((alpha-1) * old_of + new_of) / alpha
-		}
-
-		inline float iirFilterHP(float old_of, float new_of, float alpha) {
-			return (old_of * alpha - old_of + new_of) / alpha;
-		}
-
+		/// v4l2 open device
+		int cc_v4l2_open();
+		/// v4l2 query device
+		int cc_v4l2_query();
+		/// query collected device controls
+		void cc_list_controls();
+		/// v4l2 get control
+		int cc_v4l2_get(int id);
+		/// v4l2 set control
+		void cc_v4l2_set(int id, int value);
 	};
 
 } // namespace mavhub
 
 #endif // CV_MINOR_VERSION >= 2
 #endif // HAVE_OPENCV2
-#endif // HAVE_LIBFANN
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 #endif // _OPENGL_APP_H_

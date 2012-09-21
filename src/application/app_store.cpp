@@ -32,6 +32,7 @@
 #include "slam_app.h"
 #include "vision/v_oflow_app.h"
 #include "vision/v_oflow_odca_app.h"
+#include "vision/v_camctrl_app.h"
 
 #include <iostream>
 #include <sstream> //istringstream
@@ -256,6 +257,17 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_LIBFANN
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "v_camctrl_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION >= 2
+		V_CAMCTRLApp *v_camctrl_app = new V_CAMCTRLApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(v_camctrl_app);
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "plat_link_crrcsim_app") {

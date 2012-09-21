@@ -4,6 +4,7 @@
 #include <fstream>	//ifstream
 #include <stdexcept>
 #include <cassert>
+#include <unistd.h>
 
 #include <gst/gst.h>
 //FIXME: check for appsink in autotools
