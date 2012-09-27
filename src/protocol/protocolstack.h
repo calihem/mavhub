@@ -30,7 +30,7 @@
 #ifndef _PROTOCOLSTACK_H_
 #define _PROTOCOLSTACK_H_
 
-#include "core/thread.h"
+#include "lib/hub/thread.h"
 #include "core/logger.h"
 #include "protocol.h"
 // #include "protocollayer.h"

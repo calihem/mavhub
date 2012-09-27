@@ -5,7 +5,7 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
-#include "core/thread.h"
+#include "lib/hub/thread.h"
 
 #include <inttypes.h> // uint16_t
 

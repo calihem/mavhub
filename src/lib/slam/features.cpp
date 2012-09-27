@@ -425,13 +425,43 @@ cv::Mat matchesmask(const int num_src_kps,
 	return mask;
 }
 
+void objectpoints_to_idealpoints(const std::vector<cv::Point3f>& objectpoints,
+	const std::vector<float>& camera_pose,
+	std::vector<cv::Point2f>& idealpoints) {
+
+	if( objectpoints.empty() ) return;
+	idealpoints.resize( objectpoints.size() );
+
+	std::vector<float> rotation_vector(camera_pose.begin(), camera_pose.begin()+3);
+	cv::Mat rotation_matrix(3,3, CV_32FC1);
+	Rodrigues(rotation_vector, rotation_matrix);
+	const float r11 = rotation_matrix.at<float>(0,0);
+	const float r12 = rotation_matrix.at<float>(0,1);
+	const float r13 = rotation_matrix.at<float>(0,2);
+	const float r21 = rotation_matrix.at<float>(1,0);
+	const float r22 = rotation_matrix.at<float>(1,1);
+	const float r23 = rotation_matrix.at<float>(1,2);
+	const float r31 = rotation_matrix.at<float>(2,0);
+	const float r32 = rotation_matrix.at<float>(2,1);
+	const float r33 = rotation_matrix.at<float>(2,2);
+
+	for(unsigned int i = 0; i < objectpoints.size(); i++) {
+		const float x = r11*objectpoints[i].x + r12*objectpoints[i].y + r13*objectpoints[i].z + camera_pose[3];
+		const float y = r21*objectpoints[i].x + r22*objectpoints[i].y + r23*objectpoints[i].z + camera_pose[4];
+		const float z = r31*objectpoints[i].x + r32*objectpoints[i].y + r33*objectpoints[i].z + camera_pose[5];
+		
+		idealpoints[i].x = x/z;
+		idealpoints[i].y = y/z;
+	}
+}
+
 void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
 	const std::vector<float>& rotation_vector,
 	const std::vector<float>& translation_vector,
 	const cv::Mat& camera_matrix,
 	std::vector<cv::Point2f>& imagepoints) {
 
-	if(objectpoints.size() == 0) return;
+	if( objectpoints.empty() ) return;
 	imagepoints.resize( objectpoints.size() );
 
 	cv::Mat rotation_matrix(3,3, CV_32FC1);

@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "protocol/protocollayer.h"
-#include "core/thread.h"
 
 namespace mavhub {
 

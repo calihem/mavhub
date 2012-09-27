@@ -125,6 +125,12 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 cv::Mat matchesmask(const int num_src_kps,
 	const int num_dst_kps,
 	const std::vector<cv::DMatch> &matches);
+/**
+ * \brief Projects 3D point coordinates to their 2D ideal image coordinates.
+ */
+void objectpoints_to_idealpoints(const std::vector<cv::Point3f>& objectpoints,
+	const std::vector<float>& camera_pose,
+	std::vector<cv::Point2f>& idealpoints);
 
 /**
  * \brief Projects 3D point coordinates to their 2D image coordinates.
