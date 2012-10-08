@@ -5,10 +5,46 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#include <cmath>	//pow
 #include <cstdlib>	//abs
 #include <algorithm>	//nth_element
 
 namespace hub {
+
+const double pi = 3.1415926535897932384626433832795028841971693993751058209749;
+
+/**
+ * \brief Convert degree to radian.
+ */
+template <typename T>
+T deg2rad(const T d);
+
+/**
+ * Check if value val is in range (low <= x <= high)
+ *
+ * @param value x
+ * @param low range limit
+ * @param high range limit
+ * @return true (1) if x is in specified range
+ */
+template <typename T>
+int in_range(const T &x, const T &low, const T &high);
+
+/**
+ * \brief Calculates the intersection of a line and a plane.
+ * \param[in] plane_point
+ * \param[in] plane_normal_vector
+ * \param[in] line_point
+ * \param[in] line_direction
+ * \param[out] intersection 3D intersection point of given line and plane.
+ * \return 0 if line intersects plane, otherwise -1.
+ */
+template <typename T>
+int intersection(const T plane_point[3],
+	const T plane_normal_vector[3],
+	const T line_point[3],
+	const T line_direction[3],
+	T intersection[3]);
 
 /**
  * \brief Calculates MAD (Median Absolute Deviation).
@@ -56,6 +92,12 @@ template <typename T>
 T _median(std::vector<T> &values);
 
 /**
+ * \brief Convert radian to degree.
+ */
+template <typename T>
+T rad2deg(const T r);
+
+/**
  * \brief Estimate deviation using MAD.
  * Estimate the deviation of the input vector using MAD which 
  * is known to be robust.
@@ -95,6 +137,57 @@ T tukey_weight(const T x, const T sigma = 1.0);
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
+template <typename T>
+T deg2rad(const T d) {
+	return (d*pi) / 180;
+}
+
+template <typename T>
+inline int in_range(const T &x, const T &low, const T &high) {
+	return x >= low && x <= high;
+}
+
+template <typename T>
+int intersection(const T plane_point[3],
+	const T plane_normal_vector[3],
+	const T line_point[3],
+	const T line_direction[3],
+	T intersection[3]) {
+
+	T distance = line_direction[0]*plane_normal_vector[0]
+		+ line_direction[1]*plane_normal_vector[1]
+		+ line_direction[2]*plane_normal_vector[2];
+
+	if(distance == 0) { // denominator is zero
+		distance = (plane_point[0]-line_point[0])*plane_normal_vector[0]
+			+ (plane_point[1]-line_point[1])*plane_normal_vector[1]
+			+ (plane_point[2]-line_point[2])*plane_normal_vector[2];
+
+		if(distance != 0) {// numerator is zero
+			//line is is outsite and parallel to plane
+			return -1;
+		}
+
+		// line lies in plane
+		intersection[0] = line_point[0];
+		intersection[1] = line_point[1];
+		intersection[2] = line_point[2];
+
+		return 0;
+	}
+	
+	distance = ( (plane_point[0]-line_point[0])*plane_normal_vector[0]
+		+ (plane_point[1]-line_point[1])*plane_normal_vector[1]
+		+ (plane_point[2]-line_point[2])*plane_normal_vector[2] )
+		/ distance;
+
+	intersection[0] = line_point[0] + distance*line_direction[0];
+	intersection[1] = line_point[1] + distance*line_direction[1];
+	intersection[2] = line_point[2] + distance*line_direction[2];
+	
+	return 0;
+}
+
 template <typename T>
 T mad(std::vector<T> values) {
 	return _mad(values);
@@ -146,6 +239,11 @@ T _median(std::vector<T> &values) {
 	typename std::vector<T>::iterator middle = first + (last - first) / 2;
 	std::nth_element(first, middle, last);
 	return *middle;
+}
+
+template <typename T>
+inline T rad2deg(const T r) {
+	return (r*180) / pi;
 }
 
 template<typename T>

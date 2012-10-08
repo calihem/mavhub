@@ -40,6 +40,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
+#include "lib/hub/math.h"
 #include "protocol/protocolstack.h"
 //FIXME: remove mkpackage.h
 #include "protocol/mkpackage.h"
@@ -53,6 +54,7 @@
 
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
   Ctrl_LogfilePlayer::Ctrl_LogfilePlayer(const map<string, string> args) : 

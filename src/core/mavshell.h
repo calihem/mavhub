@@ -30,7 +30,7 @@
 #ifndef _MAVSHELL_H_
 #define _MAVSHELL_H_
 
-#include "core/thread.h"
+#include "lib/hub/thread.h"
 #include "io/network.h"
 
 #include <inttypes.h>   //uint8_t

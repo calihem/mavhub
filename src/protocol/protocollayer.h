@@ -35,7 +35,7 @@
 #endif // HAVE_CONFIG_H
 
 #include "core/core.h"
-#include "core/thread.h"
+#include "lib/hub/thread.h"
 #include "core/logger.h"
 #include "io/io.h"
 #include "io/uart.h"

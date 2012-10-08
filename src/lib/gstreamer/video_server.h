@@ -12,8 +12,7 @@
 #include <vector>
 #include <stdexcept>    // out_of_range exception
 
-// FIXME: mv thread.h to lib directory
-#include "core/thread.h"
+#include "lib/hub/thread.h"
 #include "video_client.h"
 
 namespace hub {

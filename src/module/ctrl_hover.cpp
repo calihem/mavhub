@@ -45,6 +45,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
+#include "lib/hub/math.h"
 #include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
@@ -54,6 +55,7 @@
 #define WINSIZE_HALF WINSIZE/2
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 	// Ctrl_Hover::Ctrl_Hover(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {

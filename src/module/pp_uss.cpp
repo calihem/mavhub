@@ -1,5 +1,9 @@
 #include "pp_uss.h"
 
+#include "lib/hub/math.h"
+
+using namespace hub;
+
 namespace mavhub {
 	PreProcessorUSS::PreProcessorUSS() {
 		// sig.reserve(16);
