@@ -4,7 +4,8 @@
 
 #ifdef HAVE_GSTREAMER
 
-//#ifdef HAVE_OPENCV2
+// #ifdef HAVE_OPENCV2
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 2)
 #include <opencv/cv.h>
 
 #include "core/logger.h"
@@ -420,6 +421,6 @@ void FiducalApp::doGeometry(const std::vector<cv::Point2f> &outerMarkers, const 
 
 } // namespace mavhub
 
-//#endif // HAVE_OPENCV2
+#endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H

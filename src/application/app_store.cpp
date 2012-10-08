@@ -128,10 +128,10 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "fiducal_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
-#ifdef HAVE_OPENCV2
+#if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 2)
 		FiducalApp *f_app = new FiducalApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(f_app);
-#endif // HAVE_OPENCV2
+#endif // HAVE_OPENCV2 and CV_MINOR_VERSION > 2
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "fiducal_control_app") {

@@ -84,6 +84,7 @@ AC_CHECK_LIB([glut], [glutInit])
 AC_CHECK_LIB([GL], [glBegin])
 AC_CHECK_LIB([GLU], [gluPerspective])
 AC_CHECK_LIB([ivy], [IvyInit])
+AC_CHECK_LIB([v4l2], [v4l2_open])
 AC_CHECK_LIB([lapack],
 	[cgesvd_],
 	[AM_CONDITIONAL(COND_LIBLAPACK, true) LIBS+="-llapack " AC_DEFINE(HAVE_LIBLAPACK, [1], [Define to 1 if you have the `lapack' library (-llapack).])],

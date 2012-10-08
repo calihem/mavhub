@@ -75,6 +75,9 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
+/* Define to 1 if you have the `v4l2' library (-lv4l2). */
+#undef HAVE_LIBV4L2
+
 /* Define to 1 if you have the <mavlink.h> header file. */
 #undef HAVE_MAVLINK_H
 
