@@ -18,12 +18,10 @@ FirstOrder::~FirstOrder() {
 }
 
 ///	first order optical flow
-
 const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
 	// const bool unwrapped = true;
 
 	if(lastImage) {
-
 		int step = image.widthStep;
 		const uchar *last = (const uchar *)lastImage->imageData;
 		const uchar *cur = (const uchar *)image.imageData;
@@ -31,6 +29,7 @@ const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
 		int8_t sgn_u, sgn_v;
 		int16_t diff;
 		uint32_t abs_grad_x, abs_grad_y, abs_grad_t, grad_magn;
+
 
 		for(int y=1;y<height-1;y++) {
 			for(int x=1;x<width-1;x++) {
@@ -103,7 +102,7 @@ const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
 		
 		// 		oFlow->algo = FIRST_ORDER;
 
-		//replace last image with current image
+		// replace last image with current image
 		cvCopy(&image, lastImage, NULL);
 
 	} else {
@@ -257,6 +256,5 @@ const OpticalFlow &LucasKanade::calcOpticalFlow(const IplImage &image) {
 	// cv::ReleaseMat(&vely);
 	return *oFlow;
 }
-
 
 #endif // defined HAVE_OPENCV2 and CV_MINOR_VERSION >= 2

@@ -38,13 +38,21 @@ namespace mavhub {
 		is_width(320),
 		is_height(240),
 		param_request_list(0),
-		histSize(256),
+		histSize(8),
 		uniform(true),
 		accumulate(false),
 		hist_w(512),
 		hist_h(400),
 		bin_w(0),
-		exposure(0)
+		mean(0.0),
+		var(0.0),
+		std(0.0),
+		skew(0.0),
+		skew_scale(1.0),
+		N(1),
+		Ntenth(1),
+		exposure(20),
+		contrast(32)
 	{
 		// cout << loglevel << endl;
 		// Logger::log(name(), "Ctor", Logger::LOGLEVEL_DEBUG);
@@ -73,14 +81,6 @@ namespace mavhub {
 		// read config
 		read_conf(args);
 
-		// // get calibration data of camera
-		// //FIXME: use image dimensions for default camera matrix
-		// cam_matrix = (cv::Mat_<double>(3,3) << 1.0, 0.0, 160.0, 0.0, 1.0, 120.0, 0.0, 0.0, 1.0);
-		// string calib_filename;
-		// get_value_from_args("calibration_data", calib_filename);
-		// if(!calib_filename.empty())
-		// 	load_calibration_data(calib_filename);
-
 		Logger::log(name(), "ctl_update_rate", ctl_update_rate, Logger::LOGLEVEL_DEBUG);
 
 		// init execution timer
@@ -101,19 +101,24 @@ namespace mavhub {
 			Logger::log(name(), "Couldn't open video device", Logger::LOGLEVEL_DEBUG);
 		cc_v4l2_query();
 		cc_list_controls();
+		// initialize all controls
 		// printf("unknown control: '%d'\n", cam_ctrls["blub"]);
-		printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
+		// printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
 		cc_v4l2_set(cam_ctrls["Auto Exposure"], 0);
-		printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
+		cc_v4l2_set(cam_ctrls["Auto Gain"], 1);
+		cc_v4l2_set(cam_ctrls["Auto White Balance"], 0);
+		// printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
 		exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
-		printf("Exposure: %d\n", exposure);
+		contrast = cc_v4l2_get(cam_ctrls["Contrast"]);
+		gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+		// printf("Exposure: %d\n", exposure);
 	}
 
 	V_CAMCTRLApp::~V_CAMCTRLApp() {}
 
 	int V_CAMCTRLApp::cc_v4l2_open() {
 		const char devicefile[] = "/dev/video0";
-		printf("device: %s\n", devicefile);
+		// printf("device: %s\n", devicefile);
 		fd = v4l2_open(devicefile, O_RDWR, 0);
     if(fd < 0)
 			return 1;
@@ -129,7 +134,7 @@ namespace mavhub {
 			do {
 				// mw->add_control(ctrl, fd, grid, gridLayout);
 				// printf();
-				printf("add_control: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
+				// printf("add_control: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
 				cam_ctrls[(char *)ctrl.name] = ctrl.id;
 				//printf("add_control: ctrl.id: %d, ctrl.name = %s\n", cam_ctrls[(char *)ctrl.name], (char *)ctrl.name);
 				ctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
@@ -145,7 +150,7 @@ namespace mavhub {
 						// mw->add_control(ctrl, fd, grid, gridLayout);
 						printf("add_control x: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
 						cam_ctrls[(char *)ctrl.name] = ctrl.id;
-						printf("add_control: ctrl.id: %d, ctrl.name = %s\n", cam_ctrls[(char *)ctrl.name], (char *)ctrl.name);
+						// printf("add_control: ctrl.id: %d, ctrl.name = %s\n", cam_ctrls[(char *)ctrl.name], (char *)ctrl.name);
 					}
 				}
 
@@ -154,7 +159,7 @@ namespace mavhub {
 					ctrl.id = i;
 					if(v4l2_ioctl(fd, VIDIOC_QUERYCTRL, &ctrl) == 0) {
 						// mw->add_control(ctrl, fd, grid, gridLayout);
-						printf("add_control priv: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
+						// printf("add_control priv: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
 						cam_ctrls[(char *)ctrl.name] = ctrl.id;
 					} else {
 						break;
@@ -171,7 +176,7 @@ namespace mavhub {
 			// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
 			// if(!strcmp(p->first.data(), (const char *)param_id)) {
 				// params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
-				Logger::log(name(), "cam_ctrls", p->first, cam_ctrls[p->first], Logger::LOGLEVEL_DEBUG);
+			Logger::log(name(), "cam_ctrls", p->first, cam_ctrls[p->first], Logger::LOGLEVEL_DEBUG);
 				// }
 		}
 	}
@@ -182,7 +187,7 @@ namespace mavhub {
 		if(id == 0) return;
     c.id = id;
     c.value = value;
-		printf("updateHardware: c.id = %d, c.value = %d\n", c.id, c.value);
+		// printf("updateHardware: c.id = %d, c.value = %d\n", c.id, c.value);
     if(v4l2_ioctl(fd, VIDIOC_S_CTRL, &c) == -1) {
 			// QString msg;
 			// msg.sprintf("Unable to set %s\n%s", name, strerror(errno));
@@ -197,7 +202,7 @@ namespace mavhub {
     struct v4l2_control c;
 		if(id == 0) return -1;
     c.id = id;
-		printf("updateHardware: c.id = %d\n", c.id);
+		// printf("updateHardware: c.id = %d\n", c.id);
     if(v4l2_ioctl(fd, VIDIOC_G_CTRL, &c) == -1) {
 			// QString msg;
 			// msg.sprintf("Unable to get %s\n%s", name,
@@ -208,115 +213,176 @@ namespace mavhub {
 		return c.value;
 	}
 
+	void V_CAMCTRLApp::calcCamCtrlMean() {
+		exposure = exposure + ((127. - mean) * 0.1);
+		contrast = 32;
+	}
+
+	void V_CAMCTRLApp::calcCamCtrlHeuristic() {
+		int i;
+		int cnt_lower = 0, cnt_upper = 0;
+		// set camera
+		// check lower
+		for(i = 0; i < 2; i++) {
+			cnt_lower += (int)cap_hist.at<float>(i);
+		}
+		// check upper
+		for(i = histSize-1; i > histSize-3; i--) {
+			cnt_upper += (int)cap_hist.at<float>(i);
+		}
+
+		Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
+
+		// heuristics
+		if((cnt_lower > Ntenth) && (cnt_upper > Ntenth)) {
+			contrast--;
+			// Logger::log(name(), "Wanne", Logger::LOGLEVEL_DEBUG);
+		}
+		else if(((int)cap_hist.at<float>(0) < Ntenth) &&
+						((int)cap_hist.at<float>(histSize-1) < Ntenth)) {
+			contrast++;
+			// Logger::log(name(), "Beule", Logger::LOGLEVEL_DEBUG);
+		}
+		else if(cnt_lower > Ntenth) {
+			exposure++;
+			// Logger::log(name(), "Links", Logger::LOGLEVEL_DEBUG);
+		}
+		else if(cnt_upper > Ntenth) {
+			exposure--;
+			// Logger::log(name(), "Rechts", Logger::LOGLEVEL_DEBUG);
+		}
+	}
+
+	void V_CAMCTRLApp::calcCamCtrlHomeoRand() {
+		int stateCritical;
+		int i;
+		int cnt_lower = 0, cnt_upper = 0;
+
+		// check lower
+		cnt_lower = (int)cap_hist.at<float>(0);
+		// check upper
+		cnt_upper = (int)cap_hist.at<float>(histSize-1);
+
+		Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
+		
+		if(cnt_lower > (Ntenth*40) || cnt_upper > (Ntenth*40))
+			stateCritical = 1;
+		else
+			stateCritical = 0;
+
+		if(stateCritical) {
+			// 	randomlyCreateNewConfig();
+			// absolute value
+			exposure = 255 * ((float)rand()/RAND_MAX);
+			contrast = 255 * ((float)rand()/RAND_MAX);
+			gain = 63 * ((float)rand()/RAND_MAX);
+
+			// differential
+			// exposure += (10 * ((float)rand()/RAND_MAX)) - 5;
+			// contrast += (10 * ((float)rand()/RAND_MAX)) - 5;
+			// gain += (6 * ((float)rand()/RAND_MAX)) - 3;
+
+			// exposure = 10;
+			//			printf("rand: %f\n", );
+		}
+		else {
+		}
+	}
+
+	void V_CAMCTRLApp::calcCamCtrlWeightedHisto() {
+		int i;
+		int cnt_lower = 0, cnt_upper = 0;
+		int exp_pos = 0, exp_neg = 0;
+		int contr_pos = 0, contr_neg = 0;
+
+		// set camera
+		// check lower
+		for(i = 0; i < (histSize/2); i++) {
+			exp_pos += (int)cap_hist.at<float>(i);
+		}
+		// check upper
+		for(i = histSize-1; i >= (histSize/2); i--) {
+			exp_neg += (int)cap_hist.at<float>(i);
+		}
+		exposure += (exp_pos / 100);
+		exposure -= (exp_neg / 100);
+
+		Logger::log(name(), "exposure:", exposure, Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), "exp_pos:", exp_pos, "exp_neg:", exp_neg, Logger::LOGLEVEL_DEBUG);
+		
+	}
+
 	void V_CAMCTRLApp::calcCamCtrl() {
+		static mavlink_message_t msg;
+		static mavlink_debug_t dbg;
+
+		// FIXME: make dt a class variable
+		// FIXME: hard/soft limit function from library (mavhub, ...)
+		// FIXME: add different methods
+
 		//FIXME: remove benchmark
 		//uint64_t start_time = get_time_ms();
-		// cv::Mat flip_image;
 
 		// uint64_t start, end;
 		// start = 0; end = 0;
 
-		// get change of attitude
-		//TODO: time check of attitude
-		// mavlink_attitude_t attitude_change;
-		// attitude_change.roll = new_attitude.roll - old_attitude.roll;
-		// attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
-		// attitude_change.yaw = new_attitude.yaw - old_attitude.yaw;
-		// Logger::log(name(), "Changed attitude:",
-		// 	rad2deg(attitude_change.roll),
-		// 	rad2deg(attitude_change.pitch),
-		// 	rad2deg(attitude_change.yaw),
-		// 	Logger::LOGLEVEL_DEBUG, _loglevel);
-	
-		// calculate transformation matrix
-		// 	double distance = 1.0; //FIXME: use altitude information
-		// 	double factor = 300.0;
-		// 	float delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
-		// 	float delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
-		// rotate image
-		cv::Point center(new_image.cols/2, new_image.rows/2);
-		// 	cv::Mat rotation_matrix = getRotationMatrix2D(center, -rad2deg(attitude_change.yaw), 1.0);
-		// 	cv::Mat rotated_image;
-		//FIXME: warp features (not image)
-		// 	cv::warpAffine(new_image, rotated_image, rotation_matrix, new_image.size());
-		// shift image
-		// 	double m[2][3] = {{1, 0, -delta_x}, {0, 1, -delta_y}};
-		// 	cv::Mat transform_matrix(2, 3, CV_64F, m);
-		// 	cv::Mat transformed_image;
-		// 	cv::warpAffine(rotated_image, transformed_image, transform_matrix, rotated_image.size());
+		/// Set the ranges ( for B,G,R) )
+		float lrange[] = { 0, 256 } ;
+		const float* lhistRange = { lrange };
 
-		// match descriptors
-		// std::vector<std::vector<cv::DMatch> > matches;
-		// 	std::vector<std::vector<cv::DMatch> > forward_matches;
-		// 	std::vector<std::vector<cv::DMatch> > backward_matches;
-		// 	matcher.radiusMatch(old_descriptors, new_descriptors, forward_matches, 100.0);	//0.21 for L2
-		// 	matcher.radiusMatch(new_descriptors, old_descriptors, backward_matches, 100.0);	//0.21 for L2
-		// 	fusion_matches(forward_matches, backward_matches, matches);
+		int i; // , N, Ntenth;
+		int histRatio;
 
-		// matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
-		// if(matches.empty()) {
-		// 	Logger::log("no matches were found", Logger::LOGLEVEL_DEBUG, _loglevel);
-		// 	return;
-		// }
+		calcHist(&new_image, 1, 0, Mat(), cap_hist, 1, &histSize, &lhistRange, uniform, accumulate);
 
-		//TODO: check for ambigous matches
+		N = is_width * is_height;
+		Ntenth = (int)(N * 0.01);
+		histRatio = 256/histSize; // binWidth
+		mean = 0.;
+		var = 0.;
+		std = 0.;
+		skew = 0.;
+		for (i = 0; i < histSize; i++) {
+			mean += i * cap_hist.at<float>(i) * histRatio;
+		}
+		mean /= N;
+		for (i = 0; i < histSize; i++) {
+			var += powf(i - mean, 2) * cap_hist.at<float>(i);
+		}
+		std = sqrtf(var/(N-1));
 
-		// TODO: use RANSAC instead of IMU filter?
-		// 	std::vector<uint8_t> filter;
-		// 	int valid_matches = filter_matches_by_imu< cv::L1<float> >(old_features,
-		// 		new_features,
-		// 		matches,
-		// 		center,
-		// 		attitude_change.roll, attitude_change.pitch, attitude_change.yaw,
-		// 		delta_x, delta_y,
-		// 		filter);
-		// 	float valid_rate = (float)valid_matches/filter.size();
-		// 	Logger::log(name(), ": Valid match rate is", valid_rate, filter.size(), Logger::LOGLEVEL_INFO, _loglevel);
+		skew_scale = (float)N / ((N-1)*(N-2));
+		for (i = 0; i < histSize; i++) {
+			skew += powf((i - mean)/std, 3) * cap_hist.at<float>(i);
+		}
+		skew *= skew_scale;
 
-		// 	cv::Mat H = find_homography(old_features, new_features, matches, CV_RANSAC);
-		// 	cv::Mat H = find_homography(old_features, new_features, matches, 0);
-		// 	std::cout << H << std::endl;
-		// 	double yaw = acos( (H.at<double>(0,0) + H.at<double>(1,1))/2.0 );
-		// 	std::cout << "yaw = " << rad2deg(yaw) << " (" << H.at<double>(0,2) << ", " << H.at<double>(1,2) << std::endl;
+		// send statistics
+		send_debug(&msg, &dbg, 0, mean);
+		send_debug(&msg, &dbg, 1, std);
+		send_debug(&msg, &dbg, 2, skew);
 
-		// 	cv::Mat rotation_vector;
-		// 	cv::Mat translation_vector;
+		// switch mode
+		// calcCamCtrlMean();
+		// calcCamCtrlHeuristic();
+		// calcCamCtrlHomeoRand();
+		calcCamCtrlWeightedHisto();
+		// calcCamCtrlNeuralFF();
 
-		// determine_egomotion(old_features,
-		// 	new_features,
-		// 	matches,
-		// 	cam_matrix,
-		// 	dist_coeffs,
-		// 	rotation_vector,
-		// 	translation_vector);
+		// set and read camera settings
+		// FIXME: use output clamping / surpression
+		cc_v4l2_set(cam_ctrls["Exposure"], exposure);
+		exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
+		send_debug(&msg, &dbg, 3, exposure);
+		cc_v4l2_set(cam_ctrls["Contrast"], contrast);
+		contrast = cc_v4l2_get(cam_ctrls["Contrast"]);
+		send_debug(&msg, &dbg, 4, contrast);
+		cc_v4l2_set(cam_ctrls["Main Gain"], gain);
+		gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+		send_debug(&msg, &dbg, 5, gain);
 
-		// 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
-		//	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
-
-		// {
-		// Lock tx_lock(tx_mav_mutex);
-		// mavlink_msg_attitude_pack(system_id(),
-		// 	component_id,
-		// 	&tx_mav_msg,
-		// 	get_time_us(),
-		// 	rotation_vector.at<double>(0, 1),
-		// 	rotation_vector.at<double>(0, 0),
-		// 	rotation_vector.at<double>(0, 2),
-		// 	0, 0, 0);
-		// AppLayer<mavlink_message_t>::send(tx_mav_msg);
-		// }
-
-		//cv::flip(new_image, flip_image, 0);
-
-		//Logger::log(name(), ": r,c", flip_image.rows, flip_image.cols, Logger::LOGLEVEL_DEBUG, _loglevel);
-		//Logger::log(name(), ": data", flip_image, Logger::LOGLEVEL_DEBUG, _loglevel);
-
-		// start = get_time_us(); // bench
-
-		// end = get_time_us();
-		// Logger::log(name(), "bench: ", end - start, Logger::LOGLEVEL_DEBUG);
-
-		
+		Logger::log(name(), "exp:", exposure, Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), "ctr:", contrast, Logger::LOGLEVEL_DEBUG);
 
 		if(with_out_stream && Core::video_server) {
 			// img_display = new_image.clone();
@@ -466,80 +532,7 @@ namespace mavhub {
 	}
 
 	void V_CAMCTRLApp::visualize(cv::Mat img_src, cv::Mat img) {
-		cv::Scalar color = CV_RGB(255,255,255);
-		const double scaleFactor = 2*img.cols/100;
-		static mavlink_message_t msg;
-		static mavlink_debug_t dbg;
-		//const int lineThickness = max(2, img.cols/300);
-		Mat cap_hist;
-		// cv::Point p,q;
-		//const double pi = 3.14159265358979323846;
-		//double angle;
-		float mean, var, std, skew, skew_scale;
 		int i;
-
-		/// Set the ranges ( for B,G,R) )
-		float lrange[] = { 0, 256 } ;
-		const float* lhistRange = { lrange };
-
-		int N, Ntenth;
-		int cnt_lower = 0, cnt_upper = 0;
-		// int exposure;
-		// p.x = (img.cols) >> 1;
-		// p.y = (img.rows) >> 1;
-		// q.x = p.x - scaleFactor*0.0;
-		// q.y = p.y - scaleFactor*0.0;
-
-		calcHist(&img_src, 1, 0, Mat(), cap_hist, 1, &histSize, &lhistRange, uniform, accumulate);
-
-		N = is_width * is_height;
-		Ntenth = (int)(N * 0.01);
-		mean = 0.;
-		var = 0.;
-		std = 0.;
-		skew = 0.;
-		for (i = 0; i < histSize; i++) {
-			mean += i * cap_hist.at<float>(i);
-		}
-		mean /= N;
-		for (i = 0; i < histSize; i++) {
-			var += powf(i - mean, 2) * cap_hist.at<float>(i);
-		}
-		std = sqrtf(var/(N-1));
-
-		skew_scale = (float)N / ((N-1)*(N-2));
-		for (i = 0; i < histSize; i++) {
-			skew += powf((i - mean)/std, 3) * cap_hist.at<float>(i);
-		}
-		skew *= skew_scale;
-
-		// send statistics
-		send_debug(&msg, &dbg, 0, mean);
-		send_debug(&msg, &dbg, 1, std);
-		send_debug(&msg, &dbg, 2, skew);
-
-
-		// set camera
-		// check lower
-		for(i = 0; i < 10; i++) {
-			cnt_lower += (int)cap_hist.at<float>(i);
-		}
-		// check upper
-		for(i = histSize-1; i > histSize-10; i--) {
-			cnt_upper += (int)cap_hist.at<float>(i);
-		}
-
-		if(cnt_lower > Ntenth)
-			exposure++;
-		if(cnt_upper > Ntenth)
-			exposure--;
-
-		cc_v4l2_set(cam_ctrls["Exposure"], exposure);
-		exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
-
-		Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
-		Logger::log(name(), "exp:", exposure, Logger::LOGLEVEL_DEBUG);
-		
 		/// Normalize the result to [ 0, histImage.rows ]
 		histImage = 0.;
 		// normalize(cap_hist, cap_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
@@ -547,10 +540,33 @@ namespace mavhub {
 		/// Draw for each channel
 		for(i = 1; i < histSize; i++ )
 			{
-				line( histImage, Point( bin_w*(i-1), hist_h - cvRound(cap_hist.at<float>(i-1)) ) ,
-							Point( bin_w*(i), hist_h - cvRound(cap_hist.at<float>(i)) ),
-							Scalar( 255, 0, 0), 1, 8, 0  );
+				line(histImage,
+						 Point( bin_w*(i-1), hist_h - cvRound(cap_hist.at<float>(i-1) * 0.1)),
+						 Point( bin_w*(i), hist_h - cvRound(cap_hist.at<float>(i) * 0.1)),
+						 Scalar( 255, 0, 0), 1, 8, 0);
 			}	
+
+		line(histImage,
+				 Point(10, hist_h),
+				 Point(10, hist_h-exposure),
+				 Scalar( 100, 100, 0), 1, 8, 0
+				 );
+		line(histImage,
+				 Point(20, hist_h),
+				 Point(20, hist_h-contrast),
+				 Scalar( 100, 100, 0), 1, 8, 0
+				 );
+		line(histImage,
+				 Point(30, hist_h),
+				 Point(30, hist_h-(gain*4)),
+				 Scalar( 100, 100, 0), 1, 8, 0
+				 );
+		// Logger::log(name(), "mean", mean, Logger::LOGLEVEL_DEBUG, _loglevel);
+		line(histImage,
+				 Point(2*mean, hist_h),
+				 Point(2*mean, 0),
+				 Scalar( 100, 100, 0), 2, 8, 0
+				 );
 		
 		histImage.copyTo(img);
 		// // cv::line(img, p, q, color, lineThickness, CV_AA, 0 );
@@ -678,6 +694,10 @@ namespace mavhub {
 
 		uint64_t dt = 0;
 		int wait_time;
+		// uint64_t start_time;
+		// uint64_t stop_time;
+
+		// sleep(2);
 
 		if(Core::video_server) {
 			int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str());
@@ -717,8 +737,9 @@ namespace mavhub {
 		// doesnt work for some unknown reason
 		// log(name(), ": creating cv window", Logger::LOGLEVEL_DEBUG);
 		// cv::namedWindow("oflow", CV_WINDOW_NORMAL | CV_GUI_NORMAL);
-		uint64_t start_time = get_time_ms();
-		uint64_t stop_time = get_time_ms();
+
+		// uint64_t start_time = get_time_ms();
+		// uint64_t stop_time = get_time_ms();
 
 
 		while( !interrupted() ) {
@@ -1176,14 +1197,14 @@ namespace mavhub {
 			params["derot_rol_b"] = 0.0;
 		}
 
-		typedef map<string, double>::const_iterator ci;
-		for(ci p = params.begin(); p!=params.end(); ++p) {
-			// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-			// if(!strcmp(p->first.data(), (const char *)param_id)) {
-			// params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
-			Logger::log("v_camctrl_app::read_conf", p->first, params[p->first], Logger::LOGLEVEL_INFO);
-			// Logger::log(name(), "handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_DEBUG);
-		}
+		// typedef map<string, double>::const_iterator ci;
+		// for(ci p = params.begin(); p!=params.end(); ++p) {
+		// 	// Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+		// 	// if(!strcmp(p->first.data(), (const char *)param_id)) {
+		// 	// params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
+		// 	Logger::log("v_camctrl_app::read_conf", p->first, params[p->first], Logger::LOGLEVEL_INFO);
+		// 	// Logger::log(name(), "handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_DEBUG);
+		// }
 
 	}
 } // namespace mavhub

@@ -104,7 +104,19 @@ namespace mavhub {
 		int hist_w; // = 512;
 		int hist_h; // = 400;
 		int bin_w; //  = cvRound( (double) hist_w/histSize );
+		/// image for displaying the histogram
 		cv::Mat histImage;
+		/// 1D image for histogram values
+		cv::Mat cap_hist;
+
+		// image properties
+		float mean;
+		float var;
+		float std;
+		float skew;
+		float skew_scale;
+		int N;
+		int Ntenth;
 
 		// camera fd
 		int fd;
@@ -112,6 +124,10 @@ namespace mavhub {
 		std::map<std::string, int> cam_ctrls;
 		/// internal exposure
 		int exposure;
+		/// internal contrast
+		int contrast;
+		/// internal gain
+		int gain;
 
 		/* mavlink_attitude_t old_attitude; */
 		/* mavlink_attitude_t new_attitude; */
@@ -131,6 +147,14 @@ namespace mavhub {
 		/* 		cv::Mat translation_vector; */
 
 		void calcCamCtrl(); // main calculation
+		/// cam ctrl heuristics based on mean pixel intensity
+		void calcCamCtrlMean();
+		/// cam ctrl heuristics
+		void calcCamCtrlHeuristic();
+		/// cam ctrl homeostatic with random reconfiguration
+		void calcCamCtrlHomeoRand();
+		/// cam ctrl weighted histogram function
+		void calcCamCtrlWeightedHisto();
 		void preprocessImage(cv::Mat img);
 		void visualize(cv::Mat img_src, cv::Mat img);
 		// uint8_t getInterpolation(cv:Mat* inputImg, int im, double x, double y);

@@ -97,7 +97,7 @@ gboolean VideoServer::bus_call(GstBus *bus, GstMessage *msg, void *user_data) {
 
 	switch( GST_MESSAGE_TYPE(msg) ) {
 		case GST_MESSAGE_EOS: {
-			g_message("End-of-stream");
+			g_message("x End-of-stream");
 			g_main_loop_quit(loop);
 			break;
 		}
