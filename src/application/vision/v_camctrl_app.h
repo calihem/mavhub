@@ -34,13 +34,33 @@
 #include <linux/types.h>          /* for videodev2.h */
 #include <linux/videodev2.h>
 #include <inttypes.h> //uint8_t
+#if (defined HAVE_LIBV4L2)
 #include <libv4l2.h>
+
+// HAVE_LIBOSCPACK
+#ifdef HAVE_LIBOSCPACK
+#include "osc/OscReceivedElements.h"
+#include "osc/OscPacketListener.h"
+#include "osc/OscOutboundPacketStream.h"
+#include "ip/UdpSocket.h"
+
+#define OSC_OUTPUT_BUFFER_SIZE 1024
+#endif // HAVE_LIBOSCPACK
 
 // #define ABS(x) ((x)<0?-(x):(x))
 #define SGN(x) ((x)==0?0:((x)>0?1:-1))
 
 namespace mavhub {
+#ifdef HAVE_LIBOSCPACK
+	// OSC Packet Listener Class
+	class V_CAMCTRLOscPacketListener : public osc::OscPacketListener {
+	public:
+    virtual void ProcessMessage(const osc::ReceivedMessage& m, 
+																const IpEndpointName& remoteEndpoint);
+	};
+#endif // HAVE_LIBOSCPACK
 
+	// main cmctrl class
 	class V_CAMCTRLApp : public AppLayer<mavlink_message_t>,
 		public hub::gstreamer::VideoClient {
 
@@ -129,6 +149,12 @@ namespace mavhub {
 		/// internal gain
 		int gain;
 
+#ifdef HAVE_LIBOSCPACK
+		uint16_t osc_port;
+		V_CAMCTRLOscPacketListener* osc_lp;
+		UdpListeningReceiveSocket* osc_sp;
+#endif // HAVE_LIBOSCPACK
+
 		/* mavlink_attitude_t old_attitude; */
 		/* mavlink_attitude_t new_attitude; */
 		/* 		std::vector<cv::KeyPoint> old_features; */
@@ -178,6 +204,7 @@ namespace mavhub {
 
 } // namespace mavhub
 
+#endif // defined(HAVE_LIBV4L2)
 #endif // CV_MINOR_VERSION >= 2
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER

@@ -5,6 +5,7 @@
 #ifdef HAVE_GSTREAMER
 
 #if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION >= 2)
+#if (defined(HAVE_LIBV4L2))
 
 #include "core/logger.h"
 #include "core/datacenter.h"
@@ -25,6 +26,46 @@ using namespace cv;
 //using namespace hub::slam;
 
 namespace mavhub {
+#ifdef HAVE_LIBOSCPACK
+	void V_CAMCTRLOscPacketListener::ProcessMessage(const osc::ReceivedMessage& m,
+																							 const IpEndpointName& remoteEndpoint)
+	{
+		try{
+			// example of parsing single messages. osc::OsckPacketListener
+			// handles the bundle traversal.
+            
+			if( strcmp( m.AddressPattern(), "/test1" ) == 0 ){
+				// example #1 -- argument stream interface
+				osc::ReceivedMessageArgumentStream args = m.ArgumentStream();
+				bool a1;
+				osc::int32 a2;
+				float a3;
+				const char *a4;
+				args >> a1 >> a2 >> a3 >> a4 >> osc::EndMessage;
+                
+				std::cout << "received '/test1' message with arguments: "
+									<< a1 << " " << a2 << " " << a3 << " " << a4 << "\n";
+                
+			}
+			else if( strcmp( m.AddressPattern(), "/test3" ) == 0 ){
+				// example #1 -- argument stream interface
+				osc::ReceivedMessageArgumentStream args = m.ArgumentStream();
+				osc::int32 a1;
+				args >> a1 >> osc::EndMessage;
+                
+				Logger::log("received '/test3' message with arguments: ", a1, Logger::LOGLEVEL_DEBUG);
+                
+			}
+		}
+		catch( osc::Exception& e ){
+			// any parsing errors such as unexpected argument types, or 
+			// missing arguments get thrown as exceptions.
+			std::cout << "error while parsing message: "
+                << m.AddressPattern() << ": " << e.what() << "\n";
+		}
+	}
+
+#endif // HAVE_LIBOSCPACK
 
 	V_CAMCTRLApp::V_CAMCTRLApp(const std::map<std::string, std::string> &args, const Logger::log_level_t loglevel) :
 		AppInterface("v_camctrl_app", loglevel),
@@ -105,13 +146,25 @@ namespace mavhub {
 		// printf("unknown control: '%d'\n", cam_ctrls["blub"]);
 		// printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
 		cc_v4l2_set(cam_ctrls["Auto Exposure"], 0);
-		cc_v4l2_set(cam_ctrls["Auto Gain"], 1);
+		cc_v4l2_set(cam_ctrls["Auto Gain"], 0);
 		cc_v4l2_set(cam_ctrls["Auto White Balance"], 0);
 		// printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
 		exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
 		contrast = cc_v4l2_get(cam_ctrls["Contrast"]);
 		gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
 		// printf("Exposure: %d\n", exposure);
+
+		
+#ifdef HAVE_LIBOSCPACK
+		get_value_from_args("osc_port", osc_port);
+		/* initializations */
+		osc_lp = new V_CAMCTRLOscPacketListener;
+		osc_sp = new UdpListeningReceiveSocket(
+																					 IpEndpointName(IpEndpointName::ANY_ADDRESS, osc_port),
+																					 osc_lp);
+
+#endif // HAVE_LIBOSCPACK
+
 	}
 
 	V_CAMCTRLApp::~V_CAMCTRLApp() {}
@@ -304,8 +357,8 @@ namespace mavhub {
 		for(i = histSize-1; i >= (histSize/2); i--) {
 			exp_neg += (int)cap_hist.at<float>(i);
 		}
-		exposure += (exp_pos / 100);
-		exposure -= (exp_neg / 100);
+		exposure += (exp_pos / 1000.);
+		exposure -= (exp_neg / 1000.);
 
 		Logger::log(name(), "exposure:", exposure, Logger::LOGLEVEL_DEBUG);
 		Logger::log(name(), "exp_pos:", exp_pos, "exp_neg:", exp_neg, Logger::LOGLEVEL_DEBUG);
@@ -315,6 +368,12 @@ namespace mavhub {
 	void V_CAMCTRLApp::calcCamCtrl() {
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
+
+
+#ifdef HAVE_LIBOSCPACK
+    char buffer[OSC_OUTPUT_BUFFER_SIZE];
+    osc::OutboundPacketStream p(buffer, OSC_OUTPUT_BUFFER_SIZE);
+#endif // HAVE_LIBOSCPACK
 
 		// FIXME: make dt a class variable
 		// FIXME: hard/soft limit function from library (mavhub, ...)
@@ -357,10 +416,6 @@ namespace mavhub {
 		}
 		skew *= skew_scale;
 
-		// send statistics
-		send_debug(&msg, &dbg, 0, mean);
-		send_debug(&msg, &dbg, 1, std);
-		send_debug(&msg, &dbg, 2, skew);
 
 		// switch mode
 		// calcCamCtrlMean();
@@ -371,15 +426,42 @@ namespace mavhub {
 
 		// set and read camera settings
 		// FIXME: use output clamping / surpression
-		cc_v4l2_set(cam_ctrls["Exposure"], exposure);
+
+		// clamp output?
+		if(params["output_enable"] > 0) {
+			cc_v4l2_set(cam_ctrls["Exposure"], exposure);
+			cc_v4l2_set(cam_ctrls["Contrast"], contrast);
+			cc_v4l2_set(cam_ctrls["Main Gain"], gain);
+		}
+
 		exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
-		send_debug(&msg, &dbg, 3, exposure);
-		cc_v4l2_set(cam_ctrls["Contrast"], contrast);
 		contrast = cc_v4l2_get(cam_ctrls["Contrast"]);
-		send_debug(&msg, &dbg, 4, contrast);
-		cc_v4l2_set(cam_ctrls["Main Gain"], gain);
 		gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+
+		// send debug: statistics, cam ctrl params
+		send_debug(&msg, &dbg, 0, mean);
+		send_debug(&msg, &dbg, 1, std);
+		send_debug(&msg, &dbg, 2, skew);
+		send_debug(&msg, &dbg, 3, exposure);
+		send_debug(&msg, &dbg, 4, contrast);
 		send_debug(&msg, &dbg, 5, gain);
+
+#ifdef HAVE_LIBOSCPACK
+			p << osc::BeginBundleImmediate
+        << osc::BeginMessage( "/v_camctrl" ) 
+				<< static_cast<int>(msg.sysid)
+				<< exposure
+				<< contrast
+				<< gain
+				<< osc::EndMessage
+				<< osc::EndBundle;
+
+			osc_sp->SendTo(
+								 IpEndpointName( "127.0.0.1", 7002),
+								 p.Data(),
+								 p.Size()
+								 );
+#endif // HAVE_LIBOSCPACK
 
 		Logger::log(name(), "exp:", exposure, Logger::LOGLEVEL_DEBUG);
 		Logger::log(name(), "ctr:", contrast, Logger::LOGLEVEL_DEBUG);
@@ -939,69 +1021,6 @@ namespace mavhub {
 	void V_CAMCTRLApp::read_conf(const map<string, string> args) {
 		map<string,string>::const_iterator iter;
 
-		iter = args.find("leak_f");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["leak_f"];
-		}
-		else {
-			params["leak_f"] = 0.995;
-		}
-
-		iter = args.find("pitch_gain");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["pitch_gain"];
-		}
-		else {
-			params["pitch_gain"] = -10.0;
-		}
-
-		iter = args.find("pitch_bias");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["pitch_bias"];
-		}
-		else {
-			params["pitch_bias"] = 0.0;
-		}
-
-		iter = args.find("pitch_limit");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["pitch_limit"];
-		}
-		else {
-			params["pitch_limit"] = 200.0;
-		}
-
-		iter = args.find("roll_gain");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["roll_gain"];
-		}
-		else {
-			params["roll_gain"] = 10.0;
-		}
-
-		iter = args.find("roll_bias");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["roll_bias"];
-		}
-		else {
-			params["roll_bias"] = 0.0;
-		}
-
-		iter = args.find("roll_limit");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["roll_limit"];
-		}
-		else {
-			params["roll_limit"] = 200.0;
-		}
-
 		iter = args.find("reset_i");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
@@ -1011,22 +1030,13 @@ namespace mavhub {
 			params["reset_i"] = 0.0;
 		}
 
-		iter = args.find("derot_pit_g");
+		iter = args.find("output_enable");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["derot_pit_g"];
+			s >> params["output_enable"];
 		}
 		else {
-			params["derot_pit_g"] = 0.0;
-		}
-
-		iter = args.find("derot_rol_g");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["derot_rol_g"];
-		}
-		else {
-			params["derot_rol_g"] = 0.0;
+			params["output_enable"] = 1.0;
 		}
 
 		iter = args.find("dbg_en");
@@ -1076,126 +1086,6 @@ namespace mavhub {
 			params["of_algo"] = 0.0;
 		}
 
-		// smoothSize
-		iter = args.find("smoothSize");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["smoothSize"];
-		}
-		else {
-			params["smoothSize"] = 9.0;
-		}
-
-		////////////////////////////////////////////////////////////
-		/// omni params
-		// center_x
-		iter = args.find("center_x");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["center_x"];
-		}
-		else {
-			params["center_x"] = 0.0;
-		}
-
-		// center_y
-		iter = args.find("center_y");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["center_y"];
-		}
-		else {
-			params["center_y"] = 0.0;
-		}
-
-		// radius_inner
-		iter = args.find("radius_inner");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["radius_inner"];
-		}
-		else {
-			params["radius_inner"] = 0.0;
-		}
-
-		// radius_outer
-		iter = args.find("radius_outer");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["radius_outer"];
-		}
-		else {
-			params["radius_outer"] = 0.0;
-		}
-
-		// interpolation
-		iter = args.find("interpolation");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["interpolation"];
-		}
-		else {
-			params["interpolation"] = 0.0;
-		}
-
-		// scale_x
-		iter = args.find("scale_x");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["scale_x"];
-		}
-		else {
-			params["scale_x"] = 0.0;
-		}
-
-		// scale_y
-		iter = args.find("scale_y");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["scale_y"];
-		}
-		else {
-			params["scale_y"] = 0.0;
-		}
-
-		// unwrap_w
-		iter = args.find("unwrap_w");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["unwrap_w"];
-		}
-		else {
-			params["unwrap_w"] = 0.0;
-		}
-
-		// unwrap_h
-		iter = args.find("unwrap_h");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["unwrap_h"];
-		}
-		else {
-			params["unwrap_h"] = 0.0;
-		}
-
-		iter = args.find("derot_pit_b");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["derot_pit_b"];
-		}
-		else {
-			params["derot_pit_b"] = 0.0;
-		}
-
-		iter = args.find("derot_rol_b");
-		if( iter != args.end() ) {
-			istringstream s(iter->second);
-			s >> params["derot_rol_b"];
-		}
-
-		else {
-			params["derot_rol_b"] = 0.0;
-		}
 
 		// typedef map<string, double>::const_iterator ci;
 		// for(ci p = params.begin(); p!=params.end(); ++p) {
@@ -1209,7 +1099,9 @@ namespace mavhub {
 	}
 } // namespace mavhub
 
-#endif // HAVE_OPENCV2 && CV_MINOR_VERSION > 1
+#endif // defined(HAVE_LIBV4L2)
+
+#endif // defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 1
 
 #endif // HAVE_GSTREAMER
 

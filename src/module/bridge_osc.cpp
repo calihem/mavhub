@@ -10,8 +10,6 @@
 #include <iostream> //cout
 #include <stdlib.h>
 
-#define OSC_OUTPUT_BUFFER_SIZE 1024
-
 using namespace std;
 
 namespace mavhub {
