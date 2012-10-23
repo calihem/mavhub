@@ -41,5 +41,12 @@ pthread_mutex_t DataCenter::fiducal_raw_mutex = PTHREAD_MUTEX_INITIALIZER;
 cv::Mat DataCenter::fiducal_rot_raw = cv::Mat();
 cv::Mat DataCenter::fiducal_trans_raw = cv::Mat();
 #endif // HAVE_OPENCV2
+
+	// camctrl
+	pthread_mutex_t DataCenter::camctrl_mutex = PTHREAD_MUTEX_INITIALIZER;
+	int DataCenter::exposure = 0;
+	int DataCenter::contrast = 0;
+	int DataCenter::gain = 0;
+
 	
 } //namespace mavhub

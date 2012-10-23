@@ -5,6 +5,7 @@
 #include "core/logger.h"
 #include "utility.h"
 #include "protocol/protocolstack.h"
+#include "core/datacenter.h"
 #include <mavlink.h>
 
 #include <iostream> //cout
@@ -56,6 +57,22 @@ namespace mavhub {
 				args >> a1 >> osc::EndMessage;
                 
 				Logger::log("received '/test3' message with arguments: ", a1, Logger::LOGLEVEL_DEBUG);
+                
+			}
+			else if( strcmp( m.AddressPattern(), "/mavhub/camctrl" ) == 0 ){
+				// example #1 -- argument stream interface
+				osc::ReceivedMessageArgumentStream args = m.ArgumentStream();
+				// bool a1;
+				// osc::int32 a2;
+				// float a3;
+				// const char *a4;
+				osc::int32 e, c, g;
+				args >> e >> c >> g >> osc::EndMessage;
+                
+				Logger::log("received '/mavhub/camctrl' message with arguments: ", e, c, g, Logger::LOGLEVEL_DEBUG);
+				DataCenter::set_camctrl(e, c, g);
+				// std::cout << "received '/mavhub/camctrl' message with arguments: "
+				// 					<< e << " " << c << " " << g << "\n";
                 
 			}
 		}

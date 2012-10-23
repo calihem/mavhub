@@ -23,6 +23,7 @@
 /* #include <brisk/brisk.h> */
 /* #include "lib/slam/features.h" */
 #include "protocol/protocollayer.h"
+#include "../../module/PID.h"
 
 /* #include "ofmodel.h" */
 /* #include "OpticalFlow.h" */
@@ -52,9 +53,11 @@
 
 namespace mavhub {
 #ifdef HAVE_LIBOSCPACK
+	class V_CAMCTRLApp;
 	// OSC Packet Listener Class
 	class V_CAMCTRLOscPacketListener : public osc::OscPacketListener {
 	public:
+		V_CAMCTRLOscPacketListener(const V_CAMCTRLApp& app);
     virtual void ProcessMessage(const osc::ReceivedMessage& m, 
 																const IpEndpointName& remoteEndpoint);
 	};
@@ -149,6 +152,10 @@ namespace mavhub {
 		/// internal gain
 		int gain;
 
+		// mean based PID
+		PID* pid_cam;
+
+
 #ifdef HAVE_LIBOSCPACK
 		uint16_t osc_port;
 		V_CAMCTRLOscPacketListener* osc_lp;
@@ -171,6 +178,9 @@ namespace mavhub {
 		/* #endif */
 		/* 		cv::Mat rotation_vector; */
 		/* 		cv::Mat translation_vector; */
+		void setExposure(int value);
+		void setContrast(int value);
+		void setGain(int value);
 
 		void calcCamCtrl(); // main calculation
 		/// cam ctrl heuristics based on mean pixel intensity
@@ -181,6 +191,7 @@ namespace mavhub {
 		void calcCamCtrlHomeoRand();
 		/// cam ctrl weighted histogram function
 		void calcCamCtrlWeightedHisto();
+		void calcCamCtrlExtern();
 		void preprocessImage(cv::Mat img);
 		void visualize(cv::Mat img_src, cv::Mat img);
 		// uint8_t getInterpolation(cv:Mat* inputImg, int im, double x, double y);

@@ -11,6 +11,8 @@
 #define dout if(0) std::cout
 #endif
 
+#include <typeinfo>
+
 namespace hub {
 namespace slam {
 

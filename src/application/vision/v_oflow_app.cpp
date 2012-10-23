@@ -777,7 +777,7 @@ namespace mavhub {
 	void V_OFLOWApp::getOF_LK2() {
 		// CvMat *velx, *vely;
 		if(new_image.cols == 0) {
-			cout << "blub" << endl;
+			// cout << "blub" << endl;
 			return;
 		}
 

@@ -86,6 +86,12 @@ namespace mavhub {
 			static cv::Mat get_fiducal_trans_raw();
 #endif // HAVE_OPENCV2
 
+			/// camctrl
+			static void set_camctrl(int e, int c, int g);
+			static int get_exposure();
+			static int get_contrast();
+			static int get_gain();
+
 		private:
 			static double extctrl_pitch;
 			static double extctrl_roll;
@@ -131,6 +137,12 @@ namespace mavhub {
 
 			static pthread_mutex_t fiducal_raw_mutex;
 #endif // HAVE_OPENCV2
+
+			/// camctrl
+			static int exposure;
+			static int contrast;
+			static int gain;
+			static pthread_mutex_t camctrl_mutex;
 
 			DataCenter();
 			DataCenter(const DataCenter &data);
@@ -402,6 +414,34 @@ inline cv::Mat DataCenter::get_fiducal_trans_raw(){
 	return tvec;
 }
 #endif // HAVE_OPENCV2
+
+// camctrl
+ inline void DataCenter::set_camctrl(int e, int c, int g) {
+	 using namespace cpp_pthread;
+
+	 Lock camctrl_lock(camctrl_mutex);
+	 exposure = e;
+	 contrast = c;
+	 gain = g;
+ }
+ inline int DataCenter::get_exposure(){
+	 using namespace cpp_pthread;
+
+	 Lock camctrl_lock(camctrl_mutex);
+	 return exposure;
+ }
+ inline int DataCenter::get_contrast(){
+	 using namespace cpp_pthread;
+
+	 Lock camctrl_lock(camctrl_mutex);
+	 return contrast;
+ }
+ inline int DataCenter::get_gain(){
+	 using namespace cpp_pthread;
+
+	 Lock camctrl_lock(camctrl_mutex);
+	 return gain;
+ }
 
 } // namespace mavhub
 

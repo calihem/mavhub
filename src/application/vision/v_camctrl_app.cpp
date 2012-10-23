@@ -27,24 +27,34 @@ using namespace cv;
 
 namespace mavhub {
 #ifdef HAVE_LIBOSCPACK
-	void V_CAMCTRLOscPacketListener::ProcessMessage(const osc::ReceivedMessage& m,
-																							 const IpEndpointName& remoteEndpoint)
+	V_CAMCTRLOscPacketListener::V_CAMCTRLOscPacketListener(const V_CAMCTRLApp &app) :
+		osc::OscPacketListener()
 	{
+		// printf("blub\n");
+	}
+
+	void V_CAMCTRLOscPacketListener::ProcessMessage(const osc::ReceivedMessage& m,
+																									const IpEndpointName& remoteEndpoint)
+	{
+		Logger::log("processMessage", Logger::LOGLEVEL_DEBUG);
+
 		try{
 			// example of parsing single messages. osc::OsckPacketListener
 			// handles the bundle traversal.
             
-			if( strcmp( m.AddressPattern(), "/test1" ) == 0 ){
+			if( strcmp( m.AddressPattern(), "/mavhub/camctrl" ) == 0 ){
 				// example #1 -- argument stream interface
 				osc::ReceivedMessageArgumentStream args = m.ArgumentStream();
-				bool a1;
-				osc::int32 a2;
-				float a3;
-				const char *a4;
-				args >> a1 >> a2 >> a3 >> a4 >> osc::EndMessage;
+				// bool a1;
+				// osc::int32 a2;
+				// float a3;
+				// const char *a4;
+				osc::int32 e, c, g;
+				args >> e >> c >> g >> osc::EndMessage;
                 
-				std::cout << "received '/test1' message with arguments: "
-									<< a1 << " " << a2 << " " << a3 << " " << a4 << "\n";
+				Logger::log("received '/mavhub/camctrl' message with arguments: ", e, c, g, Logger::LOGLEVEL_DEBUG);
+				// std::cout << "received '/mavhub/camctrl' message with arguments: "
+				// 					<< e << " " << c << " " << g << "\n";
                 
 			}
 			else if( strcmp( m.AddressPattern(), "/test3" ) == 0 ){
@@ -154,11 +164,15 @@ namespace mavhub {
 		gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
 		// printf("Exposure: %d\n", exposure);
 
+		pid_cam = new PID(0, params["cam_Kc"], params["cam_Ti"],
+											params["cam_Td"]);
+
 		
 #ifdef HAVE_LIBOSCPACK
 		get_value_from_args("osc_port", osc_port);
 		/* initializations */
-		osc_lp = new V_CAMCTRLOscPacketListener;
+		osc_lp = new V_CAMCTRLOscPacketListener(*this);
+		// osc_lp = new V_CAMCTRLOscPacketListener();
 		osc_sp = new UdpListeningReceiveSocket(
 																					 IpEndpointName(IpEndpointName::ANY_ADDRESS, osc_port),
 																					 osc_lp);
@@ -168,6 +182,18 @@ namespace mavhub {
 	}
 
 	V_CAMCTRLApp::~V_CAMCTRLApp() {}
+
+	void V_CAMCTRLApp::setExposure(int value) {
+		exposure = value;
+	}
+
+	void V_CAMCTRLApp::setContrast(int value) {
+		contrast = value;
+	}
+
+	void V_CAMCTRLApp::setGain(int value) {
+		gain = value;
+	}
 
 	int V_CAMCTRLApp::cc_v4l2_open() {
 		const char devicefile[] = "/dev/video0";
@@ -267,7 +293,13 @@ namespace mavhub {
 	}
 
 	void V_CAMCTRLApp::calcCamCtrlMean() {
-		exposure = exposure + ((127. - mean) * 0.1);
+		float e_mean = 0;
+		// static float e_mean_i = 0;
+		// e_mean = params["cam_sp"] - mean;
+		// exposure = exposure + (e_mean * 1.0);
+		exposure = exposure + pid_cam->calc(0.1, mean);
+		Logger::log(name(), "exposure: ", exposure, Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), "mean, sp: ", mean, pid_cam->getSp(), Logger::LOGLEVEL_DEBUG);
 		contrast = 32;
 	}
 
@@ -284,7 +316,7 @@ namespace mavhub {
 			cnt_upper += (int)cap_hist.at<float>(i);
 		}
 
-		Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
 
 		// heuristics
 		if((cnt_lower > Ntenth) && (cnt_upper > Ntenth)) {
@@ -316,7 +348,7 @@ namespace mavhub {
 		// check upper
 		cnt_upper = (int)cap_hist.at<float>(histSize-1);
 
-		Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "lower:", cnt_lower, "upper:", cnt_upper, Logger::LOGLEVEL_DEBUG);
 		
 		if(cnt_lower > (Ntenth*40) || cnt_upper > (Ntenth*40))
 			stateCritical = 1;
@@ -360,9 +392,15 @@ namespace mavhub {
 		exposure += (exp_pos / 1000.);
 		exposure -= (exp_neg / 1000.);
 
-		Logger::log(name(), "exposure:", exposure, Logger::LOGLEVEL_DEBUG);
-		Logger::log(name(), "exp_pos:", exp_pos, "exp_neg:", exp_neg, Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "exposure:", exposure, Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "exp_pos:", exp_pos, "exp_neg:", exp_neg, Logger::LOGLEVEL_DEBUG);
 		
+	}
+
+	void V_CAMCTRLApp::calcCamCtrlExtern() {
+		exposure = DataCenter::get_exposure();
+		contrast = DataCenter::get_contrast();
+		gain = DataCenter::get_gain();
 	}
 
 	void V_CAMCTRLApp::calcCamCtrl() {
@@ -418,11 +456,11 @@ namespace mavhub {
 
 
 		// switch mode
-		// calcCamCtrlMean();
+		calcCamCtrlMean();
 		// calcCamCtrlHeuristic();
 		// calcCamCtrlHomeoRand();
-		calcCamCtrlWeightedHisto();
-		// calcCamCtrlNeuralFF();
+		// calcCamCtrlWeightedHisto();
+		// calcCamCtrlExtern();
 
 		// set and read camera settings
 		// FIXME: use output clamping / surpression
@@ -447,24 +485,42 @@ namespace mavhub {
 		send_debug(&msg, &dbg, 5, gain);
 
 #ifdef HAVE_LIBOSCPACK
+		{
+			// prepare local hist buffer
+			int num_camctrl_parms = 3;
+			float hist[histSize+num_camctrl_parms];
+			// add histogram vector
+			hist[0] = exposure; ///128. - 1;
+			hist[1] = contrast; ///128. - 1;
+			hist[2] = gain; ///32. -1;
+			for (i = 0; i < histSize; i++) {
+				// add single values to osc message
+				// p << cap_hist.at<float>(i);
+				// add values to buf
+				hist[i+num_camctrl_parms] = cap_hist.at<float>(i);// / (float)N - 1;
+			}
+
 			p << osc::BeginBundleImmediate
-        << osc::BeginMessage( "/v_camctrl" ) 
-				<< static_cast<int>(msg.sysid)
-				<< exposure
-				<< contrast
-				<< gain
-				<< osc::EndMessage
+				<< osc::BeginMessage( "/mavhub/camctrl") ;
+				// << exposure
+				// << contrast
+				// << gain;
+			// add histogram as blob
+			p << osc::Blob(hist, (histSize+num_camctrl_parms)*sizeof(float));
+
+			p << osc::EndMessage
 				<< osc::EndBundle;
 
 			osc_sp->SendTo(
-								 IpEndpointName( "127.0.0.1", 7002),
+								 IpEndpointName( "127.0.0.1", 17779),
 								 p.Data(),
 								 p.Size()
 								 );
+		}
 #endif // HAVE_LIBOSCPACK
 
-		Logger::log(name(), "exp:", exposure, Logger::LOGLEVEL_DEBUG);
-		Logger::log(name(), "ctr:", contrast, Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "exp:", exposure, Logger::LOGLEVEL_DEBUG);
+		// Logger::log(name(), "ctr:", contrast, Logger::LOGLEVEL_DEBUG);
 
 		if(with_out_stream && Core::video_server) {
 			// img_display = new_image.clone();
@@ -545,6 +601,11 @@ namespace mavhub {
 							Logger::log(name(), "handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_DEBUG);
 						}
 
+						pid_cam->setKc(params["cam_Kc"]);
+						pid_cam->setTi(params["cam_Ti"]);
+						pid_cam->setTd(params["cam_Td"]);
+						pid_cam->setBias(params["cam_bias"]);
+						pid_cam->setSp(params["cam_sp"]);
 						// algo = (of_algorithm)(params["of_algo"]);
 					}
 				}
@@ -823,6 +884,10 @@ namespace mavhub {
 		// uint64_t start_time = get_time_ms();
 		// uint64_t stop_time = get_time_ms();
 
+		// FIXME: unfortunately blocks, need to use bridge_osc_app
+		// osc_sp->Run();
+
+		pid_cam->setSp(params["cam_sp"]);
 
 		while( !interrupted() ) {
 			//log(name(), "enter main loop", Logger::LOGLEVEL_DEBUG);
@@ -1057,6 +1122,16 @@ namespace mavhub {
 			params["ctl_en"] = 0.0;
 		}
 
+		// mean pixel value setpoint
+		iter = args.find("cam_sp");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["cam_sp"];
+		}
+		else {
+			params["cam_sp"] = 80.;
+		}
+
 		// run method update rate
 		iter = args.find("ctl_update_rate");
 		if( iter != args.end() ) {
@@ -1084,6 +1159,32 @@ namespace mavhub {
 		}
 		else {
 			params["of_algo"] = 0.0;
+		}
+
+		// PID params
+		iter = args.find("cam_Kc");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["cam_Kc"];
+		}
+		else {
+			params["cam_Kc"] = 0.1;
+		}
+		iter = args.find("cam_Ti");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["cam_Ti"];
+		}
+		else {
+			params["cam_Ti"] = 0.0;
+		}
+		iter = args.find("cam_Td");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["cam_Td"];
+		}
+		else {
+			params["cam_Td"] = 0.0;
 		}
 
 
