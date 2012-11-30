@@ -96,6 +96,7 @@ namespace mavhub {
 
 		/// update rate
 		int ctl_update_rate;
+		int ctl_mode;
 
 		/// input stream parameters
 		int is_width;
@@ -157,6 +158,7 @@ namespace mavhub {
 
 
 #ifdef HAVE_LIBOSCPACK
+		int osc_en;
 		uint16_t osc_port;
 		V_CAMCTRLOscPacketListener* osc_lp;
 		UdpListeningReceiveSocket* osc_sp;

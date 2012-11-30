@@ -49,15 +49,15 @@ mavlink_manual_control_t* copy(mavlink_manual_control_t *destination, const mk_e
 		return destination;
 
 	destination->target = 0; //FIXME
-	destination->roll = source->roll;
-	destination->pitch = source->pitch;
-	destination->yaw = source->yaw;
-	destination->thrust = source->thrust;
+	destination->x = source->roll;
+	destination->y = source->pitch;
+	destination->z = source->yaw;
+	destination->r = source->thrust;
 
-	destination->roll_manual = 1;
-	destination->pitch_manual = 1;
-	destination->yaw_manual = 1;
-	destination->thrust_manual = 1;
+	// destination->x_manual = 1;
+	// destination->y_manual = 1;
+	// destination->yaw_manual = 1;
+	// destination->thrust_manual = 1;
 
 	return destination;
 }
@@ -67,10 +67,10 @@ mavlink_manual_control_t* copy(mavlink_manual_control_t *destination, const mk_e
 // ----------------------------------------------------------------------------
 mk_extern_control_t* copy(mk_extern_control_t *destination, const mavlink_manual_control_t *source) {
 
-	destination->roll = source->roll;
-	destination->pitch = source->pitch;
-	destination->yaw = source->yaw;
-	destination->thrust = source->thrust;
+	destination->roll = source->x;
+	destination->pitch = source->y;
+	destination->yaw = source->z;
+	destination->thrust = source->r;
 
 	return destination;
 }

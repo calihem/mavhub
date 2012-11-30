@@ -12,16 +12,19 @@ extern "C" {
 #ifndef MAVLINK_TEST_ALL
 #define MAVLINK_TEST_ALL
 static void mavlink_test_common(uint8_t, uint8_t, mavlink_message_t *last_msg);
+static void mavlink_test_ardupilotmega(uint8_t, uint8_t, mavlink_message_t *last_msg);
 static void mavlink_test_huch(uint8_t, uint8_t, mavlink_message_t *last_msg);
 
 static void mavlink_test_all(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_common(system_id, component_id, last_msg);
+	mavlink_test_ardupilotmega(system_id, component_id, last_msg);
 	mavlink_test_huch(system_id, component_id, last_msg);
 }
 #endif
 
 #include "../common/testsuite.h"
+#include "../ardupilotmega/testsuite.h"
 
 
 static void mavlink_test_mk_debugout(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
@@ -1479,6 +1482,120 @@ static void mavlink_test_huch_action(uint8_t system_id, uint8_t component_id, ma
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_huch_cam_state(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_huch_cam_state_t packet_in = {
+		17.0,
+	45.0,
+	73.0,
+	101.0,
+	129.0,
+	157.0,
+	185.0,
+	213.0,
+	101,
+	168,
+	235,
+	46,
+	};
+	mavlink_huch_cam_state_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.hist1 = packet_in.hist1;
+        	packet1.hist2 = packet_in.hist2;
+        	packet1.hist3 = packet_in.hist3;
+        	packet1.hist4 = packet_in.hist4;
+        	packet1.hist5 = packet_in.hist5;
+        	packet1.hist6 = packet_in.hist6;
+        	packet1.hist7 = packet_in.hist7;
+        	packet1.hist8 = packet_in.hist8;
+        	packet1.cam_index = packet_in.cam_index;
+        	packet1.exposure = packet_in.exposure;
+        	packet1.contrast = packet_in.contrast;
+        	packet1.gain = packet_in.gain;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_state_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_huch_cam_state_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_state_pack(system_id, component_id, &msg , packet1.cam_index , packet1.exposure , packet1.contrast , packet1.gain , packet1.hist1 , packet1.hist2 , packet1.hist3 , packet1.hist4 , packet1.hist5 , packet1.hist6 , packet1.hist7 , packet1.hist8 );
+	mavlink_msg_huch_cam_state_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_state_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.cam_index , packet1.exposure , packet1.contrast , packet1.gain , packet1.hist1 , packet1.hist2 , packet1.hist3 , packet1.hist4 , packet1.hist5 , packet1.hist6 , packet1.hist7 , packet1.hist8 );
+	mavlink_msg_huch_cam_state_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_huch_cam_state_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_state_send(MAVLINK_COMM_1 , packet1.cam_index , packet1.exposure , packet1.contrast , packet1.gain , packet1.hist1 , packet1.hist2 , packet1.hist3 , packet1.hist4 , packet1.hist5 , packet1.hist6 , packet1.hist7 , packet1.hist8 );
+	mavlink_msg_huch_cam_state_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
+static void mavlink_test_huch_cam_cmd(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_huch_cam_cmd_t packet_in = {
+		5,
+	72,
+	139,
+	206,
+	};
+	mavlink_huch_cam_cmd_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.cam_index = packet_in.cam_index;
+        	packet1.exposure = packet_in.exposure;
+        	packet1.contrast = packet_in.contrast;
+        	packet1.gain = packet_in.gain;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_cmd_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_huch_cam_cmd_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_cmd_pack(system_id, component_id, &msg , packet1.cam_index , packet1.exposure , packet1.contrast , packet1.gain );
+	mavlink_msg_huch_cam_cmd_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_cmd_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.cam_index , packet1.exposure , packet1.contrast , packet1.gain );
+	mavlink_msg_huch_cam_cmd_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_huch_cam_cmd_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_cam_cmd_send(MAVLINK_COMM_1 , packet1.cam_index , packet1.exposure , packet1.contrast , packet1.gain );
+	mavlink_msg_huch_cam_cmd_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_huch(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_mk_debugout(system_id, component_id, last_msg);
@@ -1510,6 +1627,8 @@ static void mavlink_test_huch(uint8_t system_id, uint8_t component_id, mavlink_m
 	mavlink_test_huch_attitude_control(system_id, component_id, last_msg);
 	mavlink_test_huch_generic_channel(system_id, component_id, last_msg);
 	mavlink_test_huch_action(system_id, component_id, last_msg);
+	mavlink_test_huch_cam_state(system_id, component_id, last_msg);
+	mavlink_test_huch_cam_cmd(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus

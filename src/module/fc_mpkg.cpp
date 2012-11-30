@@ -210,7 +210,7 @@ namespace mavhub {
 	// copy huch data into std pixhawk attitude
 	void FC_Mpkg::set_pxh_manual_control() {
 		manual_control.target = system_id();
-		manual_control.thrust = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
+		manual_control.r = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
 	}
 
   // fetch unsigned int from mk_debugout

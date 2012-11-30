@@ -201,16 +201,17 @@ namespace mavhub {
 			pid_zrate->setSp(zrate_sp);
 			gas = pid_zrate->calc((double)dt * 1e-6, -zrate_av);
 
-			if(gas > (manual_control.thrust * 4)) { // 4 <- stick_gain
+			// FIXME: where is zrate used?
+			if(gas > (manual_control.r * 4)) { // 4 <- stick_gain
 				pid_zrate->setIntegralM1();
-				gas = manual_control.thrust * 4;
+				gas = manual_control.r * 4;
 			}
 
 			// Logger::log("Ctrl_Zrate gas", params["ctl_bias"], params["ctl_P"], Logger::LOGLEVEL_INFO);
 			// Logger::log("Ctrl_Zrate gas", zrate_err, gas, Logger::LOGLEVEL_INFO);
 
 			// reset integral
-			if(manual_control.thrust < params["ctl_mingas"]) // reset below threshold
+			if(manual_control.r < params["ctl_mingas"]) // reset below threshold
 				pid_zrate->setIntegral(0.0);
 
 			// limit gas
@@ -264,7 +265,7 @@ namespace mavhub {
 			AppLayer<mavlink_message_t>::send(msg);
 
 			dbg.ind = 3;
-			dbg.value = manual_control.thrust; // zrate_err;
+			dbg.value = manual_control.r; // zrate_err;
 			mavlink_msg_debug_encode(system_id(), static_cast<uint8_t>(component_id), &msg, &dbg);
 			AppLayer<mavlink_message_t>::send(msg);
 

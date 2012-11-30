@@ -30,7 +30,6 @@ namespace mavhub {
 	V_CAMCTRLOscPacketListener::V_CAMCTRLOscPacketListener(const V_CAMCTRLApp &app) :
 		osc::OscPacketListener()
 	{
-		// printf("blub\n");
 	}
 
 	void V_CAMCTRLOscPacketListener::ProcessMessage(const osc::ReceivedMessage& m,
@@ -103,7 +102,8 @@ namespace mavhub {
 		N(1),
 		Ntenth(1),
 		exposure(20),
-		contrast(32)
+																								 contrast(32),
+																								 osc_en(0)
 	{
 		// cout << loglevel << endl;
 		// Logger::log(name(), "Ctor", Logger::LOGLEVEL_DEBUG);
@@ -128,11 +128,13 @@ namespace mavhub {
 		assign_variable_from_args(target_component);
 		assign_variable_from_args(imu_rate);
 		assign_variable_from_args(en_heartbeat);
+		// assign_variable_from_args(ctl_update_rate)
 		
 		// read config
 		read_conf(args);
 
 		Logger::log(name(), "ctl_update_rate", ctl_update_rate, Logger::LOGLEVEL_DEBUG);
+		Logger::log(name(), "ctl_mode", ctl_mode, Logger::LOGLEVEL_DEBUG);
 
 		// init execution timer
 		exec_tmr = new Exec_Timing(ctl_update_rate);
@@ -167,18 +169,18 @@ namespace mavhub {
 		pid_cam = new PID(0, params["cam_Kc"], params["cam_Ti"],
 											params["cam_Td"]);
 
-		
 #ifdef HAVE_LIBOSCPACK
-		get_value_from_args("osc_port", osc_port);
-		/* initializations */
-		osc_lp = new V_CAMCTRLOscPacketListener(*this);
-		// osc_lp = new V_CAMCTRLOscPacketListener();
-		osc_sp = new UdpListeningReceiveSocket(
-																					 IpEndpointName(IpEndpointName::ANY_ADDRESS, osc_port),
-																					 osc_lp);
-
+		get_value_from_args("osc_en", osc_en);
+		if(osc_en > 0) {
+			get_value_from_args("osc_port", osc_port);
+			/* initializations */
+			osc_lp = new V_CAMCTRLOscPacketListener(*this);
+			// osc_lp = new V_CAMCTRLOscPacketListener();
+			osc_sp = new UdpListeningReceiveSocket(
+																						 IpEndpointName(IpEndpointName::ANY_ADDRESS, osc_port),
+																						 osc_lp);
+		}
 #endif // HAVE_LIBOSCPACK
-
 	}
 
 	V_CAMCTRLApp::~V_CAMCTRLApp() {}
@@ -293,7 +295,7 @@ namespace mavhub {
 	}
 
 	void V_CAMCTRLApp::calcCamCtrlMean() {
-		float e_mean = 0;
+		// float e_mean = 0;
 		// static float e_mean_i = 0;
 		// e_mean = params["cam_sp"] - mean;
 		// exposure = exposure + (e_mean * 1.0);
@@ -340,7 +342,7 @@ namespace mavhub {
 
 	void V_CAMCTRLApp::calcCamCtrlHomeoRand() {
 		int stateCritical;
-		int i;
+		// int i;
 		int cnt_lower = 0, cnt_upper = 0;
 
 		// check lower
@@ -376,9 +378,9 @@ namespace mavhub {
 
 	void V_CAMCTRLApp::calcCamCtrlWeightedHisto() {
 		int i;
-		int cnt_lower = 0, cnt_upper = 0;
+		// int cnt_lower = 0, cnt_upper = 0;
 		int exp_pos = 0, exp_neg = 0;
-		int contr_pos = 0, contr_neg = 0;
+		// int contr_pos = 0, contr_neg = 0;
 
 		// set camera
 		// check lower
@@ -406,11 +408,11 @@ namespace mavhub {
 	void V_CAMCTRLApp::calcCamCtrl() {
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
-
+		static mavlink_huch_cam_state_t cam_state;
 
 #ifdef HAVE_LIBOSCPACK
-    char buffer[OSC_OUTPUT_BUFFER_SIZE];
-    osc::OutboundPacketStream p(buffer, OSC_OUTPUT_BUFFER_SIZE);
+		char buffer[OSC_OUTPUT_BUFFER_SIZE];
+		osc::OutboundPacketStream p(buffer, OSC_OUTPUT_BUFFER_SIZE);
 #endif // HAVE_LIBOSCPACK
 
 		// FIXME: make dt a class variable
@@ -454,14 +456,27 @@ namespace mavhub {
 		}
 		skew *= skew_scale;
 
-
 		// switch mode
-		calcCamCtrlMean();
-		// calcCamCtrlHeuristic();
-		// calcCamCtrlHomeoRand();
-		// calcCamCtrlWeightedHisto();
-		// calcCamCtrlExtern();
-
+		switch(ctl_mode) {
+		case 0:
+			calcCamCtrlMean();
+			break;
+		case 1:
+			calcCamCtrlHeuristic();
+			break;
+		case 2:
+			calcCamCtrlHomeoRand();
+			break;
+		case 3:
+			calcCamCtrlWeightedHisto();
+			break;
+		case 4:
+			calcCamCtrlExtern();
+			break;
+		default:
+			calcCamCtrlMean();
+			break;
+		}
 		// set and read camera settings
 		// FIXME: use output clamping / surpression
 
@@ -484,8 +499,32 @@ namespace mavhub {
 		send_debug(&msg, &dbg, 4, contrast);
 		send_debug(&msg, &dbg, 5, gain);
 
+		// send cam_state
+		cam_state.cam_index = 0;
+		cam_state.exposure = exposure;
+		cam_state.contrast = contrast;
+		cam_state.gain = gain;
+		cam_state.hist1 = cap_hist.at<float>(0);
+		cam_state.hist2 = cap_hist.at<float>(1);
+		cam_state.hist3 = cap_hist.at<float>(2);
+		cam_state.hist4 = cap_hist.at<float>(3);
+		cam_state.hist5 = cap_hist.at<float>(4);
+		cam_state.hist6 = cap_hist.at<float>(5);
+		cam_state.hist7 = cap_hist.at<float>(6);
+		cam_state.hist8 = cap_hist.at<float>(7);
+
+		mavlink_msg_huch_cam_state_encode(
+																	system_id(),
+																	component_id,
+																	&msg,
+																	&cam_state);
+		Logger::log(name(), "sending cam_state", cam_state.cam_index, Logger::LOGLEVEL_DEBUG);
+		AppLayer<mavlink_message_t>::send(msg);
+		
 #ifdef HAVE_LIBOSCPACK
+		if(osc_en > 0)
 		{
+			Logger::log(name(), "osc_en", osc_en, Logger::LOGLEVEL_DEBUG);
 			// prepare local hist buffer
 			int num_camctrl_parms = 3;
 			float hist[histSize+num_camctrl_parms];
@@ -511,11 +550,12 @@ namespace mavhub {
 			p << osc::EndMessage
 				<< osc::EndBundle;
 
+			// IpEndpointName( "192.168.1.10", 17779),
 			osc_sp->SendTo(
-								 IpEndpointName( "127.0.0.1", 17779),
-								 p.Data(),
-								 p.Size()
-								 );
+										 IpEndpointName( "127.0.0.1", 17779),
+										 p.Data(),
+										 p.Size()
+										 );
 		}
 #endif // HAVE_LIBOSCPACK
 
@@ -606,6 +646,7 @@ namespace mavhub {
 						pid_cam->setTd(params["cam_Td"]);
 						pid_cam->setBias(params["cam_bias"]);
 						pid_cam->setSp(params["cam_sp"]);
+						ctl_mode = int(params["ctl_mode"]);
 						// algo = (of_algorithm)(params["of_algo"]);
 					}
 				}
@@ -651,6 +692,17 @@ namespace mavhub {
 		case MAVLINK_MSG_ID_HUCH_CTRL_HOVER_STATE:
 			if( (msg.sysid == system_id()) ) {
 				// mavlink_msg_huch_ctrl_hover_state_decode(&msg, &hover_state);
+			}
+			break;
+
+		case MAVLINK_MSG_ID_HUCH_CAM_CMD:
+			if( (msg.sysid == system_id()) ) {
+				// mavlink_msg_huch_ctrl_hover_state_decode(&msg, &hover_state);
+				// transfer desired values via datacenter
+				DataCenter::set_camctrl(
+																mavlink_msg_huch_cam_cmd_get_exposure(&msg),
+																mavlink_msg_huch_cam_cmd_get_contrast(&msg),
+																mavlink_msg_huch_cam_cmd_get_gain(&msg));
 			}
 			break;
 
@@ -1140,6 +1192,17 @@ namespace mavhub {
 		}
 		else
 			ctl_update_rate = 100;
+
+		// run method update rate
+		iter = args.find("ctl_mode");
+		if( iter != args.end() ) {
+			istringstream s(iter->second);
+			s >> params["ctl_mode"];
+		}
+		else
+			params["ctl_mode"] = ctl_mode = 100;
+		//	assign variable
+		ctl_mode = int(params["ctl_mode"]);
 
 		// camera type
 		iter = args.find("cam_type");

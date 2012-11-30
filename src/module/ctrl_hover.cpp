@@ -773,8 +773,9 @@ namespace mavhub {
 
 			// 4. run controller
 			// setpoint on stick
+			// FIXME: hasn't been used in a while
 			if(params["ctl_sticksp"]) {
-				params["ctl_setpoint"] = (int)(manual_control.thrust * 15.0);
+				params["ctl_setpoint"] = (int)(manual_control.r * 15.0);
 			}
 
 			// FIXME: christian gps-logging
@@ -1493,7 +1494,7 @@ namespace mavhub {
 	// copy huch data into std pixhawk attitude
 	void Ctrl_Hover::set_pxh_manual_control() {
 		manual_control.target = system_id();
-		manual_control.thrust = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
+		// manual_control.thrust = (float)debugout_getval_u(&mk_debugout, CTL_stickgas);
 	}
 
   // fetch unsigned int from mk_debugout
