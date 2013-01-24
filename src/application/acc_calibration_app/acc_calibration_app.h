@@ -8,8 +8,15 @@
 #ifdef HAVE_MAVLINK_H
 #include <mavlink.h>
 
-#ifdef HAVE_OPENCV
+#ifdef HAVE_OPENCV1
 #include <opencv/cv.h>
+#endif
+
+#ifdef HAVE_OPENCV2
+#include <opencv2/opencv.hpp>
+#endif
+
+#if defined(HAVE_OPENCV1) || defined(HAVE_OPENCV2)
 
 #include <vector>
 

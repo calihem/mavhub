@@ -2,7 +2,7 @@
                       ====================
 
 Author: 
-Date: 2012-09-20 11:29:16 CEST
+Date: 2013-01-23 15:06:56 CET
 
 
   *ID*   *Component*              *Description*                                                 
@@ -28,3 +28,4 @@ Date: 2012-09-20 11:29:16 CEST
     42   v_oflow_odca_app         Optical flow for omnidirectional camera, collision avoidance  
     43   v_artoolkit_tracker      not mavhub: DetectRange.cpp                                   
     44   v_camctrl_app            control camera parameters: exposure, gain, ...                
+    45   camctrl_neural_txosc     python functionality prototyping module                       

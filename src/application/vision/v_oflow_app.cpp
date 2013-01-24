@@ -1302,6 +1302,8 @@ namespace mavhub {
 					// imu_roll_speed  = static_cast<double>(raw_adc_imu.xgyro) - params["derot_rol_b"];
 
 
+					// FIXME: make that filter recursive
+					// FIXME: adaptation
 					imu_pitch_ma = ma_pitch->calc(raw_adc_imu.ygyro);
 					imu_roll_ma  = ma_roll->calc(raw_adc_imu.xgyro);
 
@@ -1310,8 +1312,10 @@ namespace mavhub {
 
 					// imu_pitch_derot = params["derot_pit_g"] * (imu_pitch_speed - imu_pitchm1);
 					// imu_roll_derot = params["derot_rol_g"] * (imu_roll_speed - imu_rollm1);
-					imu_pitch_derot = params["derot_pit_g"] * (imu_pitch_speed - ((float)imu_pitch_ma/1200.));
-					imu_roll_derot = params["derot_rol_g"] * (imu_roll_speed - ((float)imu_roll_ma/1200.));
+					float imu_pitch_ma_scaled = ((float)imu_pitch_ma/1200.);
+					float imu_roll_ma_scaled   = ((float)imu_roll_ma/1200.);
+					imu_pitch_derot = params["derot_pit_g"] * (imu_pitch_speed - imu_pitch_ma_scaled);
+					imu_roll_derot = params["derot_rol_g"] * (imu_roll_speed - imu_roll_ma_scaled);
 
 					// imu_pitchm1 = imu_pitch_speed;
 					// imu_rollm1 = imu_roll_speed;
@@ -1326,8 +1330,8 @@ namespace mavhub {
 						// send_debug(&msg, &dbg, 2, imu_pitch_derot);
 						// send_debug(&msg, &dbg, 3, imu_roll_derot);
 						send_debug(&msg, &dbg, 0, lc_active);
-						// send_debug(&msg, &dbg, 2, imu_pitch_speed);
-						// send_debug(&msg, &dbg, 3, imu_roll_speed);
+						send_debug(&msg, &dbg, 2, imu_pitch_ma_scaled);
+						send_debug(&msg, &dbg, 3, imu_roll_ma_scaled);
 					}
 
 					// // derotate flow

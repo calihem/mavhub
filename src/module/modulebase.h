@@ -36,6 +36,7 @@ enum huch_action_types_t {
 	ACTION_BUMP_ROLL, // trigger roll bumping
 	ACTION_TOGGLE_AC, // toggle altitude control on/off
 	ACTION_TOGGLE_LC, // toggle lateral control on/off
+	ACTION_TOGGLE_LAT_PID_OPT, // toggle lateral PID optimization
 	ACTION_NUM // number of items in enum
 };
 

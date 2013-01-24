@@ -9,10 +9,7 @@
 #include <list>
 
 #ifdef HAVE_OPENCV2
-/* #include <opencv2/core/core.hpp> */
-/* #include <opencv2/highgui/highgui.hpp> */
-#include <opencv/cv.h>
-//#include "OpenCV.h"
+#include <opencv2/opencv.hpp>
 
 //FIXME: image_t -> Image
 struct image_t {

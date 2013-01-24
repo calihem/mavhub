@@ -102,8 +102,7 @@ namespace mavhub {
 		N(1),
 		Ntenth(1),
 		exposure(20),
-																								 contrast(32),
-																								 osc_en(0)
+																								 contrast(32)
 	{
 		// cout << loglevel << endl;
 		// Logger::log(name(), "Ctor", Logger::LOGLEVEL_DEBUG);
@@ -170,6 +169,7 @@ namespace mavhub {
 											params["cam_Td"]);
 
 #ifdef HAVE_LIBOSCPACK
+		osc_en = 0;
 		get_value_from_args("osc_en", osc_en);
 		if(osc_en > 0) {
 			get_value_from_args("osc_port", osc_port);
@@ -409,6 +409,7 @@ namespace mavhub {
 		static mavlink_message_t msg;
 		static mavlink_debug_t dbg;
 		static mavlink_huch_cam_state_t cam_state;
+		static mavlink_data64_t d64;
 
 #ifdef HAVE_LIBOSCPACK
 		char buffer[OSC_OUTPUT_BUFFER_SIZE];
@@ -520,13 +521,36 @@ namespace mavhub {
 																	&cam_state);
 		Logger::log(name(), "sending cam_state", cam_state.cam_index, Logger::LOGLEVEL_DEBUG);
 		AppLayer<mavlink_message_t>::send(msg);
+
+		// send binary data over mavlink
+		int num_camctrl_parms = 3;
+		d64.type = 0;
+		d64.len = 44;
+		bfconvert.val[0] = exposure;
+		bfconvert.val[1] = contrast;
+		bfconvert.val[2] = gain;
+		for (i = 0; i < histSize; i++) {
+			// add single values to osc message
+			// p << cap_hist.at<float>(i);
+			// add values to buf
+			bfconvert.val[i+num_camctrl_parms] = cap_hist.at<float>(i);// / (float)N - 1;
+		}
+		for (i = 0; i < 44; i++) {
+			d64.data[i] = bfconvert.bytes[i];
+		}
+		mavlink_msg_data64_encode(
+															system_id(),
+															component_id,
+															&msg,
+															&d64);
+		Logger::log(name(), "sending data64", (int)d64.type, Logger::LOGLEVEL_DEBUG);
+		AppLayer<mavlink_message_t>::send(msg);
 		
 #ifdef HAVE_LIBOSCPACK
 		if(osc_en > 0)
 		{
 			Logger::log(name(), "osc_en", osc_en, Logger::LOGLEVEL_DEBUG);
 			// prepare local hist buffer
-			int num_camctrl_parms = 3;
 			float hist[histSize+num_camctrl_parms];
 			// add histogram vector
 			hist[0] = exposure; ///128. - 1;
@@ -1168,10 +1192,10 @@ namespace mavhub {
 		iter = args.find("ctl_mode");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> params["ctl_en"];
+			s >> params["ctl_mode"];
 		}
 		else {
-			params["ctl_en"] = 0.0;
+			params["ctl_mode"] = 0.0;
 		}
 
 		// mean pixel value setpoint

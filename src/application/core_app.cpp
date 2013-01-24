@@ -63,11 +63,40 @@ void CoreApp::run() {
 		0,	//custom mode
 		MAV_STATE_ACTIVE);	//system status
 
+	union
+	{
+		uint8_t bytes[16];
+    float val[4];
+	} bfconvert;
+
+	// float preval[4] = {0.1, 0.2, 0.3, 0.5};
+	bfconvert.val[0] = 0.1;
+	bfconvert.val[1] = 0.2;
+	bfconvert.val[2] = 0.4;
+	bfconvert.val[3] = 0.8;
+	// uint8_t data_i[16];
+	mavlink_message_t msg;
+	mavlink_data16_t d16;
+	// data_i = (uint8_t)&data;
+	d16.type = 0;
+	d16.len = 16;
+	for (int i = 0; i < 16; i++) {
+		d16.data[i] = bfconvert.bytes[i];
+	}
+
+	mavlink_msg_data16_encode(
+														system_id(),
+														component_id,
+														&msg,
+														&d16);
+
 	log("CoreApp started", Logger::LOGLEVEL_DEBUG);
 
 	while( !interrupted() ) {
 		log("CoreApp entered loop", Logger::LOGLEVEL_DEBUG);
 		send(heartbeat_msg);
+		// test data16
+		// send(msg);
 		usleep(900000);
 	}
 }

@@ -7,8 +7,15 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
-#ifdef HAVE_OPENCV
+#ifdef HAVE_OPENCV1
 #include "opencv/cv.h" // opencv headers
+#endif
+
+#ifdef HAVE_OPENCV2
+#include "opencv2/opencv.hpp" // opencv headers
+#endif
+
+#ifdef HAVE_OPENCV
 
 #include <sstream>
 

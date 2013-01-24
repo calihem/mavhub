@@ -15,10 +15,7 @@
 #include "floatfann.h"
 
 #ifdef HAVE_OPENCV2
-/* #include <opencv2/core/core.hpp> */
-/* #include <opencv2/highgui/highgui.hpp> */
-#include <opencv/cv.h>
-//#include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
 
 #if CV_MINOR_VERSION >= 2
 #include <brisk/brisk.h>

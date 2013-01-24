@@ -174,6 +174,14 @@ namespace mavhub {
 
 					}
 
+					else if(i == 3 && d[i] < d_new[i]) {
+
+						// send_action(system_id(), 33, ACTION_TOGGLE_LC);
+						send_action(system_id(), 45, ACTION_TOGGLE_LAT_PID_OPT);
+						// Logger::log(name(), "sent action", (int)action.target, (int)action.target_component, Logger::LOGLEVEL_DEBUG);
+
+					}
+
 					d[i] = d_new[i];
 					Logger::log(name(), "value changed, d-", i, d[i], d_new[i], action.action, Logger::LOGLEVEL_DEBUG);
 				}

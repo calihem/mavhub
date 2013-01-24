@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #ifdef HAVE_OPENCV2
-#include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 
 #include "OpticalFlow.h"
 

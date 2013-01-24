@@ -3,7 +3,7 @@
 #ifdef HAVE_MAVLINK_H
 
 #ifdef HAVE_OPENCV2
-#include <opencv/cv.h>
+//#include <opencv/cv.h>
 
 #include <sstream>
 #include <sys/time.h>

@@ -308,7 +308,7 @@ namespace mavhub {
 
 			// send control output to (onboard) controller
 			if(params["output_enable"] > 0) {
-				//Logger::log("plat_link_crrcsim: ctl.thust = ", ctl.thrust, Logger::LOGLEVEL_INFO);
+				Logger::log("plat_link_crrcsim: ctl.thrust = ", ctl.thrust, Logger::LOGLEVEL_INFO);
 				mavlink_msg_huch_attitude_control_encode(
 																								 system_id(), 
 																								 1,

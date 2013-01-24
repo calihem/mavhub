@@ -156,6 +156,11 @@ namespace mavhub {
 		// mean based PID
 		PID* pid_cam;
 
+		union
+		{
+			uint8_t bytes[44];
+			float val[11];
+		} bfconvert;
 
 #ifdef HAVE_LIBOSCPACK
 		int osc_en;

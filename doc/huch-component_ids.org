@@ -24,4 +24,4 @@ MAVHUB component IDs
 |   42 | v_oflow_odca_app       | Optical flow for omnidirectional camera, collision avoidance |
 |   43 | v_artoolkit_tracker    | not mavhub: DetectRange.cpp                                  |
 |   44 | v_camctrl_app          | control camera parameters: exposure, gain, ...               |
-|      |                        |                                                              |
+|   45 | camctrl_neural_txosc   | python functionality prototyping module                      |

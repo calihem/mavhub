@@ -6,7 +6,7 @@
 
 // #ifdef HAVE_OPENCV2
 #if (defined(HAVE_OPENCV2) && CV_MINOR_VERSION > 2)
-#include <opencv/cv.h>
+//#include <opencv/cv.h>
 
 #include "core/logger.h"
 #include "core/datacenter.h"

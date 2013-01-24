@@ -12,7 +12,7 @@
 #endif // HAVE_MAVLINK_H
 
 #ifdef HAVE_OPENCV2
-#include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 #endif // HAVE_OPENCV2
 
 

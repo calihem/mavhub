@@ -4,7 +4,7 @@
 #include <mavlink.h>
 
 #ifdef HAVE_OPENCV
-#include <opencv/cv.h>
+//#include <opencv/cv.h>
 
 #include "core/datacenter.h"
 #include "application/acc_calibration_app/acc_calibration_app.h"

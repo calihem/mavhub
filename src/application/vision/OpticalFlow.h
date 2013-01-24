@@ -9,8 +9,7 @@
 #include <list>
 
 #ifdef HAVE_OPENCV2
-#include "opencv/cv.h"
-//#include "opencv2/opencv.hpp"
+#include "opencv2/opencv.hpp"
 
 #if CV_MINOR_VERSION >= 2
 #include "oftypes.h"

@@ -7,7 +7,7 @@
 
 #ifdef HAVE_OPENCV2
 
-#include <opencv/cv.h>	//cv::Mat
+#include <opencv2/opencv.hpp>	//cv::Mat
 
 #if (CV_MINOR_VERSION >= 2)
 

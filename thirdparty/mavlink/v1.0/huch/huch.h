@@ -81,7 +81,8 @@ enum HUCH_MAV_ACTION
 	MAV_ACTION_BUMP_ROLL=43, /*  | */
 	MAV_ACTION_TOGGLE_AC=44, /*  | */
 	MAV_ACTION_TOGGLE_LC=45, /*  | */
-	HUCH_MAV_ACTION_ENUM_END=46, /*  | */
+	MAV_ACTION_DUMP_GNG=46, /*  | */
+	HUCH_MAV_ACTION_ENUM_END=47, /*  | */
 };
 #endif
 
