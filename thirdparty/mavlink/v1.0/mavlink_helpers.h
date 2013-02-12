@@ -12,15 +12,18 @@
 /*
  * Internal function to give access to the channel status for each channel
  */
+#ifndef MAVLINK_GET_CHANNEL_STATUS
 MAVLINK_HELPER mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 {
 	static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NUM_BUFFERS];
 	return &m_mavlink_status[chan];
 }
+#endif
 
 /*
  * Internal function to give access to the channel buffer for each channel
  */
+#ifndef MAVLINK_GET_CHANNEL_BUFFER
 MAVLINK_HELPER mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan)
 {
 	
@@ -35,6 +38,7 @@ MAVLINK_HELPER mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan)
 #endif
 	return &m_mavlink_buffer[chan];
 }
+#endif
 
 /**
  * @brief Reset the status of a channel.
@@ -546,7 +550,7 @@ MAVLINK_HELPER void _mavlink_send_uart(mavlink_channel_t chan, const char *buf, 
 #ifdef MAVLINK_SEND_UART_BYTES
 	/* this is the more efficient approach, if the platform
 	   defines it */
-	MAVLINK_SEND_UART_BYTES(chan, (uint8_t *)buf, len);
+	MAVLINK_SEND_UART_BYTES(chan, (const uint8_t *)buf, len);
 #else
 	/* fallback to one byte at a time */
 	uint16_t i;
