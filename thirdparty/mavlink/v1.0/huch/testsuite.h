@@ -24,49 +24,6 @@ static void mavlink_test_all(uint8_t system_id, uint8_t component_id, mavlink_me
 #include "../common/testsuite.h"
 
 
-static void mavlink_test_mk_debugout(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
-{
-	mavlink_message_t msg;
-        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
-        uint16_t i;
-	mavlink_mk_debugout_t packet_in = {
-		{ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70 },
-	};
-	mavlink_mk_debugout_t packet1, packet2;
-        memset(&packet1, 0, sizeof(packet1));
-        
-        	mav_array_memcpy(packet1.debugout, packet_in.debugout, sizeof(int8_t)*66);
-        
-
-        memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_mk_debugout_encode(system_id, component_id, &msg, &packet1);
-	mavlink_msg_mk_debugout_decode(&msg, &packet2);
-        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
-        memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_mk_debugout_pack(system_id, component_id, &msg , packet1.debugout );
-	mavlink_msg_mk_debugout_decode(&msg, &packet2);
-        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
-        memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_mk_debugout_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.debugout );
-	mavlink_msg_mk_debugout_decode(&msg, &packet2);
-        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
-        memset(&packet2, 0, sizeof(packet2));
-        mavlink_msg_to_send_buffer(buffer, &msg);
-        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
-        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
-        }
-	mavlink_msg_mk_debugout_decode(last_msg, &packet2);
-        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-        
-        memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_mk_debugout_send(MAVLINK_COMM_1 , packet1.debugout );
-	mavlink_msg_mk_debugout_decode(last_msg, &packet2);
-        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-}
-
 static void mavlink_test_mk_extern_control(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -1595,7 +1552,6 @@ static void mavlink_test_huch_cam_cmd(uint8_t system_id, uint8_t component_id, m
 
 static void mavlink_test_huch(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
-	mavlink_test_mk_debugout(system_id, component_id, last_msg);
 	mavlink_test_mk_extern_control(system_id, component_id, last_msg);
 	mavlink_test_huch_exp_ctrl(system_id, component_id, last_msg);
 	mavlink_test_huch_attitude(system_id, component_id, last_msg);
