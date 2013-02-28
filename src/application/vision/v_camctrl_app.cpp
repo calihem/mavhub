@@ -128,6 +128,9 @@ namespace mavhub {
     assign_variable_from_args(imu_rate);
     assign_variable_from_args(en_heartbeat);
     // assign_variable_from_args(ctl_update_rate)
+    assign_variable_from_args(device)
+    Logger::log(name(), "device", device, Logger::LOGLEVEL_DEBUG);
+
 		
     // read config
     read_conf(args);
@@ -149,20 +152,23 @@ namespace mavhub {
     img_display = Mat (hist_h, hist_w, CV_8UC1, Scalar(0,0,0));
 
     // open v4l2 device
-    if(cc_v4l2_open())
+    if(cc_v4l2_open(device))
       Logger::log(name(), "Couldn't open video device", Logger::LOGLEVEL_DEBUG);
     cc_v4l2_query();
     cc_list_controls();
     // initialize all controls
     // printf("unknown control: '%d'\n", cam_ctrls["blub"]);
     // printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
-    cc_v4l2_set(cam_ctrls["Auto Exposure"], 0);
-    cc_v4l2_set(cam_ctrls["Auto Gain"], 0);
-    cc_v4l2_set(cam_ctrls["Auto White Balance"], 0);
+    cc_v4l2_set(cam_ctrls["Auto Exposure"], 1); // manual mode = 1
+    // cc_v4l2_set(cam_ctrls["Auto Gain"], 0);
+    cc_v4l2_set(cam_ctrls["Gain, Automatic"], 0); // 3.7.0 since v4l driver?
+    // cc_v4l2_set(cam_ctrls["Auto White Balance"], 0); // ipse
+    cc_v4l2_set(cam_ctrls["White Balance, Automatic"], 0);
     // printf("Auto Exposure: %d\n", cc_v4l2_get(cam_ctrls["Auto Exposure"]));
     exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
     contrast = cc_v4l2_get(cam_ctrls["Contrast"]);
-    gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+    // gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+    gain = cc_v4l2_get(cam_ctrls["Gain"]);
     // printf("Exposure: %d\n", exposure);
 
     pid_cam = new PID(0, params["cam_Kc"], params["cam_Ti"],
@@ -197,10 +203,12 @@ namespace mavhub {
     gain = value;
   }
 
-  int V_CAMCTRLApp::cc_v4l2_open() {
-    const char devicefile[] = "/dev/video0";
-    // printf("device: %s\n", devicefile);
-    fd = v4l2_open(devicefile, O_RDWR, 0);
+  int V_CAMCTRLApp::cc_v4l2_open(std::string device) {
+    // const char devicefile[] = "/dev/video0";
+    // printf("device1: %s\n", devicefile);
+    // printf("device2: %s\n", device.c_str());
+    // fd = v4l2_open(devicefile, O_RDWR, 0);
+    fd = v4l2_open(device.c_str(), O_RDWR, 0);
     if(fd < 0)
       return 1;
     return 0;
@@ -217,7 +225,7 @@ namespace mavhub {
         // printf();
         // printf("add_control: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
         cam_ctrls[(char *)ctrl.name] = ctrl.id;
-        //printf("add_control: ctrl.id: %d, ctrl.name = %s\n", cam_ctrls[(char *)ctrl.name], (char *)ctrl.name);
+        // printf("add_control: ctrl.id: %d, ctrl.name = %s\n", cam_ctrls[(char *)ctrl.name], (char *)ctrl.name);
         ctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
       } while(0 == v4l2_ioctl (fd, VIDIOC_QUERYCTRL, &ctrl));
     } else
@@ -229,7 +237,7 @@ namespace mavhub {
           ctrl.id = i;
           if(v4l2_ioctl(fd, VIDIOC_QUERYCTRL, &ctrl) == 0) {
             // mw->add_control(ctrl, fd, grid, gridLayout);
-            printf("add_control x: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
+            // printf("add_control x: ctrl.id: %d, ctrl.name = %s\n", ctrl.id, ctrl.name);
             cam_ctrls[(char *)ctrl.name] = ctrl.id;
             // printf("add_control: ctrl.id: %d, ctrl.name = %s\n", cam_ctrls[(char *)ctrl.name], (char *)ctrl.name);
           }
@@ -273,6 +281,7 @@ namespace mavhub {
       // QString msg;
       // msg.sprintf("Unable to set %s\n%s", name, strerror(errno));
       // QMessageBox::warning(this, "Unable to set control", msg, "OK");
+      // printf("blub\n");
       Logger::log(name(), "Couldn't set v4l2 control", id, Logger::LOGLEVEL_DEBUG);
     }
     // updateStatus();
@@ -481,16 +490,19 @@ namespace mavhub {
     // set and read camera settings
     // FIXME: use output clamping / surpression
 
+
     // clamp output?
     if(params["output_enable"] > 0) {
       cc_v4l2_set(cam_ctrls["Exposure"], exposure);
       cc_v4l2_set(cam_ctrls["Contrast"], contrast);
-      cc_v4l2_set(cam_ctrls["Main Gain"], gain);
+      // cc_v4l2_set(cam_ctrls["Main Gain"], gain);
+      cc_v4l2_set(cam_ctrls["Gain"], gain);
     }
 
     exposure = cc_v4l2_get(cam_ctrls["Exposure"]);
     contrast = cc_v4l2_get(cam_ctrls["Contrast"]);
-    gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+    // gain = cc_v4l2_get(cam_ctrls["Main Gain"]);
+    gain = cc_v4l2_get(cam_ctrls["Gain"]);
 
     // send debug: statistics, cam ctrl params
     send_debug(&msg, &dbg, 0, mean);

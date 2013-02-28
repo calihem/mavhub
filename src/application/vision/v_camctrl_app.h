@@ -142,9 +142,11 @@ namespace mavhub {
 		int N;
 		int Ntenth;
 
-		// camera fd
+                /// camera device
+                std::string device;
+		/// camera fd
 		int fd;
-		// cam controls
+		/// cam controls
 		std::map<std::string, int> cam_ctrls;
 		/// internal exposure
 		int exposure;
@@ -152,8 +154,7 @@ namespace mavhub {
 		int contrast;
 		/// internal gain
 		int gain;
-
-		// mean based PID
+		/// mean based PID
 		PID* pid_cam;
 
 		union
@@ -209,7 +210,7 @@ namespace mavhub {
 		virtual void read_conf(const std::map<std::string, std::string> args);
 
 		/// v4l2 open device
-		int cc_v4l2_open();
+		int cc_v4l2_open(std::string device);
 		/// v4l2 query device
 		int cc_v4l2_query();
 		/// query collected device controls
