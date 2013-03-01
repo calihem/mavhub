@@ -13,6 +13,7 @@
 
 #ifdef HAVE_OPENCV2
 #include <opencv2/opencv.hpp>
+#include <opencv2/legacy/legacy.hpp> // needed for BruteForceMatcher
 
 #if CV_MINOR_VERSION >= 2
 #include <brisk/brisk.h>
@@ -61,7 +62,9 @@ class SLAMApp : public MavlinkAppLayer,
 		cv::BriskFeatureDetector feature_detector; ///< BRISK feature detector using AGAST
 		cv::BriskDescriptorExtractor descriptor_extractor;
 #ifdef HAVE_SSSE3
-		cv::BruteForceMatcher<cv::HammingSse> matcher;
+		// this gives an error building with libopencv 2.3.1-11ubuntu (opt)
+		// cv::BruteForceMatcher<cv::HammingSse> matcher;
+		cv::BruteForceMatcher<cv::Hamming> matcher;
 #else
 		cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif

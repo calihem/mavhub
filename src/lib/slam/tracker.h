@@ -7,6 +7,7 @@
 
 #ifdef HAVE_OPENCV2
 #include <opencv2/opencv.hpp>
+#include <opencv2/legacy/legacy.hpp>
 #if CV_MINOR_VERSION >= 2
 
 #include <brisk/brisk.h>
@@ -28,7 +29,9 @@ private:
 	cv::BriskFeatureDetector feature_detector; ///< BRISK feature detector using AGAST
 	cv::BriskDescriptorExtractor descriptor_extractor;
 #ifdef HAVE_SSSE3
-	cv::BruteForceMatcher<cv::HammingSse> matcher;
+	// see slam_app.h
+	// cv::BruteForceMatcher<cv::HammingSse> matcher;
+	cv::BruteForceMatcher<cv::Hamming> matcher;
 #else
 	cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif

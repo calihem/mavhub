@@ -7,6 +7,7 @@
 
 #ifdef HAVE_OPENCV2
 #include <opencv2/opencv.hpp>
+#include <opencv2/legacy/legacy.hpp>
 #if CV_MINOR_VERSION >= 2
 #include "ofmodel.h"
 

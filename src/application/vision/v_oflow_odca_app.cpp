@@ -808,7 +808,7 @@ namespace mavhub {
 
 				// start = get_time_us();
 
-#if (CV_MINOR_VERSION == 2)
+#if (CV_MINOR_VERSION >= 2)
 				calcOpticalFlowPyrLK(old_image, new_image,
 														 points[0], points[1],
 														 status, err, winSize,
