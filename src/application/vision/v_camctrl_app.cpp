@@ -273,11 +273,23 @@ namespace mavhub {
   void V_CAMCTRLApp::cc_v4l2_set(int id, int value)
   {
     struct v4l2_control c;
+    int ret;
+
+    // struct timeval now;
+    // struct timeval then;
+
     if(id == 0) return;
     c.id = id;
     c.value = value;
     // printf("updateHardware: c.id = %d, c.value = %d\n", c.id, c.value);
-    if(v4l2_ioctl(fd, VIDIOC_S_CTRL, &c) == -1) {
+    // gettimeofday(&now, NULL);
+    ret = v4l2_ioctl(fd, VIDIOC_S_CTRL, &c);
+    // gettimeofday(&then, NULL);
+    // printf("id: %d, dt(s): %d, dt(us): %d\n",
+    //        id,
+    //        then.tv_sec - now.tv_sec,
+    //        then.tv_usec - now.tv_usec);
+    if(ret == -1) {
       // QString msg;
       // msg.sprintf("Unable to set %s\n%s", name, strerror(errno));
       // QMessageBox::warning(this, "Unable to set control", msg, "OK");
@@ -442,7 +454,10 @@ namespace mavhub {
     int i; // , N, Ntenth;
     int histRatio;
 
-    calcHist(&new_image, 1, 0, Mat(), cap_hist, 1, &histSize, &lhistRange, uniform, accumulate);
+    {
+      Lock sync_lock(sync_mutex);
+      calcHist(&new_image, 1, 0, Mat(), cap_hist, 1, &histSize, &lhistRange, uniform, accumulate);
+    }
 
     N = is_width * is_height;
     Ntenth = (int)(N * 0.01);
@@ -600,7 +615,10 @@ namespace mavhub {
 
     if(with_out_stream && Core::video_server) {
       // img_display = new_image.clone();
-      visualize(new_image, img_display);
+      {
+        // Lock sync_lock(sync_mutex);
+        visualize(new_image, img_display);
+      }
       // cv::Mat match_img;
       // cv::drawMatches(old_image, old_features,
       // 	new_image, new_features,
@@ -712,7 +730,7 @@ namespace mavhub {
 
     case MAVLINK_MSG_ID_ATTITUDE:
       if( (msg.sysid == system_id()) ) {
-        Lock sync_lock(sync_mutex);
+        // Lock sync_lock(sync_mutex);
         // mavlink_msg_attitude_decode(&msg, &attitude);
         // take system time for attitude
         //attitude.time_boot_ms = get_time_ms();
@@ -1008,7 +1026,7 @@ namespace mavhub {
         // of_v_i = 0.0;
       }
 
-      { Lock sync_lock(sync_mutex);
+      // { Lock sync_lock(sync_mutex);
         if(new_video_data) {
           //NULL;
           // // actual frame rate
@@ -1150,7 +1168,7 @@ namespace mavhub {
           // }
 
           // AppLayer<mavlink_message_t>::send(msg);
-        }
+          // }
         new_video_data = false;
       }
       //FIXME: remove usleep
