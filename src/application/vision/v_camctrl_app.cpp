@@ -505,7 +505,7 @@ namespace mavhub {
     case 4:
       calcCamCtrlExtern();
       break;
-    case 4:
+    case 5:
       calcCamCtrlExternDiff();
       break;
     default:
