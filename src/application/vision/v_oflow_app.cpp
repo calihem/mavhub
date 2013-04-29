@@ -463,7 +463,7 @@ namespace mavhub {
 
   void V_OFLOWApp::visualize(cv::Mat img) {
     cv::Scalar color = CV_RGB(255,255,255);
-    const double scaleFactor = 2*img.cols/100;
+    const double scaleFactor = 2*img.cols/10;
     const int lineThickness = max(2, img.cols/300);
 	
     cv::Point p,q;

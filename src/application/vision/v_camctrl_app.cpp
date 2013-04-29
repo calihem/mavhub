@@ -426,6 +426,13 @@ namespace mavhub {
     gain = DataCenter::get_gain();
   }
 
+  // set from external signal, differential mode
+  void V_CAMCTRLApp::calcCamCtrlExternDiff() {
+    exposure += DataCenter::get_exposure();
+    contrast += DataCenter::get_contrast();
+    gain += DataCenter::get_gain();
+  }
+
   void V_CAMCTRLApp::calcCamCtrl() {
     static mavlink_message_t msg;
     static mavlink_debug_t dbg;
@@ -498,6 +505,9 @@ namespace mavhub {
     case 4:
       calcCamCtrlExtern();
       break;
+    case 4:
+      calcCamCtrlExternDiff();
+      break;
     default:
       calcCamCtrlMean();
       break;
@@ -546,7 +556,7 @@ namespace mavhub {
                                       component_id,
                                       &msg,
                                       &cam_state);
-    Logger::log(name(), "sending cam_state", cam_state.cam_index, Logger::LOGLEVEL_DEBUG);
+    // Logger::log(name(), "sending cam_state", cam_state.cam_index, Logger::LOGLEVEL_DEBUG);
     AppLayer<mavlink_message_t>::send(msg);
 
     // send binary data over mavlink
@@ -570,7 +580,7 @@ namespace mavhub {
                               component_id,
                               &msg,
                               &d64);
-    Logger::log(name(), "sending data64", (int)d64.type, Logger::LOGLEVEL_DEBUG);
+    // Logger::log(name(), "sending data64", (int)d64.type, Logger::LOGLEVEL_DEBUG);
     AppLayer<mavlink_message_t>::send(msg);
 		
 #ifdef HAVE_LIBOSCPACK

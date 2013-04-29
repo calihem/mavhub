@@ -200,6 +200,7 @@ namespace mavhub {
 		/// cam ctrl weighted histogram function
 		void calcCamCtrlWeightedHisto();
 		void calcCamCtrlExtern();
+		void calcCamCtrlExternDiff();
 		void preprocessImage(cv::Mat img);
 		void visualize(cv::Mat img_src, cv::Mat img);
 		// uint8_t getInterpolation(cv:Mat* inputImg, int im, double x, double y);
