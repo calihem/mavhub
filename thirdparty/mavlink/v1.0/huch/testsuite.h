@@ -1148,10 +1148,12 @@ static void mavlink_test_huch_sensor_array(uint8_t system_id, uint8_t component_
 	mavlink_huch_sensor_array_t packet_in = {
 		93372036854775807ULL,
 	{ 179.0, 180.0, 181.0, 182.0, 183.0, 184.0, 185.0, 186.0, 187.0, 188.0, 189.0, 190.0, 191.0, 192.0, 193.0, 194.0 },
+	157,
 	};
 	mavlink_huch_sensor_array_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.usec = packet_in.usec;
+        	packet1.subid = packet_in.subid;
         
         	mav_array_memcpy(packet1.data, packet_in.data, sizeof(double)*16);
         
@@ -1162,12 +1164,12 @@ static void mavlink_test_huch_sensor_array(uint8_t system_id, uint8_t component_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_huch_sensor_array_pack(system_id, component_id, &msg , packet1.usec , packet1.data );
+	mavlink_msg_huch_sensor_array_pack(system_id, component_id, &msg , packet1.usec , packet1.subid , packet1.data );
 	mavlink_msg_huch_sensor_array_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_huch_sensor_array_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.usec , packet1.data );
+	mavlink_msg_huch_sensor_array_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.usec , packet1.subid , packet1.data );
 	mavlink_msg_huch_sensor_array_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -1180,7 +1182,7 @@ static void mavlink_test_huch_sensor_array(uint8_t system_id, uint8_t component_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_huch_sensor_array_send(MAVLINK_COMM_1 , packet1.usec , packet1.data );
+	mavlink_msg_huch_sensor_array_send(MAVLINK_COMM_1 , packet1.usec , packet1.subid , packet1.data );
 	mavlink_msg_huch_sensor_array_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }

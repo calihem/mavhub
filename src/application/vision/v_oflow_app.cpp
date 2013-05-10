@@ -128,6 +128,15 @@ namespace mavhub {
     ma_pitch = new MA(1200, 0.);
     ma_roll = new MA(1200, 0.);
 
+    // init sensor_array structure
+    sensor_array_x.subid = 0;
+    sensor_array_y.subid = 1;
+    sensor_array_x.usec = 0;
+    sensor_array_y.usec = 0;
+    for(int i = 0; i < 16; i++) {
+      sensor_array_x.data[i] = 0.;
+      sensor_array_y.data[i] = 0.;
+    }
   }
 
   V_OFLOWApp::~V_OFLOWApp() {}
@@ -792,6 +801,12 @@ namespace mavhub {
     double _x = 0;
     double _y = 0;
 
+    int sectors_x = 4;
+    int sectors_y = 4;
+    int sector_width  = is_width  / sectors_x;
+    int sector_height = is_height / sectors_y;
+    int i, j;
+
     // velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
     // vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
 
@@ -802,8 +817,8 @@ namespace mavhub {
                         &cvvelx,
                         &cvvely);
 
-    for(int i = 0; i < is_width; i++) {
-      for(int j = 1; j < is_height - 1; j++) {
+    for(i = 0; i < is_width; i++) {
+      for(j = 1; j < is_height - 1; j++) {
         double u = cvGetReal2D(&cvvelx,j,i);
         double v = cvGetReal2D(&cvvely,j,i);
         double n = sqrt((double)(u*u + v*v));
@@ -832,6 +847,21 @@ namespace mavhub {
     // cout << "velY: " << velocity_y << endl;
     // cout << "_x: " << _x << endl;
     // cout << "_y: " << _y << endl;
+    for(i = 0; i < sectors_x; i++) {
+      for (j = 0; j < sectors_y; j++)
+        {
+          sensor_array_x.data[(i*sectors_y)+j] = getMeanVelXf(cvvelx,
+                                                         max(sector_width*i, 1),
+                                                         sector_width*(i+1)-1,
+                                                         max(sector_height*j, 1),
+                                                         sector_height*(j+1)-1);
+          sensor_array_y.data[(i*sectors_y)+j] = getMeanVelYf(cvvely,
+                                                         max(sector_width*i, 1),
+                                                         sector_width*(i+1)-1,
+                                                         max(sector_height*j, 1),
+                                                         sector_height*(j+1)-1);
+        }
+    }
     of_u = getMeanVelXf(cvvelx, 1, is_width-1, 1, is_height-1);
     of_v = getMeanVelYf(cvvely, 1, is_width-1, 1, is_height-1);
 
@@ -1443,6 +1473,17 @@ namespace mavhub {
                                               of_alt);
           }
 
+          AppLayer<mavlink_message_t>::send(msg);
+
+          mavlink_msg_huch_sensor_array_encode(system_id(),
+                                               component_id,
+                                               &msg,
+                                               &sensor_array_x);
+          AppLayer<mavlink_message_t>::send(msg);
+          mavlink_msg_huch_sensor_array_encode(system_id(),
+                                               component_id,
+                                               &msg,
+                                               &sensor_array_y);
           AppLayer<mavlink_message_t>::send(msg);
         }
         new_video_data = false;

@@ -113,7 +113,8 @@ namespace mavhub {
 
 		mavlink_huch_imu_raw_adc_t raw_adc_imu; /// for Gyro values
 		mavlink_huch_ctrl_hover_state_t hover_state; /// for altitude estimate
-		mavlink_huch_sensor_array_t sensor_array;
+		mavlink_huch_sensor_array_t sensor_array_x;
+		mavlink_huch_sensor_array_t sensor_array_y;
 
 		/// gyro moving average filter
 		MA *ma_pitch;
@@ -154,6 +155,8 @@ namespace mavhub {
 		void getOF_FirstOrder2();
 		void getOF_FirstOrder_Omni();
 		void getOF_LK();
+		virtual float getMeanVelXf(CvMat &vel, int x0, int x1, int y0, int y1) const;
+		virtual float getMeanVelYf(CvMat &vel, int x0, int x1, int y0, int y1) const;
 		void getOF_LK_Pyr();
 		void preprocessImage(cv::Mat img);
 		UnwrapSettings& defaultSettings();

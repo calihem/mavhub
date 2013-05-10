@@ -6,18 +6,20 @@ typedef struct __mavlink_huch_sensor_array_t
 {
  uint64_t usec; ///< timestamp in microseconds
  double data[16]; ///< 16-vector of generic double
+ uint8_t subid; ///< sub id
 } mavlink_huch_sensor_array_t;
 
-#define MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY_LEN 136
-#define MAVLINK_MSG_ID_221_LEN 136
+#define MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY_LEN 137
+#define MAVLINK_MSG_ID_221_LEN 137
 
 #define MAVLINK_MSG_HUCH_SENSOR_ARRAY_FIELD_DATA_LEN 16
 
 #define MAVLINK_MESSAGE_INFO_HUCH_SENSOR_ARRAY { \
 	"HUCH_SENSOR_ARRAY", \
-	2, \
+	3, \
 	{  { "usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_huch_sensor_array_t, usec) }, \
          { "data", NULL, MAVLINK_TYPE_DOUBLE, 16, 8, offsetof(mavlink_huch_sensor_array_t, data) }, \
+         { "subid", NULL, MAVLINK_TYPE_UINT8_T, 0, 136, offsetof(mavlink_huch_sensor_array_t, subid) }, \
          } \
 }
 
@@ -29,26 +31,29 @@ typedef struct __mavlink_huch_sensor_array_t
  * @param msg The MAVLink message to compress the data into
  *
  * @param usec timestamp in microseconds
+ * @param subid sub id
  * @param data 16-vector of generic double
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_huch_sensor_array_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
-						       uint64_t usec, const double *data)
+						       uint64_t usec, uint8_t subid, const double *data)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[136];
+	char buf[137];
 	_mav_put_uint64_t(buf, 0, usec);
+	_mav_put_uint8_t(buf, 136, subid);
 	_mav_put_double_array(buf, 8, data, 16);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 136);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 137);
 #else
 	mavlink_huch_sensor_array_t packet;
 	packet.usec = usec;
+	packet.subid = subid;
 	mav_array_memcpy(packet.data, data, sizeof(double)*16);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 136);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 137);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY;
-	return mavlink_finalize_message(msg, system_id, component_id, 136, 247);
+	return mavlink_finalize_message(msg, system_id, component_id, 137, 212);
 }
 
 /**
@@ -58,27 +63,30 @@ static inline uint16_t mavlink_msg_huch_sensor_array_pack(uint8_t system_id, uin
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
  * @param usec timestamp in microseconds
+ * @param subid sub id
  * @param data 16-vector of generic double
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_huch_sensor_array_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
 							   mavlink_message_t* msg,
-						           uint64_t usec,const double *data)
+						           uint64_t usec,uint8_t subid,const double *data)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[136];
+	char buf[137];
 	_mav_put_uint64_t(buf, 0, usec);
+	_mav_put_uint8_t(buf, 136, subid);
 	_mav_put_double_array(buf, 8, data, 16);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 136);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 137);
 #else
 	mavlink_huch_sensor_array_t packet;
 	packet.usec = usec;
+	packet.subid = subid;
 	mav_array_memcpy(packet.data, data, sizeof(double)*16);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 136);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 137);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 136, 247);
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 137, 212);
 }
 
 /**
@@ -91,7 +99,7 @@ static inline uint16_t mavlink_msg_huch_sensor_array_pack_chan(uint8_t system_id
  */
 static inline uint16_t mavlink_msg_huch_sensor_array_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_huch_sensor_array_t* huch_sensor_array)
 {
-	return mavlink_msg_huch_sensor_array_pack(system_id, component_id, msg, huch_sensor_array->usec, huch_sensor_array->data);
+	return mavlink_msg_huch_sensor_array_pack(system_id, component_id, msg, huch_sensor_array->usec, huch_sensor_array->subid, huch_sensor_array->data);
 }
 
 /**
@@ -99,22 +107,25 @@ static inline uint16_t mavlink_msg_huch_sensor_array_encode(uint8_t system_id, u
  * @param chan MAVLink channel to send the message
  *
  * @param usec timestamp in microseconds
+ * @param subid sub id
  * @param data 16-vector of generic double
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_huch_sensor_array_send(mavlink_channel_t chan, uint64_t usec, const double *data)
+static inline void mavlink_msg_huch_sensor_array_send(mavlink_channel_t chan, uint64_t usec, uint8_t subid, const double *data)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[136];
+	char buf[137];
 	_mav_put_uint64_t(buf, 0, usec);
+	_mav_put_uint8_t(buf, 136, subid);
 	_mav_put_double_array(buf, 8, data, 16);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY, buf, 136, 247);
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY, buf, 137, 212);
 #else
 	mavlink_huch_sensor_array_t packet;
 	packet.usec = usec;
+	packet.subid = subid;
 	mav_array_memcpy(packet.data, data, sizeof(double)*16);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY, (const char *)&packet, 136, 247);
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HUCH_SENSOR_ARRAY, (const char *)&packet, 137, 212);
 #endif
 }
 
@@ -131,6 +142,16 @@ static inline void mavlink_msg_huch_sensor_array_send(mavlink_channel_t chan, ui
 static inline uint64_t mavlink_msg_huch_sensor_array_get_usec(const mavlink_message_t* msg)
 {
 	return _MAV_RETURN_uint64_t(msg,  0);
+}
+
+/**
+ * @brief Get field subid from huch_sensor_array message
+ *
+ * @return sub id
+ */
+static inline uint8_t mavlink_msg_huch_sensor_array_get_subid(const mavlink_message_t* msg)
+{
+	return _MAV_RETURN_uint8_t(msg,  136);
 }
 
 /**
@@ -154,7 +175,8 @@ static inline void mavlink_msg_huch_sensor_array_decode(const mavlink_message_t*
 #if MAVLINK_NEED_BYTE_SWAP
 	huch_sensor_array->usec = mavlink_msg_huch_sensor_array_get_usec(msg);
 	mavlink_msg_huch_sensor_array_get_data(msg, huch_sensor_array->data);
+	huch_sensor_array->subid = mavlink_msg_huch_sensor_array_get_subid(msg);
 #else
-	memcpy(huch_sensor_array, _MAV_PAYLOAD(msg), 136);
+	memcpy(huch_sensor_array, _MAV_PAYLOAD(msg), 137);
 #endif
 }

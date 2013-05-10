@@ -181,8 +181,11 @@ float DenseOpticalFlow::getMeanVelXf(int x0, int x1, int y0, int y1) const {
 	// signed char vel;
 	float vel;
 
+        // printf("x0: %d, x1: %d, y0: %d, y1: %d\n", x0, x1, y0, y1);
 	for(int y=y0;y<y1;y++) {//for every row in range
 		for(int x=x0;x<x1;x++) {//for every col in range
+                  // printf("y, rows: %d, %d, x, cols: %d, %d\n", (unsigned)(y),
+                  //        (unsigned)(*velXf).rows, (unsigned)(x), (unsigned)(*velXf).cols);
 			vel = CV_MAT_ELEM(*velXf, float, y, x);
 			if(vel) {
 				num_x++;

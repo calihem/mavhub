@@ -133,6 +133,8 @@ namespace mavhub {
 
 		mavlink_huch_imu_raw_adc_t raw_adc_imu; /// for Gyro values
 		mavlink_huch_ctrl_hover_state_t hover_state; /// for altitude estimate
+		mavlink_huch_sensor_array_t sensor_array_x; // raw sensor array
+		mavlink_huch_sensor_array_t sensor_array_y; // raw sensor array
 
 		/// gyro moving average filter
 		MA *ma_pitch;
