@@ -32,6 +32,7 @@ int UART::open() {
 		//apply settings to serial interface
 		tcflush(fd, TCIFLUSH);
 		tcsetattr(fd, TCSANOW, &new_io_cfg);
+                Logger::log("opened", _name, Logger::LOGLEVEL_DEBUG);
 	}
 	return fd;
 }

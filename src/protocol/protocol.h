@@ -48,6 +48,9 @@ enum protocol_type_t {
 #ifdef HAVE_MKLINK_H
 	MKLINK,
 #endif // HAVE_MKLINK_H
+#ifdef HAVE_MSPLINK_H
+        MSPLINK, // MultiWii Serial Protocol
+#endif // HAVE_MSPLINK_H
 	UnknownProtocol
 };
 std::ostream& operator <<(std::ostream &os, const protocol_type_t &protocol_type);
@@ -78,5 +81,6 @@ int parse_byte(const uint8_t input, uint16_t &index, T &msg);
 #include "mavlink_protocol.h"
 #include "mkhuchlink_protocol.h"
 #include "mklink_protocol.h"
+#include "msplink_protocol.h" // MultiWii Serial Protocol
 
 #endif

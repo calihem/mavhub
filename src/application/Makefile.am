@@ -15,6 +15,7 @@ libapp_a_SOURCES = \
 	mavlink_mk_app.cpp \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
+	msp_app.cpp \
 	opengl_app.cpp \
 	slam_app.cpp \
 	vision/v_camctrl_app.cpp \

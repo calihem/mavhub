@@ -68,11 +68,13 @@ std::istream& operator >>(std::istream &is, LinkFactory::link_type_t &link_type)
 
 cpp_io::IOInterface* LinkFactory::build(const link_construction_plan_t &plan) {
 	cpp_io::IOInterface *layer(NULL);
-
+        Logger::log("building link interface", plan.link_type, Logger::LOGLEVEL_DEBUG);
+                                
 	switch(plan.link_type) {
 		case SerialLink:
 			try{
 				layer = new UART(plan.dev_name, UART::baudrate_to_speed(plan.baudrate) | CS8 | CLOCAL | CREAD);
+                                Logger::log("built layer", layer, Logger::LOGLEVEL_DEBUG);
 			}
 			catch(const std::exception& e) {
 				Logger::error(e.what());

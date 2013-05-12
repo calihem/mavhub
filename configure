@@ -9126,6 +9126,21 @@ fi
 
 done
 
+for ac_header in msplink.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "msplink.h" "ac_cv_header_msplink_h" "$ac_includes_default"
+if test "x$ac_cv_header_msplink_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_MSPLINK_H 1
+_ACEOF
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please specify header directory for msplink, e.g. configure CPPFLAGS=\"-I/home/user/msplink\" " >&5
+$as_echo "$as_me: WARNING: Please specify header directory for msplink, e.g. configure CPPFLAGS=\"-I/home/user/msplink\" " >&2;}
+fi
+
+done
+
 for ac_header in libgpsmm.h
 do :
   ac_fn_cxx_check_header_mongrel "$LINENO" "libgpsmm.h" "ac_cv_header_libgpsmm_h" "$ac_includes_default"

@@ -101,6 +101,7 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netdb.h netinet/in.h strings.h 
 AC_CHECK_HEADERS([mavlink.h], , [AC_MSG_WARN( [Please specify header directory for mavlink, e.g. configure CPPFLAGS="-I/home/user/mavlink/include/huch"] )])
 AC_CHECK_HEADERS([mkhuchlink.h], , [AC_MSG_WARN( [Please specify header directory for mkhuchlink, e.g. configure CPPFLAGS="-I/home/user/mkhuchlink"] )])
 AC_CHECK_HEADERS([mklink.h], , [AC_MSG_WARN( [Please specify header directory for mklink, e.g. configure CPPFLAGS="-I/home/user/mklink"] )])
+AC_CHECK_HEADERS([msplink.h], , [AC_MSG_WARN( [Please specify header directory for msplink, e.g. configure CPPFLAGS="-I/home/user/msplink"] )])
 AC_CHECK_HEADERS([libgpsmm.h], , [AC_MSG_WARN([libgps not installed in system - needed for ctrl_wifimeter_app])])
 AC_CHECK_HEADERS([GL/glut.h GL/freeglut.h], AM_CONDITIONAL(COND_OPENGL, true) , [AM_CONDITIONAL(COND_OPENGL, false) AC_MSG_WARN([OpenGL headers not found])])
 AC_CHECK_HEADERS([Ivy/ivy.h], , [AC_MSG_WARN( [Please specify header directory for ivy, e.g. configure CPPFLAGS="-I/home/user/ivy-c"] )])

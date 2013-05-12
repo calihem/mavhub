@@ -93,6 +93,9 @@
 /* Support mmx instructions */
 #undef HAVE_MMX
 
+/* Define to 1 if you have the <msplink.h> header file. */
+#undef HAVE_MSPLINK_H
+
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 

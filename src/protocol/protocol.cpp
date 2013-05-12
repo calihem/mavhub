@@ -2,9 +2,12 @@
 #include "core/logger.h"
 #include <algorithm> //transform
 
+#include <stdio.h>
+
 namespace mavhub {
 
 std::ostream& operator <<(std::ostream &os, const protocol_type_t &protocol_type) {
+  // Logger::log(protocol_type, Logger::LOGLEVEL_DEBUG);
 	switch(protocol_type) {
 #ifdef HAVE_MAVLINK_H
 		case MAVLINK:
@@ -21,6 +24,12 @@ std::ostream& operator <<(std::ostream &os, const protocol_type_t &protocol_type
 			os << "mklink";
 			break;
 #endif // HAVE_MKLINK_H
+#ifdef HAVE_MSPLINK_H
+		case MSPLINK:
+			os << "msplink";
+                        // Logger::log("msplink", Logger::LOGLEVEL_DEBUG);
+			break;
+#endif // HAVE_MSPLINK_H
 		default:
 			os << "unknown";
 			break;
@@ -58,12 +67,19 @@ std::istream& operator >>(std::istream &is, protocol_type_t &protocol_type) {
 				protocol_type = MKLINK;
 			} else
 #endif // HAVE_MKLINK_H
+#ifdef HAVE_MSPLINK_H
+			if(protocol_type_str == "msp"
+			|| protocol_type_str == "msplink" ) {
+				protocol_type = MSPLINK;
+			} else
+#endif // HAVE_MSPLINK_H
 			{ }
 			break;
 		default:
 			break;
 	}
 
+        fprintf(stdout, "%d\n", protocol_type);
 	return is;
 }
 

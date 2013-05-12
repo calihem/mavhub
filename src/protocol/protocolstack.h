@@ -330,7 +330,8 @@ void ProtocolStack<T>::read(const fd_set &fds) {
 
 template <class T>
 int ProtocolStack<T>::add_link(cpp_io::IOInterface *interface) {
-	if(!interface) return -1;
+  Logger::log(typeid(*this).name(), "enter add link", interface->name(), Logger::LOGLEVEL_DEBUG, loglevel());
+  if(!interface) return -1;
 
 	if(!interface->is_open()) {
 		Logger::log(typeid(*this).name(), "link", interface->name(), "is not ready", Logger::LOGLEVEL_WARN, loglevel());

@@ -115,6 +115,9 @@ void read_settings(Setting &settings) {
 #ifdef HAVE_MKLINK_H
 				ProtocolStack<mk_message_t>::instance().loglevel(loglevel);
 #endif // HAVE_MKLINK_H
+#ifdef HAVE_MSPLINK_H
+				ProtocolStack<msp_message_t>::instance().loglevel(loglevel);
+#endif // HAVE_MSPLINK_H
 		}
 		settings.end_group();
 	}
@@ -189,29 +192,38 @@ void add_links(const list<string> link_list, Setting &settings) {
 		}
 
 		cpp_io::IOInterface *layer = LinkFactory::build(link_construction_plan);
+                Logger::log("Constructed", layer, Logger::LOGLEVEL_WARN);
 		if(!layer) {
 			Logger::log("Construction of", *link_iter, "failed", Logger::LOGLEVEL_WARN);
 			continue;
 		}
 		switch(link_construction_plan.protocol_type) {
 #ifdef HAVE_MAVLINK_H
-			case MAVLINK:
-				ProtocolStack<mavlink_message_t>::instance().add_link(layer);
-				break;
+                case MAVLINK:
+                  ProtocolStack<mavlink_message_t>::instance().add_link(layer);
+                  break;
 #endif // HAVE_MAVLINK_H
 #ifdef HAVE_MKHUCHLINK_H
-			case MKHUCHLINK:
-				ProtocolStack<mkhuch_message_t>::instance().add_link(layer);
-				break;
+                case MKHUCHLINK:
+                  ProtocolStack<mkhuch_message_t>::instance().add_link(layer);
+                  break;
 #endif // HAVE_MKHUCHLINK_H
 #ifdef HAVE_MKLINK_H
-			case MKLINK:
-				ProtocolStack<mk_message_t>::instance().add_link(layer);
-				break;
+                case MKLINK:
+                  ProtocolStack<mk_message_t>::instance().add_link(layer);
+                  break;
 #endif // HAVE_MKLINK_H
+#ifdef HAVE_MSPLINK_H
+                case MSPLINK:
+                  int r;
+                  Logger::log("Adding MSPLINK IF", Logger::LOGLEVEL_DEBUG);
+                  r = ProtocolStack<msp_message_t>::instance().add_link(layer);
+                  Logger::log("Added MSPLINK?", r, Logger::LOGLEVEL_DEBUG);
+                  break;
+#endif // HAVE_MSPLINK_H
 
 			default:
-				Logger::log("Adding of", *link_iter, "failed, due to unkwnown protocol type", Logger::LOGLEVEL_DEBUG);
+				Logger::log("Adding of", *link_iter, "failed, due to unknown protocol type", Logger::LOGLEVEL_DEBUG);
 				break;
 		} // end switch
 		link_construction_plan.clear();

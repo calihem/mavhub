@@ -76,9 +76,9 @@ libprotocol_a_AR = $(AR) $(ARFLAGS)
 libprotocol_a_LIBADD =
 am_libprotocol_a_OBJECTS = protocol.$(OBJEXT) \
 	mavlink_protocol.$(OBJEXT) mkhuchlink_protocol.$(OBJEXT) \
-	mklink_protocol.$(OBJEXT) protocollayer.$(OBJEXT) \
-	protocolstack.$(OBJEXT) link_factory.$(OBJEXT) \
-	mkpackage.$(OBJEXT)
+	mklink_protocol.$(OBJEXT) msplink_protocol.$(OBJEXT) \
+	protocollayer.$(OBJEXT) protocolstack.$(OBJEXT) \
+	link_factory.$(OBJEXT) mkpackage.$(OBJEXT)
 libprotocol_a_OBJECTS = $(am_libprotocol_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -257,6 +257,7 @@ libprotocol_a_SOURCES = \
 	mavlink_protocol.cpp \
 	mkhuchlink_protocol.cpp \
 	mklink_protocol.cpp \
+	msplink_protocol.cpp \
 	protocollayer.cpp \
 	protocolstack.cpp \
 	link_factory.cpp \
@@ -316,6 +317,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkhuchlink_protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mklink_protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkpackage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msplink_protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocollayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocolstack.Po@am__quote@

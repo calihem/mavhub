@@ -83,7 +83,7 @@ host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/am/am_incl_doxygen.am \
-	$(top_srcdir)/configure AUTHORS COPYING INSTALL \
+	$(top_srcdir)/configure AUTHORS COPYING INSTALL TODO \
 	auxdir/config.guess auxdir/config.sub auxdir/depcomp \
 	auxdir/install-sh auxdir/missing
 subdir = .

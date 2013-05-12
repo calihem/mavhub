@@ -10,6 +10,7 @@ libprotocol_a_SOURCES = \
 	mavlink_protocol.cpp \
 	mkhuchlink_protocol.cpp \
 	mklink_protocol.cpp \
+	msplink_protocol.cpp \
 	protocollayer.cpp \
 	protocolstack.cpp \
 	link_factory.cpp \

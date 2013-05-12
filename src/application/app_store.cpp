@@ -26,6 +26,7 @@
 #include "mavlink_mk_app.h"
 #include "mavlink_mkhuch_app.h"
 #include "mk_app.h"
+#include "msp_app.h"
 #include "acc_calibration_app/acc_calibration_app.h"
 #include "attitude_filter_app/attitude_filter_app.h"
 #include "opengl_app.h"
@@ -342,6 +343,20 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		Logger::log("AppStore: added mavlink_mkhuch_app to ProtocolStack<mavlink_message_t>", Logger::LOGLEVEL_DEBUG);
 		return rc;
 #endif // HAVE_MKHUCHLINK_H
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "msp_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_MSPLINK_H
+          MSPApp *msp_app = new MSPApp(loglevel);
+
+          int rc = ProtocolStack<mavlink_message_t>::instance().add_application(msp_app);
+          if (!rc)
+            return ProtocolStack<msp_message_t>::instance().add_application(msp_app);
+          else
+            Logger::log("AppStore: failed to add msp_app to ProtocolStack<mavlink_message_t>", Logger::LOGLEVEL_WARN);
+          Logger::log("AppStore: added msp_app to ProtocolStack<mavlink_message_t>", Logger::LOGLEVEL_DEBUG);
+          return rc;
+#endif // HAVE_MSPLINK_H
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "mk_app") {
 #ifdef HAVE_MAVLINK_H
