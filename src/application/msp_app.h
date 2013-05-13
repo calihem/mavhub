@@ -57,7 +57,11 @@ namespace mavhub {
 // 			uint8_t parameter_request;
 			/// Time of last parameter answer from MSP
 // 			uint64_t parameter_time;
+                        /// pre-packed heartbeat message
                         mavlink_message_t heartbeat_msg;
+                        /// msp2mavlink message
+                        mavlink_message_t mavmsg;
+                        int run_cnt;
 
 // 			using AppLayer::send;
 // 			void send_heartbeat();
