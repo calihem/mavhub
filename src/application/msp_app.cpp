@@ -512,15 +512,18 @@ namespace mavhub {
 
       // send some rc data
       if((run_cnt % 1 == 0) && ((run_cnt/100) % 2 == 0)) {
-        roll = (uint16_t)((((float)rand())/RAND_MAX) * 1000.) + 1000;
-        pitch = (uint16_t)((((float)rand())/RAND_MAX) * 1000.) + 1000;
+        roll  = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
+        pitch = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
         // yaw = (uint16_t)((rand()/RAND_MAX) * 1000) + 1000;
         // throttle = (uint16_t)((rand()/RAND_MAX) * 1000) + 1000;
+        throttle = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1200;
         Logger::log(name(), "roll, pitch", roll, pitch, Logger::LOGLEVEL_DEBUG);
         rc.roll = roll;
         rc.pitch = pitch;
         rc.yaw = yaw;
         rc.throttle = throttle;
+        rc.aux1 = 2000;
+        rc.aux2 = 1500;
         msplink_msg_encode(&msp_msg, MSP_SET_RAW_RC,
                            &rc, 16);
         // msp_msg.len = 0;
