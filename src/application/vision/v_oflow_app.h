@@ -171,6 +171,7 @@ namespace mavhub {
 		int initModel(of_algorithm algo);
 		int initModels();
 		void calcFlow();
+		void calcESN();
 		// void load_calibration_data(const std::string &filename);
 		void getOF_FirstOrder();
 		void getOF_FirstOrder2();

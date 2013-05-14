@@ -321,8 +321,8 @@ namespace mavhub {
     // e_mean = params["cam_sp"] - mean;
     // exposure = exposure + (e_mean * 1.0);
     exposure = exposure + pid_cam->calc(0.1, mean);
-    Logger::log(name(), "exposure: ", exposure, Logger::LOGLEVEL_DEBUG);
-    Logger::log(name(), "mean, sp: ", mean, pid_cam->getSp(), Logger::LOGLEVEL_DEBUG);
+    // Logger::log(name(), "exposure: ", exposure, Logger::LOGLEVEL_DEBUG);
+    // Logger::log(name(), "mean, sp: ", mean, pid_cam->getSp(), Logger::LOGLEVEL_DEBUG);
     contrast = 32;
   }
 

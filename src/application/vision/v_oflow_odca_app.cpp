@@ -184,6 +184,11 @@ namespace mavhub {
     return 0;
   }
 
+  void V_OFLOWOdcaApp::calcESN() {
+    printf("dx: %f\n", sensor_array_x.data[0]);
+    printf("dx: %f\n", sensor_array_y.data[0]);
+  }
+
   void V_OFLOWOdcaApp::calcFlow() {
     //FIXME: remove benchmark
     //uint64_t start_time = get_time_ms();
@@ -1241,6 +1246,8 @@ namespace mavhub {
           calcFlow();
           // Logger::log(name(), ": of_u, of_v", of_u, of_v, Logger::LOGLEVEL_DEBUG);
 
+          // test matrix/vector stuff for neural networks
+          calcESN();
           // differentiate from angle: bad
           // imu_pitch = attitude.pitch;
           // imu_roll = attitude.roll;

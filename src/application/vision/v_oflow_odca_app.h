@@ -149,6 +149,7 @@ namespace mavhub {
 		/* 		cv::Mat translation_vector; */
 
 		int initModel(of_algorithm algo);
+		void calcESN();
 		void calcFlow();
 		// void load_calibration_data(const std::string &filename);
 		void getOF_FirstOrder();

@@ -196,6 +196,12 @@ namespace mavhub {
     return 0;
   }
 
+  void V_OFLOWApp::calcESN() {
+    printf("dx: %f\n", sensor_array_x.data[0]);
+    printf("dy: %f\n", sensor_array_y.data[0]);
+
+  }
+
   void V_OFLOWApp::calcFlow() {
     //FIXME: remove benchmark
 
@@ -1310,6 +1316,7 @@ namespace mavhub {
           {
             // Lock sync_lock(sync_mutex);
             calcFlow();
+            calcESN();
           }
           // log(name(), "run, post flow", Logger::LOGLEVEL_DEBUG);
 

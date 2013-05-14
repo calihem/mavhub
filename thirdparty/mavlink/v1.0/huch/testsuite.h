@@ -1740,6 +1740,55 @@ static void mavlink_test_huch_cam_cmd(uint8_t system_id, uint8_t component_id, m
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_huch_visual_oflow_sen(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_huch_visual_oflow_sen_t packet_in = {
+		17.0,
+	45.0,
+	73.0,
+	41,
+	};
+	mavlink_huch_visual_oflow_sen_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.u = packet_in.u;
+        	packet1.v = packet_in.v;
+        	packet1.squal = packet_in.squal;
+        	packet1.id = packet_in.id;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_visual_oflow_sen_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_huch_visual_oflow_sen_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_visual_oflow_sen_pack(system_id, component_id, &msg , packet1.id , packet1.u , packet1.v , packet1.squal );
+	mavlink_msg_huch_visual_oflow_sen_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_visual_oflow_sen_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.id , packet1.u , packet1.v , packet1.squal );
+	mavlink_msg_huch_visual_oflow_sen_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_huch_visual_oflow_sen_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_huch_visual_oflow_sen_send(MAVLINK_COMM_1 , packet1.id , packet1.u , packet1.v , packet1.squal );
+	mavlink_msg_huch_visual_oflow_sen_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_mk_debugout(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -1819,6 +1868,7 @@ static void mavlink_test_huch(uint8_t system_id, uint8_t component_id, mavlink_m
 	mavlink_test_huch_action(system_id, component_id, last_msg);
 	mavlink_test_huch_cam_state(system_id, component_id, last_msg);
 	mavlink_test_huch_cam_cmd(system_id, component_id, last_msg);
+	mavlink_test_huch_visual_oflow_sen(system_id, component_id, last_msg);
 	mavlink_test_mk_debugout(system_id, component_id, last_msg);
 }
 

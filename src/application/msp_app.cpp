@@ -126,7 +126,12 @@ namespace mavhub {
     AppInterface("msp_app", loglevel),
     AppLayer<mavlink_message_t>("msp_app", loglevel),
     AppLayer<msp_message_t>("msp_app", loglevel),
-    run_cnt(0)
+    run_cnt(0),
+    u_i(0.0), v_i(0.0),
+    u(0.0), v(0.0),
+    gyw_x(0.005), gyw_y(-0.005),
+    Kc_x(1.0), Ti_x(0.001), Td_x(4),
+    Kc_y(1.0), Ti_y(0.001), Td_y(4)
     // 	msp_dev(serial_port, UART::baudrate_to_speed(baudrate) | CS8 | CLOCAL | CREAD),
     // 	message_time( get_time_us() ),
     // 	attitude_time( get_time_us() ),
@@ -154,8 +159,15 @@ namespace mavhub {
 
   void MSPApp::handle_input(const mavlink_message_t &msg) {
     log("MSPApp got mavlink_message", static_cast<int>(msg.msgid), Logger::LOGLEVEL_DEBUG);
+    switch(msg.msgid) {
+    case MAVLINK_MSG_ID_HUCH_VISUAL_FLOW:
+      u = mavlink_msg_huch_visual_flow_get_u(&msg);
+      v = mavlink_msg_huch_visual_flow_get_v(&msg);
+      squal = mavlink_msg_huch_visual_flow_get_u_i(&msg);
+      u_i += ((u * 0.01) - (gyw_y * gy));
+      v_i += ((v * 0.01) - (gyw_x * gx));
+      break;
     /*
-      switch(msg.msgid) {
       case MAVLINK_MSG_ID_PING: {
       mavlink_ping_t ping;
       mavlink_msg_ping_decode(&msg, &ping);
@@ -238,10 +250,10 @@ namespace mavhub {
       action.id = mavlink_msg_action_get_action(&msg);
       send(MSP_MSG_TYPE_ACTION, &action, sizeof(msp_action_t));
       }
+      break;*/
+    default:
       break;
-      default:
-      break;
-      }*/
+    }
   }
 
   void MSPApp::handle_input(const msp_message_t& msg) {
@@ -512,11 +524,15 @@ namespace mavhub {
 
       // send some rc data
       if((run_cnt % 1 == 0) && ((run_cnt/100) % 2 == 0)) {
-        roll  = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
-        pitch = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
+        // roll  = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
+        // pitch = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1500;
         // yaw = (uint16_t)((rand()/RAND_MAX) * 1000) + 1000;
         // throttle = (uint16_t)((rand()/RAND_MAX) * 1000) + 1000;
-        throttle = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1200;
+        // throttle = (uint16_t)(((((float)rand())/RAND_MAX)-0.5) * 200.) + 1200;
+        roll = (v_i * Kc_x) + 1500;
+        pitch = (v_i * Kc_x) + 1500;
+        // FIXME: limit output, use full PID, output mask, setpoints,
+        //        proper struct for oflow sensor including squal, 
         Logger::log(name(), "roll, pitch", roll, pitch, Logger::LOGLEVEL_DEBUG);
         rc.roll = roll;
         rc.pitch = pitch;
