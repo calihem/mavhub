@@ -347,7 +347,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 	} else if(lowercase_name == "msp_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_MSPLINK_H
-          MSPApp *msp_app = new MSPApp(loglevel);
+          MSPApp *msp_app = new MSPApp(args, loglevel);
 
           int rc = ProtocolStack<mavlink_message_t>::instance().add_application(msp_app);
           if (!rc)

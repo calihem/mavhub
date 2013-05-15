@@ -8,6 +8,7 @@
 #include "utility.h"
 
 using namespace cpp_pthread;
+using namespace std;
 
 namespace mavhub {
 
@@ -122,7 +123,8 @@ namespace mavhub {
   };
 
 
-  MSPApp::MSPApp(const Logger::log_level_t loglevel) :
+  MSPApp::MSPApp(const map<string, string> args,
+                 const Logger::log_level_t loglevel) :
     AppInterface("msp_app", loglevel),
     AppLayer<mavlink_message_t>("msp_app", loglevel),
     AppLayer<msp_message_t>("msp_app", loglevel),
@@ -153,6 +155,7 @@ namespace mavhub {
                                MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,	//base mode
                                0,	//custom mode
                                MAV_STATE_ACTIVE);	//system status
+    read_conf(args);
   }
 
   MSPApp::~MSPApp() {}
@@ -633,6 +636,59 @@ namespace mavhub {
 	}*/
   // 	return -1;
   // }
+  void MSPApp::read_conf(const map<string, string> args) {
+    map<string,string>::const_iterator iter;
+
+    // iter = args.find("component_id");
+    // if( iter != args.end() ) {
+    //   istringstream s(iter->second);
+    //   s >> component_id;
+    // }
+
+    // PID x component
+    iter = args.find("pid_Kc_x");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Kc_x"];
+    }
+    iter = args.find("pid_Ti_x");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Ti_x"];
+    }
+    iter = args.find("pid_Td_x");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Td_x"];
+    }
+    iter = args.find("of_gyw_y");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["of_gyw_y"];
+    }
+
+    // PID y component
+    iter = args.find("pid_Kc_y");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Kc_y"];
+    }
+    iter = args.find("pid_Ti_y");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Ti_y"];
+    }
+    iter = args.find("pid_Td_y");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Td_y"];
+    }
+    iter = args.find("of_gyw_x");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["of_gyw_x"];
+    }
+  }
 
 } // namespace mavhub
 

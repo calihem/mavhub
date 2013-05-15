@@ -24,7 +24,8 @@ namespace mavhub {
   public:
     static const int component_id = 25;
 
-    MSPApp(const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
+    MSPApp(const std::map<std::string, std::string>,
+           const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);
     virtual ~MSPApp();
 
     virtual void handle_input(const mavlink_message_t &msg);
@@ -72,20 +73,26 @@ namespace mavhub {
     float Kc_y, Ti_y, Td_y;
     float squal;
     float gx, gy;
+    // params
+    /// request
+    int param_request_list;
+    /// param container
+    std::map<std::string, double> params;
     
-      // 			using AppLayer::send;
-      // 			void send_heartbeat();
-      // 			void send_mavlink_param_value(const msp_param_type_t param_type);
-      // 			const uint8_t get_parameter(const msp_param_type_t param_type) const;
-      // 			const int8_t* get_parameter_id(const msp_param_type_t param_type) const;
-      // 			const int parameter_id_to_index(const int8_t *parameter_id);
-      /// Send msp message over MSP device
-      // 			size_t send(const msp_message_t& msg);
-      /// Send msp data over MSP device
-      // 			size_t send(const msp_msg_type_t type, const void *data, const uint8_t size);
-      /// Method to handle input from MSP
-      // 			void handle_input(const msp_message_t& msg);
-      };
+    // 			using AppLayer::send;
+    // 			void send_heartbeat();
+    // 			void send_mavlink_param_value(const msp_param_type_t param_type);
+    // 			const uint8_t get_parameter(const msp_param_type_t param_type) const;
+    // 			const int8_t* get_parameter_id(const msp_param_type_t param_type) const;
+    // 			const int parameter_id_to_index(const int8_t *parameter_id);
+    /// Send msp message over MSP device
+    // 			size_t send(const msp_message_t& msg);
+    /// Send msp data over MSP device
+    // 			size_t send(const msp_msg_type_t type, const void *data, const uint8_t size);
+    /// Method to handle input from MSP
+    // 			void handle_input(const msp_message_t& msg);
+    virtual void read_conf(const std::map<std::string, std::string> args);
+  };
 
   // ----------------------------------------------------------------------------
   // MSPApp
