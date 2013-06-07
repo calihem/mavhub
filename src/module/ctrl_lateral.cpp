@@ -93,50 +93,50 @@ namespace mavhub {
 #endif // MAVLINK_ENABLED_HUCH	
 
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-			Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
-			if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
-				param_request_list = 1;
-			}
-			break;
+                  Logger::log("Ctrl_Lateral::handle_input: PARAM_REQUEST_LIST", Logger::LOGLEVEL_INFO);
+                  if(mavlink_msg_param_request_list_get_target_system (&msg) == system_id()) {
+                    param_request_list = 1;
+                  }
+                  break;
 		case MAVLINK_MSG_ID_PARAM_SET:
-			if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
-				Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
-				if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
-					Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
-					mavlink_msg_param_set_get_param_id(&msg, param_id);
-					Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for param_id", param_id, Logger::LOGLEVEL_INFO);
+                  if(mavlink_msg_param_set_get_target_system(&msg) == system_id()) {
+                    Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this system", (int)system_id(), Logger::LOGLEVEL_INFO);
+                    if(mavlink_msg_param_set_get_target_component(&msg) == component_id) {
+                      Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for this component", (int)component_id, Logger::LOGLEVEL_INFO);
+                      mavlink_msg_param_set_get_param_id(&msg, param_id);
+                      Logger::log("Ctrl_Lateral::handle_input: PARAM_SET for param_id", param_id, Logger::LOGLEVEL_INFO);
 
-					typedef map<string, double>::const_iterator ci;
-					for(ci p = params.begin(); p!=params.end(); ++p) {
-						// Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-						if(!strcmp(p->first.data(), (const char *)param_id)) {
-							params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
-							Logger::log("x Ctrl_Lateral::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
-						}
-					}
+                      typedef map<string, double>::const_iterator ci;
+                      for(ci p = params.begin(); p!=params.end(); ++p) {
+                        // Logger::log("ctrl_zrate param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+                        if(!strcmp(p->first.data(), (const char *)param_id)) {
+                          params[p->first] = mavlink_msg_param_set_get_param_value(&msg);
+                          Logger::log("x Ctrl_Lateral::handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_INFO);
+                        }
+                      }
 
-					// update PID controllers
-					pid_pitch->setKc(params["pitch_Kc"]);
-					pid_roll->setKc(params["roll_Kc"]);
-					pid_pitch->setTi(params["pitch_Ti"]);
-					pid_roll->setTi(params["roll_Ti"]);
-					pid_pitch->setTd(params["pitch_Td"]);
-					pid_roll->setTd(params["roll_Td"]);
-					pid_pitch->setBias(params["pitch_bias"]);
-					pid_roll->setBias(params["roll_bias"]);
-					pid_pitch->setSp(params["pitch_sp"]);
-					pid_roll->setSp(params["roll_sp"]);
+                      // update PID controllers
+                      pid_pitch->setKc(params["pitch_Kc"]);
+                      pid_roll->setKc(params["roll_Kc"]);
+                      pid_pitch->setTi(params["pitch_Ti"]);
+                      pid_roll->setTi(params["roll_Ti"]);
+                      pid_pitch->setTd(params["pitch_Td"]);
+                      pid_roll->setTd(params["roll_Td"]);
+                      pid_pitch->setBias(params["pitch_bias"]);
+                      pid_roll->setBias(params["roll_bias"]);
+                      pid_pitch->setSp(params["pitch_sp"]);
+                      pid_roll->setSp(params["roll_sp"]);
 
-					// if(!strcmp("prm_test_pitch", (const char *)param_id)) {
-					// 	prm_test_pitch = (int)mavlink_msg_param_set_get_param_value(&msg);
-					// 	Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_pitch", prm_test_pitch, Logger::LOGLEVEL_INFO);
-					// }	else if(!strcmp("prm_yaw_P", (const char *)param_id)) {
-					// 	prm_yaw_P = (double)mavlink_msg_param_set_get_param_value(&msg);
-					// 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for prm_yaw_P", prm_yaw_P, Logger::LOGLEVEL_INFO);
-					// }
-				}
-			}
-			break;
+                      // if(!strcmp("prm_test_pitch", (const char *)param_id)) {
+                      // 	prm_test_pitch = (int)mavlink_msg_param_set_get_param_value(&msg);
+                      // 	Logger::log("Ctrl_Lateral::handle_input: PARAM_SET request for prm_test_pitch", prm_test_pitch, Logger::LOGLEVEL_INFO);
+                      // }	else if(!strcmp("prm_yaw_P", (const char *)param_id)) {
+                      // 	prm_yaw_P = (double)mavlink_msg_param_set_get_param_value(&msg);
+                      // 	Logger::log("Ctrl_Hover::handle_input: PARAM_SET request for prm_yaw_P", prm_yaw_P, Logger::LOGLEVEL_INFO);
+                      // }
+                    }
+                  }
+                  break;
 
 		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
 			rc2 = mavlink_msg_rc_channels_raw_get_chan2_raw(&msg);
