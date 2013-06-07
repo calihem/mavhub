@@ -584,6 +584,23 @@ namespace mavhub {
       // pitch = u_i * Kc_x) + 1500;
       pitchf = pid_pitch->calc(0.02, u_i);
 
+	if(pitchf > params["pitch_limit"]) {
+		pitchf = params["pitch_limit"];
+		pid_pitch->setIntegralM1();
+	}
+	if(pitchf < -params["pitch_limit"]) {
+		pitchf = -params["pitch_limit"];
+		pid_pitch->setIntegralM1();
+	}
+	if(rollf > params["roll_limit"]) {
+		rollf = params["roll_limit"];
+		pid_roll->setIntegralM1();
+	}
+	if(rollf < -params["roll_limit"]) {
+		rollf = -params["roll_limit"];
+		pid_roll->setIntegralM1();
+	}
+
       // debug output
       send_debug(&mavlink_msg, &dbg, 0, u_i);
       send_debug(&mavlink_msg, &dbg, 1, v_i);
@@ -757,10 +774,15 @@ namespace mavhub {
     }
 
     // PID limit
-    iter = args.find("pid_limit");
+    iter = args.find("pitch_limit");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pid_limit"];
+      s >> params["pitch_limit"];
+    }
+    iter = args.find("roll_limit");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["roll_limit"];
     }
 
     // reset integral
