@@ -10,7 +10,7 @@
 #include <list>
 #include <math.h> //pow
 #include <iostream> //cout
-
+#include <stdio.h>
 using namespace std;
 
 namespace mavhub {
@@ -109,6 +109,9 @@ namespace mavhub {
 		uint64_t start = get_time_us();
 		uint64_t time_output = start + 1000000;
 		uint64_t usec;
+		//float avg;
+		//float avgd;
+		//uint64_t n;
 
 		MEDIAN filt_med(5);
 
@@ -138,8 +141,8 @@ namespace mavhub {
 				uint64_t end = usec;
 				wait_time = waitFreq[update_rate] - (end - start);
 				wait_time = (wait_time < 0)? 0: wait_time;
-				//Logger::log("sensrf02 frequency: ", frequency, Logger::LOGLEVEL_INFO);
-				//Logger::log("sensrf02 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
+				Logger::log("sensrf02 frequency: ", frequency, Logger::LOGLEVEL_INFO);
+				Logger::log("sensrf02 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
 		
 				/* wait */
 				usleep(wait_time);
@@ -163,6 +166,43 @@ namespace mavhub {
 					// use raw value
 #ifdef MAVLINK_ENABLED_HUCH
 					sensor_data[0].distance = get_range();
+
+				/*	while ((sensor_data[0].distance < (avg*0.9) or sensor_data[0].distance > (avg*0.9)) and n !=20 and (sensor_data[0].distance < (avgd*0.9) or sensor_data[0].distance > (avgd*0.9))){
+					
+						start_ranging();
+
+	                        	        i2c_end_conversion(fd);
+
+        	                       		// wait time 
+                	               		usec = get_time_us();
+                        	      		uint64_t end = usec;
+                               	 		wait_time = waitFreq[update_rate] - (end - start);
+                               	 		wait_time = (wait_time < 0)? 0: wait_time;
+
+                               	 		// wait 
+                               	 		usleep(wait_time);
+
+                               	 		// calculate frequency 
+                               	 		end = get_time_us();
+                               	 		frequency = (15 * frequency + end - start) / 16;
+                               	 		start = end;
+
+                               	 		// get data 
+                               	 		i2c_start_conversion(fd, SRF02_ADR);
+
+						sensor_data[0].distance = get_range();
+						avgd = (sensor_data[0].distance + avgd)/2;
+						n++;
+						//printf("hhhhhhhhhhhhhhhhhhhh%f\n",sensor_data[0].distance);
+					//	avgd = (avgd<1)?1:avgd;
+					}; 
+						
+					avg = (sensor_data[0].distance + avg)/2;
+				//	avg = (avg<1)?1:avg;
+					if (n =20) {avg=avgd;};*/
+					printf("jj%f\n",sensor_data[0].distance);
+				//	printf("%f\n",avg);
+				//	printf("%d\n",wait_time);
 #endif // MAVLINK_ENABLED_HUCH
 					//Logger::log("sensrf02 data acquired", Logger::LOGLEVEL_INFO);
 					publish_data(start);
@@ -264,7 +304,7 @@ namespace mavhub {
 	void SenSrf02::start_ranging() {
 		uint8_t buffer[2];
 		buffer[0] = SRF02_REG_WR_CMD; // command register
-		buffer[1] = SRF02_CMD_STARTRNG_SPEC; // in us
+		buffer[1] =0x51;//0x50 in inch  //0x51 in cm //0x52 in micro sekunden// SRF02_CMD_STARTRNG_SPEC; // in us
 		i2c_write_bytes(fd, (uint8_t *)buffer, 2);
 		return;
 	}

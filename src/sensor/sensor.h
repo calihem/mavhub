@@ -1,7 +1,7 @@
 #ifndef _SENSOR_H_
 #define _SENSOR_H_
 
-#include "lib/hub/thread.h"
+#include "../lib/hub/thread.h"
 
 // sensor typ definitions
 #define ALTITUDE_SENSOR		0x115
