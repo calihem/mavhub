@@ -141,8 +141,8 @@ namespace mavhub {
 				uint64_t end = usec;
 				wait_time = waitFreq[update_rate] - (end - start);
 				wait_time = (wait_time < 0)? 0: wait_time;
-				Logger::log("sensrf02 frequency: ", frequency, Logger::LOGLEVEL_INFO);
-				Logger::log("sensrf02 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
+				// Logger::log("sensrf02 frequency: ", frequency, Logger::LOGLEVEL_INFO);
+				// Logger::log("sensrf02 wait_time: ", wait_time, Logger::LOGLEVEL_DEBUG);
 		
 				/* wait */
 				usleep(wait_time);
@@ -200,7 +200,7 @@ namespace mavhub {
 					avg = (sensor_data[0].distance + avg)/2;
 				//	avg = (avg<1)?1:avg;
 					if (n =20) {avg=avgd;};*/
-					printf("jj%f\n",sensor_data[0].distance);
+					// printf("srf02 reading: %f\n",sensor_data[0].distance);
 				//	printf("%f\n",avg);
 				//	printf("%d\n",wait_time);
 #endif // MAVLINK_ENABLED_HUCH
