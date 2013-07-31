@@ -85,6 +85,7 @@ namespace mavhub {
     
     PID* pid_pitch;
     PID* pid_roll;
+    PID* pid_alt;
     // 			using AppLayer::send;
     // 			void send_heartbeat();
     // 			void send_mavlink_param_value(const msp_param_type_t param_type);
