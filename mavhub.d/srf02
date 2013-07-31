@@ -6,7 +6,7 @@ dev_id = 0x5f02
 func_id = 0x117
 
 # hardware connection
-port = /dev/i2c-2
+port = /dev/i2c-0
 
 # hardware description
 # mounting etc.
@@ -18,7 +18,7 @@ mode = 1
 
 # show debug information
 debug = 0
-timings = 1
+timings = 0
 
 # channel mapping
 chanmap = 0:0

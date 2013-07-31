@@ -161,6 +161,8 @@ namespace mavhub {
                         params["pid_Ti_y"], params["pid_Td_y"]);
     pid_roll = new PID(0.0, params["pid_Kc_x"],
                        params["pid_Ti_x"], params["pid_Td_x"]);
+    pid_alt = new PID(680.0, params["pid_Kc_z"],
+                       params["pid_Ti_z"], params["pid_Td_z"]);
   }
 
   MSPApp::~MSPApp() {}
@@ -235,10 +237,13 @@ namespace mavhub {
           // update PID controllers
           pid_pitch->setKc(params["pid_Kc_y"]);
           pid_roll->setKc(params["pid_Kc_x"]);
+          pid_alt->setKc(params["pid_Kc_z"]);
           pid_pitch->setTi(params["pid_Ti_y"]);
           pid_roll->setTi(params["pid_Ti_x"]);
+          pid_alt->setTi(params["pid_Ti_z"]);
           pid_pitch->setTd(params["pid_Td_y"]);
           pid_roll->setTd(params["pid_Td_x"]);
+          pid_alt->setTd(params["pid_Td_z"]);
 
         }
       }
@@ -527,7 +532,12 @@ namespace mavhub {
     msp_rc_t rc;
     // msp_rc_t rc;
     uint16_t roll = 1500, pitch = 1500, yaw = 1500, throttle = 1000;
-    double rollf = 0.0, pitchf = 0.0;
+    double rollf = 0.0, pitchf = 0.0, throttlef = 0.;
+    static float uss_a = 0;
+    static float uss_e_a = 0;
+    static int n=0;
+    static float uss_e;
+
 
     msplink_msg_init_rq(&msp_msg);
 
@@ -537,6 +547,7 @@ namespace mavhub {
     // msplink_status_initialize(&link_status);
     pid_pitch->setSp(0.0);
     pid_roll->setSp(0.0);
+    pid_alt->setSp(100.0);
 
     while( !interrupted() ) {
 
@@ -562,6 +573,7 @@ namespace mavhub {
         params["reset_i"] = 0.0;
         pid_pitch->setIntegral(0.0);
         pid_roll->setIntegral(0.0);
+        pid_alt->setIntegral(0.0);
         u_i = 0.0;
         v_i = 0.0;
       }
@@ -623,6 +635,59 @@ namespace mavhub {
         rc.pitch = (uint16_t)(pitchf + 1500.);
         send_debug(&mavlink_msg, &dbg, 4, (float)rc.pitch);
         send_debug(&mavlink_msg, &dbg, 5, (float)rc.roll);
+	
+	//throttle = DataCenter::get_sensor(chanmap[0], (double)sensor_data[0].distance);
+	
+	send_debug(&mavlink_msg, &dbg, 6,DataCenter::get_sensor(0));
+	
+	float uss = DataCenter::get_sensor(0);
+	float uss_d = uss-uss_a;
+	float uss_o = uss;
+	float uss_d_abs = abs(uss_d);
+	int uss_d_sign =uss_d >=0 ? 1:-1;
+
+	int thresh = 25;
+	 
+
+		
+
+	if ((uss_d_abs <= thresh) && (uss != 0)){
+		uss_e = (uss_e_a*9+uss)*0.1;
+	}else if (uss_d_sign == 1){
+		uss = uss_a;
+		uss_e = (uss_e_a*19 + uss_a + (uss_d_sign * thresh))*0.05;
+	}else{
+		uss = uss_a;
+		uss_e = (uss_e_a*9 + uss) * 0.1;
+	}
+
+	if (uss_e == uss_e_a){n++;}
+
+	if (n >= 5) {
+		uss_e =uss_o;
+		uss_e_a = uss_o;
+		uss_a = uss_o;
+		uss = uss_o;	
+		n = 0;
+	}
+
+	uss_a = uss;
+	uss_e_a = uss_e;
+
+	send_debug(&mavlink_msg, &dbg, 7,uss_e);
+
+
+      throttlef = pid_alt->calc(0.02, uss_e);
+	if(throttlef > params["throttle_limit"]) {
+		throttlef = params["throttle_limit"];
+		pid_alt->setIntegralM1();
+	}
+	if(throttlef < 10.) {
+		throttlef = 10.;
+		pid_alt->setIntegralM1();
+	}
+        throttle = (uint16_t)(throttlef + 1000.);
+
         rc.yaw = yaw;
         rc.throttle = throttle;
         rc.aux1 = 2000;
@@ -767,6 +832,23 @@ namespace mavhub {
       istringstream s(iter->second);
       s >> params["pid_Td_y"];
     }
+    // PID z component
+    iter = args.find("pid_Kc_z");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Kc_z"];
+    }
+    iter = args.find("pid_Ti_z");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Ti_z"];
+    }
+    iter = args.find("pid_Td_z");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["pid_Td_z"];
+    }
+
     iter = args.find("of_gyw_x");
     if( iter != args.end() ) {
       istringstream s(iter->second);
@@ -783,6 +865,11 @@ namespace mavhub {
     if( iter != args.end() ) {
       istringstream s(iter->second);
       s >> params["roll_limit"];
+    }
+    iter = args.find("throttle_limit");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["throttle_limit"];
     }
 
     // reset integral
