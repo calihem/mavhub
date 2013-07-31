@@ -341,11 +341,11 @@ namespace mavhub {
       //           << msp_motor->mot[2] << ", " << msp_motor->mot[3] << "]";
       // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       mavlink_msg_servo_output_raw_pack(system_id(), 0, &mavmsg, (uint32_t)0,
+													(uint8_t)0,
                                         msp_motor->mot[0], msp_motor->mot[1],
                                         msp_motor->mot[2], msp_motor->mot[3],
                                         msp_motor->mot[4], msp_motor->mot[5],
-                                        msp_motor->mot[6], msp_motor->mot[7],
-                                        (uint8_t)0);
+                                        msp_motor->mot[6], msp_motor->mot[7]);
       AppLayer<mavlink_message_t>::send(mavmsg);
       break;
 

@@ -79,7 +79,7 @@ std::istream& operator >>(std::istream &is, protocol_type_t &protocol_type) {
 			break;
 	}
 
-        fprintf(stdout, "%d\n", protocol_type);
+        // fprintf(stdout, "protocol_type: %d\n", protocol_type);
 	return is;
 }
 

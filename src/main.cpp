@@ -192,7 +192,7 @@ void add_links(const list<string> link_list, Setting &settings) {
 		}
 
 		cpp_io::IOInterface *layer = LinkFactory::build(link_construction_plan);
-                Logger::log("Constructed", layer, Logger::LOGLEVEL_WARN);
+                Logger::log("Constructed link", layer, Logger::LOGLEVEL_DEBUG);
 		if(!layer) {
 			Logger::log("Construction of", *link_iter, "failed", Logger::LOGLEVEL_WARN);
 			continue;
