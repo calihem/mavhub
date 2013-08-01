@@ -370,9 +370,9 @@ namespace mavhub {
       msp_attitude = reinterpret_cast<const msp_attitude_t*>(msg.data);
       // mavlink_attitude_t mavlink_attitude;
       mavlink_msg_attitude_pack(system_id(), component_id, &mavmsg, (uint32_t)0,
-                                (float)msp_attitude->roll,
-                                (float)msp_attitude->pitch,
-                                (float)msp_attitude->yaw,
+                                (float)((int16_t)msp_attitude->roll),
+                                (float)((int16_t)msp_attitude->pitch),
+                                (float)((int16_t)msp_attitude->yaw),
                                 0., 0., 0.);
       AppLayer<mavlink_message_t>::send(mavmsg);
       break;
