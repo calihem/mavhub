@@ -145,7 +145,7 @@ namespace mavhub {
     // 	pthread_mutex_init(&tx_msp_mutex, NULL);
     // 	msplink_msg_init(&tx_msp_msg);
     int mav_type = MAV_TYPE_GENERIC;
-    int component_id = 0;
+    int component_id = 46;
     int autopilot = MAV_AUTOPILOT_GENERIC;
     //system_id()
     mavlink_msg_heartbeat_pack(system_id(),
@@ -297,6 +297,7 @@ namespace mavhub {
     const msp_raw_imu_t *msp_raw_imu;
     const msp_motor_t *msp_motor;
     const msp_rc_t *msp_rc;
+    const msp_attitude_t *msp_attitude;
         
     switch(msg.type) {
     case MSP_IDENT: {
@@ -354,7 +355,7 @@ namespace mavhub {
       // logstream << "RC 1-4: [" << msp_rc->roll << ", " << msp_rc->pitch << ", "
       //           << msp_rc->yaw << ", " << msp_rc->throttle << "]";
       // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
-      mavlink_msg_rc_channels_raw_pack(system_id(), 0, &mavmsg, (uint32_t)0,
+      mavlink_msg_rc_channels_raw_pack(system_id(), 46, &mavmsg, (uint32_t)0,
                                        0, // port
                                         msp_rc->roll, msp_rc->pitch,
                                         msp_rc->yaw, msp_rc->throttle,
@@ -363,6 +364,16 @@ namespace mavhub {
                                         (uint8_t)0);
       aux2tm1 = aux2;
       aux2 = msp_rc->aux2;
+      AppLayer<mavlink_message_t>::send(mavmsg);
+      break;
+    case MSP_ATTITUDE:
+      msp_attitude = reinterpret_cast<const msp_attitude_t*>(msg.data);
+      // mavlink_attitude_t mavlink_attitude;
+      mavlink_msg_attitude_pack(system_id(), component_id, &mavmsg, (uint32_t)0,
+                                (float)msp_attitude->roll,
+                                (float)msp_attitude->pitch,
+                                (float)msp_attitude->yaw,
+                                0., 0., 0.);
       AppLayer<mavlink_message_t>::send(mavmsg);
       break;
       
@@ -475,34 +486,6 @@ namespace mavhub {
       // case MSP_MSG_TYPE_BOOT:
       //   //TODO
       //   break;
-      // case MSP_MSG_TYPE_ATTITUDE: {
-      //   const msp_attitude_t *msp_attitude = reinterpret_cast<const msp_attitude_t*>(msg.data);
-      //   mavlink_attitude_t mavlink_attitude;
-      //   mavlink_attitude.usec = message_time;
-      //   mavlink_attitude.roll = 0.001745329251994329577*(msp_attitude->roll_angle);
-      //   mavlink_attitude.pitch = 0.001745329251994329577*(msp_attitude->pitch_angle);
-      //   mavlink_attitude.yaw = 0.001745329251994329577*(msp_attitude->yaw_angle);
-      //   uint64_t delta_time = mavlink_attitude.usec - attitude_time;
-      //   if(delta_time > 150) {
-      //     uint64_t delta_time = mavlink_attitude.usec - attitude_time;
-      //     mavlink_attitude.rollspeed = (1745.329251994329577*(attitude.roll_angle - msp_attitude->roll_angle)) / delta_time;
-      //     mavlink_attitude.pitchspeed = (1745.329251994329577*(attitude.pitch_angle - msp_attitude->pitch_angle)) / delta_time;
-      //     mavlink_attitude.yawspeed = (1745.329251994329577*(attitude.yaw_angle - msp_attitude->yaw_angle)) / delta_time;
-      //   } else {
-      //     mavlink_attitude.rollspeed = 0;
-      //     mavlink_attitude.pitchspeed = 0;
-      //     mavlink_attitude.yawspeed = 0;
-      //   }
-      //   memcpy(&attitude, msp_attitude, sizeof(msp_attitude_t));
-      //   attitude_time = mavlink_attitude.usec;
-      //   Lock tx_lock(tx_mav_mutex);
-      //   mavlink_msg_attitude_encode(owner()->system_id(),
-      //                               component_id,
-      //                               &tx_mav_msg,
-      //                               &mavlink_attitude);
-      //   send(tx_mav_msg);
-      //   break;
-      // }
     default:
       break;
     }
@@ -711,6 +694,11 @@ namespace mavhub {
 
       msp_msg.len = 0;
       msp_msg.type = MSP_RC;
+      AppLayer<msp_message_t>::send(msp_msg);
+      // usleep(10000);
+
+      msp_msg.len = 0;
+      msp_msg.type = MSP_ATTITUDE;
       AppLayer<msp_message_t>::send(msp_msg);
       // usleep(10000);
 
