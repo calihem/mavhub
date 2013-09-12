@@ -155,14 +155,14 @@ namespace mavhub {
 			// 	alt = -params["alt_limit"];
 
 			if(params["output_enable"] > 0) {
-				chan.usec = get_time_us();
-				chan.index = CHAN_THRUST;
-				chan.value = thrust;
-				mavlink_msg_huch_generic_channel_encode(system_id(),
-																								component_id,
-																								&msg,
-																								&chan);
-				AppLayer<mavlink_message_t>::send(msg);
+                          chan.usec = get_time_us();
+                          chan.index = CHAN_THRUST;
+                          chan.value = thrust;
+                          mavlink_msg_huch_generic_channel_encode(system_id(),
+                                                                  component_id,
+                                                                  &msg,
+                                                                  &chan);
+                          AppLayer<mavlink_message_t>::send(msg);
 			}
 
 #endif // MAVLINK_ENABLED_HUCH	

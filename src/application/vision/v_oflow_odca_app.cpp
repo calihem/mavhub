@@ -84,7 +84,7 @@ namespace mavhub {
       sink_name.assign(iter->second);
     } else {
       log(name(), ": sink argument missing", Logger::LOGLEVEL_DEBUG);
-      sink_name.assign("sink1");
+      sink_name.assign("sink0");
     }
 
     get_value_from_args("out_stream", with_out_stream);
@@ -335,6 +335,52 @@ namespace mavhub {
       img_display = new_image.clone();
       // visualize(img_display);
       visualizeSectors(img_display);
+
+      // test: blank image
+      // img_display = cvCreateMat(img_display.rows, img_display.cols, CV_32F); // cv::Mat();
+      static DenseOpticalFlow *oFlow;
+      static cv::Mat fu, fv, img_display2;
+      static cv::Mat angle, mag;
+      static cv::FilterEngine *fe = cv::createDerivFilter(CV_8UC1, CV_8UC1, 1, 1, 3, BORDER_DEFAULT);
+      oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+      // cout << oFlow->getVelXf() << endl;
+      fu = oFlow->getVelXf();
+      fv = oFlow->getVelYf();
+      // cout << std::max(fu) << endl;
+
+      // cart2pol: do it on our own
+      for (int i = 0; i < is_height; i++) {
+       for (int j = 0; j < is_width; j++) {
+         if (fabs(fv.at<float>(i, j)) > 1.0 && fabs(fu.at<float>(i, j)) > 1.0)
+           img_display.at<uint8_t>(i, j) = (uint8_t)(cv::fastAtan2(fv.at<float>(i, j), fu.at<float>(i, j)) * 0.7);
+         else
+           img_display.at<uint8_t>(i, j) = 0;
+         // cout << (int)img_display.at<uint8_t>(i, j) <<endl;
+        }
+      }
+
+      // cart2pol: use opencv
+      // cv::cartToPolar(fu, fv, mag, angle, true);
+      // img_display = mag * 0.01;
+      // img_display = angle;
+      // cv::add(angle * 0.35, mag * 0.1, img_display);
+
+      img_display2 = img_display.clone();
+
+      float val1 = 0;
+      Mat dst1(1,1,CV_32F,&val1);
+      
+      Ptr<FilterEngine> Fx = createDerivFilter(CV_8UC1, CV_8UC1,
+                                               1, 0, 3, BORDER_REFLECT_101);
+      Fx->apply(img_display2, img_display, Rect(0,0,-1,-1), Point());
+
+      img_display2 = img_display.clone();
+      cv::blur(img_display2, img_display, cv::Size(3,3));
+
+      // fe->apply(img_display, img_display2, Rect(0, 0, -1, -1), Point(0, 0), false);
+      // cout << "filtered" << endl;
+          // cv::add(fu, fv, img_display);
+
       // cv::Mat match_img;
       // cv::drawMatches(old_image, old_features,
       // 	new_image, new_features,
@@ -465,7 +511,10 @@ namespace mavhub {
   void V_OFLOWOdcaApp::visualizeSectors(cv::Mat img) {
     static DenseOpticalFlow *oFlow;
     oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
-    oFlow->visualizeMeanXYf(8, 1, img);
+    // oFlow->visualizeMeanXYf(8, 1, img);
+    oFlow->visualizeMeanXYf(80, 10, img);
+    // img = cvCreateMat(img.rows, img.cols, CV_32F); // cv::Mat();
+    
     // draw circle for finding the correct center + radius in
     // non-unwrapped mode
     // cv::Point p((int)params["center_x"], (int)params["center_y"]);
@@ -736,7 +785,7 @@ namespace mavhub {
 
     j = 0;
 
-    preprocessImage(new_image);
+    // preprocessImage(new_image);
 
     // // calculate X and Y flow matrices
     ofModel->calcOpticalFlow(new_image);
@@ -1054,7 +1103,7 @@ namespace mavhub {
   void V_OFLOWOdcaApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
     if(!data) return;
 
-    //uint64_t start_time = get_time_ms();
+    // uint64_t start_time = get_time_ms();
 
     // Logger::log(name(), ": got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG);
 
@@ -1170,7 +1219,7 @@ namespace mavhub {
     int wait_time;
 
     if(Core::video_server) {
-      int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str(), 1);
+      int rc = Core::video_server->bind2appsink( dynamic_cast<VideoClient*>(this), sink_name.c_str(), 0); // FIXME: pipeline id as parameter
       Logger::log(name(), ": bound to", sink_name, rc, Logger::LOGLEVEL_DEBUG, _loglevel);
     } else {
       log(name(), ": video server not running", Logger::LOGLEVEL_WARN);
@@ -1247,7 +1296,8 @@ namespace mavhub {
           // Logger::log(name(), ": of_u, of_v", of_u, of_v, Logger::LOGLEVEL_DEBUG);
 
           // test matrix/vector stuff for neural networks
-          calcESN();
+          // calcESN();
+
           // differentiate from angle: bad
           // imu_pitch = attitude.pitch;
           // imu_roll = attitude.roll;

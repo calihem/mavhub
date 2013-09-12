@@ -10,6 +10,8 @@
 using namespace cpp_pthread;
 using namespace std;
 
+#define DEG2RAD 0.0017453292519943295
+
 namespace mavhub {
 
 // macros for state_vector
@@ -370,9 +372,9 @@ namespace mavhub {
       msp_attitude = reinterpret_cast<const msp_attitude_t*>(msg.data);
       // mavlink_attitude_t mavlink_attitude;
       mavlink_msg_attitude_pack(system_id(), component_id, &mavmsg, (uint32_t)0,
-                                (float)((int16_t)msp_attitude->roll),
-                                (float)((int16_t)msp_attitude->pitch),
-                                (float)((int16_t)msp_attitude->yaw),
+                                (float)((int16_t)msp_attitude->roll) * DEG2RAD,
+                                (float)((int16_t)msp_attitude->pitch) * DEG2RAD,
+                                (float)((int16_t)msp_attitude->yaw) * DEG2RAD,
                                 0., 0., 0.);
       AppLayer<mavlink_message_t>::send(mavmsg);
       break;
@@ -704,7 +706,7 @@ namespace mavhub {
 
       // Logger::log(name(), "run", Logger::LOGLEVEL_DEBUG);
       run_cnt++;
-      usleep(20000);
+      usleep(10000);
     }
     log("MSPApp stopped", Logger::LOGLEVEL_DEBUG);
   }

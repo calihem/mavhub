@@ -183,78 +183,78 @@ LucasKanade::~LucasKanade() {
 
 const OpticalFlow &LucasKanade::calcOpticalFlow(const IplImage &image) {
 
-	// IplImage* velx = cvCreateImage(cvSize(width,height),IPL_DEPTH_32F, 1);
-	// IplImage* vely = cvCreateImage(cvSize(width,height),IPL_DEPTH_32F, 1);
-	// cv::Mat velx = cv::Mat::zeros(cv::Size(width, height), CV_32F);
-	// cv::Mat vely = cv::Mat::zeros(cv::Size(width, height), CV_32F);
-	CvMat *velx, *vely;
+  // IplImage* velx = cvCreateImage(cvSize(width,height),IPL_DEPTH_32F, 1);
+  // IplImage* vely = cvCreateImage(cvSize(width,height),IPL_DEPTH_32F, 1);
+  // cv::Mat velx = cv::Mat::zeros(cv::Size(width, height), CV_32F);
+  // cv::Mat vely = cv::Mat::zeros(cv::Size(width, height), CV_32F);
+  CvMat *velx, *vely;
 
-	double velocity_y = 0;
-	double velocity_x = 0;
+  double velocity_y = 0;
+  double velocity_x = 0;
 
-	double _x = 0;
-	double _y = 0;
+  double _x = 0;
+  double _y = 0;
 
-	velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
-	vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
+  velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
+  vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
 
-	// cvSet(velx, cvScalarAll(0));
-	// cvSet(vely, cvScalarAll(0));
+  // cvSet(velx, cvScalarAll(0));
+  // cvSet(vely, cvScalarAll(0));
 
-	// cv::Mat m(velx);
-	// // m.setTo(0.);
-	// // cout << "velx:" << velx << endl;
-	// cout << "m: " << m << endl;
-	// // velx = (CvMat*) &m;
+  // cv::Mat m(velx);
+  // // m.setTo(0.);
+  // // cout << "velx:" << velx << endl;
+  // cout << "m: " << m << endl;
+  // // velx = (CvMat*) &m;
 
-	if(lastImage) {
-		cvCalcOpticalFlowLK(lastImage, &image, cvSize(5,5),
-												velx,
-												vely);
+  if(lastImage) {
+    cvCalcOpticalFlowLK(lastImage, &image, cvSize(5,5),
+                        velx,
+                        vely);
 
-		for(int i = 0; i < width; i++) {
+    for(int i = 0; i < width; i++) {
       for(int j = 1; j < height - 1; j++) {
-				double u = cvGetReal2D(velx,j,i);
-				double v = cvGetReal2D(vely,j,i);
-				double n = sqrt((double)(u*u + v*v));
+        double u = cvGetReal2D(velx,j,i);
+        double v = cvGetReal2D(vely,j,i);
+        double n = sqrt((double)(u*u + v*v));
 
-				if(n == 0) continue;
-
-				double x = (double)(u) / n;
-				double y = (double)(v) / n;
-
-				_x += x;
-				_y += y;
-
-				velocity_x += u;
-				velocity_y += v;
-
+        // cout << u << ", " << v << endl;
+        if(n == 0) continue;
+              
+        double x = (double)(u) / n;
+        double y = (double)(v) / n;
+              
+        _x += x;
+        _y += y;
+              
+        velocity_x += u;
+        velocity_y += v;
       }
-		}
-
-		double n = sqrt((double)(_x*_x + _y*_y));
-		if(n != 0) {
+    }
+          
+    double n = sqrt((double)(_x*_x + _y*_y));
+    if(n != 0) {
       _x /= n;
       _y /= n;
-		}
+    }
+          
+    // cout << "velX: " << velocity_x << endl;
+    // cout << "velY: " << velocity_y << endl;
+    // cout << "_x: " << _x << endl;
+    // cout << "_y: " << _y << endl;
 
-		// cout << "velX: " << velocity_x << endl;
-		// cout << "velY: " << velocity_y << endl;
-		// cout << "_x: " << _x << endl;
-		// cout << "_y: " << _y << endl;
+    //replace last image with current image
+    cvCopy(&image, lastImage, NULL);
 
-		//replace last image with current image
-		cvCopy(&image, lastImage, NULL);
+  } else {
+    lastImage = cvCloneImage(&image);
+  }
 
-	} else {
-		lastImage = cvCloneImage(&image);
-	}
-
-	// cvReleaseImage(&velx);
-	// cvReleaseImage(&vely);
-	// cv::ReleaseMat(&velx);
-	// cv::ReleaseMat(&vely);
-	return *oFlow;
+  // cvReleaseImage(&velx);
+  // cvReleaseImage(&vely);
+  // cv::ReleaseMat(&velx);
+  // cv::ReleaseMat(&vely);
+  return *oFlow;
 }
 
 #endif // defined HAVE_OPENCV2 and CV_MINOR_VERSION >= 2
