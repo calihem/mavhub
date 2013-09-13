@@ -15,6 +15,7 @@
 #include "module/ctrl_logfileplayer.h"
 #include "module/ctrl_logger.h"
 #include "module/ctrl_wifimeter.h"
+#include "module/plat_link_car.h"
 #include "module/plat_link_crrcsim.h"
 #include "module/plat_link_mk.h"
 #include "module/bridge_ivy.h"
@@ -32,6 +33,7 @@
 #include "opengl_app.h"
 #include "slam_app.h"
 #include "vision/v_oflow_app.h"
+#include "vision/v_oflow_car_app.h"
 #include "vision/v_oflow_odca_app.h"
 #include "vision/v_camctrl_app.h"
 
@@ -247,6 +249,19 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // HAVE_LIBFANN
 #endif // HAVE_GSTREAMER
 #endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "v_oflow_car_app") {
+#ifdef HAVE_MAVLINK_H
+#ifdef HAVE_GSTREAMER
+#ifdef HAVE_LIBFANN
+#ifdef HAVE_OPENCV2
+#if CV_MINOR_VERSION >= 2
+		V_OFLOWCarApp *v_oflow_car_app = new V_OFLOWCarApp(args, loglevel);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(v_oflow_car_app);
+#endif // CV_MINOR_VERSION
+#endif // HAVE_OPENCV2
+#endif // HAVE_LIBFANN
+#endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "v_oflow_odca_app") {
 #ifdef HAVE_MAVLINK_H
 #ifdef HAVE_GSTREAMER
@@ -270,6 +285,12 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER
+#endif // HAVE_MAVLINK_H
+	} else if(lowercase_name == "plat_link_car_app") {
+#ifdef HAVE_MAVLINK_H
+		// pass only configuration map into constructor
+		Plat_Link_Car *plat_link_car_app = new Plat_Link_Car(args);
+		return ProtocolStack<mavlink_message_t>::instance().add_application(plat_link_car_app);
 #endif // HAVE_MAVLINK_H
 	} else if(lowercase_name == "plat_link_crrcsim_app") {
 #ifdef HAVE_MAVLINK_H

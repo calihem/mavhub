@@ -11,6 +11,8 @@
 #if CV_MINOR_VERSION >= 2
 #include "ofmodel.h"
 
+#include "toolbox.h"
+
 class FirstOrder : public OFModel {
 	public:
 		FirstOrder(int height, int width);

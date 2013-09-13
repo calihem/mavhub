@@ -25,3 +25,5 @@ MAVHUB component IDs
 |   43 | v_artoolkit_tracker    | not mavhub: DetectRange.cpp                                  |
 |   44 | v_camctrl_app          | control camera parameters: exposure, gain, ...               |
 |   45 | camctrl_neural_txosc   | python functionality prototyping module                      |
+|   46 | plat_link_car_app      | platform link layer for HU car                               |
+|   47 | v_oflow_car_app        | oflow vision app for car                                     |

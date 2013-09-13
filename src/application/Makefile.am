@@ -20,6 +20,7 @@ libapp_a_SOURCES = \
 	slam_app.cpp \
 	vision/v_camctrl_app.cpp \
 	vision/v_oflow_app.cpp \
+	vision/v_oflow_car_app.cpp \
 	vision/v_oflow_odca_app.cpp \
 	vision/ofdifferential.cpp \
 	vision/OpticalFlow.cpp \

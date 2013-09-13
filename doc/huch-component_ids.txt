@@ -1,31 +1,39 @@
-                      MAVHUB component IDs
-                      ====================
+                          ____________________
 
-Author: 
-Date: 2013-01-23 15:06:56 CET
+                           HUCH-COMPONENT_IDS
+                          ____________________
 
 
-  *ID*   *Component*              *Description*                                                 
- ------+------------------------+--------------------------------------------------------------
-    23   fc_mpkg_app                                                                            
-    25   flightctrl                                                                             
-    26   ctrl_hover_app                                                                         
-    27   plat_link_crrcsim_app    Platform link layer: crrcsim                                  
-    28   ctrl_lateral_app                                                                       
-    29   ctrl_logger_app                                                                        
-    30   ctrl_logfileplayer_app                                                                 
-    31   ctrl_zrate_app                                                                         
-    32   bridge_ivy_app                                                                         
-    33   v_oflow_app                                                                            
-    34   ctrl_yaw                                                                               
-    35   potibox                                                                                
-    36   bridge_osc_app                                                                         
-    37   ui_potibox_app           Mangle signals from Potibox UI                                
-    38   ctrl_alt_simple_app      Simple altitude controller with equal weight fusion           
-    39   ctrl_lat_bump_app        Generate lateral system identification signals                
-    40   ctrl_bump_app                                                                          
-    41   plat_link_mk             Platform link layer: Mikrokopter (MK)                         
-    42   v_oflow_odca_app         Optical flow for omnidirectional camera, collision avoidance  
-    43   v_artoolkit_tracker      not mavhub: DetectRange.cpp                                   
-    44   v_camctrl_app            control camera parameters: exposure, gain, ...                
-    45   camctrl_neural_txosc     python functionality prototyping module                       
+Table of Contents
+_________________
+
+
+
+
+MAVHUB component IDs
+ *ID*  *Component*             *Description*                                                
+--------------------------------------------------------------------------------------------
+   23  fc_mpkg_app                                                                          
+   25  flightctrl                                                                           
+   26  ctrl_hover_app                                                                       
+   27  plat_link_crrcsim_app   Platform link layer: crrcsim                                 
+   28  ctrl_lateral_app                                                                     
+   29  ctrl_logger_app                                                                      
+   30  ctrl_logfileplayer_app                                                               
+   31  ctrl_zrate_app                                                                       
+   32  bridge_ivy_app                                                                       
+   33  v_oflow_app                                                                          
+   34  ctrl_yaw                                                                             
+   35  potibox                                                                              
+   36  bridge_osc_app                                                                       
+   37  ui_potibox_app          Mangle signals from Potibox UI                               
+   38  ctrl_alt_simple_app     Simple altitude controller with equal weight fusion          
+   39  ctrl_lat_bump_app       Generate lateral system identification signals               
+   40  ctrl_bump_app                                                                        
+   41  plat_link_mk            Platform link layer: Mikrokopter (MK)                        
+   42  v_oflow_odca_app        Optical flow for omnidirectional camera, collision avoidance 
+   43  v_artoolkit_tracker     not mavhub: DetectRange.cpp                                  
+   44  v_camctrl_app           control camera parameters: exposure, gain, ...               
+   45  camctrl_neural_txosc    python functionality prototyping module                      
+   46  plat_link_car_app       platform link layer for HU car                               
+   47  v_oflow_car_app         oflow vision app for car                                     

@@ -33,6 +33,7 @@ libmodule_a_SOURCES = \
 	pp_baro.cpp \
 	pp_ir.cpp \
 	pp_uss.cpp \
+	plat_link_car.cpp \
 	plat_link_crrcsim.cpp \
 	plat_link_mk.cpp \
 	stat_meanvar.cpp \
