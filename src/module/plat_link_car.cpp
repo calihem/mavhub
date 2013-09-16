@@ -183,7 +183,7 @@ namespace mavhub {
       switch(mavlink_msg_huch_generic_channel_get_index(&msg)) {
       case CHAN_THRUST:
         thrust = mavlink_msg_huch_generic_channel_get_value(&msg);
-        Logger::log("Plat_Link_Car::handle_input: received gen_chan thrust from", (int)msg.sysid, (int)msg.compid, thrust, Logger::LOGLEVEL_INFO);
+        // Logger::log("Plat_Link_Car::handle_input: received gen_chan thrust from", (int)msg.sysid, (int)msg.compid, thrust, Logger::LOGLEVEL_INFO);
         break;
       case CHAN_ROLL:
         roll = mavlink_msg_huch_generic_channel_get_value(&msg);
@@ -195,7 +195,7 @@ namespace mavhub {
         break;
       case CHAN_YAW:
         yaw = mavlink_msg_huch_generic_channel_get_value(&msg);
-        Logger::log("Plat_Link_Car::handle_input: received gen_chan yaw from", (int)msg.sysid, (int)msg.compid, yaw, Logger::LOGLEVEL_INFO);
+        // Logger::log("Plat_Link_Car::handle_input: received gen_chan yaw from", (int)msg.sysid, (int)msg.compid, yaw, Logger::LOGLEVEL_INFO);
         break;
       default:
         break;
@@ -227,12 +227,13 @@ namespace mavhub {
     // FIXME: hucar firmware is not very responsice to this request
     //        in a standalone program this works much better
     Logger::log(name(), "sending stream requests", ctl_update_rate, Logger::LOGLEVEL_INFO);
-    for(i=0 ; i < 100 ; i++) {
+    for(i=0 ; i < 10 ; i++) {
       // send_stream_request(&msg, MAV_DATA_STREAM_POSITION, ctl_update_rate);
       send_stream_request(&msg, MAV_DATA_STREAM_RAW_SENSORS, ctl_update_rate);
       send_stream_request(&msg, MAV_DATA_STREAM_RC_CHANNELS, ctl_update_rate);
       // send_stream_request(&msg, MAV_DATA_STREAM_EXTENDED_STATUS, ctl_update_rate);
       // send_stream_request(&msg, MAV_DATA_STREAM_EXTRA1, ctl_update_rate);
+      Logger::log(name(), "sending stream requests", ctl_update_rate, i, Logger::LOGLEVEL_INFO);
       usleep(100000);
     }
 
@@ -309,8 +310,8 @@ namespace mavhub {
 
       // send control output to (onboard) controller
       if(params["output_enable"] > 0) {
-        Logger::log(name(), "ext_ctrl.thrust = ", ext_ctrl.thrust, Logger::LOGLEVEL_INFO);
-        Logger::log(name(), "ext_ctrl.yaw = ", ext_ctrl.yaw, Logger::LOGLEVEL_INFO);
+        // Logger::log(name(), "ext_ctrl.thrust = ", ext_ctrl.thrust, Logger::LOGLEVEL_INFO);
+        // Logger::log(name(), "ext_ctrl.yaw = ", ext_ctrl.yaw, Logger::LOGLEVEL_INFO);
         mavlink_msg_huch_ext_ctrl_encode(system_id(), 
                                          0,
                                          &msg,
