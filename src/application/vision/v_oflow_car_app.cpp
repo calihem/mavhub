@@ -318,8 +318,8 @@ namespace mavhub {
         break;
       case LK:
         // use openCV Lucas-Kanade plain
-        // getOF_LK();
-        getOF_LK2();
+        getOF_LK();
+        // getOF_LK2();
         break;
       case LK_PYR:
         // use openCV pyramid Lucas-Kanade
@@ -769,6 +769,11 @@ namespace mavhub {
 
   void V_OFLOWCarApp::getOF_LK() {
     static DenseOpticalFlow *oFlow;
+    int sectors_x = 2;
+    int sectors_y = 2;
+    int sector_width  = is_width  / sectors_x;
+    int sector_height = is_height / sectors_y;
+    int i, j;
 
     // don't need this either for LK
     // preprocessImage(new_image);
@@ -787,6 +792,22 @@ namespace mavhub {
     // Logger::log(name(), "LK", Logger::LOGLEVEL_DEBUG);
     // of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
     // of_v = iirFilter(of_v, oFlow->getMeanVelYf(1, 99, 1, 99));
+
+    // for the car, quick test of autoencoder: transmit four sector oflow
+    for(i = 0; i < sectors_x; i++) {
+      for (j = 0; j < sectors_y; j++)
+        {
+          sensor_array_x.data[(i*sectors_y*2)+(2*j)] = oFlow->getMeanVelXf(max(sector_width*i, 1),
+                                                                           sector_width*(i+1)-1,
+                                                                           max(sector_height*j, 1),
+                                                                           sector_height*(j+1)-1);
+          sensor_array_x.data[(i*sectors_y*2)+(2*j+1)] = oFlow->getMeanVelYf(max(sector_width*i, 1),
+                                                                             sector_width*(i+1)-1,
+                                                                             max(sector_height*j, 1),
+                                                                             sector_height*(j+1)-1);
+        }
+    }
+    
 
     of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
     of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
@@ -1502,7 +1523,7 @@ namespace mavhub {
                                                component_id,
                                                &msg,
                                                &sensor_array_y);
-          AppLayer<mavlink_message_t>::send(msg);
+          // AppLayer<mavlink_message_t>::send(msg);
         }
         new_video_data = false;
       }
