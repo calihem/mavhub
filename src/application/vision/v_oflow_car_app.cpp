@@ -775,6 +775,8 @@ namespace mavhub {
     int sector_width  = is_width  / sectors_x;
     int sector_height = is_height / sectors_y;
     int i, j;
+    uint64_t start, end;
+    start = 0; end = 0;
 
     // don't need this either for LK
     // preprocessImage(new_image);
@@ -782,7 +784,10 @@ namespace mavhub {
     // calculate X and Y flow matrices
     //ofModel->calcOpticalFlow(new_image);
     // Logger::log(name(), "pre calcOpticalFlow", new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
+    start = get_time_us();
     ofModels[1]->calcOpticalFlow(new_image);
+    end = get_time_us();
+    Logger::log(name(), "getOF_LK:calcOpticalFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
     // log(name(), "post calcOpticalFlow", Logger::LOGLEVEL_DEBUG);
     // get oFlow object ref
     //oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
