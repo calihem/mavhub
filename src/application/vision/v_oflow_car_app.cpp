@@ -305,7 +305,10 @@ namespace mavhub {
     //Logger::log(name(), ": data", flip_image, Logger::LOGLEVEL_DEBUG, _loglevel);
 
     // Logger::log(name(), ": pre getOF", Logger::LOGLEVEL_DEBUG, _loglevel);
+
     // Logger::log(name(), "new_image step, w, h", new_image.step1(), new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
+    if(new_image.cols == 0)
+      return;
 
     // start = get_time_us(); // bench
 
@@ -318,7 +321,9 @@ namespace mavhub {
         break;
       case LK:
         // use openCV Lucas-Kanade plain
+        // log(name(), "pre getOF_LK", Logger::LOGLEVEL_DEBUG);
         getOF_LK();
+        // log(name(), "post getOF_LK", Logger::LOGLEVEL_DEBUG);
         // getOF_LK2();
         break;
       case LK_PYR:
@@ -336,10 +341,6 @@ namespace mavhub {
 
     // end = get_time_us();
     // Logger::log(name(), "bench: ", end - start, Logger::LOGLEVEL_DEBUG);
-
-    // Logger::log(name(), "new_image step, w, h", new_image.step1(), new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
-    if(new_image.cols == 0)
-      return;
 
     if(with_out_stream && Core::video_server) {
       img_display = new_image.clone();
@@ -780,7 +781,9 @@ namespace mavhub {
 
     // calculate X and Y flow matrices
     //ofModel->calcOpticalFlow(new_image);
+    // Logger::log(name(), "pre calcOpticalFlow", new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
     ofModels[1]->calcOpticalFlow(new_image);
+    // log(name(), "post calcOpticalFlow", Logger::LOGLEVEL_DEBUG);
     // get oFlow object ref
     //oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
     oFlow = (DenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
@@ -1158,7 +1161,7 @@ namespace mavhub {
   void V_OFLOWCarApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
     if(!data) return;
 
-    //uint64_t start_time = get_time_ms();
+    uint64_t start_time = get_time_us();
 
     // Logger::log(name(), ": got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG);
 
@@ -1232,8 +1235,8 @@ namespace mavhub {
     // 						Logger::LOGLEVEL_DEBUG, _loglevel);
     // }
     new_video_data = true;
-    //uint64_t stop_time = get_time_ms();
-    // Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
+    uint64_t stop_time = get_time_us();
+    Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "us", Logger::LOGLEVEL_DEBUG, _loglevel);
   }
 
   // void V_OFLOWCarApp::load_calibration_data(const std::string &filename) {
@@ -1310,8 +1313,10 @@ namespace mavhub {
     // usleep(10000);
 
     log(name(), "enter main loop", Logger::LOGLEVEL_DEBUG);
+    uint64_t start, end;
+    start = 0; end = 0;
     while( !interrupted() ) {
-
+      start = get_time_us();
       wait_time = exec_tmr->calcSleeptime();
       //Logger::log(name(), "wait_time", wait_time, Logger::LOGLEVEL_DEBUG);
 		
@@ -1323,31 +1328,37 @@ namespace mavhub {
       // dt = 
       exec_tmr->updateExecStats();
 
-      if(param_request_list) {
-        Logger::log("V_OFLOWCarApp::run: param request", Logger::LOGLEVEL_DEBUG);
-        param_request_list = 0;
+      // if(param_request_list) {
+      //   Logger::log("V_OFLOWCarApp::run: param request", Logger::LOGLEVEL_DEBUG);
+      //   param_request_list = 0;
 
-        typedef map<string, double>::const_iterator ci;
-        for(ci p = params.begin(); p!=params.end(); ++p) {
-          // Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-          mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
-          AppLayer<mavlink_message_t>::send(msg);
-        }
-      }
+      //   typedef map<string, double>::const_iterator ci;
+      //   for(ci p = params.begin(); p!=params.end(); ++p) {
+      //     // Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+      //     mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
+      //     AppLayer<mavlink_message_t>::send(msg);
+      //   }
+      // }
 
-      if(params["reset_i"] > 0.0) {
-        params["reset_i"] = 0.0;
-        of_u_i = 0.0;
-        of_v_i = 0.0;
-      }
+      // if(params["reset_i"] > 0.0) {
+      //   params["reset_i"] = 0.0;
+      //   of_u_i = 0.0;
+      //   of_v_i = 0.0;
+      // }
 
       {
         if(new_video_data) {
           // NULL;
           // log(name(), "run, pre flow", Logger::LOGLEVEL_DEBUG);
           {
+            uint64_t start, end;
             // Lock sync_lock(sync_mutex);
+            // log(name(), "pre calcFlow", Logger::LOGLEVEL_DEBUG);
+            start = get_time_us();
             calcFlow();
+            end = get_time_us();
+            Logger::log(name(), "calcFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
+            // log(name(), "post calcFlow", Logger::LOGLEVEL_DEBUG);
             // calcESN();
           }
           // log(name(), "run, post flow", Logger::LOGLEVEL_DEBUG);
@@ -1452,29 +1463,6 @@ namespace mavhub {
           if(roll < -params["roll_limit"])
             roll = -params["roll_limit"];
 
-          // neural network
-          // which is which
-          if(0 && ann != NULL) {
-            // alternatively use datacenter
-            ann_x[0] = (raw_adc_imu.xgyro - 512) / 1024.;
-            ann_x[1] = (raw_adc_imu.ygyro - 512) / 1024.;
-            ann_x[2] = (raw_adc_imu.zgyro - 512) / 1024.;
-            ann_x[3] = hover_state.kal_s0 / 2000.;
-            ann_x[4] = of_u_i / 10.;
-            ann_x[5] = of_v_i / 10.;
-            ann_x[6] = of_u / 10.;
-            ann_x[7] = of_v / 10.;
-					
-            ann_y = fann_run(ann, ann_x);
-
-            // Logger::log(name(), ": ann_pitch, ann_roll",
-            // 						ann_y[0] * 512,
-            // 						ann_y[1] * 512,
-            // 						Logger::LOGLEVEL_DEBUG);
-            pitch = ann_y[0] * 512;
-            roll  = ann_y[1] * 512;
-          }
-
           // Logger::log(name(), ": of_u, of_v", of_u, of_v, Logger::LOGLEVEL_DEBUG);
           // Logger::log(name(), ": pitch, roll", huch_mk_imu.xgyro, huch_mk_imu.ygyro, Logger::LOGLEVEL_DEBUG);
           // Logger::log(name(), ": pitch, roll", imu_pitch_speed, imu_roll_speed, Logger::LOGLEVEL_DEBUG);
@@ -1523,13 +1511,15 @@ namespace mavhub {
                                                component_id,
                                                &msg,
                                                &sensor_array_y);
-          // AppLayer<mavlink_message_t>::send(msg);
+          AppLayer<mavlink_message_t>::send(msg);
         }
         new_video_data = false;
       }
 
       //FIXME: remove usleep
       // usleep(1000);
+      end = get_time_us();
+      Logger::log(name(), "bench run(): ", end - start, Logger::LOGLEVEL_DEBUG);
     }
 
     //unbind from video server
