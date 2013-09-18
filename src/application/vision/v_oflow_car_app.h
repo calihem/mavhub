@@ -112,7 +112,7 @@ namespace mavhub {
 
       of_algorithm algo;
       OFModel *ofModel;
-      OFModel* ofModels[2];
+      OFModel* ofModels[NUM_OF_ALGORITHM];
       OpticalFlow *oFlow;
 
       /// input stream parameters
@@ -152,6 +152,7 @@ namespace mavhub {
       cv::Mat new_image;
       cv::Mat new_image_raw;
       cv::Mat img_display;
+      cv::Mat flow;
       /* mavlink_attitude_t old_attitude; */
       /* mavlink_attitude_t new_attitude; */
       /* 		std::vector<cv::KeyPoint> old_features; */
@@ -169,16 +170,17 @@ namespace mavhub {
       /* 		cv::Mat rotation_vector; */
       /* 		cv::Mat translation_vector; */
 
-      int initModel(of_algorithm algo);
       int initModels();
       void calcFlow();
       void calcESN();
       // void load_calibration_data(const std::string &filename);
       void getOF_FirstOrder();
-      void getOF_FirstOrder2();
-      void getOF_FirstOrder_Omni();
+      void getOF_HS();
       void getOF_LK();
       void getOF_LK2();
+      void getOF_HORN_SCHUNCK_CV();
+      void getOF_BLOCK_MATCHING_CV();
+      void getOF_SF();
       virtual float getMeanVelXf(CvMat &vel, int x0, int x1, int y0, int y1) const;
       virtual float getMeanVelYf(CvMat &vel, int x0, int x1, int y0, int y1) const;
       void getOF_LK_Pyr();

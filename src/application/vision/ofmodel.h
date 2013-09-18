@@ -15,16 +15,17 @@
 class OpticalFlow;
 
 class OFModel {
-	public:
-		OFModel();
-		virtual ~OFModel();
+ public:
+  OFModel();
+  virtual ~OFModel();
 
-		virtual const OpticalFlow &calcOpticalFlow(const IplImage &image) = 0;
-		/// return last determined optical flow
-		virtual const OpticalFlow &getOpticalFlow() const { return *oFlow; };
+  virtual const OpticalFlow &calcOpticalFlow(const IplImage &image) = 0;
+  virtual const OpticalFlow &calcOpticalFlow2(cv::Mat &image) = 0;
+  /// return last determined optical flow
+  virtual const OpticalFlow &getOpticalFlow() const { return *oFlow; };
 
-	protected:
-		OpticalFlow *oFlow;
+ protected:
+  OpticalFlow *oFlow;
 };
 
 #endif // HAVE_OPENCV2

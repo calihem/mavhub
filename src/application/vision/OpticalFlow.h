@@ -15,33 +15,38 @@
 #include "oftypes.h"
 
 enum of_algorithm {
-	UNKNOWN,
-	FIRST_ORDER, // 1
-	HORN_SCHUNCK,
-	CENSUS_TRANSFORM,
-	LINE_SUM,
-	LINE_CENSUS,
-	LK, // 6
-	LK_PYR,
+  UNKNOWN,
+  FIRST_ORDER, // 1
+  HORN_SCHUNCK, // 2
+  CENSUS_TRANSFORM, // 3
+  LINE_SUM, // 4
+  LINE_CENSUS, // 5
+  LK, // 6
+  LK_PYR, // 7
+  HORN_SCHUNCK_CV, // 8
+  BLOCK_MATCHING_CV, // 9
+  SIMPLEFLOW, // 10
+  FARNEBACK, // 11
+  NUM_OF_ALGORITHM // 12
 };
 
 struct UnwrapSettings {
-	int cx;		// x-coordinate of center point
-	int cy;		// y-coordinate of center point
-	int ri;		// inner radius
-	int ro;		// outer radius
-	int im;		// interpolation mode
-	double sx;	// scaling in x-direction
-	double sy;	// scaling in y-direction
-	int fw;		// fixed width 
-	int fh;		// fixed height 
-	UnwrapSettings(int cx, int cy, int ri, int ro, int im, double sx, double sy, int fw, int fh);
+  int cx;		// x-coordinate of center point
+  int cy;		// y-coordinate of center point
+  int ri;		// inner radius
+  int ro;		// outer radius
+  int im;		// interpolation mode
+  double sx;	// scaling in x-direction
+  double sy;	// scaling in y-direction
+  int fw;		// fixed width 
+  int fh;		// fixed height 
+  UnwrapSettings(int cx, int cy, int ri, int ro, int im, double sx, double sy, int fw, int fh);
 };
 
 /// Enumeration of camera types
 enum cam_type_t {
-	CAM_TYPE_PLANAR, /// planar camera image
-	CAM_TYPE_OMNI	/// Omnidirectional camera image
+  CAM_TYPE_PLANAR, /// planar camera image
+  CAM_TYPE_OMNI	/// Omnidirectional camera image
 };
 
 /// type representing sparse motion 
@@ -49,19 +54,19 @@ enum cam_type_t {
 
 /// abstract base class representing optical flow
 class OpticalFlow {
-	public:
-		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0) = 0;
-		virtual void clear() = 0;
-		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const = 0;
-		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const = 0;
-		/* virtual CvMat* getVelXf(); */
-		/* virtual CvMat* getVelYf(); */
-		virtual void visualize(cv::Mat &image) const = 0;
-		virtual void visualizeMean(int sectors, cv::Mat &image) const; 
-		virtual void visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) const; 
+ public:
+  virtual void setVelocity(int x, int y, int dx = 0, int dy = 0) = 0;
+  virtual void clear() = 0;
+  virtual int getMeanVelX(int x0, int x1, int y0, int y1) const = 0;
+  virtual int getMeanVelY(int x0, int x1, int y0, int y1) const = 0;
+  /* virtual CvMat* getVelXf(); */
+  /* virtual CvMat* getVelYf(); */
+  virtual void visualize(cv::Mat &image) const = 0;
+  virtual void visualizeMean(int sectors, cv::Mat &image) const; 
+  virtual void visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) const; 
 
-	protected:
-		of_algorithm algo;
+ protected:
+  of_algorithm algo;
 
 };
 
@@ -74,68 +79,68 @@ class OpticalFlow {
 
 /// class representing dense optical flow
 class MHDenseOpticalFlow : public OpticalFlow {
-	public:
-		MHDenseOpticalFlow(int rows, int cols);
-		virtual ~MHDenseOpticalFlow();
-		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
-		virtual void clear();
-		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
-		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
-		virtual CvMat* getVelXf();
-		virtual CvMat* getVelYf();
-		virtual float getMeanVelXf(int x0, int x1, int y0, int y1) const;
-		virtual float getMeanVelYf(int x0, int x1, int y0, int y1) const;
-		virtual void visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &image) const;
-		virtual void visualize(cv::Mat &image) const;
-		virtual int getDirection(cv::Mat &image) const;
+ public:
+  MHDenseOpticalFlow(int rows, int cols);
+  virtual ~MHDenseOpticalFlow();
+  virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
+  virtual void clear();
+  virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
+  virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
+  virtual CvMat* getVelXf();
+  virtual CvMat* getVelYf();
+  virtual float getMeanVelXf(int x0, int x1, int y0, int y1) const;
+  virtual float getMeanVelYf(int x0, int x1, int y0, int y1) const;
+  virtual void visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &image) const;
+  virtual void visualize(cv::Mat &image) const;
+  virtual int getDirection(cv::Mat &image) const;
 
-	protected:
-		CvMat *velX, *velY;
-		CvMat *velXf, *velYf;
+ protected:
+  CvMat *velX, *velY;
+  CvMat *velXf, *velYf;
 };
 
 inline MHDenseOpticalFlow::MHDenseOpticalFlow(int rows, int cols) {
-	velX = cvCreateMat(rows, cols, CV_8SC1);
-	velY = cvCreateMat(rows, cols, CV_8SC1);
-	velXf = cvCreateMat(rows, cols, CV_32F);
-	velYf = cvCreateMat(rows, cols, CV_32F);
+  velX = cvCreateMat(rows, cols, CV_8SC1);
+  velY = cvCreateMat(rows, cols, CV_8SC1);
+  velXf = cvCreateMat(rows, cols, CV_32F);
+  velYf = cvCreateMat(rows, cols, CV_32F);
 }
 inline void MHDenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
-	*( (signed char*)CV_MAT_ELEM_PTR(*(velX), y, x) ) = dx;
-	*( (signed char*)CV_MAT_ELEM_PTR(*(velY), y, x) ) = dy;
+  *( (signed char*)CV_MAT_ELEM_PTR(*(velX), y, x) ) = dx;
+  *( (signed char*)CV_MAT_ELEM_PTR(*(velY), y, x) ) = dy;
 }
 inline void MHDenseOpticalFlow::clear() {
-// 	TODO
+  // 	TODO
 }
 inline CvMat* MHDenseOpticalFlow::getVelXf() {
-	return(velXf);
+  return(velXf);
 }
 inline CvMat* MHDenseOpticalFlow::getVelYf() {
-	return (velYf);
+  return (velYf);
 }
 
 /// class representing sparse optical flow
 class SparseOpticalFlow : public OpticalFlow {
-	public:
-		SparseOpticalFlow();
-		virtual ~SparseOpticalFlow();
-		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
-		virtual void clear();
-		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
-		virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
-		virtual void visualize(cv::Mat &image) const;
+ public:
+  SparseOpticalFlow();
+  virtual ~SparseOpticalFlow();
+  virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
+  virtual void clear();
+  virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
+  virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
+  virtual void visualize(cv::Mat &image) const;
 
-	protected:
-		std::list<Displacement> velocity;
+ protected:
+  std::list<Displacement> velocity;
 
 };
 inline SparseOpticalFlow::SparseOpticalFlow() {
 }
 inline void SparseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
-	velocity.push_back( Displacement(x, y, dx, dy) );
+  velocity.push_back( Displacement(x, y, dx, dy) );
 }
 inline void SparseOpticalFlow::clear() {
-	velocity.clear();
+  velocity.clear();
 }
 
 #endif // CV_MINOR_VERSION >= 2
