@@ -148,7 +148,7 @@ namespace mavhub {
     // this is for omni case
     width = static_cast<int>(params["unwrap_w"]);
     height = static_cast<int>(params["unwrap_h"]);
-    oFlow = new DenseOpticalFlow(height, width);
+    oFlow = new MHDenseOpticalFlow(height, width);
     switch(algo) {
     case FIRST_ORDER:
       // cout << "pre ofModel = new FirstOrder: w: " << width << ", h: " << height << endl;
@@ -495,8 +495,8 @@ namespace mavhub {
     // cv::line(img, p, q, color, lineThickness, CV_AA, 0 );
     // cv::line(img, q, q, color, lineThickness*3, CV_AA, 0 );
 
-    static DenseOpticalFlow *oFlow;
-    oFlow = (DenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
+    static MHDenseOpticalFlow *oFlow;
+    oFlow = (MHDenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
     // oFlow->visualizeMeanXYf(8, 1, img);
     oFlow->visualizeMeanXYf(2, 2, img);
   }
@@ -769,7 +769,7 @@ namespace mavhub {
   }
 
   void V_OFLOWCarApp::getOF_LK() {
-    static DenseOpticalFlow *oFlow;
+    static MHDenseOpticalFlow *oFlow;
     int sectors_x = 2;
     int sectors_y = 2;
     int sector_width  = is_width  / sectors_x;
@@ -785,8 +785,8 @@ namespace mavhub {
     ofModels[1]->calcOpticalFlow(new_image);
     // log(name(), "post calcOpticalFlow", Logger::LOGLEVEL_DEBUG);
     // get oFlow object ref
-    //oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
-    oFlow = (DenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
+    //oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
+    oFlow = (MHDenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
 
     // visualize secotrized mean flow
     // this isn't necessary anymore
@@ -843,8 +843,8 @@ namespace mavhub {
     int sector_height = is_height / sectors_y;
     int i, j;
 
-    // velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
-    // vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
+    // velx = ((MHDenseOpticalFlow*)oFlow)->getVelXf();
+    // vely = ((MHDenseOpticalFlow*)oFlow)->getVelYf();
 
     // cvCalcOpticalFlowLK(&old_image, &new_image, cvSize(5,5),
     // 										velx,
@@ -956,7 +956,7 @@ namespace mavhub {
   }
 
   void V_OFLOWCarApp::getOF_LK_Pyr() {
-    // static DenseOpticalFlow *oFlow;
+    // static MHDenseOpticalFlow *oFlow;
     static vector<Point2f> points[2];
     static const int MAX_COUNT = 500;
     static Point2f pt;

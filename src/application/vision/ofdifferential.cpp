@@ -8,7 +8,7 @@
 using namespace std;
 
 FirstOrder::FirstOrder(int height, int width) : height(height), width(width), lastImage(0) {
-	oFlow = new DenseOpticalFlow(height, width);
+	oFlow = new MHDenseOpticalFlow(height, width);
 }
 
 FirstOrder::~FirstOrder() {
@@ -113,7 +113,7 @@ const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
 }
 
 HornSchunck::HornSchunck(int height, int width) : height(height), width(width), lastImage(0) {
-	oFlow = new DenseOpticalFlow(height, width);
+	oFlow = new MHDenseOpticalFlow(height, width);
 }
 
 HornSchunck::~HornSchunck() {
@@ -172,7 +172,7 @@ const OpticalFlow &HornSchunck::calcOpticalFlow(const IplImage &image) {
 }
 
 LucasKanade::LucasKanade(int height, int width) : height(height), width(width), lastImage(0) {
-	oFlow = new DenseOpticalFlow(height, width);
+	oFlow = new MHDenseOpticalFlow(height, width);
 }
 
 LucasKanade::~LucasKanade() {
@@ -195,8 +195,8 @@ const OpticalFlow &LucasKanade::calcOpticalFlow(const IplImage &image) {
   double _x = 0;
   double _y = 0;
 
-  velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
-  vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
+  velx = ((MHDenseOpticalFlow*)oFlow)->getVelXf();
+  vely = ((MHDenseOpticalFlow*)oFlow)->getVelYf();
 
   // cvSet(velx, cvScalarAll(0));
   // cvSet(vely, cvScalarAll(0));

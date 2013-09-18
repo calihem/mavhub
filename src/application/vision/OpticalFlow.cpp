@@ -121,14 +121,14 @@ void OpticalFlow::visualizeMeanXY(int sectorsx, int sectorsy, cv::Mat &image) co
 	}
 }
 
-DenseOpticalFlow::~DenseOpticalFlow() {
+MHDenseOpticalFlow::~MHDenseOpticalFlow() {
 	cvReleaseMat(&velX);
 	cvReleaseMat(&velY);
 	cvReleaseMat(&velXf);
 	cvReleaseMat(&velYf);
 }
 
-int DenseOpticalFlow::getMeanVelX(int x0, int x1, int y0, int y1) const {
+int MHDenseOpticalFlow::getMeanVelX(int x0, int x1, int y0, int y1) const {
 	int32_t sum_x = 0;	//sum of vectors
 	int16_t num_x = 0;	//number of vectors which are not null
 
@@ -151,7 +151,7 @@ int DenseOpticalFlow::getMeanVelX(int x0, int x1, int y0, int y1) const {
 	return 0;
 }
 
-int DenseOpticalFlow::getMeanVelY(int x0, int x1, int y0, int y1) const {
+int MHDenseOpticalFlow::getMeanVelY(int x0, int x1, int y0, int y1) const {
 	int32_t sum_y = 0;	//sum of vectors
 	int16_t num_y = 0;	//number of vectors which are not null
 
@@ -174,7 +174,7 @@ int DenseOpticalFlow::getMeanVelY(int x0, int x1, int y0, int y1) const {
 	return 0;
 }
 
-float DenseOpticalFlow::getMeanVelXf(int x0, int x1, int y0, int y1) const {
+float MHDenseOpticalFlow::getMeanVelXf(int x0, int x1, int y0, int y1) const {
 	float sum_x = 0;	//sum of vectors
 	int16_t num_x = 0;	//number of vectors which are not null
 
@@ -201,7 +201,7 @@ float DenseOpticalFlow::getMeanVelXf(int x0, int x1, int y0, int y1) const {
 	return 0;
 }
 
-float DenseOpticalFlow::getMeanVelYf(int x0, int x1, int y0, int y1) const {
+float MHDenseOpticalFlow::getMeanVelYf(int x0, int x1, int y0, int y1) const {
 	float sum_y = 0;	//sum of vectors
 	int16_t num_y = 0;	//number of vectors which are not null
 
@@ -224,7 +224,7 @@ float DenseOpticalFlow::getMeanVelYf(int x0, int x1, int y0, int y1) const {
 	return 0;
 }
 
-void DenseOpticalFlow::visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &image) const {
+void MHDenseOpticalFlow::visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &image) const {
   CvPoint p,q;
   float dx, dy;
   // int avgx = 0, avgy = 0;
@@ -285,7 +285,7 @@ void DenseOpticalFlow::visualizeMeanXYf(int sectorsx, int sectorsy, cv::Mat &ima
   // cv::add(velXf, velYf, image);
 }
 
-void DenseOpticalFlow::visualize(cv::Mat &image) const {
+void MHDenseOpticalFlow::visualize(cv::Mat &image) const {
 
 //        for(int y=1; y<image.rows-1; y+=3) {
 //		for(int x=1; x<image.width-1; x+=3) {
@@ -307,7 +307,7 @@ void DenseOpticalFlow::visualize(cv::Mat &image) const {
 }
 
 
-int DenseOpticalFlow::getDirection(cv::Mat &image) const{
+int MHDenseOpticalFlow::getDirection(cv::Mat &image) const{
 
 
 //    cv::Mat* dirImage = cvCreateImage(cvSize(200,200),8,1);

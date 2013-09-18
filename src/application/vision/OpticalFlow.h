@@ -73,10 +73,10 @@ class OpticalFlow {
 /* } */
 
 /// class representing dense optical flow
-class DenseOpticalFlow : public OpticalFlow {
+class MHDenseOpticalFlow : public OpticalFlow {
 	public:
-		DenseOpticalFlow(int rows, int cols);
-		virtual ~DenseOpticalFlow();
+		MHDenseOpticalFlow(int rows, int cols);
+		virtual ~MHDenseOpticalFlow();
 		virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
 		virtual void clear();
 		virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
@@ -94,23 +94,23 @@ class DenseOpticalFlow : public OpticalFlow {
 		CvMat *velXf, *velYf;
 };
 
-inline DenseOpticalFlow::DenseOpticalFlow(int rows, int cols) {
+inline MHDenseOpticalFlow::MHDenseOpticalFlow(int rows, int cols) {
 	velX = cvCreateMat(rows, cols, CV_8SC1);
 	velY = cvCreateMat(rows, cols, CV_8SC1);
 	velXf = cvCreateMat(rows, cols, CV_32F);
 	velYf = cvCreateMat(rows, cols, CV_32F);
 }
-inline void DenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
+inline void MHDenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
 	*( (signed char*)CV_MAT_ELEM_PTR(*(velX), y, x) ) = dx;
 	*( (signed char*)CV_MAT_ELEM_PTR(*(velY), y, x) ) = dy;
 }
-inline void DenseOpticalFlow::clear() {
+inline void MHDenseOpticalFlow::clear() {
 // 	TODO
 }
-inline CvMat* DenseOpticalFlow::getVelXf() {
+inline CvMat* MHDenseOpticalFlow::getVelXf() {
 	return(velXf);
 }
-inline CvMat* DenseOpticalFlow::getVelYf() {
+inline CvMat* MHDenseOpticalFlow::getVelYf() {
 	return (velYf);
 }
 
