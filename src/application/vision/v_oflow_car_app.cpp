@@ -21,6 +21,8 @@
 
 #define ACTION_TOGGLE_LC 2
 
+#define SUBFLOWS
+
 using namespace std;
 using namespace cpp_pthread;
 using namespace cv;
@@ -114,15 +116,10 @@ namespace mavhub {
     // init execution timer
     exec_tmr = new Exec_Timing(ctl_update_rate);
 
-    // neural network
-    // ann = fann_create_from_file("n_lateral_control.net");
-
-    // cout << "set OF of_algo" << endl;
-    // of_algo = (of_algorithm)FIRST_ORDER;
-    //of_algo = (of_algorithm)LK;
-    // of_algo = (of_algorithm)LK_PYR;
+    // initialize oflow models
     initModels();
 
+    // moving average filter for gyro substraction
     ma_pitch = new MA(1200, 0.);
     ma_roll = new MA(1200, 0.);
 
@@ -149,12 +146,19 @@ namespace mavhub {
     // FO, HS, LK, LKPyr, FB, SF
     // experimental: SFA and other dimreduction methods
     // cvCalcOpticalFlowLK, BM, HS
+#ifdef SUBFLOWS
+    int i;
+    for(i = 0; i < 4; i++) {
+      ofModels[i]           = new LucasKanade(40, 40);
+    }
+#else
     ofModels[FIRST_ORDER]  = new FirstOrder(height, width);
     ofModels[HORN_SCHUNCK] = new HornSchunck(height, width);
     ofModels[LK]           = new LucasKanade(height, width);
     ofModels[HORN_SCHUNCK_CV] = new HornSchunckCV(height, width);
     ofModels[BLOCK_MATCHING_CV] = new BlockMatchingCV(height, width);
     ofModels[FARNEBACK] = new Farneback(height, width);
+#endif
     return 0;
   }
 
@@ -294,12 +298,29 @@ namespace mavhub {
     start = 0; end = 0;
 
     cv::Point center(new_image.cols/2, new_image.rows/2);
+    Mat imageROI;
 
     if(new_image.cols == 0)
       return;
 
     // start = get_time_us(); // bench
 
+#ifdef SUBFLOWS
+    int ii, jj, mi;
+    for(ii = 0; ii < sectors_y; ii++) {
+      for(jj = 0; jj < sectors_x; jj++) {
+        Rect roirect(sector_width*jj+60, sector_height*ii+40, 40, 40);
+        cout << roirect << endl;
+        imageROI = new_image(roirect);
+        mi = jj*2+ii;
+        ofModels[mi]->calcOpticalFlow(imageROI);
+        oFlow = (MHDenseOpticalFlow*)&(ofModels[mi]->getOpticalFlow());
+        sensor_array_x.data[(jj*sectors_y*2)+(2*ii)] = oFlow->getMeanVelXf(1, 39, 1, 39);
+        sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)] = oFlow->getMeanVelYf(1, 39, 1, 39);
+      }
+    }
+
+#else
     if (static_cast<int>(params["cam_type"]) == CAM_TYPE_PLANAR) {
       start = get_time_us();
       switch(of_algo) {
@@ -317,6 +338,8 @@ namespace mavhub {
       case LK:
         // use openCV Lucas-Kanade plain
         // log(name(), "pre getOF_LK", Logger::LOGLEVEL_DEBUG);
+        // int subflowsx = 2;
+        // int subflowsy = 2;
         ofModels[LK]->calcOpticalFlow(new_image);
         // getOF_LK();
         // log(name(), "post getOF_LK", Logger::LOGLEVEL_DEBUG);
@@ -373,13 +396,14 @@ namespace mavhub {
       of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
       break;
     }
+#endif
 
     // end = get_time_us();
     // Logger::log(name(), "bench: ", end - start, Logger::LOGLEVEL_DEBUG);
 
     if(with_out_stream && Core::video_server) {
       img_display = new_image.clone();
-      visualize(img_display);
+      // visualize(img_display);
       // cv::Mat match_img;
       // cv::drawMatches(old_image, old_features,
       // 	new_image, new_features,
@@ -461,7 +485,7 @@ namespace mavhub {
     //oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
     oFlow = (MHDenseOpticalFlow*)&(ofModels[HORN_SCHUNCK_CV]->getOpticalFlow());
 
-    // visualize secotrized mean flow
+    // visualize sectorized mean flow
     // this isn't necessary anymore
     // oFlow->visualizeMeanXYf(1, 1, new_image);
 

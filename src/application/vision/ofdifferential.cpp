@@ -385,11 +385,14 @@ const OpticalFlow &LucasKanade::calcOpticalFlow(const IplImage &image) {
   // cvSet(velx, cvScalarAll(0));
   // cvSet(vely, cvScalarAll(0));
 
-  // cv::Mat m(velx);
-  // // m.setTo(0.);
-  // // cout << "velx:" << velx << endl;
-  // cout << "m: " << m << endl;
-  // // velx = (CvMat*) &m;
+  // cout << "img.width: " << image.width << endl;
+  // cout << "img.height: " << image.height << endl;
+  // if(lastImage) {
+  //   cout << "limg.width: " << lastImage->width << endl;
+  //   cout << "limg.height: " << lastImage->height << endl;
+  // }
+  // cout << "velx.cols: " << velx->cols << endl;
+  // cout << "velx.rows: " << velx->rows << endl;
 
   if(lastImage) {
     cvCalcOpticalFlowLK(lastImage, &image, cvSize(5,5),
