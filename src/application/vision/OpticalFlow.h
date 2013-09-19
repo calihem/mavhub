@@ -55,7 +55,9 @@ enum cam_type_t {
 /// abstract base class representing optical flow
 class OpticalFlow {
  public:
+  virtual ~OpticalFlow();
   virtual void setVelocity(int x, int y, int dx = 0, int dy = 0) = 0;
+  virtual void setVelocityf(int x, int y, float dx = 0., float dy = 0.) = 0;
   virtual void clear() = 0;
   virtual int getMeanVelX(int x0, int x1, int y0, int y1) const = 0;
   virtual int getMeanVelY(int x0, int x1, int y0, int y1) const = 0;
@@ -83,6 +85,7 @@ class MHDenseOpticalFlow : public OpticalFlow {
   MHDenseOpticalFlow(int rows, int cols);
   virtual ~MHDenseOpticalFlow();
   virtual void setVelocity(int x, int y, int dx = 0, int dy = 0);
+  virtual void setVelocityf(int x, int y, float dx = 0., float dy = 0.);
   virtual void clear();
   virtual int getMeanVelX(int x0, int x1, int y0, int y1) const;
   virtual int getMeanVelY(int x0, int x1, int y0, int y1) const;
@@ -105,10 +108,19 @@ inline MHDenseOpticalFlow::MHDenseOpticalFlow(int rows, int cols) {
   velXf = cvCreateMat(rows, cols, CV_32F);
   velYf = cvCreateMat(rows, cols, CV_32F);
 }
+
 inline void MHDenseOpticalFlow::setVelocity(int x, int y, int dx, int dy) {
+  // int
   *( (signed char*)CV_MAT_ELEM_PTR(*(velX), y, x) ) = dx;
   *( (signed char*)CV_MAT_ELEM_PTR(*(velY), y, x) ) = dy;
 }
+
+inline void MHDenseOpticalFlow::setVelocityf(int x, int y, float dx, float dy) {
+  // float
+  *( (float*)CV_MAT_ELEM_PTR(*(velXf), y, x) ) = dx;
+  *( (float*)CV_MAT_ELEM_PTR(*(velYf), y, x) ) = dy;
+}
+
 inline void MHDenseOpticalFlow::clear() {
   // 	TODO
 }

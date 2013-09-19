@@ -79,6 +79,19 @@ class LucasKanade : public OFModel {
   IplImage *lastImage;
 };
 
+class Farneback : public OFModel {
+ public:
+  Farneback(int height, int width);
+  virtual ~Farneback();
+  virtual const OpticalFlow &calcOpticalFlow(const IplImage &image);
+  const OpticalFlow &calcOpticalFlow2(cv::Mat &image);
+
+ private:
+  int height;
+  int width;
+  IplImage *lastImage;
+};
+
 #endif // CV_MINOR_VERSION >= 2
 #endif // HAVE_OPENCV2
 #endif

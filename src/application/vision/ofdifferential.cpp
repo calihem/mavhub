@@ -30,10 +30,13 @@ const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
 		
     int8_t sgn_u, sgn_v;
     int16_t diff;
+    float u, v;
     // uint32_t abs_grad_x, abs_grad_y, abs_grad_t, grad_magn;
     double abs_grad_x, abs_grad_y, abs_grad_t, grad_magn;
     register uint index, indexyp1, indexym1;
     index = indexyp1 = indexym1 = 0;
+
+    u = v = 0.;
 
     for(int y=1;y<height-1;y++) {
       for(int x=1;x<width-1;x++) {
@@ -67,19 +70,23 @@ const OpticalFlow &FirstOrder::calcOpticalFlow(const IplImage &image) {
             // cout << "grad_magn = " << grad_magn << endl;
             // better would be || \nabla I || >= THRESHOLD
             if( grad_magn > 0) { // 6*32
-              oFlow->setVelocity(x, y,
-                                 -sgn_u * ((abs_grad_x * abs_grad_t) / grad_magn),
-                                 -sgn_v * ((abs_grad_y * abs_grad_t) / grad_magn)
-                                 );
-            } else {//set zero
-              oFlow->setVelocity(x, y, 0, 0);
+              u = -sgn_u * ((abs_grad_x * abs_grad_t) / grad_magn);
+              v = -sgn_v * ((abs_grad_y * abs_grad_t) / grad_magn);
+              // oFlow->setVelocityf(x, y, u, v);
             }
-          } else {//set zero
-            oFlow->setVelocity(x, y, 0, 0);
+            // else {//set zero
+            //   oFlow->setVelocityf(x, y, 0, 0);
+            // }
           }
-        } else {//set zero
-          oFlow->setVelocity(x, y, 0, 0);
+          // else {//set zero
+          //   oFlow->setVelocity(x, y, 0, 0);
+          // }
         }
+        // else {//set zero
+        //   oFlow->setVelocity(x, y, 0, 0);
+        // }
+        oFlow->setVelocityf(x, y, u, v);
+
       }
     }
     // replace last image with current image
@@ -238,7 +245,9 @@ const OpticalFlow &HornSchunck::calcOpticalFlow(const IplImage &image) {
         u = -sgn_u * (((abs_grad_x * abs_grad_t) << 19) / divisor);
         v = -sgn_v * (((abs_grad_y * abs_grad_t) << 19) / divisor);
 
-        oFlow->setVelocity(x, y, u, v);
+        // cout << "u: " << (int)u << ", v: " << (int)v << endl;
+        // oFlow->setVelocity(x, y, u, v);
+        oFlow->setVelocityf(x, y, (float)u, (float)v);
       }
     }
 		
@@ -337,7 +346,6 @@ const OpticalFlow &BlockMatchingCV::calcOpticalFlow(const IplImage &image) {
     lastImage = cvCloneImage(&image);
   }
   return *oFlow;
-  return *oFlow;
 }
 
 /// first order optical flow
@@ -345,6 +353,8 @@ const OpticalFlow &BlockMatchingCV::calcOpticalFlow2(Mat &image) {
   return calcOpticalFlow(image);
 }
 
+////////////////////////////////////////////////////////////
+// LucasKanade
 LucasKanade::LucasKanade(int height, int width) : height(height), width(width), lastImage(0) {
   oFlow = new MHDenseOpticalFlow(height, width);
 }
@@ -433,6 +443,61 @@ const OpticalFlow &LucasKanade::calcOpticalFlow(const IplImage &image) {
 
 /// first order optical flow
 const OpticalFlow &LucasKanade::calcOpticalFlow2(Mat &image) {
+  return *oFlow;
+}
+
+////////////////////////////////////////////////////////////
+// Farneback OpenCV
+Farneback::Farneback(int height, int width) : height(height), width(width), lastImage(0) {
+  oFlow = new MHDenseOpticalFlow(height, width);
+}
+
+Farneback::~Farneback() {
+  delete oFlow;
+  if(lastImage)
+    cvReleaseImage(&lastImage);
+}
+
+const OpticalFlow &Farneback::calcOpticalFlow(const IplImage &image) {
+  CvMat *velx, *vely;
+  Mat flow;
+  Mat limg(lastImage);
+  Mat img(&image);
+  int i,j;
+  Point p;
+
+  velx = ((MHDenseOpticalFlow*)oFlow)->getVelXf();
+  vely = ((MHDenseOpticalFlow*)oFlow)->getVelYf();
+
+
+  if(lastImage) {
+    calcOpticalFlowFarneback(limg, img, flow, 0.5, 3, 15, 3, 5, 1.2, 0);
+    for(i = 0; i < flow.rows; i++) {
+      for(j = 0; j < flow.cols; j++) {
+        p = flow.at<Point2f>(i, j);
+        CV_MAT_ELEM(*velx, float, i, j) = p.x;
+        CV_MAT_ELEM(*vely, float, i, j) = p.y;
+        // cout << "p.x: " << p.x << ", p.y: " << p.y << endl;
+        // cout << "velx: " << CV_MAT_ELEM(*velx, float, i,j) << ", vely: " << CV_MAT_ELEM(*vely, float, i,j) << endl;
+      }
+    }
+
+    //replace last image with current image
+    cvCopy(&image, lastImage, NULL);
+
+  } else {
+    lastImage = cvCloneImage(&image);
+  }
+
+  // cvReleaseImage(&velx);
+  // cvReleaseImage(&vely);
+  // cv::ReleaseMat(&velx);
+  // cv::ReleaseMat(&vely);
+  return *oFlow;
+}
+
+/// first order optical flow
+const OpticalFlow &Farneback::calcOpticalFlow2(Mat &image) {
   return *oFlow;
 }
 

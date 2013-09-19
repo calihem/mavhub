@@ -81,6 +81,7 @@ namespace mavhub {
       bool new_video_data;
       /// Mutex to sync between application thread and input calls
       pthread_mutex_t sync_mutex;
+      // pthread_mutex_t extctrl_mutex;
       unsigned int target_system;
       unsigned int target_component;
       unsigned int imu_rate;
@@ -110,7 +111,7 @@ namespace mavhub {
       // LK pyr init
       bool needToInit;
 
-      of_algorithm algo;
+      of_algorithm of_algo;
       OFModel *ofModel;
       OFModel* ofModels[NUM_OF_ALGORITHM];
       OpticalFlow *oFlow;
