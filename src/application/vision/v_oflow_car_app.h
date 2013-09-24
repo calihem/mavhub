@@ -154,6 +154,9 @@ namespace mavhub {
       cv::Mat new_image_raw;
       cv::Mat img_display;
       cv::Mat flow;
+      // neural network
+      cv::Mat M1;
+      cv::Mat u;
       /* mavlink_attitude_t old_attitude; */
       /* mavlink_attitude_t new_attitude; */
       /* 		std::vector<cv::KeyPoint> old_features; */

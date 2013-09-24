@@ -102,6 +102,13 @@ namespace mavhub {
     // read config
     read_conf(args);
 
+    // neural network config via OpenCV / yaml
+    FileStorage fs2("M1_cv.yml", FileStorage::READ);
+    fs2["M1_cv"] >> M1;
+    Logger::log(name(), "M1", M1, Logger::LOGLEVEL_DEBUG);
+    // Mat u(8, 1, CV_32F);
+    u = Mat::zeros(9, 1, CV_64FC1);
+
     // // get calibration data of camera
     // //FIXME: use image dimensions for default camera matrix
     // cam_matrix = (cv::Mat_<double>(3,3) << 1.0, 0.0, 160.0, 0.0, 1.0, 120.0, 0.0, 0.0, 1.0);
@@ -285,12 +292,14 @@ namespace mavhub {
   }
 
   void V_OFLOWCarApp::calcFlow() {
-    static MHDenseOpticalFlow *oFlow;
+    static MHDenseOpticalFlow *oFlow; // FIXME: heighten the scope of the flow pointer
     int sectors_x = 2;
     int sectors_y = 2;
     int sector_width  = is_width  / sectors_x;
     int sector_height = is_height / sectors_y;
     int i, j;
+    static mavlink_message_t msg;
+    static mavlink_debug_t dbg;
 
     //FIXME: remove benchmark
 
@@ -319,6 +328,30 @@ namespace mavhub {
         sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)] = oFlow->getMeanVelYf(1, 39, 1, 39);
       }
     }
+
+    // FIXME: exec pre-trained neural network?
+    // put flow into u
+    Mat_<double> yM;
+    double y;
+    Mat_<float>& u1 = (Mat_<float>&)u;
+    // u1(0,0)  =sensor_array_x.data[0];
+    // u1(1,0) = sensor_array_x.data[1];
+    // u1(2,0) = sensor_array_x.data[2];
+    // u1(3,0) = sensor_array_x.data[3];
+    // u1(4,0) = sensor_array_x.data[4];
+    // u1(5,0) = sensor_array_x.data[5];
+    // u1(6,0) = sensor_array_x.data[6];
+    // u1(7,0) = sensor_array_x.data[7];
+    for (ii = 0; ii < 8; ii++) {
+      u.at<double>(0,ii) = sensor_array_x.data[ii];
+      Logger::log(name(), "u(0,0), sa[0]", u.at<double>(0,ii), sensor_array_x.data[ii], Logger::LOGLEVEL_DEBUG);
+    }
+    // cout << "u1 = " << u1 << endl;
+    yM = M1 * u;
+    // y = yM(0,0);
+    cout << "M1 u = " << yM << endl;
+    send_debug(&msg, &dbg, 30, yM.at<double>(0,0));
+    send_debug(&msg, &dbg, 31, tanh(yM.at<double>(0,0)));
 
 #else
     if (static_cast<int>(params["cam_type"]) == CAM_TYPE_PLANAR) {
