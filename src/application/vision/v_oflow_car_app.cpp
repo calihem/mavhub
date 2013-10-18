@@ -105,9 +105,14 @@ namespace mavhub {
     // neural network config via OpenCV / yaml
     FileStorage fs2("M1_cv.yml", FileStorage::READ);
     fs2["M1_cv"] >> M1;
-    Logger::log(name(), "M1", M1, Logger::LOGLEVEL_DEBUG);
+    // Logger::log(name(), "M1", M1, Logger::LOGLEVEL_DEBUG);
     // Mat u(8, 1, CV_32F);
     u = Mat::zeros(9, 1, CV_64FC1);
+
+    // reservoir config via OpenCV / yaml
+    fs2.open("res_M_cv.yml", FileStorage::READ);
+    fs2["res_M_cv"] >> res_M;
+    Logger::log(name(), "res_M", res_M, Logger::LOGLEVEL_DEBUG);
 
     // // get calibration data of camera
     // //FIXME: use image dimensions for default camera matrix
@@ -283,12 +288,45 @@ namespace mavhub {
 
   void V_OFLOWCarApp::visualize(cv::Mat img) {
     static MHDenseOpticalFlow *oFlow;
-    // Logger::log(name(), "visualize of_algo", of_algo, Logger::LOGLEVEL_DEBUG);
+    int sectors_x = 2;
+    int sectors_y = 2;
+    int sector_width  = is_width  / sectors_x;
+    int sector_height = is_height / sectors_y;
+    CvPoint p,q;
+    const CvScalar color = CV_RGB(255,0,0);
+    const int linethickness = 2.;
+#ifdef SUBFLOWS
+    Mat sml_img;
+    Size sml_s(160, 120);
+    int ii, jj, mi;
+    for(ii = 0; ii < sectors_y; ii++) {
+      for(jj = 0; jj < sectors_x; jj++) {
+        Rect roirect(sector_width*jj+60, sector_height*ii+40, 40, 40);
+        // cout << roirect << endl;
+        // imageROI = new_image(roirect);
+        mi = jj*2+ii;
+        rectangle(img, roirect, 
+                  Scalar( 0, 255, 255 ), linethickness, 8, 0);
+        p.x = sector_width*jj+80; // +(sectorWidth/2);
+        p.y = sector_height*ii+60; // (sectorHeight/2);
+        q.x = p.x - 10.0 * sensor_array_x.data[(jj*sectors_y*2)+(2*ii)]; // dx;
+        q.y = p.y - 10.0 * sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)]; //dy;
+        line(img, p, q, color, linethickness, CV_AA, 0 );
+      }
+    }
+    // optional but nice
+    flip(img, img, 0);
+    // scale down
+    // resize(img, sml_img, sml_s);
+    // img = sml_img.clone();
+#else
+    Logger::log(name(), "visualize of_algo", of_algo, Logger::LOGLEVEL_DEBUG);
     oFlow = (MHDenseOpticalFlow*)&(ofModels[of_algo]->getOpticalFlow());
     // oFlow->visualizeMeanXYf(8, 1, img);
     oFlow->visualizeMeanXYf(2, 2, img);
-    // Logger::log(name(), "visualize velX", oFlow->getMeanVelX(0, is_width, 0, is_height), Logger::LOGLEVEL_DEBUG);
-    // Logger::log(name(), "visualize velXf", oFlow->getMeanVelXf(0, is_width, 0, is_height), Logger::LOGLEVEL_DEBUG);
+    Logger::log(name(), "visualize velX", oFlow->getMeanVelX(0, is_width, 0, is_height), Logger::LOGLEVEL_DEBUG);
+    Logger::log(name(), "visualize velXf", oFlow->getMeanVelXf(0, is_width, 0, is_height), Logger::LOGLEVEL_DEBUG);
+#endif
   }
 
   void V_OFLOWCarApp::calcFlow() {
@@ -319,7 +357,7 @@ namespace mavhub {
     for(ii = 0; ii < sectors_y; ii++) {
       for(jj = 0; jj < sectors_x; jj++) {
         Rect roirect(sector_width*jj+60, sector_height*ii+40, 40, 40);
-        cout << roirect << endl;
+        // cout << roirect << endl;
         imageROI = new_image(roirect);
         mi = jj*2+ii;
         ofModels[mi]->calcOpticalFlow(imageROI);
@@ -328,6 +366,13 @@ namespace mavhub {
         sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)] = oFlow->getMeanVelYf(1, 39, 1, 39);
       }
     }
+
+    // we have a set of subflow / EMDs in sensor_array, no we want to execute
+    // some type of dimensionality reduction / PCA
+    // 1) standard PCA
+    // 2) reservoir PCA
+    // 3) autoencoder network
+    // 3) whitening, ICA, SFA, KPCA
 
     // FIXME: exec pre-trained neural network?
     // put flow into u
@@ -344,12 +389,12 @@ namespace mavhub {
     // u1(7,0) = sensor_array_x.data[7];
     for (ii = 0; ii < 8; ii++) {
       u.at<double>(0,ii) = sensor_array_x.data[ii];
-      Logger::log(name(), "u(0,0), sa[0]", u.at<double>(0,ii), sensor_array_x.data[ii], Logger::LOGLEVEL_DEBUG);
+      // Logger::log(name(), "u(0,0), sa[0]", u.at<double>(0,ii), sensor_array_x.data[ii], Logger::LOGLEVEL_DEBUG);
     }
     // cout << "u1 = " << u1 << endl;
     yM = M1 * u;
     // y = yM(0,0);
-    cout << "M1 u = " << yM << endl;
+    // cout << "M1 u = " << yM << endl;
     send_debug(&msg, &dbg, 30, yM.at<double>(0,0));
     send_debug(&msg, &dbg, 31, tanh(yM.at<double>(0,0)));
 
@@ -436,7 +481,7 @@ namespace mavhub {
 
     if(with_out_stream && Core::video_server) {
       img_display = new_image.clone();
-      // visualize(img_display);
+      visualize(img_display);
       // cv::Mat match_img;
       // cv::drawMatches(old_image, old_features,
       // 	new_image, new_features,
@@ -451,6 +496,8 @@ namespace mavhub {
       if(appsrc) {
         //log(name(), ": appsrc found", Logger::LOGLEVEL_DEBUG);
         //Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
+        resize(img_display, img_display, Size(), 0.5, 0.5);
+        // Logger::log(name(), "x,y", img_display.cols, img_display.rows, Logger::LOGLEVEL_DEBUG);
         Core::video_server->push(appsrc, img_display.data, img_display.cols, img_display.rows, 8);
         //Core::video_server->push(appsrc, old_image.data, old_image.cols, old_image.rows, 24);
       }
@@ -958,7 +1005,7 @@ namespace mavhub {
     // }
     new_video_data = true;
     uint64_t stop_time = get_time_us();
-    Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "us", Logger::LOGLEVEL_DEBUG, _loglevel);
+    // Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "us", Logger::LOGLEVEL_DEBUG, _loglevel);
   }
 
   // void V_OFLOWCarApp::load_calibration_data(const std::string &filename) {
@@ -1079,7 +1126,7 @@ namespace mavhub {
             start = get_time_us();
             calcFlow();
             end = get_time_us();
-            Logger::log(name(), "calcFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
+            // Logger::log(name(), "calcFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
             // log(name(), "post calcFlow", Logger::LOGLEVEL_DEBUG);
             // calcESN();
           }
@@ -1229,11 +1276,19 @@ namespace mavhub {
                                                &msg,
                                                &sensor_array_x);
           AppLayer<mavlink_message_t>::send(msg);
-          mavlink_msg_huch_sensor_array_encode(system_id(),
-                                               component_id,
-                                               &msg,
-                                               &sensor_array_y);
+          mavlink_data16_t dd;
+          dd.data[0] = 33;
+          mavlink_msg_data16_encode(system_id(),
+                                    component_id,
+                                    &msg,
+                                    &dd);
           AppLayer<mavlink_message_t>::send(msg);
+          
+          // mavlink_msg_huch_sensor_array_encode(system_id(),
+          //                                      component_id,
+          //                                      &msg,
+          //                                      &sensor_array_y);
+          // AppLayer<mavlink_message_t>::send(msg);
         }
         new_video_data = false;
       }
@@ -1241,7 +1296,7 @@ namespace mavhub {
       //FIXME: remove usleep
       // usleep(1000);
       end = get_time_us();
-      Logger::log(name(), "bench run(): ", end - start, Logger::LOGLEVEL_DEBUG);
+      // Logger::log(name(), "bench run(): ", end - start, Logger::LOGLEVEL_DEBUG);
     }
 
     //unbind from video server
