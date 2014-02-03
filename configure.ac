@@ -11,7 +11,7 @@ AC_CONFIG_AUX_DIR([auxdir])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -70,8 +70,13 @@ AC_SUBST([OPENCV2_LIBS])
 
 # Checks for GStreamer
 PKG_CHECK_MODULES([GSTREAMER], [gstreamer-0.10 gstreamer-app-0.10],
-	[AC_DEFINE(HAVE_GSTREAMER, [], [Use GStreamer]) gstreamer=true],
+	[AC_DEFINE(HAVE_GSTREAMER, [10], [Use GStreamer]) gstreamer=true],
 	[gstreamer=false])
+if test x$gstreamer = xfalse; then
+	PKG_CHECK_MODULES([GSTREAMER], [gstreamer-1.0 gstreamer-app-1.0],
+		[AC_DEFINE(HAVE_GSTREAMER, [1], [Use GStreamer]) gstreamer=true],
+		[gstreamer=false])
+fi
 AM_CONDITIONAL(COND_USE_GSTREAMER, test x$gstreamer = xtrue)
 
 # Checks for libraries.

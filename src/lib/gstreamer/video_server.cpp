@@ -6,15 +6,15 @@
 #include <cassert>
 #include <unistd.h>
 
-#include <gst/gst.h>
-//FIXME: check for appsink in autotools
 #include <gst/app/gstappsink.h>
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 #include <gst/app/gstappbuffer.h>
+#endif
 
 namespace hub {
 namespace gstreamer {
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 // little debug makro
 #if VERBOSE >= 1
@@ -82,8 +82,13 @@ int VideoServer::bind2appsink(VideoClient* client, const std::string &element, c
 	}
 	if( cli_sink_iter == client_sink_map.end() ) { // not connected
 		g_object_set( G_OBJECT(sink), "emit_signals", true, "sync", false, NULL);
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 		g_signal_connect(sink, "new_buffer",
-			G_CALLBACK(new_video_buffer_callback), NULL);	
+			G_CALLBACK(new_video_buffer_callback), NULL);
+#elif GST_VERSION_MAJOR == 1
+		g_signal_connect(sink, "new-sample",
+			G_CALLBACK(new_video_buffer_callback), NULL);
+#endif
 	}
 
 	// put pair to connection map
@@ -148,6 +153,7 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 	GstAppSink *sink = GST_APP_SINK(element);
 	if(!sink) return;
 
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 	GstBuffer *buffer = gst_app_sink_pull_buffer(sink);
 	if(!buffer) {
 		g_print("ERROR: pulling buffer from appsink failed\n");
@@ -174,7 +180,7 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 		gst_buffer_unref(buffer);
 		return;
 	}
-	
+
 	gint bpp(8);
 	if( !gst_structure_get_int(struc, "bpp", &bpp) ) {
 		assert(width != 0 && height != 0);
@@ -192,9 +198,75 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 	}
 
 	gst_buffer_unref(buffer);
+
+#elif GST_VERSION_MAJOR == 1
+	GstSample *sample = gst_app_sink_pull_sample(sink);
+	if(!sample) {
+		g_print("ERROR: pulling sample from appsink failed\n");
+		return;
+	}
+	// define variables here to avoid jumps crossing initialization
+	GstBuffer *buffer(NULL);
+	gint bpp(8);
+	GstMemory *memory(NULL);
+	std::map<VideoClient*, GstElement*>::iterator cli_sink_iter;
+
+	GstCaps *caps = gst_sample_get_caps(sample);
+	if(!caps) {
+		g_print("ERROR: getting caps from sample failed\n");
+		goto _return;
+	}
+	if( !gst_caps_is_fixed(caps) ) {
+		g_print("ERROR: caps aren't fixed\n");
+		goto _return;
+	}
+	const GstStructure *struc;
+	struc = gst_caps_get_structure(caps, 0); // structure returned belongs to caps
+	gint height, width;
+	if( !gst_structure_get_int(struc, "width", &width)
+	|| !gst_structure_get_int(struc, "height", &height) ) {
+		g_print ("ERROR: width/height not available\n");
+		goto _return;
+	}
+
+	buffer = gst_sample_get_buffer(sample); // buffer belongs to sample
+	if(!buffer) {
+		g_print("ERROR: getting buffer from sample failed\n");
+		goto _return;
+	}
+
+	if( !gst_structure_get_int(struc, "bpp", &bpp) ) {
+		assert(width != 0 && height != 0);
+		bpp = 8*gst_buffer_get_size(buffer)/width/height;
+	} else {
+		assert(8*gst_buffer_get_size(buffer) >= (unsigned)width*height*bpp);
+	}
+
+	memory = gst_buffer_get_memory(buffer, 0);
+	if(!memory) {
+		g_print("ERROR: getting memory from buffer");
+		goto _return;
+	}
+	GstMapInfo info;
+	if(gst_memory_map(memory, &info, GST_MAP_READ) == FALSE) {
+		g_print("ERROR: mapping memory failed");
+		goto _return;
+	}
+
+	cli_sink_iter = client_sink_map.begin();
+	for( ; cli_sink_iter != client_sink_map.end(); ++cli_sink_iter) {
+		if(cli_sink_iter->second != element) continue;
+
+		cli_sink_iter->first->handle_video_data((unsigned char*)info.data, width, height, bpp);
+	}
+_return:
+	if(memory) gst_memory_unref(memory);
+	gst_sample_unref(sample);
+#endif
 }
 
 void VideoServer::print_elements() const {
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 	std::vector<GstElement*>::const_iterator pipe_iter;
 	for(pipe_iter = pipeline_vector.begin(); pipe_iter != pipeline_vector.end(); pipe_iter++) {
 		GstIterator *iter = gst_bin_iterate_elements( GST_BIN(*pipe_iter) );
@@ -228,6 +300,9 @@ void VideoServer::print_elements() const {
 		gst_iterator_free (iter);
 		g_print("\n");
 	}
+#elif GST_VERSION_MAJOR == 1
+	//TODO
+#endif
 }
 
 int VideoServer::push(GstAppSrc *appsrc, unsigned char *data, const int width, const int height, const int bpp) {
@@ -239,11 +314,16 @@ int VideoServer::push(GstAppSrc *appsrc, unsigned char *data, const int width, c
 	}
 
 	int data_size = width*height*bpp/8;
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 	// copy data (because of different threads)
 	gpointer buf_data = g_memdup(data, data_size);
 	GstBuffer *buf = gst_app_buffer_new(buf_data, data_size, g_free, buf_data);
 	gst_app_src_push_buffer(GST_APP_SRC(appsrc), buf); //this function takes ownership of buf
-
+#elif GST_VERSION_MAJOR == 1
+	gpointer buffer_data = g_memdup(data, data_size);
+	GstBuffer *buffer = gst_buffer_new_wrapped(buffer_data, data_size);
+	gst_app_src_push_buffer(appsrc, buffer); //this function takes ownership of buf
+#endif
 	return 0;
 }
 

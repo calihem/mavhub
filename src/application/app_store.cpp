@@ -408,7 +408,7 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 		return -2;
 	}
 
-	Logger::log("AppStore: Can't build app", lowercase_name, "since protocol not available", Logger::LOGLEVEL_INFO); 
+	Logger::log("AppStore: Can't build app", lowercase_name, "since dependencies are not fulfilled ", Logger::LOGLEVEL_INFO);
 	return -1;
 }
 
