@@ -20,7 +20,8 @@ OpenGLApp::OpenGLApp(const Logger::log_level_t loglevel) :
 #ifdef HAVE_GSTREAMER
 	hub::gstreamer::VideoClient(),
 #endif // HAVE_GSTREAMER
-	textures(1)
+	textures(1),
+	new_data(false)
 	{
 	pthread_mutex_init(&tx_mav_mutex, NULL);
 }
@@ -54,11 +55,23 @@ void OpenGLApp::handle_video_data(const unsigned char *data, const int width, co
 	OpenGLApp::height = height;
 	OpenGLApp::bpp = bpp;
 
+	if(width*height*bpp/8 > buffer_size) {
+		Logger::log(name(), "buffer size too small for video data", Logger::LOGLEVEL_WARN, _loglevel);
+		return;
+	}
+
 	Lock buf_lock(buf_mutex);
+	Logger::log(name(), "handle_video_data: locked buf_mutex", Logger::LOGLEVEL_DEBUG, _loglevel);
 	if(bpp == 8) // gray image
 		memcpy(buffer, data, width*height);
 	else if(bpp == 24) // color image
 		memcpy(buffer, data, width*height*3);
+	else {
+		Logger::log(name(), "bpp of size", bpp, "not supported", Logger::LOGLEVEL_WARN, _loglevel);
+		return;
+	}
+	new_data = true;
+	Logger::log(name(), "copied video data to buffer and unlock buf_mutex", Logger::LOGLEVEL_DEBUG, _loglevel);
 }
 #endif // HAVE_GSTREAMER
 
@@ -90,12 +103,17 @@ void OpenGLApp::run() {
 // 	Map2D::load_texture(textures[0], buffer, 290, 290);
 
 	while( !interrupted() ) {
-		{
-			Lock buf_lock(buf_mutex);
-			Map2D::load_texture(textures[0], buffer, width, height, bpp);
+		if(new_data) {
+			{ // buf_mutex scope
+				Lock buf_lock(buf_mutex);
+				Logger::log(name(), "loop: lock buf_mutex", Logger::LOGLEVEL_DEBUG, _loglevel);
+				Map2D::load_texture(textures[0], buffer, width, height, bpp);
+				new_data = false;
+			}
+			Logger::log(name(), "updated texture and unlocked buf_mutex", Logger::LOGLEVEL_DEBUG, _loglevel);
 		}
 		Map2D::display();
-		usleep(500);
+		usleep(250);
 	}
 
 	log("stop running", Logger::LOGLEVEL_DEBUG);

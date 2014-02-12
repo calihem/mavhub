@@ -42,6 +42,7 @@ namespace mavhub {
 			virtual void run();
 
 		private:
+			static const unsigned int buffer_size = 640*480*3;
 			/// Time difference since last heartbeat
 // 			uint64_t delta_time;
 			/// TX buffer for mavlink messages
@@ -53,8 +54,9 @@ namespace mavhub {
 			unsigned int width;
 			unsigned int height;
 			unsigned int bpp;
-			char buffer[921600]; //640x480x3
+			char buffer[buffer_size];
 			pthread_mutex_t buf_mutex;
+			bool new_data;
 
 #ifdef HAVE_GSTREAMER
 			static void new_video_buffer_callback(GstElement *element, GstElement *data);

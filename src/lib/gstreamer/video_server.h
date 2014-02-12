@@ -82,7 +82,11 @@ class VideoServer : public cpp_pthread::PThread {
 		static std::multimap<VideoClient*, GstElement*> client_sink_map;
 		
 		static gboolean bus_call(GstBus *bus, GstMessage *msg, void *user_data);
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 		static void new_video_buffer_callback(GstElement *element, GstElement *data);
+#elif GST_VERSION_MAJOR == 1
+		static GstFlowReturn new_video_buffer_callback(GstElement *element, GstElement *data);
+#endif
 		/**
 		 * \brief Get pipeline with given ID.
 		 */

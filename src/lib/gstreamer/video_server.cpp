@@ -149,11 +149,11 @@ GstElement* VideoServer::element(const std::string &name, const int pipeline_id)
 	return NULL;
 }
 
+#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *data) { 
 	GstAppSink *sink = GST_APP_SINK(element);
 	if(!sink) return;
 
-#if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10
 	GstBuffer *buffer = gst_app_sink_pull_buffer(sink);
 	if(!buffer) {
 		g_print("ERROR: pulling buffer from appsink failed\n");
@@ -198,12 +198,20 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 	}
 
 	gst_buffer_unref(buffer);
-
+}
 #elif GST_VERSION_MAJOR == 1
+GstFlowReturn VideoServer::new_video_buffer_callback(GstElement *element, GstElement *data) {
+	dout << "[VideoServer] new_video_buffer_callback got called" << endl;
+
+	GstFlowReturn rc = GST_FLOW_CUSTOM_ERROR;
+
+	GstAppSink *sink = GST_APP_SINK(element);
+	if(!sink) return rc;
+
 	GstSample *sample = gst_app_sink_pull_sample(sink);
 	if(!sample) {
 		g_print("ERROR: pulling sample from appsink failed\n");
-		return;
+		return rc;
 	}
 	// define variables here to avoid jumps crossing initialization
 	GstBuffer *buffer(NULL);
@@ -218,6 +226,7 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 	}
 	if( !gst_caps_is_fixed(caps) ) {
 		g_print("ERROR: caps aren't fixed\n");
+		rc = GST_FLOW_NOT_SUPPORTED;
 		goto _return;
 	}
 	const GstStructure *struc;
@@ -252,18 +261,24 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 		g_print("ERROR: mapping memory failed");
 		goto _return;
 	}
+	dout << "[VideoServer] filled info struct" << endl;
 
 	cli_sink_iter = client_sink_map.begin();
 	for( ; cli_sink_iter != client_sink_map.end(); ++cli_sink_iter) {
 		if(cli_sink_iter->second != element) continue;
 
+		dout << "[VideoServer] call handle_video_data" << endl;
 		cli_sink_iter->first->handle_video_data((unsigned char*)info.data, width, height, bpp);
 	}
+	rc = GST_FLOW_OK;
+
 _return:
 	if(memory) gst_memory_unref(memory);
 	gst_sample_unref(sample);
-#endif
+	dout << "[VideoServer] released all data" << endl;
+	return rc;
 }
+#endif
 
 void VideoServer::print_elements() const {
 #if GST_VERSION_MAJOR == 0 && GST_VERSION_MINOR == 10

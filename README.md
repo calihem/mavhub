@@ -35,14 +35,17 @@ A complete list about the supported paremeters can be found in the [boost runtim
 
 ### Optional
 * autotools
-* [boost C++ library](http://www.boost.org/)
+* [BLAS](http://www.netlib.org/blas/) (libblas-dev)
+* [boost C++ library](http://www.boost.org/) (libboost-dev)
 * [boost Unit Test Framework](http://www.boost.org/doc/libs/1_45_0/libs/test/doc/html/index.html)
 * [doxygen](http://www.doxygen.org)
 * [GStreamer](http://gstreamer.freedesktop.org/)
+* [ivy](http://www.eei.cena.fr/products/ivy/)
+* [LAPACK](http://www.netlib.org/lapack/) (liblapack-dev)
 * [mavlink](http://qgroundcontrol.org/mavlink/start)
 * mkhuchlink
-* OpenCV
-* OpenGL
+* OpenCV (libopencv-dev)
+* OpenGL (freeglut3-dev)
 
 ## Configuration
 
