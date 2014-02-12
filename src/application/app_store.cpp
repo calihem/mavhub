@@ -280,8 +280,10 @@ int AppStore::order(const std::string& app_name, const std::map<std::string, std
 #ifdef HAVE_GSTREAMER
 #ifdef HAVE_OPENCV2
 #if CV_MINOR_VERSION >= 2
+#ifdef HAVE_LIBOSCPACK
 		V_CAMCTRLApp *v_camctrl_app = new V_CAMCTRLApp(args, loglevel);
 		return ProtocolStack<mavlink_message_t>::instance().add_application(v_camctrl_app);
+#endif // HAVE_LIBOSPACK
 #endif // CV_MINOR_VERSION
 #endif // HAVE_OPENCV2
 #endif // HAVE_GSTREAMER

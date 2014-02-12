@@ -30,6 +30,7 @@ A complete list about the supported paremeters can be found in the [boost runtim
 
 ## Dependencies
 ### Required
+* automake
 * pkg-config
 
 ### Optional
