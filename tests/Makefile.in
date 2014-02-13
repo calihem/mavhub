@@ -109,10 +109,11 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_test_mavhub_OBJECTS = brisk_test.$(OBJEXT) \
+am_test_mavhub_OBJECTS = brisk_test.$(OBJEXT) camera_test.$(OBJEXT) \
 	featurematching_test.$(OBJEXT) featureposition_test.$(OBJEXT) \
-	featureprojection_test.$(OBJEXT) mavhub_test.$(OBJEXT) \
-	pose_test.$(OBJEXT) sba_test.$(OBJEXT) utility_test.$(OBJEXT) \
+	featureprojection_test.$(OBJEXT) hub_test.$(OBJEXT) \
+	mavhub_test.$(OBJEXT) pose_test.$(OBJEXT) sba_test.$(OBJEXT) \
+	slam_test.$(OBJEXT) \
 	application/acc_calibration_app_test.$(OBJEXT)
 test_mavhub_OBJECTS = $(am_test_mavhub_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -334,13 +335,15 @@ AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
 test_mavhub_SOURCES = \
 	brisk_test.cpp \
+	camera_test.cpp \
 	featurematching_test.cpp \
 	featureposition_test.cpp \
 	featureprojection_test.cpp \
+	hub_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
 	sba_test.cpp \
-	utility_test.cpp \
+	slam_test.cpp \
 	application/acc_calibration_app_test.cpp
 
 SRC_EXTRA_LIBS = $(am__append_1) $(am__append_2) $(am__append_3)
@@ -458,13 +461,15 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/brisk_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/camera_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/featurematching_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/featureposition_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/featureprojection_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hub_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavhub_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pose_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sba_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utility_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slam_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@application/$(DEPDIR)/acc_calibration_app_test.Po@am__quote@
 
 .cpp.o:

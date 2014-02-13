@@ -5,6 +5,7 @@
 
 #include "core/logger.h"
 #include "utility.h"
+#include "lib/hub/time.h"
 #include "protocol/protocolstack.h"
 
 //#include "opencv2/opencv.hpp"
@@ -12,6 +13,7 @@
 #include <iostream> //cout
 #include <stdlib.h>
 using namespace std;
+using namespace hub;
 //using namespace cv;
 
 namespace mavhub {

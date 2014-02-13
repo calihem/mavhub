@@ -6,6 +6,7 @@
 
 #include "core/datacenter.h"
 #include "protocol/protocolstack.h"
+#include "lib/hub/time.h"
 
 #include <cstdlib>
 #include <sstream>
@@ -16,6 +17,7 @@
 #define RAND_MAX_TO_M1 1/(double)RAND_MAX
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 	Ctrl_Yaw::Ctrl_Yaw(const map<string, string> args,

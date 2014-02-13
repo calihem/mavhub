@@ -121,10 +121,9 @@ am__libopengl_a_SOURCES_DIST = opengl/map_2d.cpp
 libopengl_a_OBJECTS = $(am_libopengl_a_OBJECTS)
 libslam_a_AR = $(AR) $(ARFLAGS)
 libslam_a_LIBADD =
-am__libslam_a_SOURCES_DIST = slam/features.cpp slam/pose.cpp \
-	slam/bundleadjust.cpp slam/tracker.cpp slam/map.cpp
+am__libslam_a_SOURCES_DIST = slam/features.cpp slam/bundleadjust.cpp \
+	slam/tracker.cpp slam/map.cpp
 @COND_OPENCV2_TRUE@am_libslam_a_OBJECTS = slam/features.$(OBJEXT) \
-@COND_OPENCV2_TRUE@	slam/pose.$(OBJEXT) \
 @COND_OPENCV2_TRUE@	slam/bundleadjust.$(OBJEXT) \
 @COND_OPENCV2_TRUE@	slam/tracker.$(OBJEXT) slam/map.$(OBJEXT)
 libslam_a_OBJECTS = $(am_libslam_a_OBJECTS)
@@ -346,7 +345,6 @@ noinst_LIBRARIES = $(am__append_2) $(am__append_3) $(am__append_4)
 
 @COND_OPENCV2_TRUE@libslam_a_SOURCES = \
 @COND_OPENCV2_TRUE@	slam/features.cpp \
-@COND_OPENCV2_TRUE@	slam/pose.cpp \
 @COND_OPENCV2_TRUE@	slam/bundleadjust.cpp \
 @COND_OPENCV2_TRUE@	slam/tracker.cpp \
 @COND_OPENCV2_TRUE@	slam/map.cpp
@@ -423,8 +421,6 @@ slam/$(DEPDIR)/$(am__dirstamp):
 	@: > slam/$(DEPDIR)/$(am__dirstamp)
 slam/features.$(OBJEXT): slam/$(am__dirstamp) \
 	slam/$(DEPDIR)/$(am__dirstamp)
-slam/pose.$(OBJEXT): slam/$(am__dirstamp) \
-	slam/$(DEPDIR)/$(am__dirstamp)
 slam/bundleadjust.$(OBJEXT): slam/$(am__dirstamp) \
 	slam/$(DEPDIR)/$(am__dirstamp)
 slam/tracker.$(OBJEXT): slam/$(am__dirstamp) \
@@ -451,7 +447,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@slam/$(DEPDIR)/bundleadjust.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@slam/$(DEPDIR)/features.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@slam/$(DEPDIR)/map.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@slam/$(DEPDIR)/pose.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@slam/$(DEPDIR)/tracker.Po@am__quote@
 
 .cpp.o:

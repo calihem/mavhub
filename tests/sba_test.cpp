@@ -4,10 +4,14 @@
 #include <fstream>
 #include <cmath>	//sqrt
 
+#include "lib/hub/time.h"
+#include "lib/hub/math.h"
+#include "lib/slam/features.h"
 #include "lib/slam/bundleadjust.h"
-#include "utility.h"
 
-using namespace mavhub;
+#define USE_IDEAL_MODEL
+
+using namespace hub;
 using namespace hub::slam;
 
 template<typename T>
@@ -119,7 +123,7 @@ void set_visibility_mask(const std::vector<cv::Point3d> &object_points,
 	}
 }
 
-int read_pose(const std::string &fname, std::vector<double> &parameters, std::vector<double> &rotations) {
+int read_pose(const std::string &fname, std::vector<double> &parameters) {
 
 	std::ifstream fstream(fname.c_str(), std::ifstream::in);
 	if(fstream.fail()) return -1;
@@ -137,24 +141,11 @@ int read_pose(const std::string &fname, std::vector<double> &parameters, std::ve
 
 		std::istringstream val_stream(line.substr(start, std::string::npos));
 		double value;
-		for(int i=0; i<4; i++) { //read rotation
-			val_stream >> value;
-			rotations.push_back(value);
-		}
-		for(int i=0; i<3; i++) { //clear rotation in parameters
-			parameters.push_back(0.0);
-		}
-		for(int i=0; i<3; i++) { //read translation
+		val_stream >> value; // throw first scalar component of quaternion away
+		for(int i=0; i<6; i++) {
 			val_stream >> value;
 			parameters.push_back(value);
 		}
-// 		val_stream >> value;
-// 		rotations.push_back(value);
-// 		for(int i=0; i<6; i++) {
-// 			val_stream >> value;
-// 			parameters.push_back(value);
-// 			rotations.push_back(value);
-// 		}
 	}
 
 	return 0;
@@ -180,6 +171,20 @@ void set_measurements(const std::list< scene_t<>::type > &scenes,
 				}
 			}
 		}
+	}
+}
+
+void idealise_measurements(std::vector<double> &measurements, const cv::Mat &camera_matrix) {
+	if(measurements.size() % 2) return;
+
+	double cx = camera_matrix.at<double>(0, 2);
+	double cy = camera_matrix.at<double>(1, 2);
+	double fx = camera_matrix.at<double>(0, 0);
+	double fy = camera_matrix.at<double>(1, 1);
+
+	for(unsigned int i=0; i<measurements.size(); i+=2) {
+		measurements[i] = (measurements[i] - cx)/fx;
+		measurements[i+1] = (measurements[i+1] - cy)/fy;
 	}
 }
 
@@ -211,8 +216,7 @@ int read_calibration(const std::string &fname, std::vector<double> &intrinsics) 
 
 BOOST_AUTO_TEST_SUITE(SBATestSuite)
 
-BOOST_AUTO_TEST_CASE(Test_sba)
-{
+BOOST_AUTO_TEST_CASE(Test_sba) {
 
 	std::vector<cv::Point3d> object_points;
 	std::list< scene_t<>::type > scenes;
@@ -226,25 +230,26 @@ BOOST_AUTO_TEST_CASE(Test_sba)
 	// parameter vector p0: (a1, ..., am, b1, ..., bn). aj are the image j parameters, bi are the i-th point parameters,
 	std::vector<double> parameters;
 	parameters.reserve(num_images*num_params_per_cam + num_points*num_params_per_point);
-	// initial rotations
-	std::vector<double> rotations;
-	rotations.reserve(num_images*4);
-	read_pose("../thirdparty/sba/demo/7cams.txt", parameters, rotations);
+	read_pose("../thirdparty/sba/demo/7cams.txt", parameters);
 	//append object points
 	parameters.insert(parameters.end(), &(object_points[0].x), &(object_points[0].x) + 3*object_points.size());
 	BOOST_CHECK((unsigned)parameters.size() == num_images*num_params_per_cam + num_points*num_params_per_point);
+
+	std::vector<double> intrinsic_parameters(9);
+	read_calibration("../thirdparty/sba/demo/calib.txt", intrinsic_parameters);
+	cv::Mat camera_matrix(3, 3, CV_64F, &intrinsic_parameters[0]);
 
 	std::vector<double> measurements;
 	set_measurements(scenes, num_points, measurements);
 	BOOST_CHECK((unsigned)measurements.size() <= num_points*num_images*num_params_per_measuremnt);
 	const unsigned int num_projections = (unsigned)measurements.size() / num_params_per_measuremnt;
 
-	std::vector<double> intrinsic_parameters(9);
-	read_calibration("../thirdparty/sba/demo/calib.txt", intrinsic_parameters);
-	cv::Mat camera_matrix(3, 3, CV_64F, &intrinsic_parameters[0]);
-
+#ifdef USE_IDEAL_MODEL
+	idealise_measurements(measurements, camera_matrix);
+#else
 	// set up global data
-	sba_model_data_t<> g_data(camera_matrix, rotations);
+	sba_model_data_t<> g_data(camera_matrix);
+#endif
 
 	static const int max_iterations = 100;
 	int verbosity = 0;
@@ -254,8 +259,12 @@ BOOST_AUTO_TEST_CASE(Test_sba)
 	opts[4]=0.0;
 	double info[SBA_INFOSZ];
 
+	// make a copy of pose and structure parameters
+	std::vector<double> initial_parameters(parameters);
+	std::vector<double> initial_measurements(measurements);
+
 	uint64_t start_time = get_time_us();
-	int rc = sba_motstr_levmar_x(num_points,	// number of points
+	int rc = sba_motstr_levmar_w(num_points,	// number of points
 			    0,				// number of points not to be modified
 			    num_images,			// number of images
 			    0,				// number of images not to be modified
@@ -266,9 +275,19 @@ BOOST_AUTO_TEST_CASE(Test_sba)
 			    &measurements[0],		// measurement vector
 			    NULL,			// measurements covariance matrices
 			    num_params_per_measuremnt,	// number of parameters for EACH measurement; usually 2
+#ifdef USE_IDEAL_MODEL
+			    sba_ideal_pinhole_model,		// model function
+			    sba_ideal_pinhole_model_jac,	// jacobian of model function
+#else	
 			    sba_pinhole_model,		// model function
 			    sba_pinhole_model_jac,	// jacobian of model function
+#endif
+			    sba_tukey_estimator,	// weighting function
+#ifdef USE_IDEAL_MODEL
+			    NULL,			// additional data
+#else
 			    (void*)&g_data,		// additional data
+#endif
 			    max_iterations,		// maximum number of iterations
 			    verbosity,			// verbosity
 			    opts,			// options
@@ -291,6 +310,27 @@ BOOST_AUTO_TEST_CASE(Test_sba)
 	);
 	BOOST_TEST_MESSAGE("Elapsed time: " << (stop_time-start_time)/1000 << "ms");
 	BOOST_CHECK( (info[1] / num_projections) < 0.7 );
+
+// 	for(unsigned int i=0; i<num_images; i++) {
+// 		const unsigned int offset = i*num_params_per_cam;
+// 		BOOST_TEST_MESSAGE("|" << i << "|: "
+// 			<< "(" << initial_parameters[offset] << ", " << initial_parameters[offset+1]  << ", " << initial_parameters[offset+2]
+// 			<< ", " << initial_parameters[offset+3] << ", " << initial_parameters[offset+4]  << ", " << initial_parameters[offset+5] << ")"
+// 			<< " -> "
+// 			<< "(" << parameters[offset] << ", " << parameters[offset+1]  << ", " << parameters[offset+2]
+// 			<< ", " << parameters[offset+3] << ", " << parameters[offset+4]  << ", " << parameters[offset+5] << ")"
+// 		);
+// 	}
+// 	for(unsigned int i=0; i<num_points; i++) {
+// 		const unsigned int offset = num_images*num_params_per_cam + i*num_params_per_point;
+// 		BOOST_TEST_MESSAGE("[" << i << "]: "
+// 			<< "(" << initial_parameters[offset] << ", " << initial_parameters[offset+1]  << ", " << initial_parameters[offset+2] << ")"
+// 			<< " -> "
+// 			<< "(" << parameters[offset] << ", " << parameters[offset+1]  << ", " << parameters[offset+2] << ")"
+// 
+// 		);
+// 	}
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

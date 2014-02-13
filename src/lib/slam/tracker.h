@@ -17,15 +17,37 @@
 namespace hub {
 namespace slam {
 
+//FIXME: make it more generic template class
 class Tracker {
 public:
-	Tracker();
+	/**
+	 * \brief Constructor
+	 */
+	Tracker(const int image_width,
+		const int image_height,
+		const cv::Mat &camera_matrix = cv::Mat(),
+		const cv::Mat &distortion_coefficients = cv::Mat());
+	~Tracker();
 
-	void track_camera(const cv::Mat &image, std::vector<float> &parameter_vector);
+	/**
+	 * \brief Save map points (point cloud) and camera views as polygon files (ply).
+	 */
+	int save_map(const std::string &name) const;
+
+	/**
+	 * \brief Get pose of camera by identifying the image in the map.
+	 * \param[in] image Camera image.
+	 * \param[in,out] parameter_vector 6D-Vector containing quaternion vector part and translation. Input will be used as a first guess.
+	 * \param[in] avg_depth Average distance between camera and objects.
+	 */
+	int track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth = 100.0);
 
 protected:
 
 private:
+	cv::Mat camera_matrix; ///< Camera matrix of intrinsic parameters.
+	cv::Mat distortion_coefficients; ///< distortion coefficients of camera.
+
 	cv::BriskFeatureDetector feature_detector; ///< BRISK feature detector using AGAST
 	cv::BriskDescriptorExtractor descriptor_extractor;
 #ifdef HAVE_SSSE3
@@ -38,7 +60,14 @@ private:
 	Map<> map;
 
 };
-	
+
+// ----------------------------------------------------------------------------
+// Implementations
+// ----------------------------------------------------------------------------
+inline int Tracker::save_map(const std::string &name) const {
+	map.save_points(name+"_map.ply");
+	return map.save_views(name+"_view.ply");
+}
 
 } // namespace slam
 } // namespace hub

@@ -12,9 +12,11 @@
 #include "core/datacenter.h"
 #include "protocol/protocollayer.h"
 #include "utility.h"
+#include "lib/hub/time.h"
 
 using namespace std;
 using namespace cpp_pthread;
+using namespace hub;
 
 namespace mavhub {
 

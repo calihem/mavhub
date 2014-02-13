@@ -6,13 +6,15 @@ include $(top_srcdir)/am/am_incl_common.am
 bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
 	brisk_test.cpp \
+	camera_test.cpp \
 	featurematching_test.cpp \
 	featureposition_test.cpp \
 	featureprojection_test.cpp \
+	hub_test.cpp \
 	mavhub_test.cpp \
 	pose_test.cpp \
 	sba_test.cpp \
-	utility_test.cpp \
+	slam_test.cpp \
 	application/acc_calibration_app_test.cpp
 
 SRC_EXTRA_LIBS = 

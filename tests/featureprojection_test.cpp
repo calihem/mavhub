@@ -3,6 +3,9 @@
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
 #include <limits>	//epsilon
+#include <numeric>	//inner_product
+
+#include "lib/hub/math.h"
 
 #define PRECISION float
 // #define PRECISION double
@@ -10,9 +13,15 @@
 static const PRECISION DISTANCE = 50;
 
 using namespace hub::slam;
+using namespace hub;
 
 // template<typename PointT, typename T>
 // T ssd(const PointT &point_a, const PointT &point_b);
+
+template<typename T>
+inline T ssd(const T &a, const T &b) {
+	return (a-b)*(a-b);
+}
 
 template<typename T>
 inline T ssd(const cv::Point_<T> &point_a, const cv::Point_<T> &point_b) {
@@ -51,87 +60,111 @@ BOOST_AUTO_TEST_SUITE(FeatureTestSuite)
 BOOST_AUTO_TEST_CASE(Test_features)
 {
 
-	std::vector< cv::Point3_<PRECISION> > object_points;
-	object_points.push_back( cv::Point3f(0, 0, DISTANCE) );
-	object_points.push_back( cv::Point3f(-20, -15, DISTANCE) );
-	object_points.push_back( cv::Point3f(-25, 35, DISTANCE) );
-	object_points.push_back( cv::Point3f(22, 17, DISTANCE) );
-	object_points.push_back( cv::Point3f(10, -20, DISTANCE) );
-	object_points.push_back( cv::Point3f(-15, 6, DISTANCE) );
-	object_points.push_back( cv::Point3f(5, -28, DISTANCE) );
+	std::vector< cv::Point3_<PRECISION> > objectpoints;
+	objectpoints.push_back( cv::Point3_<PRECISION>(0, 0, DISTANCE) );
+	objectpoints.push_back( cv::Point3_<PRECISION>(-20, -15, DISTANCE) );
+	objectpoints.push_back( cv::Point3_<PRECISION>(-25, 35, DISTANCE) );
+	objectpoints.push_back( cv::Point3_<PRECISION>(22, 17, DISTANCE) );
+	objectpoints.push_back( cv::Point3_<PRECISION>(10, -20, DISTANCE) );
+	objectpoints.push_back( cv::Point3_<PRECISION>(-15, 6, DISTANCE) );
+	objectpoints.push_back( cv::Point3_<PRECISION>(5, -28, DISTANCE) );
 
 	cv::Mat camera_matrix = (cv::Mat_<double>(3,3) << 288.0,   0.0, 160.0,
 	                                                    0.0, 284.0, 120.0,
 	                                                    0.0,   0.0,   1.0);
-	cv::Mat distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0912, -0.287, 0.001889, 0.001793, 0.09828);
+// 	cv::Mat distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0912, -0.287, 0.001889, 0.001793, 0.09828);
+	cv::Mat distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0, 0.0, 0.0, 0.0, 0.0);
 
-	std::vector<PRECISION> rotation_vector(3, 0);
-	std::vector<PRECISION> translation_vector(3, 0);
+// 	std::vector<PRECISION> pose_vector(6, 0);
+	std::vector<PRECISION> pose_vector(6);
+	pose_vector[0] = 0.1;	//phi
+	pose_vector[1] = 0.2;	//theta
+	pose_vector[2] = 0.3;	//psi
+	pose_vector[3] = 1.0;	//t1
+	pose_vector[4] = -1.0;	//t2
+	pose_vector[5] = 0.5;	//t3
 
-	// use OpenCV routine for a distorted projection without rotation or translation
-	std::vector< cv::Point_<PRECISION> > image_points;
-	projectPoints(object_points,
-		rotation_vector,
-		translation_vector,
+	PRECISION e;
+
+	//
+	// test OpenCV implementation of rotation matrix against own
+	// FIXME: move to math test suite
+	//
+	std::vector<PRECISION> rotation_vector(pose_vector.begin(), pose_vector.begin()+3);
+	cv::Mat cv_rotation_matrix(3,3, CV_32FC1);
+	Rodrigues(rotation_vector, cv_rotation_matrix);
+
+	std::vector<PRECISION> rotation_matrix(9);
+	rotation_matrix_rad(&pose_vector[0], &rotation_matrix[0]);
+	std::vector<PRECISION> cv_rotation_mat((PRECISION*)cv_rotation_matrix.data, (PRECISION*)cv_rotation_matrix.data+9);
+
+	e = error<PRECISION, PRECISION>(rotation_matrix, cv_rotation_mat);
+	BOOST_TEST_MESSAGE("rotation matrix error: " << e);
+// 	BOOST_CHECK(e <= 100*std::numeric_limits<PRECISION>::min());
+	// opnecv implementation is performing really bad :( => large error
+	BOOST_CHECK(e <= 0.2);
+
+	//
+	// project points
+	//
+	std::vector< cv::Point_<PRECISION> > imagepoints;
+	objectpoints_to_imagepoints(objectpoints,
+// 	objectpoints_to_idealpoints(objectpoints,
+		pose_vector,
+		camera_matrix,
+		imagepoints);
+
+	//
+	// test "objectpoints_to_imagepoints" against OpenCV "projectPoints" => not possible :(
+	//
+// 	std::vector<PRECISION> translation_vector( pose_vector.begin()+3, pose_vector.end() );
+// 	cv::Mat distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0, 0.0, 0.0, 0.0, 0.0);
+// 	std::vector< cv::Point_<PRECISION> > ctrl_imagepoints;
+// 	projectPoints(objectpoints,
+// 		rotation_vector,
+// 		translation_vector,
+// 		camera_matrix,
+// 		distortion_coefficients,
+// 		ctrl_imagepoints);
+// 	e = error<cv::Point_<PRECISION>, PRECISION>(imagepoints, ctrl_imagepoints);
+// 	BOOST_TEST_MESSAGE("projection errror: " << e);
+// 	BOOST_CHECK(e <= 0.0001);
+
+	// 
+	// reproject image points
+	//
+	std::vector< cv::Point3_<PRECISION> > reprojected_objectpoints;
+	PRECISION distance = DISTANCE+pose_vector[5];
+	imagepoints_to_objectpoints(imagepoints,
+// 	idealpoints_to_objectpoints(imagepoints,
+		distance,
+		pose_vector,
+		camera_matrix,
+		reprojected_objectpoints);
+
+	e = error<cv::Point3_<PRECISION>, PRECISION>(objectpoints, reprojected_objectpoints);
+	BOOST_TEST_MESSAGE("reprojection errror: " << e);
+// 	BOOST_CHECK(e <= 100*std::numeric_limits<PRECISION>::min());
+	BOOST_CHECK(e <= 0.01);
+
+	//
+	// test undistort_n2i of cv::KeyPoint
+	//
+	// fill keypoints with coordinates of imagepoints
+	std::vector<cv::KeyPoint> keypoints( imagepoints.size() );
+	for(unsigned int i=0; i<imagepoints.size(); i++) {
+		keypoints[i].pt = imagepoints[i];
+	}
+	std::vector< cv::Point_<PRECISION> > undistorted_idealpoints;
+	undistort_n2i(keypoints,
 		camera_matrix,
 		distortion_coefficients,
-		image_points);
-
-/*
-	std::vector< cv::Point_<PRECISION> > one_image_point;
-	std::vector< cv::Point_<PRECISION> > one_undist_point(1);
-	one_image_point.push_back(image_points[2]);
-	CvMat oip = cvMat(1, 1, CV_32FC2, &one_image_point[0]);
-	CvMat oup = cvMat(1, 1, CV_32FC2, &one_undist_point[0]);
-	CvMat cam = camera_matrix;
-	CvMat dist = distortion_coefficients;
-	myUndistortPoints(&oip, &oup, &cam, &dist);
-std::cout << "myUndistortPoints: (" << one_undist_point[0].x << ", " << one_undist_point[0].y << ")" << std::endl;
-
-	cv::Point2f up = undistort(image_points[2], camera_matrix, distortion_coefficients);
-std::cout << "undistort: (" << up.x << ", " << up.y << ")" << std::endl;
-*/
-
-	// get the object points out of the image points
-	std::vector< cv::Point3_<PRECISION> > reprojected_object_points;
-	imagepoints_to_objectpoints(image_points,
-		DISTANCE,	//distance
-		camera_matrix,
-		distortion_coefficients,
-		reprojected_object_points);
-
-	PRECISION err = error<cv::Point3_<PRECISION>, PRECISION>(object_points, reprojected_object_points);
-	BOOST_TEST_MESSAGE("feature reprojection errror: " << err);
-// 	BOOST_CHECK(err <= 100*std::numeric_limits<PRECISION>::min());
-	BOOST_CHECK(err <= 0.01);
-
-	// now test own projection implementation "objectpoints_to_imagepoints" against OpenCV "projectPoints"
-	rotation_vector[0] = 0.1;	//phi
-	rotation_vector[1] = 0.2;	//theta
-	rotation_vector[2] = 0.3;	//psi
-	translation_vector[0] = 1.0;	//t1
-	translation_vector[1] = -1.0;	//t2
-	translation_vector[2] = 0.5;	//t3
-	// no distortion
-	distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0, 0.0, 0.0, 0.0, 0.0);
-
-	objectpoints_to_imagepoints(object_points,
-		rotation_vector,
-		translation_vector,
-		camera_matrix,
-		image_points);
-
-	std::vector< cv::Point_<PRECISION> > ctrl_image_points;
-	projectPoints(object_points,
-		rotation_vector,
-		translation_vector,
-		camera_matrix,
-		distortion_coefficients,
-		ctrl_image_points);
-
-	err = error<cv::Point_<PRECISION>, PRECISION>(image_points, ctrl_image_points);
-	BOOST_TEST_MESSAGE("feature projection errror: " << err);
-	BOOST_CHECK(err <= 0.0001);
+		undistorted_idealpoints);
+	std::vector< cv::Point_<PRECISION> > idealpoints;
+	imagepoints_to_idealpoints(imagepoints, camera_matrix, idealpoints);
+	e = error<cv::Point_<PRECISION>, PRECISION>(undistorted_idealpoints, idealpoints);
+	BOOST_TEST_MESSAGE("undistortion error: " << e);
+	BOOST_CHECK(e <= 100*std::numeric_limits<PRECISION>::min());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

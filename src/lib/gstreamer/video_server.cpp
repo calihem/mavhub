@@ -201,8 +201,6 @@ void VideoServer::new_video_buffer_callback(GstElement *element, GstElement *dat
 }
 #elif GST_VERSION_MAJOR == 1
 GstFlowReturn VideoServer::new_video_buffer_callback(GstElement *element, GstElement *data) {
-	dout << "[VideoServer] new_video_buffer_callback got called" << endl;
-
 	GstFlowReturn rc = GST_FLOW_CUSTOM_ERROR;
 
 	GstAppSink *sink = GST_APP_SINK(element);
@@ -261,21 +259,17 @@ GstFlowReturn VideoServer::new_video_buffer_callback(GstElement *element, GstEle
 		g_print("ERROR: mapping memory failed");
 		goto _return;
 	}
-	dout << "[VideoServer] filled info struct" << endl;
 
 	cli_sink_iter = client_sink_map.begin();
 	for( ; cli_sink_iter != client_sink_map.end(); ++cli_sink_iter) {
 		if(cli_sink_iter->second != element) continue;
 
-		dout << "[VideoServer] call handle_video_data" << endl;
 		cli_sink_iter->first->handle_video_data((unsigned char*)info.data, width, height, bpp);
 	}
 	rc = GST_FLOW_OK;
 
 _return:
-	if(memory) gst_memory_unref(memory);
 	gst_sample_unref(sample);
-	dout << "[VideoServer] released all data" << endl;
 	return rc;
 }
 #endif

@@ -82,7 +82,7 @@ inline static void _dblzero(register double *arr, register int count)
 }
 
 /* auxiliary routine for computing the mean reprojection error; used for debugging */
-static double sba_mean_repr_error(int n, int mnp, double *x, double *hx, struct sba_crsm *idxij, int *rcidxs, int *rcsubs)
+double sba_mean_repr_error(int n, int mnp, double *x, double *hx, struct sba_crsm *idxij, int *rcidxs, int *rcsubs)
 {
 register int i, j;
 int nnz, nprojs;
@@ -148,7 +148,7 @@ double *ptr;
  * Uses loop unrolling and blocking to reduce bookkeeping overhead & pipeline
  * stalls and increase instruction-level parallelism; see http://www.abarnett.demon.co.uk/tutorial.html
  */
-static double nrmL2xmy(double *const e, const double *const x, const double *const y, const int n)
+double nrmL2xmy(double *const e, const double *const x, const double *const y, const int n)
 {
 const int blocksize=8, bpwr=3; /* 8=2^3 */
 register int i;
@@ -205,7 +205,7 @@ register double sum0=0.0, sum1=0.0, sum2=0.0, sum3=0.0;
  *
  * Similarly to nrmL2xmy() above, uses loop unrolling and blocking
  */
-static double nrmCxmy(double *const e, const double *const x, const double *const y,
+double nrmCxmy(double *const e, const double *const x, const double *const y,
                       const double *const W, const int mnp, const int nvis)
 {
 const int n=nvis*mnp;
@@ -275,7 +275,7 @@ register double *eptr;
 }
 
 /* search for & print image projection components that are infinite; useful for identifying errors */
-static void sba_print_inf(double *hx, int nimgs, int mnp, struct sba_crsm *idxij, int *rcidxs, int *rcsubs)
+void sba_print_inf(double *hx, int nimgs, int mnp, struct sba_crsm *idxij, int *rcidxs, int *rcsubs)
 {
 register int i, j, k;
 int nnz;
@@ -325,7 +325,7 @@ double *phxij;
  *       much faster compared to the naive strategy, it is not preferable to analytic jacobians,
  *       since the latter are considerably faster to compute and result in fewer LM iterations.
  */
-static void sba_fdjac_x(
+void sba_fdjac_x(
     double *p,                /* I: current parameter estimate, (m*cnp+n*pnp)x1 */
     struct sba_crsm *idxij,   /* I: sparse matrix containing the location of x_ij in hx */
     int    *rcidxs,           /* work array for the indexes of nonzero elements of a single sparse matrix row/column */

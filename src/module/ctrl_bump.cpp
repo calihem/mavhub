@@ -15,8 +15,10 @@
 #include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
+#include "lib/hub/time.h"
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 	// Ctrl_Bump::Ctrl_Bump(int component_id_, int numchan_, const list<pair<int, int> > chanmap_, const map<string, string> args) {

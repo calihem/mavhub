@@ -18,7 +18,11 @@ BOOST_AUTO_TEST_CASE(Test_HammingSse)
 	unsigned char array1[16], array2[16];
 	unsigned char *signature1 = &array1[0],
 		*signature2 = &array2[0];
+#ifdef HAVE_SSSE3
 	cv::HammingSse hamming_functor;
+#else
+	cv::Hamming hamming_functor;
+#endif
 	int hamming_distance;
 
 	// Test zero signatures

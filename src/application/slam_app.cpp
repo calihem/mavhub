@@ -10,12 +10,15 @@
 #include "core/datacenter.h"
 #include "utility.h"
 #include "lib/slam/pose.h"
+#include "lib/slam/tracker.h"
+#include "lib/hub/time.h"
 
 #include <sstream> //istringstream
 
 using namespace std;
 using namespace cpp_pthread;
 using namespace hub::slam;
+using namespace hub;
 
 namespace mavhub {
 
@@ -30,17 +33,12 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	target_component(1),
 	imu_rate(10),
 	channel_rate(0),
+	parameter_vector(6, 0),
 	trigger_channel(0),
 	altitude(0.0),
-	cam_matrix(3, 3, CV_32FC1),
-	dist_coeffs( cv::Mat::zeros(4, 1, CV_32FC1) ),
-	scenes(2),
-	attitudes(2),
-	feature_detector(60, 3) //threshold, octaves
-// 	rotation_vector( cv::Mat::zeros(3, 1, CV_64FC1) ),
-// 	translation_vector( cv::Mat::zeros(3, 1, CV_64FC1) )
+	tracker(NULL),
 #ifdef SLAM_LOG
-	, log_file("slam_log.data")
+	log_file("slam_log.data")
 #endif
 	{
 
@@ -69,13 +67,32 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	assign_variable_from_args(imu_rate);
 	assign_variable_from_args(channel_rate);
 
-	// get calibration data of camera
-	//FIXME: use image dimensions for default camera matrix
-	cam_matrix = (cv::Mat_<double>(3,3) << 1.0, 0.0, 160.0, 0.0, 1.0, 120.0, 0.0, 0.0, 1.0);
+	// get camera calibration data
+	unsigned int image_width = 320, image_height = 240;
+	assign_variable_from_args(image_width);
+	assign_variable_from_args(image_height);
+	cv::Mat camera_matrix = (cv::Mat_<double>(3,3) << 1.0, 0.0, image_width/2.0, 0.0, 1.0, image_height/2.0, 0.0, 0.0, 1.0);
+	cv::Mat distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0, 0.0, 0.0, 0.0, 0.0);
 	string calib_filename;
 	get_value_from_args("calibration_data", calib_filename);
-	if(!calib_filename.empty())
-		load_calibration_data(calib_filename);
+	if( !calib_filename.empty() ) {
+		cv::FileStorage fs(calib_filename, cv::FileStorage::READ);
+		if( fs.isOpened() ) {
+			image_width = (int)fs["image_width"];
+			image_height = (int)fs["image_height"];
+			fs["camera_matrix"] >> camera_matrix;
+			fs["distortion_coefficients"] >> distortion_coefficients;
+		} else {
+			log("Can't open calibration data", calib_filename, Logger::LOGLEVEL_DEBUG);
+		}
+	}
+
+	//FIXME: move initialization to run
+	// initialize tracker
+	tracker = new hub::slam::Tracker(image_width, image_height, camera_matrix, distortion_coefficients);
+	if(!tracker) {
+		log("Can't initialize tracker", Logger::LOGLEVEL_ERROR);
+	}
 
 #ifdef SLAM_LOG
 	log_file << "# time [ms]"
@@ -90,185 +107,9 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 #endif
 }
 
-SLAMApp::~SLAMApp() {}
-
-void SLAMApp::extract_features() {
-	//FIXME: remove benchmark
-	uint64_t start_time = get_time_ms();
-
-	if(landmarks.keypoints.empty()) {
-		if(altitude == 0.0) { // aircraft is on the ground
-			log("reject initial feature extraction on ground", Logger::LOGLEVEL_DEBUG);
-			return;
-		}
-
-		// get features from image
-		feature_detector.detect(scenes.front(), landmarks.keypoints);
-		if(landmarks.keypoints.empty()) {
-			log("didn't found reference features", Logger::LOGLEVEL_DEBUG);
-			take_new_image = 1;
-			return;
-		}
-
-		//TODO: filter features (shi-tomasi)
-
-		// calculate descriptors which can remove or add some of the keypoints
-		descriptor_extractor.compute(scenes.front(), landmarks.keypoints, landmarks.descriptors);
-
-		// calculate corresponding 3D object points
-		keypoints_to_objectpoints(landmarks.keypoints,
-			altitude, //distance from ground
-			landmarks.objectpoints,
-			cam_matrix,
-			dist_coeffs);
-
-		//FIXME: deprecated
-		// init counters
-		landmarks.counters.assign(landmarks.keypoints.size(), 100);
-		return;
-	}
-
-	// get features from image
-	vector<cv::KeyPoint> keypoints;
-	feature_detector.detect(scenes.back(), keypoints);
-	if(keypoints.empty()) {
-		log("didn't found features", Logger::LOGLEVEL_DEBUG);
-		return;
-	}
-
-	uint64_t stop_time = get_time_ms();
-	log( "feature extraction needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
-	start_time = stop_time;
-
-	//TODO: filter features (shi-tomasi)
-
-	// calculate descriptors
-	cv::Mat descriptors;
-	descriptor_extractor.compute(scenes.back(), keypoints, descriptors);
-	if(keypoints.empty()) {
-		log("keypoints empty after descriptor computation", Logger::LOGLEVEL_DEBUG);
-		return;
-	}
-
-	stop_time = get_time_ms();
-	log( "descriptors needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
-	start_time = stop_time;
-
-	std::vector<cv::DMatch> matches;
-	matcher.match(landmarks.descriptors, descriptors, matches);
-	if(matches.empty()) {
-		log("no matches fount", Logger::LOGLEVEL_DEBUG);
-		return;
-	}
-	stop_time = get_time_ms();
-	log( "forward matching needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
-	start_time = stop_time;
-
-	std::vector<char> matches_mask(matches.size(), 1);
-
-	filter_matches_by_robust_distribution(landmarks.keypoints, keypoints, matches, matches_mask);
-
-	stop_time = get_time_ms();
-	log( "distribution filtering needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
-	start_time = stop_time;
-
-	std::vector<float> parameter_vector(6, 0);
-
-	// get change of attitude as initial guess
-	parameter_vector[0] = attitudes.back().pitch - attitudes.front().pitch;	//phi
-	parameter_vector[1] = attitudes.back().roll - attitudes.front().roll;	//theta
-	parameter_vector[2] = attitudes.back().yaw - attitudes.front().yaw;	//psi
-
-	//get initial guess of translation
-	cv::Point3f translation = camera_translation<float>(landmarks.objectpoints,
-		keypoints,
-		altitude,
-		matches,
-		cam_matrix,
-		dist_coeffs,
-		matches_mask);
-	parameter_vector[3] = translation.y;
-	parameter_vector[4] = translation.x;
-	parameter_vector[5] = translation.z;
-
-	// get finer estimatation of pose
-	int rc = estimate_pose(landmarks.objectpoints,
-		keypoints,
-		matches,
-		cam_matrix,
-		dist_coeffs,
-		parameter_vector,
-		matches_mask);
-	if(rc <= 0) {
-		log("position estimation failed with return code", rc, Logger::LOGLEVEL_DEBUG);
-		return;
-	}
-	stop_time = get_time_ms();
-	log( "egomotion needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG);
-	start_time = stop_time;
-
-	// add offsets to rotation vector to get orientation out of relative changes
-// 	rotation_vector.at<double>(0, 1) += attitudes.front().roll;
-// 	rotation_vector.at<double>(0, 0) += attitudes.front().pitch;
-// 	rotation_vector.at<double>(0, 2) += attitudes.front().yaw;
-	//FIXME: add offsets to translation to get position out of egomotion
-// 	translation_vector.at<double>(0, 2) += altitude;
-
-#ifdef SLAM_LOG
-	log_file << setw(13) << get_time_ms()
-		<< setw(10) << right << attitudes.back().roll
-		<< setw(10) << right << attitudes.back().pitch
-		<< setw(10) << right << attitudes.back().yaw
-		<< setw(10) << right << attitudes.back().rollspeed
-		<< setw(10) << right << attitudes.back().pitchspeed
-		<< setw(10) << right << attitudes.back().yawspeed
-		<< setw(10) << right << altitude
-		<< setw(10) << right << parameter_vector[1]
-		<< setw(10) << right << parameter_vector[0]
-		<< setw(10) << right << parameter_vector[2]
-		<< setw(10) << right << parameter_vector[4]
-		<< setw(10) << right << parameter_vector[3]
-		<< setw(10) << right << parameter_vector[5]
-		<< std::endl;
-#endif
-// 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
-// 	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
-	log("parameter_vector_vector", parameter_vector, Logger::LOGLEVEL_INFO);
-	{
-	Lock tx_lock(tx_mav_mutex);
-	mavlink_msg_attitude_pack(system_id(),
-		component_id,
-		&tx_mav_msg,
-		get_time_us(),
-		parameter_vector[1],
-		parameter_vector[0],
-		parameter_vector[2],
-		0, 0, 0);
-	AppLayer<mavlink_message_t>::send(tx_mav_msg);
-	}
-
-	if(with_out_stream && Core::video_server) {
-		cv::Mat match_img;
-		cv::drawMatches(scenes.front(), landmarks.keypoints,
-			scenes.back(), keypoints,
-			matches,
-			match_img,
-			cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
-			matches_mask,
-// 			std::vector<char>(),
-// 			std::vector<std::vector<char> >(),
-			cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS
-		);
-		//FIXME:
-		GstAppSrc *appsrc = GST_APP_SRC( Core::video_server->element("source", -1) );
-		if(appsrc)
-			Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
-		else
-			log(name(), ": no appsrc found", Logger::LOGLEVEL_DEBUG);
-	}
-// 	uint64_t stop_time = get_time_ms();
-	stop_time = get_time_ms();
-	Logger::log(name(), "sending and displaying needed", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
+SLAMApp::~SLAMApp() {
+	if(tracker)
+		delete tracker;
 }
 
 void SLAMApp::handle_input(const mavlink_message_t &msg) {
@@ -278,7 +119,7 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 		Logger::LOGLEVEL_DEBUG, _loglevel);
 
 	switch(msg.msgid) {
-		case MAVLINK_MSG_ID_HUCH_ACTION:
+/*		case MAVLINK_MSG_ID_HUCH_ACTION:
 			if( (mavlink_msg_huch_action_get_target(&msg) == system_id()) ) {
 // 			&& (mavlink_msg_action_get_target_component(&msg) == component_id) ) {
 				uint8_t action_id = mavlink_msg_huch_action_get_action(&msg);
@@ -289,6 +130,7 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 				}
 			}
 			break;
+*/
 		case MAVLINK_MSG_ID_ATTITUDE:
 			if( (msg.sysid == system_id()) ) {
 				Lock sync_lock(sync_mutex);
@@ -297,7 +139,7 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 				attitude.time_boot_ms = get_time_ms();
 			}
 			break;
-		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+/*		case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
 			if( (msg.sysid == system_id()) ) {
 				uint16_t channel6 = mavlink_msg_rc_channels_raw_get_chan6_raw(&msg);
 				log("got channel 6", channel6, Logger::LOGLEVEL_DEBUG);
@@ -313,6 +155,7 @@ void SLAMApp::handle_input(const mavlink_message_t &msg) {
 				trigger_channel = channel6;
 			}
 			break;
+*/
 		case MAVLINK_MSG_ID_VFR_HUD:
 			if( (msg.sysid == system_id()) ) {
 				// scale altitude from m to cm
@@ -346,42 +189,10 @@ void SLAMApp::handle_video_data(const unsigned char *data, const int width, cons
 	cv::Mat video_data(height, width, CV_8UC1, image_data);
 
 	Lock sync_lock(sync_mutex);
-	if(take_new_image) {
-		// make a new reference image
-		video_data.copyTo(scenes.front());
-		landmarks.clear();
-		memcpy(&(attitudes.front()), &attitude, sizeof(mavlink_attitude_t));
-		if(take_new_image & (1 << 1)) {
-			//TODO: send ACK
-		}
-		take_new_image = 0;
-		log("took new reference image", Logger::LOGLEVEL_DEBUG);
-#ifdef SLAM_LOG
-		log_file << "# new reference image" << std::endl;
-#endif
+	video_data.copyTo(image_buffer);
+// 	memcpy(&(attitudes.back()), &attitude, sizeof(mavlink_attitude_t));
 
-	} else {
-		video_data.copyTo(scenes.back());
-// 		new_features.clear();
-		memcpy(&(attitudes.back()), &attitude, sizeof(mavlink_attitude_t));
-// 		Logger::log(name(), "attitude of new image",
-// 			rad2deg(new_attitude.roll),
-// 			rad2deg(new_attitude.pitch),
-// 			rad2deg(new_attitude.yaw),
-// 			Logger::LOGLEVEL_DEBUG, _loglevel);
-	}
 	new_video_data = true;
-}
-
-void SLAMApp::load_calibration_data(const std::string &filename) {
-	cv::FileStorage fs(filename, cv::FileStorage::READ);
-	if( !fs.isOpened() ) {
-		log("Can't open calibration data", filename, Logger::LOGLEVEL_DEBUG);
-		return;
-	}
-
-	fs["camera_matrix"] >> cam_matrix;
-	fs["distortion_coefficients"] >> dist_coeffs;
 }
 
 void SLAMApp::run() {
@@ -425,7 +236,8 @@ void SLAMApp::run() {
 		log(name(), "enter main loop", Logger::LOGLEVEL_DEBUG);
 		{ Lock sync_lock(sync_mutex);
 			if(new_video_data) {
-				extract_features();
+				//FIXME: set parameter_vector
+				tracker->track_camera(image_buffer, parameter_vector, altitude);
 				new_video_data = false;
 			}
 		}

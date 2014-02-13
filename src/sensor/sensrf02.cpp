@@ -4,6 +4,7 @@
 
 #include "core/logger.h" //"printf"
 #include "utility.h"
+#include "lib/hub/time.h"
 #include "../core/datacenter.h"
 #include "../module/filter_median.h"
 
@@ -12,6 +13,7 @@
 #include <iostream> //cout
 #include <stdio.h>
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 

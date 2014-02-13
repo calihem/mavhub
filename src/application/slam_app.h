@@ -24,6 +24,10 @@
 
 #define SLAM_LOG 1
 
+namespace hub { namespace slam {
+class Tracker;
+} }
+
 namespace mavhub {
 
 class SLAMApp : public MavlinkAppLayer,
@@ -50,17 +54,12 @@ class SLAMApp : public MavlinkAppLayer,
 		unsigned int imu_rate; ///< Update rate of IMU sensor values.
 		unsigned int channel_rate; ///< Update rate of raw RC channel stream.
 		uint16_t trigger_channel; ///< Current raw value of trigger channel (channel 6).
+		std::vector<float> parameter_vector; ///< 6D vector containing rotation and translation estimation
 		mavlink_attitude_t attitude; ///< Current attitude of system.
 		float altitude; ///< Current altitude in cm.
-
 		std::string sink_name; ///< Sink name of video server input.
-		cv::Mat cam_matrix; ///< Camera matrix of intrinsic parameters.
-		cv::Mat dist_coeffs; ///< distortion coefficients of camera.
-		hub::slam::landmarks_t landmarks; ///< landmark database
-		std::list<cv::Mat> scenes; ///< List of images
-		std::list<mavlink_attitude_t> attitudes; ///< Attitude of scenes
-		cv::BriskFeatureDetector feature_detector; ///< BRISK feature detector using AGAST
-		cv::BriskDescriptorExtractor descriptor_extractor;
+		cv::Mat image_buffer; ///< Image buffer
+		hub::slam::Tracker *tracker; ///< Image tracker
 #ifdef HAVE_SSSE3
 		// this gives an error building with libopencv 2.3.1-11ubuntu (opt)
 		// cv::BruteForceMatcher<cv::HammingSse> matcher;
@@ -68,13 +67,10 @@ class SLAMApp : public MavlinkAppLayer,
 #else
 		cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif
-// 		cv::Mat rotation_vector;
-// 		cv::Mat translation_vector;
 #ifdef SLAM_LOG
 		std::ofstream log_file;
 #endif
-		void extract_features();
-		void load_calibration_data(const std::string &filename);
+
 };
 
 } // namespace mavhub

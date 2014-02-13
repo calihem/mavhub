@@ -41,6 +41,7 @@
 #include "core/logger.h"
 #include "utility.h"
 #include "lib/hub/math.h"
+#include "lib/hub/time.h"
 #include "protocol/protocolstack.h"
 //FIXME: remove mkpackage.h
 #include "protocol/mkpackage.h"

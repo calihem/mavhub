@@ -12,11 +12,13 @@
 
 #include "core/logger.h"
 #include "utility.h"
+#include "lib/hub/time.h"
 #include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
   FC_Mpkg::FC_Mpkg(int component_id) :

@@ -50,15 +50,15 @@ struct landmarks_t {
  * \param[in] use_extrinsic_guess Use \a rotation_vector and \a translation_vector as initial guess.
  * \param[in] matches_mask matches.at(i) will only be considered if matches_mask.at(i) is non-zero
  */
-int egomotion(const std::vector<cv::Point3f> objectpoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<cv::DMatch>& matches,
-	const cv::Mat &camera_matrix,
-	const cv::Mat &distortion_coefficients,
-	cv::Mat &rotation_vector,
-	cv::Mat &translation_vector,
-	const bool use_extrinsic_guess = false,
-	std::vector<char> matches_mask = std::vector<char>() );
+// int egomotion(const std::vector<cv::Point3f> objectpoints,
+// 	const std::vector<cv::KeyPoint>& dst_keypoints,
+// 	const std::vector<cv::DMatch>& matches,
+// 	const cv::Mat &camera_matrix,
+// 	const cv::Mat &distortion_coefficients,
+// 	cv::Mat &rotation_vector,
+// 	cv::Mat &translation_vector,
+// 	const bool use_extrinsic_guess = false,
+// 	std::vector<char> matches_mask = std::vector<char>() );
 
 /**
  * Estimate 3D motion from inverse projected image points
@@ -88,6 +88,11 @@ void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> &src_
 		const std::vector<cv::DMatch> &matches,
 		std::vector<char> &mask);
 
+void filter_matches_by_robust_distribution(const std::vector<cv::Point2f> &src_points,
+		const std::vector<cv::Point2f> &dst_points,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask);
+
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
@@ -102,10 +107,24 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
 		    std::vector<std::vector<cv::DMatch> > &matches);
 
+template<void(*R)(const float[3], float[9])>
+void idealpoints_to_objectpoints( const std::vector<cv::Point2f>& idealpoints,
+	const float distance,
+	const std::vector<float>& camera_pose,
+	std::vector<cv::Point3f>& objectpoints);
+
+void idealpoints_to_imagepoints(const std::vector<cv::Point2f>& idealpoints,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& imagepoints);
+
+void imagepoints_to_idealpoints(const std::vector<cv::Point2f>& imagepoints,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& idealpoints);
+
 void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const float distance,
+	const std::vector<float>& camera_pose,
 	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients,
 	std::vector<cv::Point3f>& objectpoints);
 
 void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
@@ -138,14 +157,12 @@ void objectpoints_to_idealpoints(const std::vector<cv::Point3f>& objectpoints,
  * This function is almost similar to cv::projectPoints except that it doesn't
  * support distorted image points.
  * \param[in] objectpoints Vector of 3D object points.
- * \param[in] rotation_vector 3D rotation vector containing euler angles (rad).
- * \param[in] translation_vector 3D translation vector.
+ * \param[in] camera_pose Vector consisting of 3D rotation vector with euler angles (rad) and 3D translation vector.
  * \param[in] camera_matrix Matrix of intrinsic parameters
  * \param[out] imagepoints Outputvector containing the 2D projected object points.
  */
 void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
-	const std::vector<float>& rotation_vector,
-	const std::vector<float>& translation_vector,
+	const std::vector<float>& camera_pose,
 	const cv::Mat& camera_matrix,
 	std::vector<cv::Point2f>& imagepoints);
 
@@ -189,6 +206,14 @@ cv::Point2f undistort_n2i(const cv::Point2f &point,
 
 cv::Point2f undistort_i2i(const cv::Point2f &point,
 	const cv::Mat& distortion_coefficients);
+
+/**
+ * \brief Undistort keypoints.
+ */
+void undistort_n2i(const std::vector<cv::KeyPoint> &keypoints,
+	const cv::Mat &camera_matrix,
+	const cv::Mat &distortion_coefficients,
+	std::vector<cv::Point2f> &undistorted_points);
 
 // ----------------------------------------------------------------------------
 // Implementations
@@ -246,6 +271,42 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	}
 
 	return rc;
+}
+
+template<void(*R)(const float[3], float[9])>
+void idealpoints_to_objectpoints(const std::vector<cv::Point2f>& idealpoints,
+	const float distance,
+	const std::vector<float>& camera_pose,
+	std::vector<cv::Point3f>& objectpoints) {
+
+	if(idealpoints.empty() || camera_pose.size() < 6)
+		return;
+
+	const float t1 = camera_pose[3];
+	const float t2 = camera_pose[4];
+	const float t3 = camera_pose[5];
+
+	// rotation matrix is orthogonal => R^-1 = R^t
+	float rotation_matrix[9];
+	R(&camera_pose[0], rotation_matrix);
+	const float r11 = rotation_matrix[0]; const float r12 = rotation_matrix[1]; const float r13 = rotation_matrix[2];
+	const float r21 = rotation_matrix[3]; const float r22 = rotation_matrix[4]; const float r23 = rotation_matrix[5];
+	const float r31 = rotation_matrix[6]; const float r32 = rotation_matrix[7]; const float r33 = rotation_matrix[8];
+
+	const float x3 = distance - t3;
+	const float y3_numerator = r13*t1 + r23*t2 + r33*t3 + x3;
+
+
+	objectpoints.resize( idealpoints.size() );
+	for(unsigned int i=0; i<idealpoints.size(); i++) {
+		const float u = idealpoints[i].x;
+		const float v = idealpoints[i].y;
+
+		float y3 = y3_numerator / (r33 + r13*u + r23*v);
+		objectpoints[i].x = r11*(y3*u-t1) + r21*(y3*v-t2) + r31*(y3-t3);
+		objectpoints[i].y = r12*(y3*u-t1) + r22*(y3*v-t2) + r32*(y3-t3);
+		objectpoints[i].z = x3;
+	}
 }
 
 template <typename T>

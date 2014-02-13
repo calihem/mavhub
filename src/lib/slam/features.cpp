@@ -39,7 +39,7 @@ void landmarks_t::clear() {
 	counters.clear();
 	scene_ids.clear();
 }
-
+/*
 int egomotion(const std::vector<cv::Point3f> objectpoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<cv::DMatch>& matches,
@@ -99,7 +99,7 @@ cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
 	
 	//FIXME
 	return cv::Point3f(0, 0, 0);
-}
+}*/
 
 //FIXME: improve performance
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
@@ -298,6 +298,72 @@ void filter_matches_by_robust_distribution(const std::vector<cv::KeyPoint> &src_
 	}
 }
 
+void filter_matches_by_robust_distribution(const std::vector<cv::Point2f> &src_points,
+		const std::vector<cv::Point2f> &dst_points,
+		const std::vector<cv::DMatch> &matches,
+		std::vector<char> &mask) {
+
+	if(matches.size() != mask.size()) return;
+
+	// filter in horizontal direction first (reduces the computation cost of vertical filter)
+	std::vector<float> x_distances; x_distances.reserve( src_points.size() );
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const unsigned int x_distance = abs(src_points[src_index].x - dst_points[dst_index].x);
+		x_distances.push_back(x_distance);
+	}
+	if(x_distances.empty()) return;
+
+	// calculate robust standard deviation
+	float median;
+	float sigma = robust_sigma(x_distances, median);
+	if( sigma <= std::numeric_limits<float>::min() )
+		return;
+
+	size_t distance_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		// scale distance to fit standard normal distribution
+		const float z = abs(x_distances[distance_index] - median) / sigma;
+		//use 0,95 interval for z
+		if(z > 1.96)
+			mask[i] = 0;
+		distance_index++;
+	}
+
+	// filter in vertical direction
+	std::vector<float> y_distances; y_distances.reserve( src_points.size() );
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
+		const unsigned int y_distance = abs(src_points[src_index].y - dst_points[dst_index].y);
+		y_distances.push_back(y_distance);
+	}
+	if(y_distances.size() == 0) return;
+
+	// calculate robust standard deviation
+	sigma = robust_sigma(y_distances, median);
+	if( sigma <= std::numeric_limits<float>::min() )
+		return;
+
+	distance_index = 0;
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(mask[i] == 0) continue;
+
+		// scale distance to fit standard normal distribution
+		const float z = abs(y_distances[distance_index] - median) / sigma;
+		//use 0,95 interval for z
+		if(z > 1.96)
+			mask[i] = 0;
+
+		distance_index++;
+	}
+}
+
 void find_lis(const std::vector<int> &sequence, std::vector<int> &lis) {
 
 	lis.clear();
@@ -354,19 +420,54 @@ void fusion_matches(const std::vector<cv::DMatch> &forward_matches,
 	}
 }
 
+void idealpoints_to_imagepoints(const std::vector<cv::Point2f>& idealpoints,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& imagepoints) {
+
+	if( idealpoints.empty() ) return;
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+
+	imagepoints.resize( idealpoints.size() );
+	for(unsigned int i=0; i<idealpoints.size(); i++) {
+		imagepoints[i].x = fx*idealpoints[i].x + cx;
+		imagepoints[i].y = fy*idealpoints[i].y + cy;
+	}
+}
+
+void imagepoints_to_idealpoints(const std::vector<cv::Point2f>& imagepoints,
+	const cv::Mat& camera_matrix,
+	std::vector<cv::Point2f>& idealpoints) {
+
+	if( imagepoints.empty() ) return;
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+
+	idealpoints.resize( imagepoints.size() );
+	for(unsigned int i=0; i<imagepoints.size(); i++) {
+		idealpoints[i].x = (imagepoints[i].x - cx)/fx;
+		idealpoints[i].y = (imagepoints[i].y - cy)/fy;
+	}
+}
+
 void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const float distance,
+	const std::vector<float>& camera_pose,
 	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients,
 	std::vector<cv::Point3f>& objectpoints) {
 
 	if( imagepoints.size() == 0) return;
-	objectpoints.resize( imagepoints.size() );
 
-	for(unsigned int i = 0; i < imagepoints.size(); i++) {
-		cv::Point2f up = undistort_n2i(imagepoints[i], camera_matrix, distortion_coefficients);
-		objectpoints[i] = cv::Point3f(up.x * distance, up.y * distance, distance);
-	}
+	std::vector<cv::Point2f> idealpoints;
+	imagepoints_to_idealpoints(imagepoints, camera_matrix, idealpoints);
+
+	idealpoints_to_objectpoints<rotation_matrix_rad>(idealpoints, distance, camera_pose, objectpoints);
 }
 
 void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
@@ -407,7 +508,7 @@ void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
 		}
 		
 		//for ideal point coordinates it is enough to multiply with the distance
-		objectpoints[i] = cv::Point3f(x*distance, y*distance, distance);
+		objectpoints[i] = cv::Point3f(-x*distance, -y*distance, distance);
 	}
 }
 
@@ -429,66 +530,36 @@ void objectpoints_to_idealpoints(const std::vector<cv::Point3f>& objectpoints,
 	const std::vector<float>& camera_pose,
 	std::vector<cv::Point2f>& idealpoints) {
 
+	if(camera_pose.size() < 6) return;
 	if( objectpoints.empty() ) return;
 	idealpoints.resize( objectpoints.size() );
 
-	std::vector<float> rotation_vector(camera_pose.begin(), camera_pose.begin()+3);
-	cv::Mat rotation_matrix(3,3, CV_32FC1);
-	Rodrigues(rotation_vector, rotation_matrix);
-	const float r11 = rotation_matrix.at<float>(0,0);
-	const float r12 = rotation_matrix.at<float>(0,1);
-	const float r13 = rotation_matrix.at<float>(0,2);
-	const float r21 = rotation_matrix.at<float>(1,0);
-	const float r22 = rotation_matrix.at<float>(1,1);
-	const float r23 = rotation_matrix.at<float>(1,2);
-	const float r31 = rotation_matrix.at<float>(2,0);
-	const float r32 = rotation_matrix.at<float>(2,1);
-	const float r33 = rotation_matrix.at<float>(2,2);
+	float rotation_matrix[9];
+	rotation_matrix_rad(&camera_pose[0], rotation_matrix);
+	const float r11 = rotation_matrix[0]; const float r12 = rotation_matrix[1]; const float r13 = rotation_matrix[2];
+	const float r21 = rotation_matrix[3]; const float r22 = rotation_matrix[4]; const float r23 = rotation_matrix[5];
+	const float r31 = rotation_matrix[6]; const float r32 = rotation_matrix[7]; const float r33 = rotation_matrix[8];
 
 	for(unsigned int i = 0; i < objectpoints.size(); i++) {
 		const float x = r11*objectpoints[i].x + r12*objectpoints[i].y + r13*objectpoints[i].z + camera_pose[3];
 		const float y = r21*objectpoints[i].x + r22*objectpoints[i].y + r23*objectpoints[i].z + camera_pose[4];
 		const float z = r31*objectpoints[i].x + r32*objectpoints[i].y + r33*objectpoints[i].z + camera_pose[5];
-		
+
 		idealpoints[i].x = x/z;
 		idealpoints[i].y = y/z;
 	}
 }
 
 void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
-	const std::vector<float>& rotation_vector,
-	const std::vector<float>& translation_vector,
+	const std::vector<float>& camera_pose,
 	const cv::Mat& camera_matrix,
 	std::vector<cv::Point2f>& imagepoints) {
 
-	if( objectpoints.empty() ) return;
-	imagepoints.resize( objectpoints.size() );
+	if( objectpoints.empty() || camera_pose.size() < 6) return;
 
-	cv::Mat rotation_matrix(3,3, CV_32FC1);
-	Rodrigues(rotation_vector, rotation_matrix);
-	const float r11 = rotation_matrix.at<float>(0,0);
-	const float r12 = rotation_matrix.at<float>(0,1);
-	const float r13 = rotation_matrix.at<float>(0,2);
-	const float r21 = rotation_matrix.at<float>(1,0);
-	const float r22 = rotation_matrix.at<float>(1,1);
-	const float r23 = rotation_matrix.at<float>(1,2);
-	const float r31 = rotation_matrix.at<float>(2,0);
-	const float r32 = rotation_matrix.at<float>(2,1);
-	const float r33 = rotation_matrix.at<float>(2,2);
-
-	const float cx = camera_matrix.at<double>(0, 2);
-	const float cy = camera_matrix.at<double>(1, 2);
-	const float fx = camera_matrix.at<double>(0, 0);
-	const float fy = camera_matrix.at<double>(1, 1);
-
-	for(unsigned int i = 0; i < objectpoints.size(); i++) {
-		const float x = r11*objectpoints[i].x + r12*objectpoints[i].y + r13*objectpoints[i].z + translation_vector[0];
-		const float y = r21*objectpoints[i].x + r22*objectpoints[i].y + r23*objectpoints[i].z + translation_vector[1];
-		const float z = r31*objectpoints[i].x + r32*objectpoints[i].y + r33*objectpoints[i].z + translation_vector[2];
-		
-		imagepoints[i].x = cx + (fx*x)/z;
-		imagepoints[i].y = cy + (fy*y)/z;
-	}
+	std::vector<cv::Point2f> idealpoints;
+	objectpoints_to_idealpoints(objectpoints, camera_pose, idealpoints);
+	idealpoints_to_imagepoints(idealpoints, camera_matrix, imagepoints);
 }
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix) {
@@ -496,12 +567,55 @@ cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_
 		return point;
 
 	cv::Point2f transformed;
-	
+
 	const double *matrix_data = reinterpret_cast<const double*>(transform_matrix.data);
 	transformed.x = matrix_data[0]*point.x + matrix_data[1]*point.y + matrix_data[2];
 	transformed.y = matrix_data[3]*point.x + matrix_data[4]*point.y + matrix_data[5];
 	
 	return transformed;
+}
+
+void undistort_n2i(const std::vector<cv::KeyPoint> &keypoints,
+	const cv::Mat &camera_matrix,
+	const cv::Mat &distortion_coefficients,
+	std::vector<cv::Point2f> &undistorted_points) {
+
+	if( keypoints.empty() ) return;
+	if(camera_matrix.cols != 3 || camera_matrix.rows != 3 ) return;
+	if(distortion_coefficients.total() < 5) return;
+
+	const double cx = camera_matrix.at<double>(0, 2);
+	const double cy = camera_matrix.at<double>(1, 2);
+	const double fx = camera_matrix.at<double>(0, 0);
+	const double fy = camera_matrix.at<double>(1, 1);
+	const double *k = distortion_coefficients.ptr<double>();
+
+	undistorted_points.resize( keypoints.size() );
+
+	double ideal_x, ideal_y;
+	for(unsigned int i=0; i<keypoints.size(); i++) {
+		ideal_x = (keypoints[i].pt.x-cx)/fx;
+		ideal_y = (keypoints[i].pt.y-cy)/fy;
+		const double x0 = ideal_x, y0 = ideal_y;
+
+		//undistort points using simplified iterative approach from OpenCV
+		for(uint8_t j=0; j<5; j++) {
+			const double xx = ideal_x*ideal_x;
+			const double xy = ideal_x*ideal_y;
+			const double yy = ideal_y*ideal_y;
+			const double r2 = xx+yy;
+
+			const double radial_factor = 1.0/(1 + ((k[4]*r2 + k[1])*r2 + k[0])*r2);
+			const double tang_x = 2*k[2]*xy + k[3]*(r2 + 2*xx);
+			const double tang_y = k[2]*(r2 + 2*yy) + 2*k[3]*xy;
+
+			ideal_x = (x0 - tang_x)*radial_factor;
+			ideal_y = (y0 - tang_y)*radial_factor;
+		}
+
+		undistorted_points[i].x = ideal_x;
+		undistorted_points[i].y = ideal_y;
+	}
 }
 
 void update_landmarks(landmarks_t &landmarks,const std::vector<std::vector<cv::DMatch> > &matches) {

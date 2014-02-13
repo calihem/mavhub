@@ -9,6 +9,7 @@
 #include "protocol/protocolstack.h"
 #include "qk_helper.h"
 #include "protocol/mkpackage.h"
+#include "lib/hub/time.h"
 
 #include <cstdlib>
 #include <sstream>
@@ -16,6 +17,7 @@
 #define RAND_MAX_TO_M1 1/(double)RAND_MAX
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 	Ctrl_Zrate::Ctrl_Zrate(const map<string, string> args) : 

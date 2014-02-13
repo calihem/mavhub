@@ -8,9 +8,11 @@
 
 #include "core/logger.h" //"printf"
 #include "utility.h"
+#include "lib/hub/time.h"
 #include "core/datacenter.h"
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 

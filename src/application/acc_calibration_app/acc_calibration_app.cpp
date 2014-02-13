@@ -7,8 +7,10 @@
 #include <iomanip>
 #include <string>
 #include <cmath>
+#include "lib/hub/time.h"
 using namespace std;
 using namespace cpp_pthread;
+using namespace hub;
 
 namespace mavhub {
 

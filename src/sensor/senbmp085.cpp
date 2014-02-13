@@ -6,9 +6,11 @@
 
 #include "core/logger.h" //"printf"
 #include "utility.h"
+#include "lib/hub/time.h"
 // #include "datacenter.h"
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 

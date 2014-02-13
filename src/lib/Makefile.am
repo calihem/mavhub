@@ -23,7 +23,6 @@ noinst_LIBRARIES += libslam.a
 
 libslam_a_SOURCES = \
 	slam/features.cpp \
-	slam/pose.cpp \
 	slam/bundleadjust.cpp \
 	slam/tracker.cpp \
 	slam/map.cpp

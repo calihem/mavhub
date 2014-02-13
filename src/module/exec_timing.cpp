@@ -30,8 +30,10 @@
 
 #include "exec_timing.h"
 #include "core/logger.h"
+#include "lib/hub/time.h"
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 	// Exec_Timing::Exec_Timing(int order_, vector<double> &coeff) {

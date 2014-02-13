@@ -10,10 +10,12 @@
 #include <limits>	//epsilon
 
 #include "utility.h"
+#include "lib/hub/time.h"
 
 #define VISUAL_OUTPUT 0
 
 using namespace boost::unit_test;
+using namespace hub;
 using namespace hub::slam;
 using namespace mavhub;
 
@@ -53,8 +55,8 @@ BOOST_AUTO_TEST_SUITE(FeatureMatchingTestSuite)
 BOOST_AUTO_TEST_CASE(test_featurematching)
 {
 	//FIXME: avoid static filenames
-	cv::Mat left_image = cv::imread("../tests/images/allgaeu_left.jpg", 0);
-	cv::Mat right_image = cv::imread("../tests/images/allgaeu_right.jpg", 0);
+	cv::Mat left_image = cv::imread("../tests/data/allgaeu_left.jpg", 0);
+	cv::Mat right_image = cv::imread("../tests/data/allgaeu_right.jpg", 0);
 	BOOST_REQUIRE(left_image.data && right_image.data);
 
 	// get features from image
@@ -72,7 +74,11 @@ BOOST_AUTO_TEST_CASE(test_featurematching)
 	BOOST_CHECK( !left_keypoints.empty() && !right_keypoints.empty() );
 
 	// match descriptors
+#ifdef HAVE_SSSE3
 	cv::BruteForceMatcher<cv::HammingSse> matcher;
+#else
+	cv::BruteForceMatcher<cv::Hamming> matcher;
+#endif
 	std::vector<cv::DMatch> matches;
 	uint64_t start_time = get_time_us();
 	matcher.match(left_descriptors, right_descriptors, matches);
