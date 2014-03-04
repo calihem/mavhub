@@ -1,32 +1,9 @@
-# mavhub (Micro Air Vehicle HUB)
+# MAVHUB (Micro Air Vehicle HUB)
 
-## Description
-TODO
-
-## Usage
-	mavhub [options]
-
-### Settings
-Settings can be stored in an ini-like file. Examples can be found in the `mavhub.d` directory.
-To start, just enter
-
-	./src/mavhub -c ../mavhub.d/mavhub.conf
-
-### GStreamer plugins
-To use own gstreamer plugins or plugins which aren't installed in the GStreamer search path, you
-have to set the `GST_PLUGIN_PATH` to the directory containing the plugins, e.g.
-
-	export GST_PLUGIN_PATH=/home/user/git/mavhub/lib/gstreamer/
-	./src/mavhub -c ../mavhub.d/mavhub.conf
-
-### Unit Test Framework
-A complete list about the supported paremeters can be found in the [boost runtime parameter reference](http://www.boost.org/doc/libs/1_49_0/libs/test/doc/html/utf/user-guide/runtime-config/reference.html). For example, a more verbatim output can be reached by
-
-	./tests/test_mavhub --log_level=message
-
-## Options
-	-c <file>, --config <file>    open config file <file>
-	-h, --help                    print usage summary
+MAVHUB is a simple C++ framework to abstract the communication between multiple
+components of a robotic system. Therefor it supports multiple protocols and
+has some wrapper classes to access I/O devices or to realize your robotic
+algorithm.
 
 ## Dependencies
 ### Required
@@ -115,6 +92,31 @@ Documentation can be generated using Doxygen. Please run
 	make doxygen-doc
 
 and have a look at doc/html/index.html.
+
+## Usage
+	mavhub [options]
+
+### Options
+	-c <file>, --config <file>    open config file <file>
+	-h, --help                    print usage summary
+
+### Settings
+Settings can be stored in an ini-like file. Examples can be found in the `mavhub.d` directory.
+To start, just enter
+
+	./src/mavhub -c ../mavhub.d/mavhub.conf
+
+### GStreamer plugins
+To use own gstreamer plugins or plugins which aren't installed in the GStreamer search path, you
+have to set the `GST_PLUGIN_PATH` to the directory containing the plugins, e.g.
+
+	export GST_PLUGIN_PATH=/home/user/git/mavhub/lib/gstreamer/
+	./src/mavhub -c ../mavhub.d/mavhub.conf
+
+### Unit Test Framework
+A complete list about the supported paremeters can be found in the [boost runtime parameter reference](http://www.boost.org/doc/libs/1_49_0/libs/test/doc/html/utf/user-guide/runtime-config/reference.html). For example, a more verbatim output can be reached by
+
+	./tests/test_mavhub --log_level=message
 
 ## FAQ
 ## Where to get the sourcecode?
