@@ -13,7 +13,7 @@ algorithm.
 ### Optional
 * autotools
 * [BLAS](http://www.netlib.org/blas/) (libblas-dev)
-* [boost C++ library](http://www.boost.org/) (libboost-dev)
+* [boost C++ library](http://www.boost.org/) (libboost-dev, libboost-test-dev)
 * [boost Unit Test Framework](http://www.boost.org/doc/libs/1_45_0/libs/test/doc/html/index.html)
 * [doxygen](http://www.doxygen.org)
 * [GStreamer](http://gstreamer.freedesktop.org/)
@@ -59,6 +59,13 @@ for e.g. the beagle-board.
 To compile the test program in the tests directory, enable test support via
 
 	./configure --enable-tests=yes
+
+If you get an error on a 64 bit machine saying that configure could not find the version of the library,
+adding of
+
+	--with-boost-libdir=/usr/lib/x86_64-linux-gnu/
+
+might help.
 
 ### Examples
 1. On x86 architecture you might want to enter

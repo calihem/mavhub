@@ -4,7 +4,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/detail/unit_test_parameters.hpp>
 
-#include <opencv2/highgui/highgui.hpp>	//imread
+#include <opencv2/opencv.hpp>
 #include <brisk/brisk.h>
 
 #include <cstdlib>
@@ -85,10 +85,10 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 // 	start_time = get_time_us();
 
 	// match descriptors
-#ifdef HAVE_SSSE3
-	cv::BruteForceMatcher<cv::HammingSse> matcher;
-#else
+#if CV_MINOR_VERSION <= 3
 	cv::BruteForceMatcher<cv::Hamming> matcher;
+#else
+	cv::BFMatcher matcher(cv::NORM_HAMMING);
 #endif
 	std::vector<cv::DMatch> matches;
 	matcher.match(first_descriptors, second_descriptors, matches);
