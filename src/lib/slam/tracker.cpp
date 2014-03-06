@@ -6,7 +6,7 @@
 
 #define VERBOSE 0
 
-#define LOG_DEBUG_DATA 1
+#define LOG_DEBUG_DATA 0
 
 // little debug makro
 #if VERBOSE >= 1
@@ -73,13 +73,14 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	std::vector< cv::Point2f > op_projections;
 	cv::Mat op_descriptors;
 	map.fill_tracking_points(objectpoints, op_projections, op_descriptors);
-	// add new features to map
-	map.add_features(ideal_points,
-		descriptors,
-		parameter_vector,
-		avg_depth);
 
 	if( objectpoints.empty() ) { // no suitable points found in map
+		// add new features to map
+		map.add_features(ideal_points,
+			descriptors,
+			parameter_vector,
+			avg_depth);
+
 		return 1;
 	}
 
@@ -188,7 +189,6 @@ f_stream.close();
 counter++;
 #endif
 
-
 	//get translation
 	guess_translation(objectpoints,
 		ideal_points,
@@ -212,6 +212,13 @@ counter++;
 		return -4;
 	}
 */
+
+	// add features with new estimatio to map
+	map.add_features(ideal_points,
+		descriptors,
+		parameter_vector,
+		avg_depth);
+
 	return 0;
 }
 

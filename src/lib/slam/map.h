@@ -23,7 +23,7 @@
 //FIXME: remove dependency to BRISK
 #include "brisk/brisk.h"
 
-#define _HUB_MAP_VERBOSE 1
+#define _HUB_MAP_VERBOSE 0
 
 // little debug makro
 #if _HUB_MAP_VERBOSE >= 1
@@ -357,6 +357,7 @@ void Map<T>::local_bundle_adjust() {
 	}
 	dout << "filled " << measurements.size() << " measurements" << std::endl;
 
+#if _HUB_MAP_VERBOSE
 static unsigned int run_counter;
 static const char *cams_fn_template = "cams_%02u.txt";
 char *filename;
@@ -408,6 +409,7 @@ if(!run_counter) {
 	calib_stream.close();
 }
 run_counter++;
+#endif
 
 // 	assert(parameters.size() == (unsigned)(num_images*num_params_per_cam + num_points*num_params_per_point));
 // 	assert(rotations.size() == (unsigned)(num_images*quaternion_size));
@@ -625,7 +627,9 @@ void Map<T>::process_working_task() {
 		new_counter++;
 #endif
 	}
+#if _HUB_MAP_VERBOSE
 	dout << "added " << new_counter << " new points of " << projections.size() << " total projections to db" << std::endl;
+#endif
 
 	//add scenery
 	cpp_pthread::Lock scene_lock(scene_mutex);
