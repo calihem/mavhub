@@ -28,8 +28,12 @@ brisk_landmark_t::brisk_landmark_t(const cv::KeyPoint &kp,
 	const cv::Point3f &op,
 	const uint8_t descr[16],
 	const unsigned int counter,
-	const int fc) {
-	//TODO
+	const int fc) : 
+		keypoint(kp),
+		object_point(op),
+		counter(counter),
+		first_occurence(fc) {
+	memcpy(&descriptor, &descr, sizeof(descriptor));
 }
 
 void landmarks_t::clear() {

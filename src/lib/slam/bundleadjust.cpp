@@ -32,7 +32,7 @@ struct fdj_data_x_ {
 inline static void *emalloc_(const char *file, int line, size_t sz) {
 	void *ptr=(void *)malloc(sz);
 	if(ptr==NULL) {
-		fprintf(stderr, "SBA: memory allocation request for %u bytes failed in file %s, line %d, exiting", sz, file, line);
+		fprintf(stderr, "SBA: memory allocation request for %lu bytes failed in file %s, line %d, exiting", sz, file, line);
 		exit(1);
 	}
 	return ptr;
@@ -56,7 +56,7 @@ extern void sba_print_inf(double *hx, int nimgs, int mnp, struct sba_crsm *idxij
 namespace hub {
 namespace slam {
 
-void sba_ideal_pinhole_model(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsubs, double *hx, void *adata) {
+void sba_ideal_pinhole_model(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsubs, double *hx, void */*adata*/) {
 	const int num_cols = idxij->nc;
 	const double *p_points = p+num_cols*num_params_per_cam;
 
@@ -99,7 +99,7 @@ void sba_pinhole_model(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsu
 	}
 }
 
-void sba_ideal_pinhole_model_jac(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsubs, double *jac, void *adata) {
+void sba_ideal_pinhole_model_jac(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsubs, double *jac, void */*adata*/) {
 	const int num_cols = idxij->nc;
 	const double *p_points = p+num_cols*num_params_per_cam;
 

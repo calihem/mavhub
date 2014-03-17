@@ -405,7 +405,7 @@ inline int guess_pose(const std::vector< cv::Point3_<T> > &objectpoints,
 }
 
 template<typename T, void(*F)(const T*, const T*, T*, const size_t)>
-void levmar_ideal_pinhole_model(T *p, T *hx, int m, int n, void *data) {
+void levmar_ideal_pinhole_model(T *p, T *hx, int /*m*/, int n, void *data) {
 
 	const pinhole_model_data_t<T> *pinhole_model_data = static_cast< pinhole_model_data_t<T>* >(data);
 	if(!pinhole_model_data) return;
@@ -440,7 +440,7 @@ void levmar_ideal_pinhole_model(T *p, T *hx, int m, int n, void *data) {
 }
 
 template<typename T, void(*F)(const T*, const T*, const cv::Mat &, T*, const size_t)>
-void levmar_pinhole_model(T *p, T *hx, int m, int n, void *data) {
+void levmar_pinhole_model(T *p, T *hx, int /*m*/, int n, void *data) {
 
 	const pinhole_model_data_t<T> *pinhole_model_data = static_cast< pinhole_model_data_t<T>* >(data);
 	if(!pinhole_model_data) return;
@@ -520,7 +520,7 @@ void levmar_ideal_pinhole_model_jac(T *p, T *jac, int m, int n, void *data) {
 }
 
 template<typename T>
-void levmar_ideal_pinhole_quat_jac(T *p, T *jac, int m, int n, void *data) {
+void levmar_ideal_pinhole_quat_jac(T */*p*/, T */*jac*/, int /*m*/, int /*n*/, void */*data*/) {
 	//TODO
 	assert(0);
 }
@@ -744,11 +744,11 @@ void levmar_approx_pinhole_euler_jac(T *p, T *jac, int m, int n, void *data) {
 	const int num_points = n/2;
 	const unsigned int v_offset = m*num_points;
 	// multiply partial u / partial p with fx
-	for(int i=0; i<v_offset; i++) {
+	for(unsigned int i=0; i<v_offset; i++) {
 		jac[i] *= fx;
 	}
 	// multiply partial v / partial p with fy
-	for(int i=v_offset; i<2*v_offset; i++) {
+	for(unsigned int i=v_offset; i<2*v_offset; i++) {
 		jac[i] *= fy;
 	}
 }
