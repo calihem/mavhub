@@ -3,7 +3,6 @@
 #include "sensrf02.h"
 
 #include "core/logger.h" //"printf"
-#include "utility.h"
 #include "lib/hub/time.h"
 #include "../core/datacenter.h"
 #include "../module/filter_median.h"

@@ -6,7 +6,6 @@
 //#define WINSIZE 9
 //#define WINSIZE_HALF WINSIZE/2
 
-#include "utility.h"
 
 #include <algorithm>
 #include <vector>

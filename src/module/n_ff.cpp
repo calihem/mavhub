@@ -10,7 +10,6 @@
 #include <stdio.h>
 
 #include "core/logger.h"
-#include "utility.h"
 
 using namespace std;
 using namespace cv;

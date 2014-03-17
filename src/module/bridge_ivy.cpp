@@ -4,7 +4,6 @@
 #ifdef HAVE_IVY_IVY_H
 
 #include "core/logger.h"
-#include "utility.h"
 #include "protocol/protocolstack.h"
 
 #include <iostream> //cout

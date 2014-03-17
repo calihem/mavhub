@@ -23,7 +23,7 @@
 #include <cstdlib>      // exit
 
 #include "core/logger.h"
-#include "utility.h"
+#include "lib/hub/utility.h"
 #include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"

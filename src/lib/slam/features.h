@@ -223,13 +223,13 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<std::vector<cv::DMatch> >& matches,
 	const cv::Point& center,
-	const float rad_roll, const float rad_pitch, const float rad_yaw,
+	const float /*rad_roll*/, const float /*rad_pitch*/, const float rad_yaw,
 	const float delta_x, const float delta_y,
 	std::vector<uint8_t>& filter,
 	Distance distance_metric) {
 
-	double alpha = cos(rad_yaw);
-	double beta = sin(rad_yaw);
+	const double alpha = cos(rad_yaw);
+	const double beta = sin(rad_yaw);
 
 	/* Transformation matrix
 	 * ( alpha beta  (1-alpha)*center.x-beta*center.y-delta_x )

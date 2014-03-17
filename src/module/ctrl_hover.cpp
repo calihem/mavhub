@@ -44,7 +44,6 @@
 #include <sstream>
 
 #include "core/logger.h"
-#include "utility.h"
 #include "lib/hub/math.h"
 #include "lib/hub/time.h"
 #include "protocol/protocolstack.h"

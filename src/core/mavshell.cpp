@@ -32,7 +32,7 @@
 #include "core/logger.h"
 #include "protocol/protocollayer.h"
 #include "protocol/protocolstack.h"
-#include "utility.h"
+#include "lib/hub/utility.h"
 #include "protocol/link_factory.h"
 
 #include <iterator>     //istream_iterator
@@ -40,7 +40,9 @@
 #include <stdexcept>    // out_of_range exception
 
 #include <iostream>     //cout
+
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 

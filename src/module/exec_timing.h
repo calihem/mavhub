@@ -33,8 +33,7 @@
 #ifndef _EXEC_TIMING_H_
 #define _EXEC_TIMING_H_
 
-#include "utility.h" // for uint64_t
-
+#include <inttypes.h> // for uint64_t
 #include <sys/time.h> //us
 #include <vector>
 

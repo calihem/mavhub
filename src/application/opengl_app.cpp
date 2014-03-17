@@ -5,7 +5,6 @@
 
 #include "core/logger.h"
 #include "core/datacenter.h"
-#include "utility.h"
 
 #include "lib/opengl/map_2d.h"
 

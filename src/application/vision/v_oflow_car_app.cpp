@@ -10,7 +10,6 @@
 
 #include "core/logger.h"
 #include "core/datacenter.h"
-#include "utility.h"
 
 #include <sstream> //istringstream
 

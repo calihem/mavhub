@@ -42,7 +42,7 @@ namespace mavhub {
 		wait_freq = rate ? 1000000 / rate : 0;
 		wait_time = wait_freq;
 		frequency = wait_time;
-		start = get_time_us(); // from utility
+		start = get_time_us(); // from time
 		usec = 0;
 		gettimeofday(&tk, NULL);
 		gettimeofday(&tkm1, NULL);

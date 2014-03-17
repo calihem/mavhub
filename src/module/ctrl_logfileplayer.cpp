@@ -39,7 +39,7 @@
 #ifdef HAVE_MAVLINK_H
 
 #include "core/logger.h"
-#include "utility.h"
+#include "lib/hub/utility.h"
 #include "lib/hub/math.h"
 #include "lib/hub/time.h"
 #include "protocol/protocolstack.h"

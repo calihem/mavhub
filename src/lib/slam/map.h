@@ -55,6 +55,7 @@ class Map : public cpp_pthread::PThread {
 			const std::vector<T> &pose) :
 				ideal_width(ideal_width),
 				ideal_height(ideal_height),
+				angle(angle),
 				radius_1m(radius),
 				pose(pose) { };
 
@@ -802,7 +803,7 @@ void Map<T>::visible_points(const std::vector<T> &pose,
 
 	std::vector<cv::Point2f> idealpoints( Map<T>::objectpoints.size() );
 	ideal_pinhole_model_quatvec<T>(&Map<T>::objectpoints[0].x,
-		&camera.pose[0],
+		&pose[0],
 		&idealpoints[0].x,
 		Map<T>::objectpoints.size() );
 

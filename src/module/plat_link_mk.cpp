@@ -4,7 +4,6 @@
 #ifdef HAVE_MKHUCHLINK_H
 
 #include "core/logger.h"
-#include "utility.h"
 #include "lib/hub/time.h"
 #include "protocol/protocolstack.h"
 

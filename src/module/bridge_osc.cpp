@@ -3,7 +3,6 @@
 #ifdef HAVE_LIBOSCPACK
 
 #include "core/logger.h"
-#include "utility.h"
 #include "protocol/protocolstack.h"
 #include "core/datacenter.h"
 #include <mavlink.h>

@@ -26,6 +26,7 @@
 
 #include "main.h"
 
+#include "lib/hub/utility.h"
 #include "core/core.h"
 #include "core/logger.h"
 #include "protocol/protocolstack.h"
@@ -42,6 +43,7 @@
 #include <cstdlib>      // exit
 
 using namespace std;
+using namespace hub;
 using namespace mavhub;
 using namespace cpp_pthread;
 using namespace cpp_io;

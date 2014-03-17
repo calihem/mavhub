@@ -1,7 +1,5 @@
 #include "network.h"
 
-#include "utility.h"
-
 #include <cstring> //memset
 #include <netdb.h> //hostent
 #include <iostream>

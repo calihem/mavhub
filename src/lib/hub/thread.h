@@ -83,7 +83,7 @@ class PThread {
 		/**
 		 * \brief True if thread has to be interrupted or was interrupted.
 		 */
-		const bool interrupted() const;
+		bool interrupted() const;
 
 	protected:
 		/// C struct to represent thread.
@@ -154,7 +154,7 @@ inline void* PThread::join() {
 inline void PThread::interrupt() {
 	_interrupt = true;
 }
-inline const bool PThread::interrupted() const {
+inline bool PThread::interrupted() const {
 	return _interrupt;
 }
 inline void* PThread::start_routine_wrapper(void *arg) {

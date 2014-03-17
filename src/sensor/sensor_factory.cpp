@@ -1,5 +1,5 @@
 #include "sensor_factory.h"
-#include "utility.h"
+#include "lib/hub/utility.h"
 
 #include "core/logger.h"
 
@@ -9,6 +9,7 @@
 #include <list>
 
 using namespace std;
+using namespace hub;
 
 namespace mavhub {
 

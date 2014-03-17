@@ -5,7 +5,6 @@
 
 #include "core/logger.h"
 #include "core/datacenter.h"
-#include "utility.h"
 
 using namespace cpp_pthread;
 using namespace std;

@@ -3,7 +3,6 @@
 
 #include "io/io.h"
 #include "core/logger.h"
-#include "utility.h"
 
 #include <termios.h>
 #include <unistd.h> //read, write

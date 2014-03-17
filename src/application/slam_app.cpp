@@ -8,7 +8,6 @@
 
 #include "core/logger.h"
 #include "core/datacenter.h"
-#include "utility.h"
 #include "lib/slam/pose.h"
 #include "lib/slam/tracker.h"
 #include "lib/hub/time.h"
