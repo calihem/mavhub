@@ -57,7 +57,7 @@ extern int GEQP3(int *m, int *n, LM_REAL *a, int *lda, int *jpvt,
 extern int ORGQR(int *m, int *n, int *k, LM_REAL *a, int *lda, LM_REAL *tau,
                    LM_REAL *work, int *lwork, int *info);
 
-extern int TRTRI(char *uplo, char *diag, int *n, LM_REAL *a, int *lda, int *info);
+extern int TRTRI(const char *uplo, const char *diag, int *n, LM_REAL *a, int *lda, int *info);
 #ifdef __cplusplus
 }
 #endif

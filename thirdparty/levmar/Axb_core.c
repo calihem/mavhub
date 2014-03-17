@@ -59,30 +59,30 @@ extern int GEQRF(int *m, int *n, LM_REAL *a, int *lda, LM_REAL *tau, LM_REAL *wo
 extern int ORGQR(int *m, int *n, int *k, LM_REAL *a, int *lda, LM_REAL *tau, LM_REAL *work, int *lwork, int *info);
 
 /* solution of triangular systems */
-extern int TRTRS(char *uplo, char *trans, char *diag, int *n, int *nrhs, LM_REAL *a, int *lda, LM_REAL *b, int *ldb, int *info);
+extern int TRTRS(const char *uplo, const char *trans, const char *diag, int *n, int *nrhs, LM_REAL *a, int *lda, LM_REAL *b, int *ldb, int *info);
 
 /* Cholesky decomposition and systems solution */
-extern int POTF2(char *uplo, int *n, LM_REAL *a, int *lda, int *info);
-extern int POTRF(char *uplo, int *n, LM_REAL *a, int *lda, int *info); /* block version of dpotf2 */
-extern int POTRS(char *uplo, int *n, int *nrhs, LM_REAL *a, int *lda, LM_REAL *b, int *ldb, int *info);
+extern int POTF2(const char *uplo, int *n, LM_REAL *a, int *lda, int *info);
+extern int POTRF(const char *uplo, int *n, LM_REAL *a, int *lda, int *info); /* block version of dpotf2 */
+extern int POTRS(const char *uplo, int *n, int *nrhs, LM_REAL *a, int *lda, LM_REAL *b, int *ldb, int *info);
 
 /* LU decomposition and systems solution */
 extern int GETRF(int *m, int *n, LM_REAL *a, int *lda, int *ipiv, int *info);
-extern int GETRS(char *trans, int *n, int *nrhs, LM_REAL *a, int *lda, int *ipiv, LM_REAL *b, int *ldb, int *info);
+extern int GETRS(const char *trans, int *n, int *nrhs, LM_REAL *a, int *lda, int *ipiv, LM_REAL *b, int *ldb, int *info);
 
 /* Singular Value Decomposition (SVD) */
-extern int GESVD(char *jobu, char *jobvt, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu,
+extern int GESVD(const char *jobu, const char *jobvt, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu,
                    LM_REAL *vt, int *ldvt, LM_REAL *work, int *lwork, int *info);
 
 /* lapack 3.0 new SVD routine, faster than xgesvd().
  * In case that your version of LAPACK does not include them, use the above two older routines
  */
-extern int GESDD(char *jobz, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu, LM_REAL *vt, int *ldvt,
+extern int GESDD(const char *jobz, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu, LM_REAL *vt, int *ldvt,
                    LM_REAL *work, int *lwork, int *iwork, int *info);
 
 /* LDLt/UDUt factorization and systems solution */
-extern int SYTRF(char *uplo, int *n, LM_REAL *a, int *lda, int *ipiv, LM_REAL *work, int *lwork, int *info);
-extern int SYTRS(char *uplo, int *n, int *nrhs, LM_REAL *a, int *lda, int *ipiv, LM_REAL *b, int *ldb, int *info);
+extern int SYTRF(const char *uplo, int *n, LM_REAL *a, int *lda, int *ipiv, LM_REAL *work, int *lwork, int *info);
+extern int SYTRS(const char *uplo, int *n, int *nrhs, LM_REAL *a, int *lda, int *ipiv, LM_REAL *b, int *ldb, int *info);
 #ifdef __cplusplus
 }
 #endif

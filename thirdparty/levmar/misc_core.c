@@ -44,21 +44,21 @@ extern "C" {
 /* BLAS matrix multiplication, LAPACK SVD & Cholesky routines */
 #define GEMM LM_MK_BLAS_NAME(gemm)
 /* C := alpha*op( A )*op( B ) + beta*C */
-extern void GEMM(char *transa, char *transb, int *m, int *n, int *k,
+extern void GEMM(const char *transa, const char *transb, int *m, int *n, int *k,
           LM_REAL *alpha, LM_REAL *a, int *lda, LM_REAL *b, int *ldb, LM_REAL *beta, LM_REAL *c, int *ldc);
 
 #define GESVD LM_MK_LAPACK_NAME(gesvd)
 #define GESDD LM_MK_LAPACK_NAME(gesdd)
-extern int GESVD(char *jobu, char *jobvt, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu,
+extern int GESVD(const char *jobu, const char *jobvt, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu,
                  LM_REAL *vt, int *ldvt, LM_REAL *work, int *lwork, int *info);
 
 /* lapack 3.0 new SVD routine, faster than xgesvd() */
-extern int GESDD(char *jobz, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu, LM_REAL *vt, int *ldvt,
+extern int GESDD(const char *jobz, int *m, int *n, LM_REAL *a, int *lda, LM_REAL *s, LM_REAL *u, int *ldu, LM_REAL *vt, int *ldvt,
                  LM_REAL *work, int *lwork, int *iwork, int *info);
 
 /* Cholesky decomposition */
 #define POTF2 LM_MK_LAPACK_NAME(potf2)
-extern int POTF2(char *uplo, int *n, LM_REAL *a, int *lda, int *info);
+extern int POTF2(const char *uplo, int *n, LM_REAL *a, int *lda, int *info);
 #ifdef __cplusplus
 }
 #endif
