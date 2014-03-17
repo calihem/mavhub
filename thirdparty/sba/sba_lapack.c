@@ -51,36 +51,36 @@ extern int F77_FUNC(dgeqrf)(int *m, int *n, double *a, int *lda, double *tau, do
 extern int F77_FUNC(dorgqr)(int *m, int *n, int *k, double *a, int *lda, double *tau, double *work, int *lwork, int *info);
 
 /* solution of triangular system */
-extern int F77_FUNC(dtrtrs)(char *uplo, char *trans, char *diag, int *n, int *nrhs, double *a, int *lda, double *b, int *ldb, int *info);
+extern int F77_FUNC(dtrtrs)(const char *uplo, const char *trans, const char *diag, int *n, int *nrhs, double *a, int *lda, double *b, int *ldb, int *info);
 
 /* Cholesky decomposition, linear system solution and matrix inversion */
-extern int F77_FUNC(dpotf2)(char *uplo, int *n, double *a, int *lda, int *info); /* unblocked Cholesky */
-extern int F77_FUNC(dpotrf)(char *uplo, int *n, double *a, int *lda, int *info); /* block version of dpotf2 */
-extern int F77_FUNC(dpotrs)(char *uplo, int *n, int *nrhs, double *a, int *lda, double *b, int *ldb, int *info);
-extern int F77_FUNC(dpotri)(char *uplo, int *n, double *a, int *lda, int *info);
+extern int F77_FUNC(dpotf2)(const char *uplo, int *n, double *a, int *lda, int *info); /* unblocked Cholesky */
+extern int F77_FUNC(dpotrf)(const char *uplo, int *n, double *a, int *lda, int *info); /* block version of dpotf2 */
+extern int F77_FUNC(dpotrs)(const char *uplo, int *n, int *nrhs, double *a, int *lda, double *b, int *ldb, int *info);
+extern int F77_FUNC(dpotri)(const char *uplo, int *n, double *a, int *lda, int *info);
 
 /* LU decomposition, linear system solution and matrix inversion */
 extern int F77_FUNC(dgetrf)(int *m, int *n, double *a, int *lda, int *ipiv, int *info); /* blocked LU */
 extern int F77_FUNC(dgetf2)(int *m, int *n, double *a, int *lda, int *ipiv, int *info); /* unblocked LU */
-extern int F77_FUNC(dgetrs)(char *trans, int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, int *ldb, int *info);
+extern int F77_FUNC(dgetrs)(const char *trans, int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, int *ldb, int *info);
 extern int F77_FUNC(dgetri)(int *n, double *a, int *lda, int *ipiv, double *work, int *lwork, int *info);
 
 /* SVD */
-extern int F77_FUNC(dgesvd)(char *jobu, char *jobvt, int *m, int *n,
+extern int F77_FUNC(dgesvd)(const char *jobu, const char *jobvt, int *m, int *n,
            double *a, int *lda, double *s, double *u, int *ldu,
            double *vt, int *ldvt, double *work, int *lwork,
            int *info);
 
 /* lapack 3.0 routine, faster than dgesvd() */
-extern int F77_FUNC(dgesdd)(char *jobz, int *m, int *n, double *a, int *lda,
+extern int F77_FUNC(dgesdd)(const char *jobz, int *m, int *n, double *a, int *lda,
            double *s, double *u, int *ldu, double *vt, int *ldvt,
            double *work, int *lwork, int *iwork, int *info);
 
 
 /* Bunch-Kaufman factorization of a real symmetric matrix A, solution of linear systems and matrix inverse */
-extern int F77_FUNC(dsytrf)(char *uplo, int *n, double *a, int *lda, int *ipiv, double *work, int *lwork, int *info); /* blocked ver. */
-extern int F77_FUNC(dsytrs)(char *uplo, int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, int *ldb, int *info);
-extern int F77_FUNC(dsytri)(char *uplo, int *n, double *a, int *lda, int *ipiv, double *work, int *info);
+extern int F77_FUNC(dsytrf)(const char *uplo, int *n, double *a, int *lda, int *ipiv, double *work, int *lwork, int *info); /* blocked ver. */
+extern int F77_FUNC(dsytrs)(const char *uplo, int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, int *ldb, int *info);
+extern int F77_FUNC(dsytri)(const char *uplo, int *n, double *a, int *lda, int *ipiv, double *work, int *info);
 
 
 /*
