@@ -6,8 +6,6 @@
 
 #define VERBOSE 0
 
-#define LOG_DEBUG_DATA 0
-
 // little debug makro
 #if VERBOSE >= 1
 #define dout if(1) std::cout << typeid(*this).name() << ": "
@@ -42,87 +40,59 @@ Tracker::~Tracker() {
 	map.join();
 }
 
-int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth) {
+int Tracker::log_debug_data(const cv::Mat &image,
+                            const std::vector<cv::KeyPoint> &keypoints,
+                            const std::vector<float> &parameter_vector,
+                            const std::bitset<8> &debug_mask) {
+	static bool first_run = true;
+	static uint32_t counter = 0;
 
-	// get features from image
-	std::vector<cv::KeyPoint> keypoints;
-	feature_detector.detect(image, keypoints);
-	if(keypoints.empty()) {
-		dout << "didn't found features" << std::endl;
-		return -1;
+	if( debug_mask.test(POSE) ) { // log pose estimations
+		static const char *pose_filename = "pose_estimation.m";
+		std::ofstream pose_stream;
+
+		if(first_run) // create new file
+			pose_stream.open(pose_filename);
+		else  // append to existing data
+			pose_stream.open(pose_filename, std::ios_base::app);
+		if( !pose_stream.is_open() )
+			return - 119;
+
+		if(first_run) {// add header
+			pose_stream << "%% pose estimations before and after tracking" << std::endl
+				<< "%% q1 q2 q3 x_transl y_transl z_transl q1 q2 q3 x_transl y_transl z_transl" << std::endl
+				<< "%%" << std::endl
+				<< "%% add the following line(s) (without %) to the end of the file" << std::endl
+				<< "%];" << std::endl
+				<< "%pose = reshape(pose, 12, [])';" << std::endl;
+
+			pose_stream << "pose = [";
+		} else
+			pose_stream << "; ";
+
+		pose_stream << parameter_vector[0] << ", "
+			<< parameter_vector[1] << ", "
+			<< parameter_vector[2] << ", "
+			<< parameter_vector[3] << ", "
+			<< parameter_vector[4] << ", "
+			<< parameter_vector[5];
+		pose_stream.close();
+		first_run =false;
 	}
 
-	// calculate descriptors which can remove or add some of the keypoints
-	cv::Mat descriptors;
-	descriptor_extractor.compute(image, keypoints, descriptors);
-	if(keypoints.empty()) {
-		dout << "keypoints empty after descriptor computation" << std::endl;
-		return -2;
+	if( debug_mask.test(FEATURE_IMAGE) ) { // save image with features
+		// save current image with features
+		static const char *image_filename_template = "image_%05u.png";
+		char *image_filename;
+		if( asprintf(&image_filename, image_filename_template, counter ) < 0)
+			return -123;
+
+		cv::Mat color_image;
+		cv::drawKeypoints(image, keypoints, color_image);
+		cv::imwrite(image_filename, color_image);
+		free(image_filename);
 	}
-
-	// undistort points
-	std::vector<cv::Point2f> ideal_points;
-	undistort_n2i(keypoints, camera_matrix, distortion_coefficients, ideal_points);
-
-	// activate map (multiple starting doesn't harm)
-	map.start();
-
-	// get (possible) matching points and descriptors from map
-	map.set_view(parameter_vector);
-	std::vector< cv::Point3_<float> > objectpoints;
-	std::vector< cv::Point2f > op_projections;
-	cv::Mat op_descriptors;
-	map.fill_tracking_points(objectpoints, op_projections, op_descriptors);
-
-	if( objectpoints.empty() ) { // no suitable points found in map
-		// add new features to map
-		map.add_features(ideal_points,
-			descriptors,
-			parameter_vector,
-			avg_depth);
-
-		return 1;
-	}
-
-	// match descriptors
-	std::vector<cv::DMatch> matches;
-	matcher.match(op_descriptors, descriptors, matches);
-	if( matches.empty() ) {
-		dout << "no matches found" << std::endl;
-		return -3;
-	}
-
-	// filter matches
-	std::vector<char> matches_mask(matches.size(), 1);
-	filter_matches_by_robust_distribution(op_projections, ideal_points, matches, matches_mask);
-
-#if LOG_DEBUG_DATA
-static uint32_t counter = 0;
-
-static const char *log_template = "log_values.m";
-std::ofstream log_stream;
-if(counter)
-	log_stream.open(log_template, std::ios_base::app);
-else
-	log_stream.open(log_template);
-if( !log_stream.is_open() )
-	return - 119;
-
-if(!counter) {// add header
-	log_stream << "% add the following lines (without #) to the end of the file" << std::endl
-		<< "%];" << std::endl
-		<< "%pose = reshape(pose, 6, [])';" << std::endl;
-
-	log_stream << "pose = [";
-} else
-	log_stream << ", ";
-log_stream << parameter_vector[0] << ", "
-	<< parameter_vector[1] << ", "
-	<< parameter_vector[2] << ", "
-	<< parameter_vector[3] << ", "
-	<< parameter_vector[4] << ", "
-	<< parameter_vector[5];
-
+/*
 static const char *filename_template = "matches_%05u.m";
 char *filename;
 if( asprintf(&filename, filename_template, counter ) < 0)
@@ -176,18 +146,78 @@ if( asprintf(&filename, plot_template, counter ) < 0)
 f_stream << "print -dpng " << filename << std::endl;
 free(filename);
 
-// save current image with features
-static const char *image_template = "image_%05u.png";
-if( asprintf(&filename, image_template, counter ) < 0)
-	return -123;
-cv::Mat color_image;
-cv::drawKeypoints(image, keypoints, color_image);
-cv::imwrite(filename, color_image);
-free(filename);
 
 f_stream.close();
-counter++;
-#endif
+*/
+	counter++;
+	return 0;
+}
+
+int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth, const std::bitset<8> &debug_mask) {
+
+	// get features from image
+	std::vector<cv::KeyPoint> keypoints;
+	feature_detector.detect(image, keypoints);
+	if(keypoints.size() < 6) {
+		dout << "only " << keypoints.size() << " features found (not enough)" << std::endl;
+		if( debug_mask.test(FEATURE_IMAGE) ) {
+			std::bitset<8> mask;
+			mask.set(FEATURE_IMAGE);
+			log_debug_data(image, keypoints, parameter_vector, mask);
+		}
+		return -1;
+	}
+
+	// calculate descriptors which can remove or add some of the keypoints
+	cv::Mat descriptors;
+	descriptor_extractor.compute(image, keypoints, descriptors);
+	if(keypoints.size() < 6) {
+		dout << "only " << keypoints.size() << " keypoints left after descriptor computation (not enough)" << std::endl;
+		if( debug_mask.test(FEATURE_IMAGE) ) {
+			std::bitset<8> mask;
+			mask.set(FEATURE_IMAGE);
+			log_debug_data(image, keypoints, parameter_vector, mask);
+		}
+		return -2;
+	}
+
+	// undistort points
+	std::vector<cv::Point2f> ideal_points;
+	undistort_n2i(keypoints, camera_matrix, distortion_coefficients, ideal_points);
+
+	// activate map (multiple starting doesn't harm)
+	map.start();
+
+	// get (possible) matching points and descriptors from map
+	map.set_view(parameter_vector);
+	std::vector< cv::Point3_<float> > objectpoints;
+	std::vector< cv::Point2f > op_projections;
+	cv::Mat op_descriptors;
+	map.fill_tracking_points(objectpoints, op_projections, op_descriptors);
+
+	if( objectpoints.empty() ) { // no suitable points found in map
+		// add new features to map
+		map.add_features(ideal_points,
+			descriptors,
+			parameter_vector,
+			avg_depth);
+
+		return 1;
+	}
+
+	// match descriptors
+	std::vector<cv::DMatch> matches;
+	matcher.match(op_descriptors, descriptors, matches);
+	if( matches.empty() ) {
+		dout << "no matches found" << std::endl;
+		return -3;
+	}
+
+	// filter matches
+	std::vector<char> matches_mask(matches.size(), 1);
+	filter_matches_by_robust_distribution(op_projections, ideal_points, matches, matches_mask);
+
+	log_debug_data(image, keypoints, parameter_vector, debug_mask);
 
 	//get translation
 	guess_translation(objectpoints,
@@ -197,6 +227,12 @@ counter++;
 		&parameter_vector[3],
 		matches_mask);
 
+	if( debug_mask.test(POSE) ) {
+		// only log new estimations of pose
+		std::bitset<8> mask;
+		mask.set(POSE);
+		log_debug_data(image, keypoints, parameter_vector, mask);
+	}
 /*
 	// get estimatation of pose
 	int rc = guess_pose< float, levmar_ideal_pinhole_quatvec<float>, levmar_ideal_pinhole_quatvec_jac<float> >(

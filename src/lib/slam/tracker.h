@@ -10,6 +10,9 @@
 #include <opencv2/legacy/legacy.hpp>
 #if CV_MINOR_VERSION >= 2
 
+#include <bitset>
+
+//FIXME remove brisk dependency
 #include <brisk/brisk.h>
 #include "lib/slam/features.h"
 #include "lib/slam/map.h"
@@ -20,6 +23,9 @@ namespace slam {
 //FIXME: make it more generic template class
 class Tracker {
 public:
+	enum debug_flags_t { POSE = 0,
+		FEATURE_IMAGE = 1
+	};
 	/**
 	 * \brief Constructor
 	 */
@@ -40,7 +46,7 @@ public:
 	 * \param[in,out] parameter_vector 6D-Vector containing quaternion vector part and translation. Input will be used as a first guess.
 	 * \param[in] avg_depth Average distance between camera and objects.
 	 */
-	int track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth = 100.0);
+	int track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth = 100.0, const std::bitset<8> &debug_mask = 0);
 
 protected:
 
@@ -58,6 +64,11 @@ private:
 	cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif
 	Map<> map;
+	
+	int log_debug_data(const cv::Mat &image,
+		const std::vector<cv::KeyPoint> &keypoints,
+		const std::vector<float> &parameter_vector,
+		const std::bitset<8> &debug_mask);
 
 };
 
