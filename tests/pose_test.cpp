@@ -5,7 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
 
-#include "utility.h"
+#include "lib/hub/utility.h"
 #include "lib/hub/time.h"
 
 #define PRECISION float
@@ -23,7 +23,6 @@ const PRECISION pose_point_array[] = {
 };
 const size_t num_points = sizeof(pose_point_array)/sizeof(PRECISION)/3;
 
-using namespace mavhub;
 using namespace hub;
 using namespace hub::slam;
 

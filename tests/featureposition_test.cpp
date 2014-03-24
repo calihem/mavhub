@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include <limits>	//epsilon
 
-#include "utility.h"
+#include "lib/hub/utility.h"
 #include "lib/hub/time.h"
 
 #define VISUAL_OUTPUT 0
@@ -18,7 +18,6 @@
 using namespace boost::unit_test;
 using namespace hub;
 using namespace hub::slam;
-using namespace mavhub;
 
 BOOST_AUTO_TEST_SUITE(FeaturePositionTestSuite)
 

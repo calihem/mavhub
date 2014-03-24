@@ -5,9 +5,9 @@
 #include <cmath>	//sqrt
 
 #include "lib/slam/tracker.h"
-#include "utility.h"
+#include "lib/hub/utility.h"
 
-using namespace mavhub;
+using namespace hub;
 using namespace hub::slam;
 
 BOOST_AUTO_TEST_SUITE(SLAMTestSuite)

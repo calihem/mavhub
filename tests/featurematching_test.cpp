@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <limits>	//epsilon
 
-#include "utility.h"
+#include "lib/hub/utility.h"
 #include "lib/hub/time.h"
 
 #define VISUAL_OUTPUT 0
@@ -17,7 +17,6 @@
 using namespace boost::unit_test;
 using namespace hub;
 using namespace hub::slam;
-using namespace mavhub;
 
 double match_ratio(const std::vector<cv::KeyPoint> &src_keypoints,
 	const std::vector<cv::KeyPoint> &dst_keypoints,

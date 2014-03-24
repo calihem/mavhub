@@ -74,26 +74,33 @@ BOOST_AUTO_TEST_CASE(Test_math_multiply) {
 	BOOST_CHECK_EQUAL(b[2], a[0]*M[6]+a[1]*M[7]+a[2]*M[8]);
 }
 
+
 BOOST_AUTO_TEST_CASE(Test_math_rotation) {
+// macro to check similarities of rotation matrices (values near 0 are ignored)
+#define ROT_MATRIX_CHECK(m_euler, m_quat) \
+	for(unsigned int j=0; j<9; j++) { \
+		if( abs(m_euler[j]) < 0.000001 \
+		|| abs(m_quat[j]) < 0.000001) \
+			continue; \
+		BOOST_CHECK_CLOSE(m_euler[j], m_quat[j], 1.0); \
+	}
 	const unsigned int factor = 4;
 	double euler_angles[3] = {0.0, 0.0, 0.0};
 	double quaternion[4];
 	double rot_matrix_euler[9];
 	double rot_matrix_quat[9];
 
+	// check rotation around fraction of pi
 	const unsigned int max_iterations = pow(3, factor);
 	for(unsigned int i=1; i<(max_iterations-1); i++) {
 		rotation_matrix_rad(&euler_angles[0], &rot_matrix_euler[0]);
 
 		euler_to_quaternion(&euler_angles[0], quaternion);
 		rotation_matrix_quat(quaternion, &rot_matrix_quat[0]);
-		for(unsigned int j=0; j<9; j++) {
-			//skip values near 0
-			if( abs(rot_matrix_euler[j]) < 0.000001
-			|| abs(rot_matrix_quat[j]) < 0.000001)
-				continue;
-			BOOST_CHECK_CLOSE(rot_matrix_euler[j], rot_matrix_quat[j], 1.0);
-		}
+		ROT_MATRIX_CHECK(rot_matrix_euler, rot_matrix_quat)
+
+		rotation_matrix_quatvec(&quaternion[1], &rot_matrix_quat[0]);
+		ROT_MATRIX_CHECK(rot_matrix_euler, rot_matrix_quat)
 
 		if( !(i % (factor)) ) {
 			euler_angles[2] = 0;
