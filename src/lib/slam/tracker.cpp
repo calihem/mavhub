@@ -26,7 +26,10 @@ Tracker::Tracker(const int image_width,
 		distortion_coefficients(distortion_coefficients),
 		feature_detector(60, 3), //threshold, octaves
 		descriptor_extractor(),
-		matcher() {
+		matcher(),
+		last_imu_time(0),
+		speed(3, 0.0),
+		pose(6, 0.0) {
 
 	if(Tracker::camera_matrix.rows < 3 || Tracker::camera_matrix.cols < 3)
 		Tracker::camera_matrix = cv::Mat::eye(3, 3, CV_64F);
@@ -40,15 +43,55 @@ Tracker::~Tracker() {
 	map.join();
 }
 
-int Tracker::log_debug_data(const cv::Mat &image,
-                            const std::vector<cv::KeyPoint> &keypoints,
+int Tracker::imu_update(const uint64_t &time_ms, const std::vector<float> &imu_data) {
+
+	float delta_time = (float)(time_ms - last_imu_time)/1000.0;
+	if(delta_time <= 0.001 || delta_time > 1.0) {// time in a implausible range
+		dout << "delta_time of " << time_ms << " - " << last_imu_time << " =  " << delta_time << " seems to be implausible" << std::endl; 
+		//reset speed
+		speed[0] = speed[1] = speed[2] = 0.0;
+		goto finish;
+	}
+
+	// convert body to inertial frame
+	float accels_inertial[3];
+	float rotation_matrix[9];
+	rotation_matrix_quatvec(&imu_data[0], rotation_matrix);
+	multiply(rotation_matrix, &imu_data[3], accels_inertial);
+	accels_inertial[2] += 9.81; // remove gravity
+
+	// update pose
+	pose[0] = imu_data[0];
+	pose[1] = imu_data[1];
+	pose[2] = imu_data[2];
+	pose[3] += delta_time * speed[0];
+	pose[4] += delta_time * speed[1];
+	pose[5] += delta_time * speed[2];
+
+	// update speed
+	speed[0] += delta_time * accels_inertial[0];
+	speed[1] += delta_time * accels_inertial[1];
+	speed[2] += delta_time * accels_inertial[2];
+
+finish:
+	last_imu_time = time_ms;
+
+	return 0;
+}
+
+int Tracker::log_debug_data(const std::bitset<8> &debug_mask,
+                            const cv::Mat &image,
                             const std::vector<float> &parameter_vector,
-                            const std::bitset<8> &debug_mask) {
+                            const std::vector<cv::KeyPoint> &keypoints,
+                            const std::vector<cv::Point2f> &ideal_points,
+                            const std::vector<cv::Point2f> &op_projections,
+                            const std::vector<cv::DMatch> &matches,
+                            const std::vector<char> &matches_mask) {
 	static bool first_run = true;
 	static uint32_t counter = 0;
 
 	if( debug_mask.test(POSE) ) { // log pose estimations
-		static const char *pose_filename = "pose_estimation.m";
+		static const char *pose_filename = "tracker_pose_estimation.m";
 		std::ofstream pose_stream;
 
 		if(first_run) // create new file
@@ -68,7 +111,7 @@ int Tracker::log_debug_data(const cv::Mat &image,
 
 			pose_stream << "pose = [";
 		} else
-			pose_stream << "; ";
+			pose_stream << ", ";
 
 		pose_stream << parameter_vector[0] << ", "
 			<< parameter_vector[1] << ", "
@@ -80,9 +123,8 @@ int Tracker::log_debug_data(const cv::Mat &image,
 		first_run =false;
 	}
 
-	if( debug_mask.test(FEATURE_IMAGE) ) { // save image with features
-		// save current image with features
-		static const char *image_filename_template = "image_%05u.png";
+	if( debug_mask.test(FEATURE_IMAGE) ) { // save current image with features
+		static const char *image_filename_template = "feature_image_%05u.png";
 		char *image_filename;
 		if( asprintf(&image_filename, image_filename_template, counter ) < 0)
 			return -123;
@@ -92,65 +134,72 @@ int Tracker::log_debug_data(const cv::Mat &image,
 		cv::imwrite(image_filename, color_image);
 		free(image_filename);
 	}
-/*
-static const char *filename_template = "matches_%05u.m";
-char *filename;
-if( asprintf(&filename, filename_template, counter ) < 0)
-	return -120;
-std::ofstream f_stream(filename);
-free(filename);
-if( !f_stream.is_open() )
-	return -121;
 
-const double cx = camera_matrix.at<double>(0, 2);
-const double cy = camera_matrix.at<double>(1, 2);
-const double fx = camera_matrix.at<double>(0, 0);
-const double fy = camera_matrix.at<double>(1, 1);
+	if( debug_mask.test(MATCHES) ) { // save matches
+		static const char *filename_template = "matches_%05u.m";
+		char *filename;
+		if( asprintf(&filename, filename_template, counter ) < 0)
+			return -120;
+		std::ofstream f_stream(filename);
+		free(filename);
+		if( !f_stream.is_open() )
+			return -121;
 
-// insert "header"
-f_stream << "% rpy = [" << rad2deg(parameter_vector[0]) << " "
-	<< rad2deg(parameter_vector[1]) << " "
-	<< rad2deg(parameter_vector[2]) << "];" << std::endl;
-f_stream << "% t = [" << parameter_vector[3] << " "
-	<< parameter_vector[4] << " "
-	<< parameter_vector[5] << "];" << std::endl;
+		const double cx = camera_matrix.at<double>(0, 2);
+		const double cy = camera_matrix.at<double>(1, 2);
+		const double fx = camera_matrix.at<double>(0, 0);
+		const double fy = camera_matrix.at<double>(1, 1);
 
-// insert projections and their displacements
-f_stream << "xyuv = [";
-for(unsigned int i=0; i<matches.size(); i++) {
-	if(matches_mask[i] == 0) continue;
-	const int src_index = matches[i].queryIdx;
-	const int dst_index = matches[i].trainIdx;
+		// insert "header"
+		f_stream << "%% Current feature matches at pose " << parameter_vector << std::endl
+			<< "%% xyuv = x y (source image) x_displacement y_displacement" << std::endl;
 
-	f_stream << op_projections[src_index].x*fx+cx << " "
-		<< op_projections[src_index].y*fy+cy << " "
-		<< (ideal_points[dst_index].x - op_projections[src_index].x)*fx+cx << " "
-		<< (ideal_points[dst_index].y - op_projections[src_index].y)*fy+cy << " ";
-}
-f_stream << "];" << std::endl;;
-f_stream << "xyuv = reshape(xyuv, 4, size(xyuv)(2)/4);" << std::endl;
-f_stream << "quiver(xyuv(1,:),xyuv(2,:), xyuv(3,:), xyuv(4,:))" << std::endl;
+		// insert projections and their displacements
+		f_stream << "xyuv = [";
+		for(unsigned int i=0; i<matches.size(); i++) {
+			if(matches_mask[i] == 0) continue;
+			const int src_index = matches[i].queryIdx;
+			const int dst_index = matches[i].trainIdx;
 
-// add label
-f_stream << "title(\"p = " << rad2deg(parameter_vector[0]) << ", "
-<< rad2deg(parameter_vector[1]) << ", "
-<< rad2deg(parameter_vector[2]) << " | "
-	<< parameter_vector[3] << ", "
-	<< parameter_vector[4] << ", "
-	<< parameter_vector[5] << "\");" << std::endl;
+			f_stream << op_projections[src_index].x*fx+cx << " "
+				<< op_projections[src_index].y*fy+cy << " "
+				<< (ideal_points[dst_index].x - op_projections[src_index].x)*fx+cx << " "
+				<< (ideal_points[dst_index].y - op_projections[src_index].y)*fy+cy << " ";
+		}
+		f_stream << "];" << std::endl;;
+		f_stream << "xyuv = reshape(xyuv, 4, size(xyuv)(2)/4);" << std::endl;
+		f_stream << "quiver(xyuv(1,:),xyuv(2,:), xyuv(3,:), xyuv(4,:))" << std::endl;
 
-// save plotting as image
-static const char *plot_template = "matches_%05u.png";
-if( asprintf(&filename, plot_template, counter ) < 0)
-	return -122;
-f_stream << "print -dpng " << filename << std::endl;
-free(filename);
+		// add label
+		f_stream << "title(\"p = " << parameter_vector[0] << ", "
+			<< parameter_vector[1] << ", "
+			<< parameter_vector[2] << " | "
+			<< parameter_vector[3] << ", "
+			<< parameter_vector[4] << ", "
+			<< parameter_vector[5] << "\");" << std::endl;
 
+		// save plotting as image
+		static const char *plot_template = "matches_%05u.png";
+		if( asprintf(&filename, plot_template, counter ) < 0)
+			return -122;
+		f_stream << "print -dpng " << filename << std::endl;
+		free(filename);
 
-f_stream.close();
-*/
+		f_stream.close();
+	}
+
 	counter++;
 	return 0;
+}
+
+void Tracker::pose_estimation(const std::vector<float>& pose) {
+	//reset time + speed
+// 	last_imu_time = 0;
+// 	speed[0] = speed[1] = speed[2] = 0.0;
+	// constrain estimation of speed
+	speed[0] /= 2.0; speed[1] /= 2.0; speed[2] /= 2.0;
+
+	Tracker::pose = pose;
 }
 
 int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth, const std::bitset<8> &debug_mask) {
@@ -163,7 +212,7 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 		if( debug_mask.test(FEATURE_IMAGE) ) {
 			std::bitset<8> mask;
 			mask.set(FEATURE_IMAGE);
-			log_debug_data(image, keypoints, parameter_vector, mask);
+			log_debug_data(mask, image, parameter_vector, keypoints);
 		}
 		return -1;
 	}
@@ -176,7 +225,7 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 		if( debug_mask.test(FEATURE_IMAGE) ) {
 			std::bitset<8> mask;
 			mask.set(FEATURE_IMAGE);
-			log_debug_data(image, keypoints, parameter_vector, mask);
+			log_debug_data(mask, image, parameter_vector, keypoints);
 		}
 		return -2;
 	}
@@ -217,7 +266,7 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	std::vector<char> matches_mask(matches.size(), 1);
 	filter_matches_by_robust_distribution(op_projections, ideal_points, matches, matches_mask);
 
-	log_debug_data(image, keypoints, parameter_vector, debug_mask);
+	log_debug_data(debug_mask, image, parameter_vector, keypoints, ideal_points, op_projections, matches, matches_mask);
 
 	//get translation
 	guess_translation(objectpoints,
@@ -227,12 +276,6 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 		&parameter_vector[3],
 		matches_mask);
 
-	if( debug_mask.test(POSE) ) {
-		// only log new estimations of pose
-		std::bitset<8> mask;
-		mask.set(POSE);
-		log_debug_data(image, keypoints, parameter_vector, mask);
-	}
 /*
 	// get estimatation of pose
 	int rc = guess_pose< float, levmar_ideal_pinhole_quatvec<float>, levmar_ideal_pinhole_quatvec_jac<float> >(
@@ -248,6 +291,16 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 		return -4;
 	}
 */
+
+	// pose update
+	pose_estimation(parameter_vector);
+
+	if( debug_mask.test(POSE) ) {
+		// only log new estimations of pose
+		std::bitset<8> mask;
+		mask.set(POSE);
+		log_debug_data(mask,image, parameter_vector, keypoints, ideal_points, op_projections, matches, matches_mask);
+	}
 
 	// add features with new estimatio to map
 	map.add_features(ideal_points,

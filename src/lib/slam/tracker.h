@@ -24,7 +24,8 @@ namespace slam {
 class Tracker {
 public:
 	enum debug_flags_t { POSE = 0,
-		FEATURE_IMAGE = 1
+		FEATURE_IMAGE = 1,
+		MATCHES = 2
 	};
 	/**
 	 * \brief Constructor
@@ -34,6 +35,23 @@ public:
 		const cv::Mat &camera_matrix = cv::Mat(),
 		const cv::Mat &distortion_coefficients = cv::Mat());
 	~Tracker();
+
+	/**
+	 * \brief Perform dead reckoning on IMU accels.
+	 * \param[in] time_us Timestamp in milliseconds of sensor data.
+	 * \param[in] imu_data Quaternion vector part (inertial frame) + accelerometer (body frame) [q1 q2 q3 accel_x accel_y accel_z]
+	 */
+	int imu_update(const uint64_t &time_ms, const std::vector<float> &imu_data);
+
+	/**
+	 * \brief Get current pose estimation.
+	 */
+	const std::vector<float>& pose_estimation() const;
+
+	/**
+	 * \brief Set current pose estimation.
+	 */
+	void pose_estimation(const std::vector<float>& pose);
 
 	/**
 	 * \brief Save map points (point cloud) and camera views as polygon files (ply).
@@ -64,17 +82,27 @@ private:
 	cv::BruteForceMatcher<cv::Hamming> matcher;
 #endif
 	Map<> map;
+	uint64_t last_imu_time; ///< Timestamp of last IMU data
+	std::vector<float> speed; ///< Current speed estimation based on IMU data
+	std::vector<float> pose; ///< Current pose estimation based on IMU and localization
 	
-	int log_debug_data(const cv::Mat &image,
-		const std::vector<cv::KeyPoint> &keypoints,
+	int log_debug_data(const std::bitset<8> &debug_mask,
+		const cv::Mat &image,
 		const std::vector<float> &parameter_vector,
-		const std::bitset<8> &debug_mask);
-
+		const std::vector<cv::KeyPoint> &keypoints = std::vector<cv::KeyPoint>(),
+		const std::vector<cv::Point2f> &ideal_points = std::vector<cv::Point2f>(),
+		const std::vector<cv::Point2f> &op_projections = std::vector<cv::Point2f>(),
+		const std::vector<cv::DMatch> &matches = std::vector<cv::DMatch>(),
+		const std::vector<char> &matches_mask = std::vector<char>() );
 };
 
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
+inline const std::vector<float>& Tracker::pose_estimation() const {
+	return pose;
+}
+
 inline int Tracker::save_map(const std::string &name) const {
 	map.save_points(name+"_map.ply");
 	return map.save_views(name+"_view.ply");
