@@ -34,13 +34,6 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 	parameter_vector[4] = -1.0;	//t2
 	parameter_vector[5] = 0.5;	//t3
 
-	// test euler
-	std::vector<float> model_points(2*num_points);
-	ideal_pinhole_model_euler(point_array,
-		&parameter_vector[0],
-		&model_points[0],
-		num_points);
-
 	std::vector< cv::Point3f > objectpoints(num_points);
 	for(unsigned int i=0; i<num_points; i++) {
 		objectpoints[i] = cv::Point3f(point_array[i*3], point_array[i*3 +1], point_array[i*3 + 2]);
@@ -48,6 +41,12 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 	std::vector< cv::Point2f > idealpoints;
 	objectpoints_to_idealpoints(objectpoints, parameter_vector, idealpoints);
 
+	// test euler
+	std::vector<float> model_points(2*num_points);
+	ideal_pinhole_model_euler(point_array,
+		&parameter_vector[0],
+		&model_points[0],
+		num_points);
 	for(unsigned int i=0; i<num_points; i++) {
 		BOOST_CHECK_EQUAL( point_array[i*3], objectpoints[i].x);
 		BOOST_CHECK_EQUAL( point_array[i*3 + 1], objectpoints[i].y);
@@ -58,6 +57,35 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 	}
 
 	// test quaternion
+	for(unsigned int i=0; i<2*num_points; i++) {
+		model_points[i] = 0; // invalidate data
+	}
+	std::vector<float> quat_param_vector(7);
+	euler_to_quaternion(&parameter_vector[0], &quat_param_vector[0]);
+	quat_param_vector[4] = parameter_vector[3];
+	quat_param_vector[5] = parameter_vector[4];
+	quat_param_vector[6] = parameter_vector[5];
+	ideal_pinhole_model_quat(point_array,
+		&quat_param_vector[0],
+		&model_points[0],
+		num_points);
+	for(unsigned int i=0; i<num_points; i++) {
+		BOOST_CHECK_CLOSE( model_points[2*i], idealpoints[i].x, 0.1);
+		BOOST_CHECK_CLOSE( model_points[2*i + 1], idealpoints[i].y, 0.1);
+	}
+
+	for(unsigned int i=0; i<2*num_points; i++) {
+		model_points[i] = 0; // invalidate data
+	}
+	for(unsigned int i=0; i<num_points; i++) {
+		ideal_pinhole_model_quat(&point_array[3*i],
+			&quat_param_vector[0],
+			&model_points[0]);
+		BOOST_CHECK_CLOSE( model_points[0], idealpoints[i].x, 0.1);
+		BOOST_CHECK_CLOSE( model_points[1], idealpoints[i].y, 0.1);
+	}
+
+	// test quaternion vector
 	for(unsigned int i=0; i<2*num_points; i++) {
 		model_points[i] = 0; // invalidate data
 	}

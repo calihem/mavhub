@@ -35,6 +35,8 @@ BOOST_AUTO_TEST_CASE(Test_slam)
 
 	cv::Mat image;
 	unsigned int counter = 0;
+	std::bitset<8> debug_mask;
+	debug_mask.set(Tracker::POSE);
 // 	for(unsigned int i=0; i<10 && video_capture.grab(); i++ ) {
 	while( video_capture.grab() ) {
 		counter++;
@@ -45,7 +47,7 @@ BOOST_AUTO_TEST_CASE(Test_slam)
 		video_capture.retrieve(frame);
 		cv::cvtColor(frame, image, CV_BGR2GRAY);
 
-		tracker.track_camera(image, parameter_vector, altitude);
+		tracker.track_camera(image, parameter_vector, altitude, debug_mask);
 		std::stringstream parameter_stream;
 		parameter_stream << parameter_vector;
 		BOOST_TEST_MESSAGE( "parameter_vector: " << parameter_stream.str());

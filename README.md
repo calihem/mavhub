@@ -13,8 +13,8 @@ algorithm.
 ### Optional
 * autotools
 * [BLAS](http://www.netlib.org/blas/) (libblas-dev)
-* [boost C++ library](http://www.boost.org/) (libboost-dev, libboost-test-dev)
-* [boost Unit Test Framework](http://www.boost.org/doc/libs/1_45_0/libs/test/doc/html/index.html)
+* [boost C++ library](http://www.boost.org/) (libboost-dev)
+* [boost Unit Test Framework](http://www.boost.org/doc/libs/1_55_0/libs/test/doc/html/index.html) (libboost-test-dev)
 * [doxygen](http://www.doxygen.org)
 * [GStreamer](http://gstreamer.freedesktop.org/)
 * [ivy](http://www.eei.cena.fr/products/ivy/)
@@ -121,9 +121,14 @@ have to set the `GST_PLUGIN_PATH` to the directory containing the plugins, e.g.
 	./src/mavhub -c ../mavhub.d/mavhub.conf
 
 ### Unit Test Framework
-A complete list about the supported paremeters can be found in the [boost runtime parameter reference](http://www.boost.org/doc/libs/1_49_0/libs/test/doc/html/utf/user-guide/runtime-config/reference.html). For example, a more verbatim output can be reached by
+A complete list about the supported paremeters can be found in the [boost runtime parameter reference](http://www.boost.org/doc/libs/1_55_0/libs/test/doc/html/utf/user-guide/runtime-config/reference.html).
+For example, a more verbatim output can be reached by
 
 	./tests/test_mavhub --log_level=message
+
+To run only a subset of tests use the `run_test` argument
+
+	./tests/test_mavhub --log_level=test_suite --run_test=PoseTestSuite,CameraTestSuite
 
 ## FAQ
 ## Where to get the sourcecode?
