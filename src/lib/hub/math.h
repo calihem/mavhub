@@ -1,3 +1,29 @@
+/****************************************************************************
+** Copyright 2012 Humboldt-Universitaet zu Berlin
+**
+** This file is part of MAVHUB.
+**
+** MAVHUB is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** MAVHUB is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with MAVHUB.  If not, see <http://www.gnu.org/licenses/>.
+**
+*****************************************************************************/
+/**
+ * \file math.h
+ * \date created at 2012/05/16
+ *
+ * \brief Library of math routines.
+ */
+
 #ifndef _HUB_MATH_H_
 #define _HUB_MATH_H_
 
@@ -13,24 +39,36 @@
 
 namespace hub {
 
+/// Estimation of \f$\pi\f$
 const double pi = 3.1415926535897932384626433832795028841971693993751058209749;
 
 /**
- * \brief Convert degree to radian.
+ * \brief Convert degrees to radians.
+ *
+ * Does the simple math of multiplying the input by pi and dividing by 180.
+ * \param[in] d Angle in degrees.
+ * \return Angle in radians.
+ * \sa T rad2deg
  */
 template <typename T>
-T deg2rad(const T d);
+T deg2rad(const T &d);
 
+/**
+ * \brief Converts euler angles to quaternions.
+ * \param[in] euler_angle Euler angles as array.
+ * \param[out] quaternion Quaternion as array.
+ * \return Pointer to quaternion array.
+ * \sa quaternion_to_euler
+ */
 template <typename T>
 T* euler_to_quaternion(const T euler_angle[3], T quaternion[4]);
 
 /**
- * Check if value val is in range (low <= x <= high)
- *
- * @param value x
- * @param low range limit
- * @param high range limit
- * @return true (1) if x is in specified range
+ * \brief Check if value val is in range (low <= x <= high)
+ * \param[in] value x
+ * \param[in] low range limit
+ * \param[in] high range limit
+ * \return true (1) if x is in specified range
  */
 template <typename T>
 int in_range(const T &x, const T &low, const T &high);
@@ -53,54 +91,84 @@ int intersection(const T plane_point[3],
 
 /**
  * \brief Calculates MAD (Median Absolute Deviation).
+ *
+ * Keep in mind the cost of the copy constructor which is needed to make this
+ * function safe to use.
  * \param[in] values Data vector.
- * \sa _mad(std::vector<T> &values)
+ * \return MAD
+ * \sa _mad(std::vector<T>&)
  */
 template <typename T>
 T mad(std::vector<T> values);
 
+/**
+ * \brief Calculates MAD (Median Absolute Deviation) and median.
+ *
+ * Keep in mind the cost of the copy constructor which is needed to make this
+ * function safe to use.
+ * \param[in] values Data vector.
+ * \param[out] median Median of values.
+ * \return MAD
+ * \sa _mad(std::vector<T>&,T&)
+ */
 template <typename T>
 T mad(std::vector<T> values, T &median);
 
 /**
- * Calculate MAD (Median Absolute Deviation) without copy constructor.
- * \param[in] values Data vector.
+ * \brief Calculates MAD (Median Absolute Deviation) without copy constructor.
+ * \param[in,out] values Data vector.
+ * \return MAD.
  * \warning The input vector gets altered.
  * \sa mad(std::vector<T> values);
  */
 template <typename T>
 T _mad(std::vector<T> &values);
 
+/**
+ * \brief Calculates MAD (Median Absolute Deviation) and median without copy constructor.
+ * \param[in,out] values Data vector.
+ * \param median[out] Median of values.
+ * \return MAD
+ * \warning The input vector gets altered.
+ * \sa mad(std::vector<T>,T&);
+ */
 template <typename T>
 T _mad(std::vector<T> &values, T &median);
 
+/**
+ * \brief Calculates mean of data vector.
+ * \param[in] values Data vector.
+ * \return Mean.
+ */
 template <typename T>
 T mean(const std::vector<T> &values);
 
 /**
  * \brief Find median in linear time.
+ *
  * Determine the median of the input vector. Keep in mind the cost of the
  * copy constructor which is needed to make this function safe to use.
  * \param[in] values Data vector.
- * \sa _median(std::vector<T> &values);
+ * \sa _median(std::vector<T>&);
  */
 template <typename T>
 T median(std::vector<T> values);
 
 /**
  * \brief Find median in linear time without copy constructor.
- * \param[in] values Data vector.
- * \sa median(std::vector<T> values)
+ * \param[in,out] values Data vector.
+ * \return Median
  * \warning The input vector gets altered.
+ * \sa median(std::vector<T>)
  */
 template <typename T>
 T _median(std::vector<T> &values);
 
 /**
  * \brief Multiply 3x3 matrix with 3D vector.
- * \param[in] matrix
- * \param[in] input
- * \param[out] output
+ * \param[in] matrix 3x3 multiplication matrix.
+ * \param[in] input 3D input vector.
+ * \param[out] output 3D output vector as a result of the multiplication.
  */
 template<typename T>
 void multiply(const T matrix[9], const T input[3], T output[3]);
@@ -110,25 +178,44 @@ void multiply(const T matrix[9], const T input[3], T output[3]);
  * \param[in] lhs Left hand side factor.
  * \param[in] rhs Right hand side factor.
  * \param[out] product product = lhs*rhs.
+ * \return Pointer to product.
  */
 template <typename T>
 T* multiply_quaternion(const T lhs[4], const T rhs[4], T product[4]);
 
+/**
+ * \brief Normalize data vector so it has unit length.
+ * \param[in,out] data Data vector
+ * \param[in] n Number of elemnts in \a data.
+ */
 template <typename T>
 void normalize(T *data, const size_t n);
 
+/**
+ * \brief Converts quaternions to euler angles.
+ * \param[in] quaternion Quaternion as array.
+ * \param[out] euler_angle Euler angles as array.
+ * \return Pointer to \a euler_angle array.
+ * \sa euler_to_quaternion(const T euler_angle[3], T quaternion[4])
+ */
 template <typename T>
 T* quaternion_to_euler(const T quaternion[4], T euler_angle[3]);
 
 /**
- * \brief Convert radian to degree.
+ * \brief Convert radians to degrees.
+ *
+ * Does the simple math of multiplying the input by 180 and dividing by pi.
+ * \param[in] r Angle in radians.
+ * \return Angle in degrees.
+ * \sa deg2rad(const T &d)
  */
 template <typename T>
-T rad2deg(const T r);
+T rad2deg(const T &r);
 
 /**
  * \brief Estimate deviation using MAD.
- * Estimate the deviation of the input vector using MAD which 
+ *
+ * Estimate the deviation of the input vector using MAD which
  * is known to be robust.
  * \param[in] values Data vector.
  * \sa _robust_sigma(std::vector<T> &values)
@@ -136,61 +223,104 @@ T rad2deg(const T r);
 template<typename T>
 T robust_sigma(const std::vector<T> &values);
 
+/**
+ * \brief Estimate deviation using MAD.
+ * 
+ * Estimate the deviation of the input vector using MAD which 
+ * is known to be robust and return also the median.
+ * \param[in] values Data vector.
+ * \param[out] median Median of \a values.
+ * \sa _robust_sigma(std::vector<T> &values, T &median)
+ */
 template<typename T>
 T robust_sigma(const std::vector<T> &values, T &median);
 
 /**
- * \brief Estimate deviation using MAD.
+ * \copydoc robust_sigma(const std::vector<T>&)
  * \param[in] values Data vector.
- * \sa robust_sigma(const std::vector<T> &values)
  * \warning The input vector gets altered.
+ * \sa robust_sigma(const std::vector<T> &values)
  */
 template<typename T>
 T _robust_sigma(std::vector<T> &values);
 
+/**
+ * \copydoc robust_sigma(const std::vector<T>&,T&)
+ * \param[in] values Data vector.
+ * \param[out] median Median of \a values.
+ * \sa robust_sigma(std::vector<T> &values, T &median)
+ */
 template<typename T>
 T _robust_sigma(std::vector<T> &values, T &median);
 
 /**
- * \brief Calculate rotation matrix.
+ * \brief Calculates rotation matrix.
+ *
  * Based on <a href="http://gentlenav.googlecode.com/files/EulerAngles.pdf">EulerAngles.pdf</a>.
  * The rotations are applied in the following order:
  * <ol>
- * <li>Rotate about z-Axis through yaw-angle (rotation_vector[2]).</li>
- * <li>Rotate about y-Axis through pitch-angle (rotation_vector[1]).</li>
- * <li>Rotate about x-Axis through roll-angle (rotation_vector[0]).</li>
+ * <li>Rotate about z-Axis through yaw-angle (\a rotation_vector_deg[2]).</li>
+ * <li>Rotate about y-Axis through pitch-angle (\a rotation_vector_deg[1]).</li>
+ * <li>Rotate about x-Axis through roll-angle (\a rotation_vector_deg[0]).</li>
  * </ol>
- * \param[in] rotation_vector_deg 3D rotation vector with euler angles.
+ * \param[in] rotation_vector_deg 3D rotation vector with euler angles in degrees.
  * \param[out] rotation_matrix 3x3 rotation matrix.
  * \sa rotation_matrix_quat
- * \sa rotation_matrix_quat
+ * \sa rotation_matrix_quatvec
  * \sa rotation_matrix_rad
  */
-
 template<typename T>
 void rotation_matrix_deg(const T rotation_vector_deg[3], T rotation_matrix[9]);
 
 /**
- * \brief Calculate rotation matrix.
+ * \copydoc rotation_matrix_deg
  * \param[in] rotation_quaternion unit quaternion describing rotation.
  * \param[out] rotation_matrix 3x3 rotation matrix.
+ * \sa rotation_matrix_deg
+ * \sa rotation_matrix_quatvec
+ * \sa rotation_matrix_rad
  */
 template<typename T>
 void rotation_matrix_quat(const T rotation_quaternion[4], T rotation_matrix[9]);
 
+/**
+ * \copydoc rotation_matrix_deg
+ * \param[in] rotation_quatvec Quaternion vector part describing rotation.
+ * \param[out] rotation_matrix 3x3 rotation matrix.
+ * \sa rotation_matrix_deg
+ * \sa rotation_matrix_quat
+ * \sa rotation_matrix_rad
+ */
 template<typename T>
-void rotation_matrix_quatvec(const T rotation_quaternion[3], T rotation_matrix[9]);
+void rotation_matrix_quatvec(const T rotation_quatvec[3], T rotation_matrix[9]);
 
+/**
+ * \copydoc rotation_matrix_deg
+ * \param[in] rotation_vector_rad 3D rotation vector with euler angles in radians.
+ * \param[out] rotation_matrix 3x3 rotation matrix.
+ * \sa rotation_matrix_deg
+ * \sa rotation_matrix_quat
+ * \sa rotation_matrix_quatvec
+ */
 template<typename T>
 void rotation_matrix_rad(const T rotation_vector_rad[3], T rotation_matrix[9]);
 
+/**
+ * \brief Estimate standard deviation.
+ *
+ * Estimates standard deviation by uncorrected sample standard deviation formula.
+ * \param[in] values Data vector.
+ * \return Standard deviation of \a values.
+ * \warning This is known to be not robust.
+ * \sa robust_sigma(const std::vector<T>&)
+ */
 template <typename T>
 T std_dev(const std::vector<T> &values);
 
 /**
  * \brief Calculate weight of Tukey M-estimator.
  * \param[in] x Data value (residual)
- * \param[in] sigma Deviation of the set \arg x is belonging to.
+ * \param[in] sigma Deviation of the set \a x is belonging to.
  * \return Weight
  */
 template<typename T>
@@ -198,6 +328,8 @@ T tukey_weight(const T x, const T sigma = 1.0);
 
 /**
  * \brief Transforms 3-dimensional quaternion vector to 4-dimension unit quaternion by adding scalar part.
+ * \param[in] v Vector part of quaternion
+ * \param[out] q Unit quaternion consisting of scalar and vector part.
  */
 template<typename T>
 void vec2quat(const T v[3], T q[4]);
@@ -206,7 +338,7 @@ void vec2quat(const T v[3], T q[4]);
 // Implementations
 // ----------------------------------------------------------------------------
 template <typename T>
-T deg2rad(const T d) {
+inline T deg2rad(const T &d) {
 	return (d*pi) / 180;
 }
 
@@ -292,12 +424,12 @@ int intersection(const T plane_point[3],
 }
 
 template <typename T>
-T mad(std::vector<T> values) {
+inline T mad(std::vector<T> values) {
 	return _mad(values);
 }
 
 template <typename T>
-T mad(std::vector<T> values, T &median) {
+inline T mad(std::vector<T> values, T &median) {
 	return _mad(values, median);
 }
 
@@ -331,7 +463,7 @@ T mean(const std::vector<T> &values) {
 }
 
 template <typename T>
-T median(std::vector<T> values) {
+inline T median(std::vector<T> values) {
 	return _median(values);
 }
 
@@ -345,7 +477,7 @@ T _median(std::vector<T> &values) {
 }
 
 template<typename T>
-void multiply(const T matrix[9], const T input[3], T output[3]) {
+inline void multiply(const T matrix[9], const T input[3], T output[3]) {
 	output[0] = matrix[0]*input[0] + matrix[1]*input[1] + matrix[2]*input[2];
 	output[1] = matrix[3]*input[0] + matrix[4]*input[1] + matrix[5]*input[2];
 	output[2] = matrix[6]*input[0] + matrix[7]*input[1] + matrix[8]*input[2];
@@ -422,7 +554,7 @@ T* quaternion_to_euler(const T quaternion[4], T euler_angle[3]) {
 }
 
 template <typename T>
-inline T rad2deg(const T r) {
+inline T rad2deg(const T &r) {
 	return (r*180) / pi;
 }
 
