@@ -46,7 +46,7 @@ inline const uint16_t Core::system_id() {
 	return _system_id;
 }
 inline const uint16_t Core::system_id(const uint16_t system_id) {
-	cpp_pthread::Lock sys_lock(system_id_mutex);
+	hub::Lock sys_lock(system_id_mutex);
 	_system_id = system_id;
 
 	return _system_id;

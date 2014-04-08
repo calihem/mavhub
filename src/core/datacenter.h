@@ -155,19 +155,19 @@ namespace mavhub {
 // ----------------------------------------------------------------------------
 // extctrl component setters
 inline void DataCenter::set_extctrl_pitch(const double pitch) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	extctrl_pitch = pitch;
 }
 inline void DataCenter::set_extctrl_roll(const double roll) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	extctrl_roll = roll;
 }
 inline void DataCenter::set_extctrl_yaw(const double yaw) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	extctrl_yaw = yaw;
@@ -175,19 +175,19 @@ inline void DataCenter::set_extctrl_yaw(const double yaw) {
 
 // extctrl component getters
 inline const double DataCenter::get_extctrl_pitch() {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	return extctrl_pitch;
 }
 inline const double DataCenter::get_extctrl_roll() {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	return extctrl_roll;
 }
 inline const double DataCenter::get_extctrl_yaw() {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	return extctrl_yaw;
@@ -195,7 +195,7 @@ inline const double DataCenter::get_extctrl_yaw() {
 
 // unified sensor array read/write
 inline void DataCenter::set_sensor(const int id, const double val) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(sensors_mutex);
 	if(id >= 0 && id < DC_NUMSENS)
@@ -205,7 +205,7 @@ inline void DataCenter::set_sensor(const int id, const double val) {
 	return;
 }
 inline const double DataCenter::get_sensor(const int id) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock ri_lock(extctrl_mutex);
 	if(id >= 0 && id < DC_NUMSENS)
@@ -218,7 +218,7 @@ inline const double DataCenter::get_sensor(const int id) {
 
 #ifdef HAVE_MAVLINK_H
 	inline const mavlink_raw_imu_t DataCenter::get_raw_imu() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(raw_imu_mutex);
 		mavlink_raw_imu_t raw_imu_copy(raw_imu);
@@ -226,13 +226,13 @@ inline const double DataCenter::get_sensor(const int id) {
 		return raw_imu_copy;
 	}
 	inline void DataCenter::set_raw_imu(const mavlink_raw_imu_t &mavlink_raw_imu) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(raw_imu_mutex);
 		raw_imu = mavlink_raw_imu;
 	}
 	inline const mavlink_raw_pressure_t DataCenter::get_raw_pressure() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock rp_lock(raw_pressure_mutex);
 		mavlink_raw_pressure_t raw_pressure_copy(raw_pressure);
@@ -240,7 +240,7 @@ inline const double DataCenter::get_sensor(const int id) {
 		return raw_pressure_copy;
 	}
 	inline void DataCenter::set_raw_pressure(const mavlink_raw_pressure_t &raw_pressure) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock rp_lock(raw_pressure_mutex);
 		DataCenter::raw_pressure = raw_pressure;
@@ -248,7 +248,7 @@ inline const double DataCenter::get_sensor(const int id) {
 	}
 #ifdef MAVLINK_ENABLED_HUCH
 	inline const mavlink_huch_exp_ctrl_rx_t DataCenter::get_exp_ctrl() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(exp_ctrl_mutex);
 		mavlink_huch_exp_ctrl_rx_t exp_ctrl_data_copy(exp_ctrl_rx_data);
@@ -256,14 +256,14 @@ inline const double DataCenter::get_sensor(const int id) {
 		return exp_ctrl_data_copy;
 	}
 	inline void DataCenter::set_exp_ctrl(const mavlink_huch_exp_ctrl_rx_t &exp_ctrl_rx_data) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(exp_ctrl_mutex);
 		DataCenter::exp_ctrl_rx_data = exp_ctrl_rx_data;
 	}
 
 	inline const mavlink_huch_imu_raw_adc_t DataCenter::get_huch_imu_raw_adc() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ira_lock(raw_imu_mutex);
 		mavlink_huch_imu_raw_adc_t imu_raw_adc_copy(huch_imu_raw_adc);
@@ -271,14 +271,14 @@ inline const double DataCenter::get_sensor(const int id) {
 		return imu_raw_adc_copy;
 	}
 	inline void DataCenter::set_huch_imu_raw_adc(const mavlink_huch_imu_raw_adc_t &huch_imu_raw_adc) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ira_lock(huch_imu_raw_adc_mutex);
 		DataCenter::huch_imu_raw_adc = huch_imu_raw_adc;
 	}
 
 	inline const mavlink_huch_mk_imu_t DataCenter::get_huch_mk_imu() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock mi_lock(huch_mk_imu_mutex);
 		mavlink_huch_mk_imu_t mk_imu_copy(huch_mk_imu);
@@ -286,14 +286,14 @@ inline const double DataCenter::get_sensor(const int id) {
 		return mk_imu_copy;
 	}
 	inline void DataCenter::set_huch_mk_imu(const mavlink_huch_mk_imu_t &huch_mk_imu) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock mi_lock(huch_imu_raw_adc_mutex);
 		DataCenter::huch_mk_imu = huch_mk_imu;
 	}
 
 	inline const mavlink_huch_magnetic_kompass_t DataCenter::get_huch_magnetic_kompass() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ira_lock(raw_imu_mutex);
 		mavlink_huch_magnetic_kompass_t magnetic_kompass_copy(huch_magnetic_kompass);
@@ -301,7 +301,7 @@ inline const double DataCenter::get_sensor(const int id) {
 		return magnetic_kompass_copy;
 	}
 	inline void DataCenter::set_huch_magnetic_kompass(const mavlink_huch_magnetic_kompass_t &huch_magnetic_kompass) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ira_lock(huch_magnetic_kompass_mutex);
 		DataCenter::huch_magnetic_kompass = huch_magnetic_kompass;
@@ -310,7 +310,7 @@ inline const double DataCenter::get_sensor(const int id) {
 	// FlightCtrl legacy functions
 	// attitude
 	inline const mavlink_huch_attitude_t DataCenter::get_huch_attitude() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(mk_fc_mutex);
 		mavlink_huch_attitude_t huch_attitude_copy(huch_attitude);
@@ -318,14 +318,14 @@ inline const double DataCenter::get_sensor(const int id) {
 		return huch_attitude_copy;
 	}
 	inline void DataCenter::set_huch_attitude(const mavlink_huch_attitude_t &huch_attitude_a) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(mk_fc_mutex);
 		DataCenter::huch_attitude = huch_attitude_a;
 	}
 	// altitude
 	inline const mavlink_huch_fc_altitude_t DataCenter::get_huch_fc_altitude() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(mk_fc_mutex);
 		mavlink_huch_fc_altitude_t huch_fc_altitude_copy(huch_altitude);
@@ -333,14 +333,14 @@ inline const double DataCenter::get_sensor(const int id) {
 		return huch_fc_altitude_copy;
 	}
 	inline void DataCenter::set_huch_fc_altitude(const mavlink_huch_fc_altitude_t &huch_fc_altitude_a) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(mk_fc_mutex);
 		DataCenter::huch_altitude = huch_fc_altitude_a;
 	}
 	// ranger
 	inline const mavlink_huch_ranger_t DataCenter::get_huch_ranger() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(huch_ranger_mutex);
 		mavlink_huch_ranger_t huch_ranger_copy(huch_ranger);
@@ -348,7 +348,7 @@ inline const double DataCenter::get_sensor(const int id) {
 		return huch_ranger_copy;
 	}
 	inline void DataCenter::set_huch_ranger_at(const mavlink_huch_ranger_t &huch_ranger_a, int index) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(huch_ranger_mutex);
 		switch(index) {
@@ -367,7 +367,7 @@ inline const double DataCenter::get_sensor(const int id) {
 	}
 	// status
 	inline const mavlink_mk_fc_status_t DataCenter::get_mk_fc_status() {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(mk_fc_mutex);
 		mavlink_mk_fc_status_t mk_fc_status_copy(mk_fc_status);
@@ -375,7 +375,7 @@ inline const double DataCenter::get_sensor(const int id) {
 		return mk_fc_status_copy;
 	}
 	inline void DataCenter::set_mk_fc_status(const mavlink_mk_fc_status_t &mk_fc_status_a) {
-		using namespace cpp_pthread;
+		using namespace hub;
 
 		Lock ri_lock(mk_fc_mutex);
 		DataCenter::mk_fc_status = mk_fc_status_a;
@@ -386,19 +386,19 @@ inline const double DataCenter::get_sensor(const int id) {
 #ifdef HAVE_OPENCV2
 // fiducal data
 inline void DataCenter::set_fiducal_rot_raw(const cv::Mat &rvec) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock fiducal_lock(fiducal_raw_mutex);
 	rvec.copyTo(fiducal_rot_raw);
 }
 inline void DataCenter::set_fiducal_trans_raw(const cv::Mat &tvec) {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	Lock fiducal_lock(fiducal_raw_mutex);
 	tvec.copyTo(fiducal_rot_raw);
 }
 inline cv::Mat DataCenter::get_fiducal_rot_raw() {
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	cv::Mat rvec;
 	Lock fiducal_lock(fiducal_raw_mutex);
@@ -406,7 +406,7 @@ inline cv::Mat DataCenter::get_fiducal_rot_raw() {
 	return rvec;
 }
 inline cv::Mat DataCenter::get_fiducal_trans_raw(){
-	using namespace cpp_pthread;
+	using namespace hub;
 
 	cv::Mat tvec;
 	Lock fiducal_lock(fiducal_raw_mutex);
@@ -417,7 +417,7 @@ inline cv::Mat DataCenter::get_fiducal_trans_raw(){
 
 // camctrl
  inline void DataCenter::set_camctrl(int e, int c, int g) {
-	 using namespace cpp_pthread;
+	 using namespace hub;
 
 	 Lock camctrl_lock(camctrl_mutex);
 	 exposure = e;
@@ -425,19 +425,19 @@ inline cv::Mat DataCenter::get_fiducal_trans_raw(){
 	 gain = g;
  }
  inline int DataCenter::get_exposure(){
-	 using namespace cpp_pthread;
+	 using namespace hub;
 
 	 Lock camctrl_lock(camctrl_mutex);
 	 return exposure;
  }
  inline int DataCenter::get_contrast(){
-	 using namespace cpp_pthread;
+	 using namespace hub;
 
 	 Lock camctrl_lock(camctrl_mutex);
 	 return contrast;
  }
  inline int DataCenter::get_gain(){
-	 using namespace cpp_pthread;
+	 using namespace hub;
 
 	 Lock camctrl_lock(camctrl_mutex);
 	 return gain;

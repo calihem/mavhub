@@ -70,7 +70,7 @@ void sba_ideal_pinhole_model(double *p, struct sba_crsm *idxij, int *rcidxs, int
 			const double *p_point = p_points + rcsubs[i]*num_params_per_point;
 			double *p_measurement = hx + idxij->val[rcidxs[i]]*num_params_per_measuremnt; // p_measurement = hx_ij
 
-			ideal_pinhole_model_quatvec<double>(p_point, p_pose, p_measurement);
+			ideal_pinhole_model<double, rotation_matrix_quatvec>(p_point, p_pose, p_measurement);
 		}
 	}
 }

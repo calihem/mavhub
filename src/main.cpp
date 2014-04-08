@@ -45,7 +45,6 @@
 using namespace std;
 using namespace hub;
 using namespace mavhub;
-using namespace cpp_pthread;
 using namespace cpp_io;
 
 int tcp_port(32000);	///< \var TCP port of configuration shell

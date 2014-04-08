@@ -6,8 +6,6 @@
 #include "core/logger.h"
 #include "core/datacenter.h"
 
-using namespace cpp_pthread;
-
 namespace mavhub {
 
 // macros for state_vector

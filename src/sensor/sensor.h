@@ -12,7 +12,7 @@
 
 namespace mavhub {
 
-	class Sensor : public cpp_pthread::PThread {
+	class Sensor : public hub::PThread {
 		public:
 			Sensor();
 			virtual ~Sensor();

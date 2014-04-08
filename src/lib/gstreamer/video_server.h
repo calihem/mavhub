@@ -18,7 +18,7 @@
 namespace hub {
 namespace gstreamer {
 
-class VideoServer : public cpp_pthread::PThread {
+class VideoServer : public hub::PThread {
 	public:
 		VideoServer(int *argc, char **argv, const std::string &pipeline_description);
 		VideoServer(int *argc, char **argv, const std::list<std::string> &pipeline_descriptions);
@@ -69,7 +69,7 @@ class VideoServer : public cpp_pthread::PThread {
 
 	protected:
 		/**
-		 * \copydoc cpp_pthread::PThread::run()
+		 * \copydoc hub::PThread::run()
 		 *
 		 * The run method ...
 		 */

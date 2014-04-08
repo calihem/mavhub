@@ -41,28 +41,31 @@ extern const char *ply_face_element;
 extern const char *ply_header_end;
 
 template<typename T=float>
-class Map : public cpp_pthread::PThread {
+class Map : public hub::PThread {
 
 	/**
 	 * \brief Struct describing (ideal) camera.
 	 */
 	struct camera_t {
-		camera_t() : ideal_width(0), ideal_height(0), angle(0), radius_1m(0), pose() {};
+		camera_t() : ideal_width(0), ideal_height(0), fov_radius(0), pose() {};
 		camera_t(const T ideal_width,
 			const T ideal_height,
-			const T angle,
 			const T radius,
 			const std::vector<T> &pose) :
 				ideal_width(ideal_width),
 				ideal_height(ideal_height),
-				angle(angle),
-				radius_1m(radius),
+// 				fov_angle_rad(angle),
+				fov_radius(radius),
+// 				radius_1m(radius),
 				pose(pose) { };
 
 		T ideal_width; /// Image width normalized by focal length.
 		T ideal_height; /// Image height normalized by focal length.
-		T angle; /// Camera angle between optical axis and points which are projected to one image corner
-		T radius_1m; /// The radius of the circle a view cone would produce at distance of 1m from the camera.
+// 		T fov_angle_rad; /// Camera angle between optical axis and points which are projected to one image corner
+		T fov_radius; /// Radius of field of view (inner circle) normalized by focal length.
+// 		T angle; /// Camera angle between optical axis and points which are projected to one image corner
+// 		//FIXME 1m radius depends on  the scale chosen in the intrinsic parameters
+// 		T radius_1m; /// The radius of the circle a view cone would produce at distance of 1m from the camera.
 		std::vector<T> pose;
 	};
 
@@ -174,8 +177,11 @@ private:
 	 * \retval index
 	 */
 	int add_point(const cv::Point3_<T>& point, const cv::Mat& descriptor);
+
 	int check_viewpoint_distance(const std::vector<T> &view_point, const T max_distance) const;
 
+	bool is_keyframe(const std::vector<T> &camera_pose, const std::vector<T> &view_point) const;
+	
 	void local_bundle_adjust();
 
 	void process_working_task();
@@ -221,7 +227,7 @@ void Map<T>::add_features(const std::vector<cv::Point2f>& projections,
 
 	queue_data_t working_task(projections, descriptors, camera_pose, average_depth);
 
-	cpp_pthread::Lock work_lock(work_mutex);
+	hub::Lock work_lock(work_mutex);
 	working_queue.push_back(working_task);
 
 	dout << "added task to working queue" << std::endl;
@@ -237,38 +243,53 @@ int Map<T>::add_point(const cv::Point3_<T>& point, const cv::Mat& descriptor) {
 }
 
 template<typename T>
-int Map<T>::check_viewpoint_distance(const std::vector<T> &view_point, const T max_distance) const {
-	cv::L2<T> euclidean_distance;
-	cpp_pthread::Lock scene_lock(scene_mutex);
-
-	//FIXME: iterate in reverse order => reduces checks
-	for(typename std::list<scene_t>::const_iterator scene_iter = scenes.begin();
-	scene_iter != scenes.end();
-	++scene_iter) {
-		// all viewpoints lie in same plane => 2D euclidean is enough
-		const T distance = euclidean_distance(&view_point[0], &(scene_iter->view_point[0]), 2);
-		dout << "check viewpoint distance " << distance << " against " << max_distance/10 << std::endl;
-		//FIXME
-		if(distance <= max_distance/10) {
-// 		if(distance <= max_distance) {
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
-template<typename T>
 void Map<T>::fill_tracking_points(std::vector< cv::Point3_<T> > &objectpoints,
 	std::vector<cv::Point2f> &projections,
 	cv::Mat &descriptors) {
 
-	cpp_pthread::Lock map_lock(map_mutex);
-	cpp_pthread::Lock cam_lock(cam_mutex);
+	hub::Lock map_lock(map_mutex);
+	hub::Lock cam_lock(cam_mutex);
 
 	//FIXME: point_indices
 	std::vector<uint16_t> point_indices;
 	visible_points(camera.pose, objectpoints, projections, descriptors, point_indices);
+}
+
+template<typename T>
+bool Map<T>::is_keyframe(const std::vector<T> &camera_pose, const std::vector<T> &view_point) const {
+	// to show that the current frame is NOT a keyframe we have to find at least one
+	// scenery which is near current frame (meaning viewpoints are near) and where
+	// the camera pose is above current.
+
+// 	T camera_fov_radius;
+// 	{ hub::Lock cam_lock(cam_mutex);
+// 		camera_fov_radius = camera.fov_radius;
+// 	}
+
+	cv::L2<T> euclidean_distance;
+	const T max_distance = 0.5; //FIXME max_distance depends on altitude and camera
+	hub::Lock scene_lock(scene_mutex);
+
+	// iterate through scenes in reverse order
+	for(typename std::list<scene_t>::const_reverse_iterator scene_iter = scenes.rbegin();
+	scene_iter != scenes.rend();
+	++scene_iter) {
+// 		const T current_fov_radius = camera_fov_radius*camera_pose[5];
+// 		const T scene_fov_radius = camera_fov_radius*scene_iter->camera_pose[5];
+// 		const T fov_radius = std::min(current_fov_radius, scene_fov_radius);
+
+
+		const T altitude_distance = camera_pose[5] - scene_iter->camera_pose[5];
+
+		// all viewpoints lie in same plane => 2D euclidean is enough
+		const T viewpoint_distance = euclidean_distance(&view_point[0], &(scene_iter->view_point[0]), 2);
+
+// std::cout << "altitude distance: " << altitude_distance << " = " << camera_pose[5] << "-" << scene_iter->camera_pose[5] << ", vp distance: " << viewpoint_distance << std::endl;
+		if(altitude_distance <= 0.2 && viewpoint_distance <= max_distance)
+			return false;
+	}
+
+	return true;
 }
 
 template<typename T>
@@ -474,7 +495,7 @@ void Map<T>::process_working_task() {
 	if( working_queue.empty() )
 		return;
 
-	cpp_pthread::Lock work_lock(work_mutex);
+	hub::Lock work_lock(work_mutex);
 
 	//calculate intersection of optical axis with plane parallel to xy-plane and going through (0,0,100)
 	const T plane_point[3] = {0.0, 0.0, 100.0};
@@ -504,7 +525,7 @@ void Map<T>::process_working_task() {
 	const std::vector<cv::Point2f>& projections = working_queue.front().projections;
 	const T average_depth = working_queue.front().avg_depth;
 
-	cpp_pthread::Lock map_lock(map_mutex);
+	hub::Lock map_lock(map_mutex);
 // 	if(objectpoints.size() != (unsigned)Map<T>::descriptors.rows) {
 // 		dout << "ERROR: inconsistent map" << std::endl;
 // 		return;
@@ -524,7 +545,7 @@ void Map<T>::process_working_task() {
 		Map<T>::descriptors = descriptors;
 
 		// add first scene
-		cpp_pthread::Lock scene_lock(scene_mutex);
+		hub::Lock scene_lock(scene_mutex);
 		scenes.clear();
 		scenes.push_back( scene_t(camera_pose, view_point, projections, indices) );
 
@@ -532,11 +553,20 @@ void Map<T>::process_working_task() {
 		return;
 	}
 
+	if( !is_keyframe(camera_pose, view_point) ) {
+		dout << "reject image as keyframe" << std::endl;
+		//throw task away
+		working_queue.pop_front();
+		return;
+	}
+
+/*
 	T view_radius;
 	{
-		cpp_pthread::Lock cam_lock(cam_mutex);
+		hub::Lock cam_lock(cam_mutex);
 		view_radius = camera.radius_1m; //1m equals 100.0
 	}
+	//FIXME viewpoint distance is not enough to decide for keyframe (think about ascending or descending)
 	rc = check_viewpoint_distance(view_point, view_radius);
 	if(rc <= 0) { // we already have a near enough keyframe
 		dout << "reject image as keyframe" << std::endl;
@@ -544,14 +574,14 @@ void Map<T>::process_working_task() {
 		working_queue.pop_front();
 		return;
 	}
-
+*/
 	// only take visible objectpoints into account
 	std::vector< cv::Point3_<T> > visible_objectpoints;
 	std::vector<cv::Point2f> visible_projections;
 	std::vector<uint16_t> visible_map_indices;
 	cv::Mat visible_descriptors;
 	{
-		cpp_pthread::Lock cam_lock(cam_mutex);
+		hub::Lock cam_lock(cam_mutex);
 		visible_points(camera_pose,
 			visible_objectpoints,
 			visible_projections,
@@ -633,7 +663,7 @@ void Map<T>::process_working_task() {
 #endif
 
 	//add scenery
-	cpp_pthread::Lock scene_lock(scene_mutex);
+	hub::Lock scene_lock(scene_mutex);
 	scenes.push_back( scene_t(camera_pose, view_point, projections, point_indices) );
 	dout << "added scenery" << std::endl;
 
@@ -754,35 +784,39 @@ int Map<T>::save_views(const std::string &file_name) const {
 
 template<typename T>
 void Map<T>::set_camera(const cv::Mat& camera_matrix, const int width, const int height) {
-	cpp_pthread::Lock cam_lock(cam_mutex);
+	hub::Lock cam_lock(cam_mutex);
 
-	const T cx = camera_matrix.at<double>(0, 2);
-	const T cy = camera_matrix.at<double>(1, 2);
+// 	const T cx = camera_matrix.at<double>(0, 2);
+// 	const T cy = camera_matrix.at<double>(1, 2);
 	const T fx = camera_matrix.at<double>(0, 0);
 	const T fy = camera_matrix.at<double>(1, 1);
 
 	camera.ideal_width = (T)width/fx;
 	camera.ideal_height = (T)height/fy;
 
-	const T ideal_x_max = (T)(width-cx)/fx;
-	const T ideal_y_max = (T)(height-cy)/fy;
-
 	// use incircle of image
-	camera.radius_1m = std::min(ideal_x_max, ideal_y_max); //camera radius at 1cm
+	const T ideal_size = std::min((T)width/fx, (T)height/fy);
+// 	camera.fov_angle_rad = std::atan(ideal_size/2);
+	camera.fov_radius = ideal_size/2;
+	
+// 	const T ideal_x_max = (T)(width-cx)/fx;
+// 	const T ideal_y_max = (T)(height-cy)/fy;
+
+// 	camera.radius_1m = std::min(ideal_x_max, ideal_y_max); //camera radius at 1cm
 	// use circumcircle of image
 // 	camera.radius_1m = std::sqrt(ideal_x_max*ideal_x_max + ideal_y_max*ideal_y_max); //camera radius at 1cm
 
-	camera.angle = rad2deg( std::atan(camera.radius_1m) ); //angle of camera cone
-	camera.radius_1m *= 100.0; //scale to 1m
+// 	camera.angle = rad2deg( std::atan(camera.radius_1m) ); //angle of camera cone
+// 	camera.radius_1m *= 100.0; //scale to 1m
 
-	dout << "configured camera with dimension (" << camera.ideal_width << ", " << camera.ideal_height << ")" << std::endl;
+	dout << "configured camera with dimension (" << camera.ideal_width << ", " << camera.ideal_height << ") and fov radius " << camera.fov_radius << std::endl;
 }
 
 template<typename T>
 void Map<T>::set_view(const std::vector<T>& parameter_vector) {
 	if(parameter_vector.size() < 6) return;
 
-	cpp_pthread::Lock cam_lock(cam_mutex);
+	hub::Lock cam_lock(cam_mutex);
 	camera.pose = parameter_vector;
 }
 
@@ -802,7 +836,7 @@ void Map<T>::visible_points(const std::vector<T> &pose,
 	}
 
 	std::vector<cv::Point2f> idealpoints( Map<T>::objectpoints.size() );
-	ideal_pinhole_model_quatvec<T>(&Map<T>::objectpoints[0].x,
+	ideal_pinhole_model<T, rotation_matrix_quatvec>(&Map<T>::objectpoints[0].x,
 		&pose[0],
 		&idealpoints[0].x,
 		Map<T>::objectpoints.size() );

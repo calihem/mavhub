@@ -160,7 +160,7 @@ namespace mavhub {
 
 				/* assign buffer to data */
 				{ // begin of data mutex scope
-					cpp_pthread::Lock ri_lock(data_mutex);
+					Lock ri_lock(data_mutex);
 					//Logger::log("sensrf02 data locked", Logger::LOGLEVEL_INFO);
 					// use median filter
 					// sensor_data[0].distance = (int)filt_med.calc((double)get_range());
@@ -328,7 +328,7 @@ namespace mavhub {
 		int reading;
 #ifdef MAVLINK_ENABLED_HUCH
 		{ // begin of data mutex scope
-			cpp_pthread::Lock ri_lock(data_mutex);
+			Lock ri_lock(data_mutex);
 			reading = sensor_data[0].distance;
 		}
 #endif // MAVLINK_ENABLED_HUCH

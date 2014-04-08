@@ -8,7 +8,7 @@
 
 #include "lib/opengl/map_2d.h"
 
-using namespace cpp_pthread;
+using namespace hub;
 using namespace hub::opengl;
 
 namespace mavhub {

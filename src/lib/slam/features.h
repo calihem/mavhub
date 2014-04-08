@@ -127,12 +127,6 @@ void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	const cv::Mat& camera_matrix,
 	std::vector<cv::Point3f>& objectpoints);
 
-void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
-	const float distance,
-	std::vector<cv::Point3f>& objectpoints,
-	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients);
-
 /**
  * \brief Get mask from matches
  *

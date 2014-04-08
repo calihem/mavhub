@@ -31,6 +31,7 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+#include <cerrno>
 #include <cmath>	//pow
 #include <cstdlib>	//abs
 #include <vector>
@@ -172,6 +173,12 @@ T _median(std::vector<T> &values);
  */
 template<typename T>
 void multiply(const T matrix[9], const T input[3], T output[3]);
+
+/**
+ * \brief Multiply 2 matrices \a C = \a A \a B.
+ */
+template <typename T>
+T* multiply_matrix(const T A[9], const T B[9], T C[9]);
 
 /**
  * \brief Multiply 2 quaternions.
@@ -484,6 +491,23 @@ inline void multiply(const T matrix[9], const T input[3], T output[3]) {
 }
 
 template <typename T>
+T* multiply_matrix(const T A[9], const T B[9], T C[9]) {
+	C[0] = A[0]*B[0] + A[1]*B[3] + A[2]*B[6];
+	C[1] = A[0]*B[1] + A[1]*B[4] + A[2]*B[7];
+	C[2] = A[0]*B[2] + A[1]*B[5] + A[2]*B[8];
+
+	C[3] = A[3]*B[0] + A[4]*B[3] + A[5]*B[6];
+	C[4] = A[3]*B[1] + A[4]*B[4] + A[5]*B[7];
+	C[5] = A[3]*B[2] + A[4]*B[5] + A[5]*B[8];
+
+	C[6] = A[6]*B[0] + A[7]*B[3] + A[8]*B[6];
+	C[7] = A[6]*B[1] + A[7]*B[4] + A[8]*B[7];
+	C[8] = A[6]*B[2] + A[7]*B[5] + A[8]*B[8];
+
+	return C;
+}
+
+template <typename T>
 T* multiply_quaternion(const T lhs[4], const T rhs[4], T product[4]) {
 
 	const T t1 = (lhs[0]+lhs[1])*(rhs[0]+rhs[1]);
@@ -674,7 +698,10 @@ inline void vec2quat(const T v[3], T q[4]) {
 	q[1] = v[0];
 	q[2] = v[1];
 	q[3] = v[2];
-	q[0] = sqrt(1.0 - q[1]*q[1] - q[2]*q[2] - q[3]*q[3]); 
+	errno = 0;
+	q[0] = sqrt(1.0 - q[1]*q[1] - q[2]*q[2] - q[3]*q[3]);
+	if(EDOM == errno)
+		q[0] = 0.0;
 }
 
 } // namespace hub

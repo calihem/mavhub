@@ -72,18 +72,35 @@ BOOST_AUTO_TEST_CASE(Test_math_multiply) {
 	BOOST_CHECK_EQUAL(b[0], a[0]*M[0]+a[1]*M[1]+a[2]*M[2]);
 	BOOST_CHECK_EQUAL(b[1], a[0]*M[3]+a[1]*M[4]+a[2]*M[5]);
 	BOOST_CHECK_EQUAL(b[2], a[0]*M[6]+a[1]*M[7]+a[2]*M[8]);
+	
+	//TODO matrix multiplication
+	
+	//TODO quaternion multiplication
 }
 
 
 BOOST_AUTO_TEST_CASE(Test_math_rotation) {
-// macro to check similarities of rotation matrices (values near 0 are ignored)
-#define ROT_MATRIX_CHECK(m_euler, m_quat) \
+// macro to check similarities of rotation matrices
+#define CHECK_ROT_MATRICES(m_euler, m_quat) \
 	for(unsigned int j=0; j<9; j++) { \
-		if( abs(m_euler[j]) < 0.000001 \
-		|| abs(m_quat[j]) < 0.000001) \
-			continue; \
-		BOOST_CHECK_CLOSE(m_euler[j], m_quat[j], 1.0); \
+		if(std::fabs(m_euler[j]) < 0.000001) \
+			BOOST_CHECK_SMALL(m_quat[j], 0.000001); \
+		else \
+			BOOST_CHECK_CLOSE(m_euler[j], m_quat[j], 0.1); \
 	}
+// macro to check orthogonality of a matrix FIXME with all the variables it is very nasty and not reusable
+#define CHECK_ORTHOGONALITY(matrix) \
+	double _inv_matrix[9]; \
+	_inv_matrix[0] = matrix[0]; _inv_matrix[1] = matrix[3]; _inv_matrix[2] = matrix[6]; \
+	_inv_matrix[3] = matrix[1]; _inv_matrix[4] = matrix[4]; _inv_matrix[5] = matrix[7]; \
+	_inv_matrix[6] = matrix[2]; _inv_matrix[7] = matrix[5]; _inv_matrix[8] = matrix[8]; \
+	double _matrix_product[9]; \
+	multiply_matrix(matrix, _inv_matrix, _matrix_product); \
+	_matrix_product[0] -= 1.0; _matrix_product[4] -= 1.0; _matrix_product[8] -= 1.0; \
+	for(unsigned int j=0; j<9; j++) { \
+		BOOST_CHECK_SMALL(_matrix_product[j], 0.000001); \
+	}
+
 	const unsigned int factor = 4;
 	double euler_angles[3] = {0.0, 0.0, 0.0};
 	double quaternion[4];
@@ -94,13 +111,14 @@ BOOST_AUTO_TEST_CASE(Test_math_rotation) {
 	const unsigned int max_iterations = pow(3, factor);
 	for(unsigned int i=1; i<(max_iterations-1); i++) {
 		rotation_matrix_rad(&euler_angles[0], &rot_matrix_euler[0]);
+		CHECK_ORTHOGONALITY(rot_matrix_euler);
 
 		euler_to_quaternion(&euler_angles[0], quaternion);
 		rotation_matrix_quat(quaternion, &rot_matrix_quat[0]);
-		ROT_MATRIX_CHECK(rot_matrix_euler, rot_matrix_quat)
+		CHECK_ROT_MATRICES(rot_matrix_euler, rot_matrix_quat);
 
 		rotation_matrix_quatvec(&quaternion[1], &rot_matrix_quat[0]);
-		ROT_MATRIX_CHECK(rot_matrix_euler, rot_matrix_quat)
+		CHECK_ROT_MATRICES(rot_matrix_euler, rot_matrix_quat);
 
 		if( !(i % (factor)) ) {
 			euler_angles[2] = 0;
@@ -115,6 +133,7 @@ BOOST_AUTO_TEST_CASE(Test_math_rotation) {
 }
 
 BOOST_AUTO_TEST_CASE(Test_math_coordinate_system) {
+	static const double tolerance = 0.0001;
 	double point[] = {1.0, 2.0, 3.0};
 	double euler_angles[3];
 	double rotation_matrix[9];
@@ -124,57 +143,57 @@ BOOST_AUTO_TEST_CASE(Test_math_coordinate_system) {
 	euler_angles[0] = pi/2; euler_angles[1] = 0; euler_angles[2] = 0; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], result[0], 1.0);
-	BOOST_CHECK_CLOSE(point[1], result[2], 1.0);
-	BOOST_CHECK_CLOSE(point[2], -result[1], 1.0);
+	BOOST_CHECK_CLOSE(point[0], result[0], tolerance);
+	BOOST_CHECK_CLOSE(point[1], result[2], tolerance);
+	BOOST_CHECK_CLOSE(point[2], -result[1], tolerance);
 
 	//rotate 90 deg around pitch
 	euler_angles[0] = 0; euler_angles[1] = pi/2; euler_angles[2] = 0; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], -result[2], 1.0);
-	BOOST_CHECK_CLOSE(point[1], result[1], 1.0);
-	BOOST_CHECK_CLOSE(point[2], result[0], 1.0);
+	BOOST_CHECK_CLOSE(point[0], -result[2], tolerance);
+	BOOST_CHECK_CLOSE(point[1], result[1], tolerance);
+	BOOST_CHECK_CLOSE(point[2], result[0], tolerance);
 
 	//rotate 90 deg around yaw
 	euler_angles[0] = 0; euler_angles[1] = 0; euler_angles[2] = pi/2; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], result[1], 1.0);
-	BOOST_CHECK_CLOSE(point[1], -result[0], 1.0);
-	BOOST_CHECK_CLOSE(point[2], result[2], 1.0);
+	BOOST_CHECK_CLOSE(point[0], result[1], tolerance);
+	BOOST_CHECK_CLOSE(point[1], -result[0], tolerance);
+	BOOST_CHECK_CLOSE(point[2], result[2], tolerance);
 
 	//rotate 90 deg around roll and pitch
 	euler_angles[0] = pi/2; euler_angles[1] = pi/2; euler_angles[2] = 0; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], -result[2], 1.0);
-	BOOST_CHECK_CLOSE(point[1], result[0], 1.0);
-	BOOST_CHECK_CLOSE(point[2], -result[1], 1.0);
+	BOOST_CHECK_CLOSE(point[0], -result[2], tolerance);
+	BOOST_CHECK_CLOSE(point[1], result[0], tolerance);
+	BOOST_CHECK_CLOSE(point[2], -result[1], tolerance);
 
 	//rotate 90 deg around pitch and yaw
 	euler_angles[0] = 0; euler_angles[1] = pi/2; euler_angles[2] = pi/2; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], -result[2], 1.0);
-	BOOST_CHECK_CLOSE(point[1], -result[0], 1.0);
-	BOOST_CHECK_CLOSE(point[2], result[1], 1.0);
+	BOOST_CHECK_CLOSE(point[0], -result[2], tolerance);
+	BOOST_CHECK_CLOSE(point[1], -result[0], tolerance);
+	BOOST_CHECK_CLOSE(point[2], result[1], tolerance);
 
 	//rotate 90 deg around roll and yaw
 	euler_angles[0] = pi/2; euler_angles[1] = 0; euler_angles[2] = pi/2; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], result[1], 1.0);
-	BOOST_CHECK_CLOSE(point[1], result[2], 1.0);
-	BOOST_CHECK_CLOSE(point[2], result[0], 1.0);
+	BOOST_CHECK_CLOSE(point[0], result[1], tolerance);
+	BOOST_CHECK_CLOSE(point[1], result[2], tolerance);
+	BOOST_CHECK_CLOSE(point[2], result[0], tolerance);
 
 	//rotate 90 deg around roll, pitch and yaw
 	euler_angles[0] = pi/2; euler_angles[1] = pi/2; euler_angles[2] = pi/2; 
 	rotation_matrix_rad(euler_angles, rotation_matrix);
 	multiply(rotation_matrix, point, result);
-	BOOST_CHECK_CLOSE(point[0], -result[2], 1.0);
-	BOOST_CHECK_CLOSE(point[1], result[1], 1.0);
-	BOOST_CHECK_CLOSE(point[2], result[0], 1.0);
+	BOOST_CHECK_CLOSE(point[0], -result[2], tolerance);
+	BOOST_CHECK_CLOSE(point[1], result[1], tolerance);
+	BOOST_CHECK_CLOSE(point[2], result[0], tolerance);
 }
 
 BOOST_AUTO_TEST_CASE(Test_math_intersection) {

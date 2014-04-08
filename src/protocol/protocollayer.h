@@ -64,7 +64,7 @@ namespace mavhub {
  * \class AppInterface
  * \brief Interface class for applications.
  */
-class AppInterface : public cpp_pthread::PThread {
+class AppInterface : public hub::PThread {
 	public:
 		/**
 		 * \brief AppInterface constructor with application name

@@ -14,7 +14,6 @@
 #include <cmath>
 
 using namespace std;
-using namespace cpp_pthread;
 using namespace hub;
 
 namespace mavhub {

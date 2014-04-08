@@ -38,7 +38,7 @@ namespace mavhub {
 			try {
 				data_pointer = iter->second->get_data_pointer(id);
 				if (data_pointer != NULL) {
-					cpp_pthread::Lock ri_lock(iter->second->get_data_mutex());
+					hub::Lock ri_lock(iter->second->get_data_mutex());
 					data = *(reinterpret_cast<T*>(data_pointer));
 				}
 			}

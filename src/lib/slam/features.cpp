@@ -18,9 +18,6 @@
 #define dout if(0) std::cout
 #endif
 
-#define rad2deg(r) ((r) * 180) / M_PI
-#define deg2rad(d) ((d) * M_PI) / 180
-
 namespace hub {
 namespace slam {
 
@@ -472,48 +469,6 @@ void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 	imagepoints_to_idealpoints(imagepoints, camera_matrix, idealpoints);
 
 	idealpoints_to_objectpoints<rotation_matrix_rad>(idealpoints, distance, camera_pose, objectpoints);
-}
-
-void keypoints_to_objectpoints(const std::vector<cv::KeyPoint>& keypoints,
-	const float distance,
-	std::vector<cv::Point3f>& objectpoints,
-	const cv::Mat& camera_matrix,
-	const cv::Mat& distortion_coefficients) {
-
-	if(keypoints.empty()) return;
-	//check vector dimension
-	assert(distortion_coefficients.total() == 5);
-
-	const double *k = distortion_coefficients.ptr<double>();
-	const double cx = camera_matrix.at<double>(0, 2);
-	const double cy = camera_matrix.at<double>(1, 2);
-	const double ifx = 1./camera_matrix.at<double>(0, 0);
-	const double ify = 1./camera_matrix.at<double>(1, 1);
-
-	objectpoints.resize( keypoints.size() );
-	for(size_t i = 0; i<keypoints.size(); i++) {
-		double x = (keypoints[i].pt.x - cx) * ifx;
-		double y = (keypoints[i].pt.y - cy) * ify;
-		const double x0 = x, y0 = y;
-
-		//undistort points using simplified iterative approach from OpenCV
-		for(uint8_t j=0; j<5; j++) {
-			const double xx = x*x;
-			const double xy = x*y;
-			const double yy = y*y;
-			const double r2 = xx+yy;
-
-			const double radial_factor = 1/(1 + ((k[4]*r2 + k[1])*r2 + k[0])*r2);
-			const double tang_x = 2*k[2]*xy + k[3]*(r2 + 2*xx);
-			const double tang_y = k[2]*(r2 + 2*yy) + 2*k[3]*xy;
-			
-			x = (x0 - tang_x)*radial_factor;
-			y = (y0 - tang_y)*radial_factor;
-		}
-		
-		//for ideal point coordinates it is enough to multiply with the distance
-		objectpoints[i] = cv::Point3f(-x*distance, -y*distance, distance);
-	}
 }
 
 cv::Mat matchesmask(const int num_src_kps,

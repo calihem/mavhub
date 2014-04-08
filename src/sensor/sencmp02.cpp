@@ -155,7 +155,7 @@ void SenCmp02::run() {
 #ifdef MAVLINK_ENABLED_HUCH
 			{ // begin of data mutex scope
 				int i;
-				cpp_pthread::Lock ri_lock(data_mutex);
+				Lock ri_lock(data_mutex);
 				for(i=0; i < CMP02_NUMCHAN; i++) {
 					sensor_data[i].analog = cmp_value[i];
 					sensor_data[i].usec = start;

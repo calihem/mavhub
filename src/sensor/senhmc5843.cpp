@@ -133,7 +133,7 @@ namespace mavhub {
 #ifdef MAVLINK_ENABLED_HUCH
 				/* assign buffer to data */
 				{ // begin of data mutex scope
-					cpp_pthread::Lock ri_lock(data_mutex);
+					Lock ri_lock(data_mutex);
 					kompass_data.data_x = (int16_t)((buffer[0] << 8) + buffer[1]);
 					kompass_data.data_y = (int16_t)((buffer[2] << 8) + buffer[3]);
 					kompass_data.data_z = (int16_t)((buffer[4] << 8) + buffer[5]);

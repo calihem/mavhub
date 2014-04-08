@@ -479,7 +479,7 @@ void levmar_pinhole_model(T *p, T *hx, int /*m*/, int n, void *data) {
 
 template<typename T>
 inline void levmar_ideal_pinhole_euler(T *p, T *hx, int m, int n, void *data) {
-	levmar_ideal_pinhole_model< T, ideal_pinhole_model_euler<T> >(p, hx, m, n, data);
+	levmar_ideal_pinhole_model< T, ideal_pinhole_model<T, rotation_matrix_rad> >(p, hx, m, n, data);
 }
 
 template<typename T>
@@ -489,7 +489,7 @@ inline void levmar_ideal_pinhole_quat(T *p, T *hx, int m, int n, void *data) {
 
 template<typename T>
 inline void levmar_ideal_pinhole_quatvec(T *p, T *hx, int m, int n, void *data) {
-	levmar_ideal_pinhole_model< T, ideal_pinhole_model_quatvec<T> >(p, hx, m, n, data);
+	levmar_ideal_pinhole_model< T, ideal_pinhole_model<T, rotation_matrix_quatvec> >(p, hx, m, n, data);
 }
 
 template<typename T>

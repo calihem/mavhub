@@ -43,7 +43,7 @@ namespace mavhub {
  * \class MAVShell
  * \brief Class to handle a TCP connection to configure mavhub.
  */
-class MAVShell : public cpp_pthread::PThread {
+class MAVShell : public hub::PThread {
 	public:
 		/**
 		 * \brief MAVShell constructor with optional TCP port.

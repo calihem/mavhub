@@ -74,7 +74,7 @@ std::ostream& operator <<(std::ostream&os, const ProtocolStack<T> &proto_stack) 
  * \brief Communication stack to handle different IO interfaces and message types.
  */
 template <class T>
-class ProtocolStack : public cpp_pthread::PThread {
+class ProtocolStack : public hub::PThread {
 	public:
 
 		/**
@@ -168,7 +168,7 @@ class ProtocolStack : public cpp_pthread::PThread {
 
 	protected:
 		/**
-		 * \copydoc cpp_pthread::PThread::run()
+		 * \copydoc hub::PThread::run()
 		 *
 		 * The run method polls in an infinite loop over all interfaces
 		 * and collects the incoming data.
@@ -343,7 +343,7 @@ int ProtocolStack<T>::add_link(cpp_io::IOInterface *interface) {
 	interface->enable_blocking_mode(false);
 
 	{  //begin of link mutex scope
-		cpp_pthread::Lock lm_lock(link_mutex);
+		hub::Lock lm_lock(link_mutex);
 
 		link_list.push_back(interface);
 		T msg;
@@ -382,7 +382,7 @@ int ProtocolStack<T>::remove_link(const unsigned int link_id) {
 	join();
 
 	{  //begin of link mutex scope
-		cpp_pthread::Lock lm_lock(link_mutex);
+		hub::Lock lm_lock(link_mutex);
 
 		link_list_t::iterator iface_iter = link_list.begin();
 		// seek iterator to right position
@@ -439,7 +439,7 @@ void ProtocolStack<T>::send(const T &msg) const {
 
 template <class T>
 void ProtocolStack<T>::send_over_links(const T &msg, const cpp_io::IOInterface *src_link) const {
-	cpp_pthread::Lock tx_lock(tx_mutex);
+	hub::Lock tx_lock(tx_mutex);
 
 	uint16_t length = serialize( msg, &tx_buffer[0], tx_buffer.size() );
 

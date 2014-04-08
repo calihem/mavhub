@@ -6,7 +6,6 @@
 #include "core/logger.h"
 #include "core/datacenter.h"
 
-using namespace cpp_pthread;
 using namespace std;
 
 #define DEG2RAD 0.0017453292519943295

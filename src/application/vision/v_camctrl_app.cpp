@@ -21,7 +21,6 @@
 #define ACTION_TOGGLE_LC 2
 
 using namespace std;
-using namespace cpp_pthread;
 using namespace hub;
 using namespace cv;
 //using namespace hub::slam;

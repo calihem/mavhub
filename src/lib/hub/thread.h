@@ -30,7 +30,7 @@
 
 #include <pthread.h>
 
-namespace cpp_pthread {
+namespace hub {
 
 /**
  * \brief C++ wrapper class for the POSIX pthread library
@@ -174,6 +174,6 @@ inline Lock::~Lock() {
 	pthread_mutex_unlock(mutex_ptr);
 }
 
-} // namespace cpp_pthread
+} // namespace hub
 
 #endif

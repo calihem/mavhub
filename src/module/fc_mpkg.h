@@ -21,7 +21,7 @@
 #define MKGYRO2RAD 1.52634e-05
 
 namespace mavhub {
-  // class FC_Mpkg : public cpp_pthread::PThread {
+  // class FC_Mpkg : public hub::PThread {
 	/// FlightCtrl MKPackage Receiver
   class FC_Mpkg : public AppLayer<mavlink_message_t>, public AppLayer<mk_message_t> {
   public:

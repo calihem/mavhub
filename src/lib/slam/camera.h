@@ -1,3 +1,47 @@
+/****************************************************************************
+** Copyright 2013 Humboldt-Universitaet zu Berlin
+**
+** This file is part of MAVHUB.
+**
+** MAVHUB is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** MAVHUB is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with MAVHUB.  If not, see <http://www.gnu.org/licenses/>.
+**
+*****************************************************************************/
+/**
+ * \file camera.h
+ * \date created at 2013/02/13
+ * \author Michael Schulz
+ *
+ * \brief Library to handle camera projections.
+ * 
+ * This library contains methods to calculate the projections of 3D points
+ * to an camera image using the pinhole model. It supports both euler and
+ * quaternion rotation representations and allows the computing of the
+ * corresponding jacobians.
+ * 
+ * The used coordinate system follows an East-North-Down convention, i.e.
+ * \code 
+ * y ^
+ *   |
+ *   |
+ *   X---> x
+ *  z
+ * \endcode
+ * For the methods using the euler angles this means, that the elements of the 
+ * parameter vector p = [phi theta psi x y z] describes a rotation around x-axis (phi),
+ * y-axis (theta) and z-axis (psi) and a translation of [x y z].
+ */
+
 #ifndef _HUB_CAMERA_H_
 #define _HUB_CAMERA_H_
 
@@ -5,9 +49,12 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
+// FIXME remove dependency of opencv
 #ifdef HAVE_OPENCV2
 #include <opencv/cv.h>
-#if CV_MINOR_VERSION >= 2
+#endif // HAVE_OPENCV2
+
+//TODO swap position of rotation and translation information in parameter vector so that model functions can be more generalized by templates
 
 #include "lib/hub/math.h"
 
@@ -16,23 +63,66 @@ namespace slam {
 // ----------------------------------------------------------------------------
 // Ideal pinhole model functions
 // ----------------------------------------------------------------------------
-template<typename T>
-void ideal_pinhole_model_euler(const T *objectpoints,
+/**
+ * \brief Calculates the projectios of 3D points to ideal 2D image points using euler angles.
+ * \param[in] objectpoints Pointer to 3D object points.
+ * \param[in] rt Rotation + translation vector.
+ * \param[out] idealpoints Pointer to 2D projections of objectpoints.
+ * \param[in] n number of objectpoints
+ */
+template<typename T, void(*R)(const T[3], T[9])>
+void ideal_pinhole_model(const T *objectpoints,
 		const T rt[6],
 		T *idealpoints,
 		const size_t n = 1);
 
+/**
+ * \brief Calculates the jacobian of the ideal pinhole projection using euler angles.
+ * \param[in] objectpoint 3D object point
+ * \param[in] rt Rotation + translation vector
+ * \param[out] jacmRT Jacobian of rotation and translation \f$ \frac{\partial f}{\partial qr \partial r}\f$.
+ * \param[out] jacmS Jacobian of structure \f$ \frac{\partial f}{\partial opject\_point}\f$.
+ */
 template<typename T>
 void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 		const T rt[6],
 		T jac_u[6],
 		T jac_v[6]);
 
+/**
+ * \brief Inverse camera model to use with euler angles or quatvec.
+ * \param[in] idealpoints Image projections of in ideal coordinates.
+ * \param[in] rt Parameter vector containing rotation and translation 
+ * \param[in] distance Meassured distance to observed object, i.e. objectpoints[i].z = distance - rt[5].
+ * \param[out] objectpoints 3D coordinates of \a idealpoints.
+ * \param[in] n Number of idealpoints
+ * \sa inverse_ideal_pinhole_model_quat
+ */
+template<typename T, void(*R)(const T[3], T[9])>
+void inverse_ideal_pinhole_model(const T *idealpoints,
+		const T rt[6],
+		const T &distance,
+		T *objectpoints,
+		const size_t n = 1);
+
+/**
+ * \brief Calculates the projection of a 3D point to ideal 2D image point using quaternions.
+ * \param[in] objectpoint 3D object point.
+ * \param[in] qt quaternions + translation vector.
+ * \param[out] idealpoint 2D projection of objectpoint.
+ */
 template<typename T>
 void ideal_pinhole_model_quat(const T objectpoint[3],
 		const T qt[7],
 		T idealpoint[2]);
 
+/**
+ * \brief Calculates the projections of 3D points to ideal 2D image points using quaternions.
+ * \param[in] objectpoints Pointer to 3D object points.
+ * \param[in] qt quaternions + translation vector.
+ * \param[out] idealpoints Pointer to 2D projections of objectpoints.
+ * \param[in] n number of objectpoints
+ */
 template<typename T>
 void ideal_pinhole_model_quat(const T *objectpoints,
 		const T qt[7],
@@ -40,15 +130,19 @@ void ideal_pinhole_model_quat(const T *objectpoints,
 		const size_t n);
 
 /**
- * \brief Calculates the projection of a 3D point to a 2D image point.
- * \param[in] objectpoint 3D object point
- * \param[in] qt rotation quaternion + translation vector
- * \param[out] idealpoints 2D projection of M
+ * \brief Inverse camera model to use with euler angles or quatvec.
+ * \param[in] idealpoints Image projections of in ideal coordinates.
+ * \param[in] qt Parameter vector containing quaternions and translation 
+ * \param[in] distance Meassured distance to observed object, i.e. objectpoints[i].z = distance - rt[5].
+ * \param[out] objectpoints 3D coordinates of \a idealpoints.
+ * \param[in] n Number of idealpoints
+ * \sa inverse_ideal_pinhole_model
  */
 template<typename T>
-void ideal_pinhole_model_quatvec(const T *objectpoints,
-		const T qt[6],
-		T *idealpoints,
+void inverse_ideal_pinhole_model_quat(const T *idealpoints,
+		const T qt[7],
+		const T &distance,
+		T *objectpoints,
 		const size_t n = 1);
 
 /**
@@ -57,7 +151,7 @@ void ideal_pinhole_model_quatvec(const T *objectpoints,
  * \param[in] qr rotation quaternion vector part
  * \param[in] t translation vector
  * \param[out] jacmRT Jacobian of rotation and translation \f$ \frac{\partial f}{\partial qr \partial r}\f$.
- * \param[out] jacmS Jacobian of structure \f$ \frac{\partial f}{\partial opject_point}\f$.
+ * \param[out] jacmS Jacobian of structure \f$ \frac{\partial f}{\partial opject\_point}\f$.
  */
 template<typename T>
 void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
@@ -69,6 +163,7 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 // ----------------------------------------------------------------------------
 // Pinhole model functions
 // ----------------------------------------------------------------------------
+#if CV_MINOR_VERSION >= 2
 template<typename T>
 void pinhole_model_euler(const T *objectpoints,
 		const T rt[6],
@@ -106,7 +201,7 @@ inline void pinhole_model_quatvec(const T *objectpoints,
  * \param[in] camera_matrix intrinsic params
  * \param[in] qr0 quaternion rotation estimation
  * \param[out] jacmRT Jacobian of rotation and translation \f$ \frac{\partial f}{\partial qr \partial r}\f$.
- * \param[out] jacmS Jacobian of structure \f$ \frac{\partial f}{\partial opject_point}\f$.
+ * \param[out] jacmS Jacobian of structure \f$ \frac{\partial f}{\partial opject\_point}\f$.
  */
 template<typename T>
 void pinhole_model_quatvec_jac(const T objectpoint[3],
@@ -115,27 +210,35 @@ void pinhole_model_quatvec_jac(const T objectpoint[3],
 		const cv::Mat &camera_matrix,
 		T jacmRT[2][6],
 		T jacmS[2][3]);
+#endif // CV_MINOR_VERSION
 
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
-template<typename T>
-void ideal_pinhole_model_euler(const T *objectpoints,
+template<typename T, void(*R)(const T[3], T[9])>
+void ideal_pinhole_model(const T *objectpoints,
 		const T rt[6],
 		T *idealpoints,
 		size_t n) {
 
+	// determine rotation matrix
 	T rotation_matrix[9];
-	rotation_matrix_rad(rt, rotation_matrix);
-	T transformed_point[3];
+	R(rt, rotation_matrix);
 
+	T rotated_point[3];
 	for(size_t i=0; i<n; i++) {
-		multiply(rotation_matrix, &objectpoints[i*3], transformed_point);
+		// rotate 3D points
+		multiply(rotation_matrix, &objectpoints[i*3], rotated_point);
 
-		transformed_point[2] += rt[5];
-		if(transformed_point[2] <= 0.001) transformed_point[2] = 1;
-		idealpoints[i*2] = (transformed_point[0] + rt[3])/transformed_point[2];
-		idealpoints[i*2 + 1] = (transformed_point[1] + rt[4])/transformed_point[2];
+		rotated_point[2] += rt[5];
+		idealpoints[i*2] = rotated_point[0] + rt[3];
+		idealpoints[i*2 + 1] = rotated_point[1] + rt[4];
+		// avoid divding by (almost) zero for points near camera
+		if(rotated_point[2] <= 0.001)
+			continue;
+
+		idealpoints[i*2] /= rotated_point[2];
+		idealpoints[i*2 + 1] /= rotated_point[2];
 	}
 }
 
@@ -227,6 +330,41 @@ void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 	jac_v[5] = y2*inv_y3_square;
 }
 
+template<typename T, void(*R)(const T[3], T[9])>
+void inverse_ideal_pinhole_model(const T *idealpoints,
+		const T rt[6],
+		const T &distance,
+		T *objectpoints,
+		const size_t n = 1) {
+
+	const T t1 = rt[3];
+	const T t2 = rt[4];
+	const T t3 = rt[5];
+
+	// rotation matrix is orthogonal => R^{-1} = R^t
+	T rotation_matrix[9];
+	R(&rt[0], rotation_matrix);
+	const T r11 = rotation_matrix[0]; const T r12 = rotation_matrix[1]; const T r13 = rotation_matrix[2];
+	const T r21 = rotation_matrix[3]; const T r22 = rotation_matrix[4]; const T r23 = rotation_matrix[5];
+	const T r31 = rotation_matrix[6]; const T r32 = rotation_matrix[7]; const T r33 = rotation_matrix[8];
+
+	const T x3 = distance - t3;
+	const T y3_numerator = x3 + r13*t1 + r23*t2 + r33*t3;
+
+	for(unsigned int i=0; i<n; i++) {
+		const T u = idealpoints[i*2];
+		const T v = idealpoints[i*2+1];
+		const T y3 = y3_numerator / (r13*u + r23*v + r33);
+		const T tmp1 = y3*u-t1;
+		const T tmp2 = y3*v-t2;
+		const T tmp3 = y3-t3;
+
+		objectpoints[i*3]   = r11*tmp1 + r21*tmp2 + r31*tmp3;
+		objectpoints[i*3+1] = r12*tmp1 + r22*tmp2 + r32*tmp3;
+		objectpoints[i*3+2] = x3;
+	}
+}
+
 template<typename T>
 void ideal_pinhole_model_quat(const T objectpoint[3],
 		const T qt[7],
@@ -253,6 +391,12 @@ void ideal_pinhole_model_quat(const T objectpoint[3],
 // 	const T x = (1-2*(q2*q2+q3*q3))*p0 + 2*(q1*q2-q0*q3)*p1     + 2*(q0*q2+q1*q3)*p2     + t[0];
 // 	const T y = 2*(q0*q3+q1*q2)*p0     + (1-2*(q1*q1+q3*q3))*p1 + 2*(q2*q3-q0*q1)*p2     + t[1];
 // 	const T z = 2*(q1*q3-q0*q2)*p0     + 2*(q0*q1+q2*q3)*p1     + (1-2*(q1*q1+q2*q2))*p2 + t[2];
+
+	if(z <= 0.001) {
+		idealpoint[0] = x;
+		idealpoint[1] = y;
+		return;
+	}
 
 	idealpoint[0] = x/z;
 	idealpoint[1] = y/z;
@@ -281,15 +425,38 @@ void ideal_pinhole_model_quat(const T *objectpoints,
 }
 
 template<typename T>
-void ideal_pinhole_model_quatvec(const T *objectpoints,
-		const T qt[6],
-		T *idealpoints,
-		size_t n) {
+void inverse_ideal_pinhole_model_quat(const T *idealpoints,
+		const T qt[7],
+		const T &distance,
+		T *objectpoints,
+		const size_t n = 1) {
 
-	T quat[7];
-	vec2quat(qt, quat);
-	quat[4] = qt[3]; quat[5] = qt[4]; quat[6] = qt[5];
-	ideal_pinhole_model_quat(objectpoints, quat, idealpoints, n);
+	const T t1 = qt[4];
+	const T t2 = qt[5];
+	const T t3 = qt[6];
+
+	// rotation matrix is orthogonal => R^{-1} = R^t
+	T rotation_matrix[9];
+	rotation_matrix_quat(&qt[0], rotation_matrix);
+	const T r11 = rotation_matrix[0]; const T r12 = rotation_matrix[1]; const T r13 = rotation_matrix[2];
+	const T r21 = rotation_matrix[3]; const T r22 = rotation_matrix[4]; const T r23 = rotation_matrix[5];
+	const T r31 = rotation_matrix[6]; const T r32 = rotation_matrix[7]; const T r33 = rotation_matrix[8];
+
+	const T x3 = distance - t3;
+	const T y3_numerator = x3 + r13*t1 + r23*t2 + r33*t3;
+
+	for(unsigned int i=0; i<n; i++) {
+		const T u = idealpoints[i*2];
+		const T v = idealpoints[i*2+1];
+		const T y3 = y3_numerator / (r13*u + r23*v + r33);
+		const T tmp1 = y3*u-t1;
+		const T tmp2 = y3*v-t2;
+		const T tmp3 = y3-t3;
+
+		objectpoints[i*3]   = r11*tmp1 + r21*tmp2 + r31*tmp3;
+		objectpoints[i*3+1] = r12*tmp1 + r22*tmp2 + r32*tmp3;
+		objectpoints[i*3+2] = x3;
+	}
 }
 
 template<typename T>
@@ -430,6 +597,7 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	jacmS[1][2] = t347*t127-t159*t350;
 }
 
+#if CV_MINOR_VERSION >= 2
 template<typename T>
 inline void pinhole_model_euler(const T *objectpoints,
 		const T rt[6],
@@ -437,7 +605,7 @@ inline void pinhole_model_euler(const T *objectpoints,
 		T *imagepoints,
 		size_t n) {
 
-	ideal_pinhole_model_euler(objectpoints, rt, imagepoints, n);
+	ideal_pinhole_model<T, rotation_matrix_rad>(objectpoints, rt, imagepoints, n);
 
 	const T cx = camera_matrix.at<double>(0, 2);
 	const T cy = camera_matrix.at<double>(1, 2);
@@ -570,10 +738,9 @@ void pinhole_model_quatvec_jac(const T objectpoint[3],
 	jacmS[0][2] = (fx*(2.0*t305+q0*q2-t306)+t350*cx)*t127-t147*t350;
 	jacmS[1][2] = (fy*t347+cy*t350)*t127-t159*t350;
 }
+#endif // CV_MINOR_VERSION
 
 } // namespace slam
 } // namespace hub
 
-#endif // CV_MINOR_VERSION
-#endif // HAVE_OPENCV2
 #endif // _HUB_CAMERA_H_

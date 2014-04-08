@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(Test_guess_quaternion_pose) {
 	quatvec_pose[5] = 0.5;	//t3
 
 	std::vector< cv::Point_<PRECISION> > idealpoints(num_points);
-	ideal_pinhole_model_quatvec(&objectpoints[0].x,
+	ideal_pinhole_model<PRECISION, rotation_matrix_quatvec>(&objectpoints[0].x,
 		&quatvec_pose[0],
 		&idealpoints[0].x,
 		num_points);

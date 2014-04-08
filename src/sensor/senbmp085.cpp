@@ -120,7 +120,7 @@ void SenBmp085::run() {
 				/* compute temperature data */
 #ifdef MAVLINK_ENABLED_HUCH
 				{ // begin of data mutex scope
-					cpp_pthread::Lock ri_lock(data_mutex);
+					Lock ri_lock(data_mutex);
 					temperature.temperature = calc_temp(uncomp_temp, b5, calibration_data);
 					temperature.usec = get_time_us();
 				} // end of data mutex scope
@@ -147,7 +147,7 @@ void SenBmp085::run() {
 			/* compute altitude */
 			float _alt = calc_altitude(_pres, pressure_0);	
 			{ // begin of data mutex scope
-				cpp_pthread::Lock ri_lock(data_mutex);
+				Lock ri_lock(data_mutex);
 				raw_pressure.pressure = _pres;
 				raw_pressure.usec = usec;
 				altitude.altitude = _alt;

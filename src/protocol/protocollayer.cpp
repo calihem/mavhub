@@ -32,7 +32,7 @@
 
 #include <sstream>
 
-using namespace cpp_pthread;
+using namespace hub;
 
 namespace mavhub {
 

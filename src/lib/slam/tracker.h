@@ -23,22 +23,36 @@ namespace slam {
 //FIXME: make it more generic template class
 class Tracker {
 public:
+	/**
+	 * \brief Enumeration of supported camera orientations.
+	 */ 
+	enum camera_orientation_t { CAM_DOWN };
+
+	/**
+	 * \brief Enumeration of possible debug values.
+	 */
 	enum debug_flags_t { POSE = 0,
 		FEATURE_IMAGE = 1,
 		MATCHES = 2
 	};
+
 	/**
 	 * \brief Constructor
 	 */
 	Tracker(const int image_width,
 		const int image_height,
 		const cv::Mat &camera_matrix = cv::Mat(),
-		const cv::Mat &distortion_coefficients = cv::Mat());
+		const cv::Mat &distortion_coefficients = cv::Mat(),
+		const camera_orientation_t camera_orientation = CAM_DOWN);
+
+	/**
+	 * \brief Destructor
+	 */	
 	~Tracker();
 
 	/**
 	 * \brief Perform dead reckoning on IMU accels.
-	 * \param[in] time_us Timestamp in milliseconds of sensor data.
+	 * \param[in] time_ms Timestamp in milliseconds of sensor data.
 	 * \param[in] imu_data Quaternion vector part (inertial frame) + accelerometer (body frame) [q1 q2 q3 accel_x accel_y accel_z]
 	 */
 	int imu_update(const uint64_t &time_ms, const std::vector<float> &imu_data);
@@ -52,6 +66,11 @@ public:
 	 * \brief Set current pose estimation.
 	 */
 	void pose_estimation(const std::vector<float>& pose);
+
+	/**
+	 * \brief Reset inner states of tracker.
+	 */
+	int reset();
 
 	/**
 	 * \brief Save map points (point cloud) and camera views as polygon files (ply).
@@ -71,6 +90,7 @@ protected:
 private:
 	cv::Mat camera_matrix; ///< Camera matrix of intrinsic parameters.
 	cv::Mat distortion_coefficients; ///< distortion coefficients of camera.
+	camera_orientation_t camera_orientation;
 
 	cv::BriskFeatureDetector feature_detector; ///< BRISK feature detector using AGAST
 	cv::BriskDescriptorExtractor descriptor_extractor;
@@ -85,15 +105,19 @@ private:
 	uint64_t last_imu_time; ///< Timestamp of last IMU data
 	std::vector<float> speed; ///< Current speed estimation based on IMU data
 	std::vector<float> pose; ///< Current pose estimation based on IMU and localization
-	
+
+	int log_debug_data(const std::bitset<8> &debug_mask,
+		const std::vector<float> &parameter_vector);
 	int log_debug_data(const std::bitset<8> &debug_mask,
 		const cv::Mat &image,
 		const std::vector<float> &parameter_vector,
-		const std::vector<cv::KeyPoint> &keypoints = std::vector<cv::KeyPoint>(),
-		const std::vector<cv::Point2f> &ideal_points = std::vector<cv::Point2f>(),
-		const std::vector<cv::Point2f> &op_projections = std::vector<cv::Point2f>(),
-		const std::vector<cv::DMatch> &matches = std::vector<cv::DMatch>(),
-		const std::vector<char> &matches_mask = std::vector<char>() );
+		const std::vector<cv::KeyPoint> &keypoints);
+	int log_debug_data(const std::bitset<8> &debug_mask,
+		const std::vector<float> &parameter_vector,
+		const std::vector<cv::Point2f> &ideal_points,
+		const std::vector<cv::Point2f> &op_projections,
+		const std::vector<cv::DMatch> &matches,
+		const std::vector<char> &matches_mask);
 };
 
 // ----------------------------------------------------------------------------

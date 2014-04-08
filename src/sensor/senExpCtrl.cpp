@@ -143,7 +143,7 @@ void SenExpCtrl::run() {
 			/* assign buffer to data */
 			{ // begin of data mutex scope
 				int i;
-				cpp_pthread::Lock ri_lock(data_mutex);
+				hub::Lock ri_lock(data_mutex);
 				for(i=0; i < EXPCTRL_NUMCHAN; i++) {
 					sensor_data[i].analog = exprx_value[i];
 					sensor_data[i].usec = start;

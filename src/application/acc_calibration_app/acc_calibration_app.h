@@ -116,7 +116,7 @@ namespace mavhub {
 	* This class realises a seperate thread of the AccCalibrationApp for roll and pitch angle computation and display.
 	* A seperate thread is used, so that the handle_input function of the AccCalibrationApp cannot be blocked.
 	*/
-	class AccCalibrationAppTestThread : public cpp_pthread::PThread {
+	class AccCalibrationAppTestThread : public hub::PThread {
 		public:
 			AccCalibrationAppTestThread(AccCalibrationApp* accCalibrationApp);
 		protected:

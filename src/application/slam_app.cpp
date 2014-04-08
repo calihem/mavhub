@@ -15,7 +15,6 @@
 #include <sstream> //istringstream
 
 using namespace std;
-using namespace cpp_pthread;
 using namespace hub::slam;
 using namespace hub;
 
@@ -32,8 +31,8 @@ SLAMApp::SLAMApp(const std::map<std::string, std::string> &args, const Logger::l
 	target_component(1),
 	imu_rate(10),
 	channel_rate(0),
-	parameter_vector(6, 0),
 	trigger_channel(0),
+	parameter_vector(6, 0),
 	altitude(0.0),
 	tracker(NULL),
 #ifdef SLAM_LOG
