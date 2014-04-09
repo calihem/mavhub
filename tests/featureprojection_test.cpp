@@ -6,6 +6,7 @@
 #include <numeric>	//inner_product
 
 #include "lib/hub/math.h"
+#include "lib/slam/camera.h"
 
 #define PRECISION float
 // #define PRECISION double
@@ -87,65 +88,20 @@ BOOST_AUTO_TEST_CASE(Test_features)
 	PRECISION e;
 
 	//
-	// test OpenCV implementation of rotation matrix against own
-	// FIXME: move to math test suite
-	//
-	std::vector<PRECISION> rotation_vector(pose_vector.begin(), pose_vector.begin()+3);
-	cv::Mat cv_rotation_matrix(3,3, CV_32FC1);
-	Rodrigues(rotation_vector, cv_rotation_matrix);
-
-	std::vector<PRECISION> rotation_matrix(9);
-	rotation_matrix_rad(&pose_vector[0], &rotation_matrix[0]);
-	std::vector<PRECISION> cv_rotation_mat((PRECISION*)cv_rotation_matrix.data, (PRECISION*)cv_rotation_matrix.data+9);
-
-	e = error<PRECISION, PRECISION>(rotation_matrix, cv_rotation_mat);
-	BOOST_TEST_MESSAGE("rotation matrix error: " << e);
-// 	BOOST_CHECK(e <= 100*std::numeric_limits<PRECISION>::min());
-	// opnecv implementation is performing really bad :( => large error
-	BOOST_CHECK(e <= 0.2);
-
-	//
 	// project points
 	//
-	std::vector< cv::Point_<PRECISION> > imagepoints;
-	objectpoints_to_imagepoints(objectpoints,
+	std::vector< cv::Point_<PRECISION> > imagepoints( objectpoints.size() );
+	pinhole_model_euler(
+		reinterpret_cast<PRECISION*>( &(objectpoints[0].x) ),
+		&pose_vector[0],
+		camera_matrix,
+		reinterpret_cast<PRECISION*>( &(imagepoints[0].x) ),
+		objectpoints.size() );
+// 	objectpoints_to_imagepoints(objectpoints,
 // 	objectpoints_to_idealpoints(objectpoints,
-		pose_vector,
-		camera_matrix,
-		imagepoints);
-
-	//
-	// test "objectpoints_to_imagepoints" against OpenCV "projectPoints" => not possible :(
-	//
-// 	std::vector<PRECISION> translation_vector( pose_vector.begin()+3, pose_vector.end() );
-// 	cv::Mat distortion_coefficients = (cv::Mat_<double>(1,5) << 0.0, 0.0, 0.0, 0.0, 0.0);
-// 	std::vector< cv::Point_<PRECISION> > ctrl_imagepoints;
-// 	projectPoints(objectpoints,
-// 		rotation_vector,
-// 		translation_vector,
+// 		pose_vector,
 // 		camera_matrix,
-// 		distortion_coefficients,
-// 		ctrl_imagepoints);
-// 	e = error<cv::Point_<PRECISION>, PRECISION>(imagepoints, ctrl_imagepoints);
-// 	BOOST_TEST_MESSAGE("projection errror: " << e);
-// 	BOOST_CHECK(e <= 0.0001);
-
-	// 
-	// reproject image points
-	//
-	std::vector< cv::Point3_<PRECISION> > reprojected_objectpoints;
-	PRECISION distance = DISTANCE+pose_vector[5];
-	imagepoints_to_objectpoints(imagepoints,
-// 	idealpoints_to_objectpoints(imagepoints,
-		distance,
-		pose_vector,
-		camera_matrix,
-		reprojected_objectpoints);
-
-	e = error<cv::Point3_<PRECISION>, PRECISION>(objectpoints, reprojected_objectpoints);
-	BOOST_TEST_MESSAGE("reprojection errror: " << e);
-// 	BOOST_CHECK(e <= 100*std::numeric_limits<PRECISION>::min());
-	BOOST_CHECK(e <= 0.01);
+// 		imagepoints);
 
 	//
 	// test undistort_n2i of cv::KeyPoint

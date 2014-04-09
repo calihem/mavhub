@@ -63,11 +63,17 @@ BOOST_AUTO_TEST_CASE(Test_guess_euler_pose) {
 	euler_pose[4] = -1.0;	//t2
 	euler_pose[5] = 0.5;	//t3
 
-	std::vector< cv::Point_<PRECISION> > imagepoints;
-	objectpoints_to_imagepoints(objectpoints,
-		euler_pose,
+	std::vector< cv::Point_<PRECISION> > imagepoints( objectpoints.size() );
+	pinhole_model_euler(
+		reinterpret_cast<PRECISION*>( &(objectpoints[0].x) ),
+		&euler_pose[0],
 		camera_matrix,
-		imagepoints);
+		reinterpret_cast<PRECISION*>( &(imagepoints[0].x) ),
+		objectpoints.size() );
+// 	objectpoints_to_imagepoints(objectpoints,
+// 		euler_pose,
+// 		camera_matrix,
+// 		imagepoints);
 
 	//apply some error to image points
 	imagepoints[0].x = 0;

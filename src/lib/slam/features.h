@@ -38,36 +38,6 @@ struct landmarks_t {
 	std::vector<int> scene_ids; //FIXME: needed?
 };
 
-/**
- * \brief Determine egomotion based on feature matches.
- * \param[in] objectpoints
- * \param[in] dst_keypoints
- * \param[in] matches
- * \param[in] camera_matrix
- * \param[in] distortion_coefficients
- * \param[in,out] rotation_vector
- * \param[in,out] translation_vector
- * \param[in] use_extrinsic_guess Use \a rotation_vector and \a translation_vector as initial guess.
- * \param[in] matches_mask matches.at(i) will only be considered if matches_mask.at(i) is non-zero
- */
-// int egomotion(const std::vector<cv::Point3f> objectpoints,
-// 	const std::vector<cv::KeyPoint>& dst_keypoints,
-// 	const std::vector<cv::DMatch>& matches,
-// 	const cv::Mat &camera_matrix,
-// 	const cv::Mat &distortion_coefficients,
-// 	cv::Mat &rotation_vector,
-// 	cv::Mat &translation_vector,
-// 	const bool use_extrinsic_guess = false,
-// 	std::vector<char> matches_mask = std::vector<char>() );
-
-/**
- * Estimate 3D motion from inverse projected image points
- */
-cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<cv::DMatch>& matches,
-	std::vector<char> mask);
-
 /// Filter out matches 
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
 
@@ -107,25 +77,9 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
 		    std::vector<std::vector<cv::DMatch> > &matches);
 
-template<void(*R)(const float[3], float[9])>
-void idealpoints_to_objectpoints( const std::vector<cv::Point2f>& idealpoints,
-	const float distance,
-	const std::vector<float>& camera_pose,
-	std::vector<cv::Point3f>& objectpoints);
-
-void idealpoints_to_imagepoints(const std::vector<cv::Point2f>& idealpoints,
-	const cv::Mat& camera_matrix,
-	std::vector<cv::Point2f>& imagepoints);
-
 void imagepoints_to_idealpoints(const std::vector<cv::Point2f>& imagepoints,
 	const cv::Mat& camera_matrix,
 	std::vector<cv::Point2f>& idealpoints);
-
-void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
-	const float distance,
-	const std::vector<float>& camera_pose,
-	const cv::Mat& camera_matrix,
-	std::vector<cv::Point3f>& objectpoints);
 
 /**
  * \brief Get mask from matches
@@ -138,27 +92,6 @@ void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
 cv::Mat matchesmask(const int num_src_kps,
 	const int num_dst_kps,
 	const std::vector<cv::DMatch> &matches);
-/**
- * \brief Projects 3D point coordinates to their 2D ideal image coordinates.
- */
-void objectpoints_to_idealpoints(const std::vector<cv::Point3f>& objectpoints,
-	const std::vector<float>& camera_pose,
-	std::vector<cv::Point2f>& idealpoints);
-
-/**
- * \brief Projects 3D point coordinates to their 2D image coordinates.
- * 
- * This function is almost similar to cv::projectPoints except that it doesn't
- * support distorted image points.
- * \param[in] objectpoints Vector of 3D object points.
- * \param[in] camera_pose Vector consisting of 3D rotation vector with euler angles (rad) and 3D translation vector.
- * \param[in] camera_matrix Matrix of intrinsic parameters
- * \param[out] imagepoints Outputvector containing the 2D projected object points.
- */
-void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
-	const std::vector<float>& camera_pose,
-	const cv::Mat& camera_matrix,
-	std::vector<cv::Point2f>& imagepoints);
 
 template <typename T>
 T min_eigenval(const T &dxx, const T &dxy, const T &dyy);

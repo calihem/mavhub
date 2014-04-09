@@ -40,67 +40,6 @@ void landmarks_t::clear() {
 	counters.clear();
 	scene_ids.clear();
 }
-/*
-int egomotion(const std::vector<cv::Point3f> objectpoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<cv::DMatch>& matches,
-	const cv::Mat &camera_matrix,
-	const cv::Mat &distortion_coefficients,
-	cv::Mat &rotation_vector,
-	cv::Mat &translation_vector,
-	const bool use_extrinsic_guess,
-	std::vector<char> matches_mask) {
-
-	if(matches_mask.empty()) {
-		matches_mask.assign(matches.size(), 1);
-	} else if(matches_mask.size() != matches.size()) {
-		return -1;
-	}
-
-	std::vector<cv::Point3f> object_points; //matched object points
-	object_points.reserve( objectpoints.size() );
-	std::vector<cv::Point2f> image_points; //matched destination image points
-	image_points.reserve( dst_keypoints.size() );
-	for(size_t i = 0; i < matches.size(); i++) {
-		if( matches_mask[i] == 0) continue;
-
-		const int src_index = matches[i].queryIdx;
-		object_points.push_back( objectpoints[src_index] );
-
-		const int dst_index = matches[i].trainIdx;
-		const cv::KeyPoint& dst_keypoint = dst_keypoints[dst_index];
-		image_points.push_back(dst_keypoint.pt);
-	}
-
-	try {
-// 		cv::solvePnPRansac(object_points,
-		cv::solvePnP(object_points,
-			image_points,
-			camera_matrix,
-			distortion_coefficients,
-			rotation_vector,
-			translation_vector,
-			use_extrinsic_guess );
-	}
-	catch(cv::Exception &e) {
-		return -2;
-// 		rotation_vector = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 0.0);
-// 		rotation_vector.copyTo(translation_vector);
-	}
-	
-	return 0;
-}
-
-cv::Point3f feature_movement(const std::vector<cv::Point3f> &objectpoints,
-	const std::vector<cv::KeyPoint>& dst_keypoints,
-	const std::vector<cv::DMatch>& matches,
-	std::vector<char> mask) {
-	
-	//TODO: implement
-	
-	//FIXME
-	return cv::Point3f(0, 0, 0);
-}*/
 
 //FIXME: improve performance
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches) {
@@ -457,20 +396,6 @@ void imagepoints_to_idealpoints(const std::vector<cv::Point2f>& imagepoints,
 	}
 }
 
-void imagepoints_to_objectpoints(const std::vector<cv::Point2f>& imagepoints,
-	const float distance,
-	const std::vector<float>& camera_pose,
-	const cv::Mat& camera_matrix,
-	std::vector<cv::Point3f>& objectpoints) {
-
-	if( imagepoints.size() == 0) return;
-
-	std::vector<cv::Point2f> idealpoints;
-	imagepoints_to_idealpoints(imagepoints, camera_matrix, idealpoints);
-
-	idealpoints_to_objectpoints<rotation_matrix_rad>(idealpoints, distance, camera_pose, objectpoints);
-}
-
 cv::Mat matchesmask(const int num_src_kps,
 	const int num_dst_kps,
 	const std::vector<cv::DMatch> &matches) {
@@ -483,42 +408,6 @@ cv::Mat matchesmask(const int num_src_kps,
 	}
 
 	return mask;
-}
-
-void objectpoints_to_idealpoints(const std::vector<cv::Point3f>& objectpoints,
-	const std::vector<float>& camera_pose,
-	std::vector<cv::Point2f>& idealpoints) {
-
-	if(camera_pose.size() < 6) return;
-	if( objectpoints.empty() ) return;
-	idealpoints.resize( objectpoints.size() );
-
-	float rotation_matrix[9];
-	rotation_matrix_rad(&camera_pose[0], rotation_matrix);
-	const float r11 = rotation_matrix[0]; const float r12 = rotation_matrix[1]; const float r13 = rotation_matrix[2];
-	const float r21 = rotation_matrix[3]; const float r22 = rotation_matrix[4]; const float r23 = rotation_matrix[5];
-	const float r31 = rotation_matrix[6]; const float r32 = rotation_matrix[7]; const float r33 = rotation_matrix[8];
-
-	for(unsigned int i = 0; i < objectpoints.size(); i++) {
-		const float x = r11*objectpoints[i].x + r12*objectpoints[i].y + r13*objectpoints[i].z + camera_pose[3];
-		const float y = r21*objectpoints[i].x + r22*objectpoints[i].y + r23*objectpoints[i].z + camera_pose[4];
-		const float z = r31*objectpoints[i].x + r32*objectpoints[i].y + r33*objectpoints[i].z + camera_pose[5];
-
-		idealpoints[i].x = x/z;
-		idealpoints[i].y = y/z;
-	}
-}
-
-void objectpoints_to_imagepoints(const std::vector<cv::Point3f>& objectpoints,
-	const std::vector<float>& camera_pose,
-	const cv::Mat& camera_matrix,
-	std::vector<cv::Point2f>& imagepoints) {
-
-	if( objectpoints.empty() || camera_pose.size() < 6) return;
-
-	std::vector<cv::Point2f> idealpoints;
-	objectpoints_to_idealpoints(objectpoints, camera_pose, idealpoints);
-	idealpoints_to_imagepoints(idealpoints, camera_matrix, imagepoints);
 }
 
 cv::Point2f transform_affine(const cv::Point2f &point, const cv::Mat &transform_matrix) {

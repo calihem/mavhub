@@ -106,11 +106,17 @@ BOOST_AUTO_TEST_CASE(test_featureposition)
 	std::vector<float> parameter_vector(6, 0);
 
 	// calculate corresponding 3D object points
-	std::vector<cv::Point3f> objectpoints;
-	idealpoints_to_objectpoints<rotation_matrix_rad>(first_idealpoints,
-		66, //distance from ground
-		parameter_vector,
-		objectpoints);
+	std::vector<cv::Point3f> objectpoints( first_idealpoints.size() );
+	inverse_ideal_pinhole_model<float, rotation_matrix_rad>(
+		reinterpret_cast<float*>( &(first_idealpoints[0].x) ),
+		&parameter_vector[0],
+		66.0, //distance from ground
+		reinterpret_cast<float*>( &(objectpoints[0].x) ),
+		first_idealpoints.size() );
+// 	idealpoints_to_objectpoints<rotation_matrix_rad>(first_idealpoints,
+// 		66, //distance from ground
+// 		parameter_vector,
+// 		objectpoints);
 	stop_time = get_time_us();
 	BOOST_TEST_MESSAGE("[objectpoints] " << stop_time-start_time) << "us";
 	start_time = get_time_us();

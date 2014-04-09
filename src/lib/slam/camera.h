@@ -335,7 +335,7 @@ void inverse_ideal_pinhole_model(const T *idealpoints,
 		const T rt[6],
 		const T &distance,
 		T *objectpoints,
-		const size_t n = 1) {
+		const size_t n) {
 
 	const T t1 = rt[3];
 	const T t2 = rt[4];
@@ -429,7 +429,7 @@ void inverse_ideal_pinhole_model_quat(const T *idealpoints,
 		const T qt[7],
 		const T &distance,
 		T *objectpoints,
-		const size_t n = 1) {
+		const size_t n) {
 
 	const T t1 = qt[4];
 	const T t2 = qt[5];
