@@ -10,7 +10,7 @@
 using namespace hub;
 using namespace hub::slam;
 
-BOOST_AUTO_TEST_SUITE(SLAMTestSuite)
+BOOST_AUTO_TEST_SUITE(hub_slam_tests)
 
 BOOST_AUTO_TEST_CASE(Test_slam)
 {

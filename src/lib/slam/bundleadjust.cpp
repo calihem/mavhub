@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+#define _BUNDLEADJUST_VERBOSE 0
+
 #define emalloc(sz)       emalloc_(__FILE__, __LINE__, sz)
 #define FABS(x)           (((x)>=0)? (x) : -(x))
 #define COLUMN_MAJOR      1
@@ -17,6 +19,8 @@ extern "C" {
 #define SBA_EPSILON       1E-12
 #define SBA_EPSILON_SQ    ( (SBA_EPSILON)*(SBA_EPSILON) )
 #define SBA_ONE_THIRD     0.3333333334 /* 1.0/3.0 */
+#define dfprintf(file, ...) \
+	do { if (_BUNDLEADJUST_VERBOSE) fprintf(file, __VA_ARGS__); } while (0)
 
 typedef int (*PLS)(double *A, double *B, double *x, int m, int iscolmaj);
 
@@ -32,7 +36,7 @@ struct fdj_data_x_ {
 inline static void *emalloc_(const char *file, int line, size_t sz) {
 	void *ptr=(void *)malloc(sz);
 	if(ptr==NULL) {
-		fprintf(stderr, "SBA: memory allocation request for %lu bytes failed in file %s, line %d, exiting", sz, file, line);
+		dfprintf(stderr, "SBA: memory allocation request for %lu bytes failed in file %s, line %d, exiting", sz, file, line);
 		exit(1);
 	}
 	return ptr;
@@ -291,8 +295,8 @@ int sba_motstr_levmar_w(
 	nobs=nvis*mnp;
 	nvars=m*cnp + n*pnp;
 	if(nobs<nvars){
-	fprintf(stderr, "SBA: sba_motstr_levmar_x() cannot solve a problem with fewer measurements [%d] than unknowns [%d]\n", nobs, nvars);
-	return SBA_ERROR;
+		dfprintf(stderr, "SBA: sba_motstr_levmar_x() cannot solve a problem with fewer measurements [%d] than unknowns [%d]\n", nobs, nvars);
+		return SBA_ERROR;
 	}
 
 	/* allocate & fill up the idxij structure */
@@ -426,7 +430,7 @@ int sba_motstr_levmar_w(
 				ptr1=covx + (k=idxij.val[rcidxs[j]]*covsz);
 				ptr2=wght + k;
 				if(!sba_mat_cholinv(ptr1, ptr2, mnp)){ /* compute w_x_ij s.t. w_x_ij^T w_x_ij = cov_x_ij^-1 */
-					fprintf(stderr, "SBA: invalid covariance matrix for x_ij (i=%d, j=%d) in sba_motstr_levmar_x()\n", i, rcsubs[j]);
+					dfprintf(stderr, "SBA: invalid covariance matrix for x_ij (i=%d, j=%d) in sba_motstr_levmar_x()\n", i, rcsubs[j]);
 					retval=SBA_ERROR;
 					goto freemem_and_return;
 				}
@@ -666,7 +670,7 @@ int sba_motstr_levmar_w(
 				//j=sba_symat_invert_Chol(ptr1, pnp); matinv=sba_symat_invert_Chol;
 				j=sba_symat_invert_BK(ptr1, pnp); matinv=sba_symat_invert_BK;
 				if(!j){
-					fprintf(stderr, "SBA: singular matrix V*_i (i=%d) in sba_motstr_levmar_x(), increasing damping\n", i);
+					dfprintf(stderr, "SBA: singular matrix V*_i (i=%d) in sba_motstr_levmar_x(), increasing damping\n", i);
 					goto moredamping; // increasing damping will eventually make V*_i diagonally dominant, thus nonsingular
 					//retval=SBA_ERROR;
 					//goto freemem_and_return;
@@ -930,7 +934,7 @@ int sba_motstr_levmar_w(
 
 				if(dp_L2>=(p_L2+eps2)/SBA_EPSILON_SQ){ /* almost singular */
 					//if(dp_L2>=(p_L2+eps2)/SBA_EPSILON){ /* almost singular */
-					fprintf(stderr, "SBA: the matrix of the augmented normal equations is almost singular in sba_motstr_levmar_x(),\n"
+					dfprintf(stderr, "SBA: the matrix of the augmented normal equations is almost singular in sba_motstr_levmar_x(),\n"
 						"     minimization should be restarted from the current solution with an increased damping term\n");
 					retval=SBA_ERROR;
 					goto freemem_and_return;
@@ -988,7 +992,7 @@ moredamping:
 			mu*=nu;
 			nu2=nu<<1; // 2*nu;
 			if(nu2<=nu){ /* nu has wrapped around (overflown) */
-				fprintf(stderr, "SBA: too many failed attempts to increase the damping factor in sba_motstr_levmar_x()! Singular Hessian matrix?\n");
+				dfprintf(stderr, "SBA: too many failed attempts to increase the damping factor in sba_motstr_levmar_x()! Singular Hessian matrix?\n");
 				//exit(1);
 				stop=6;
 				break;

@@ -18,7 +18,6 @@ namespace slam {
 static const int num_params_per_cam = 6;	// cnp
 static const int num_params_per_point = 3;	// pnp
 static const int num_params_per_measuremnt = 2;	// mnp
-static const int quaternion_size = 4;
 
 /**
  * \brief Struct containing the intrinsic camera parameters and the initial rotaion guess.

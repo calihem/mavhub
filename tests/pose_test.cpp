@@ -37,7 +37,7 @@ PRECISION estimation_error(const std::vector<PRECISION> &parameters,
 	return sqrt(sq_error);
 }
 
-BOOST_AUTO_TEST_SUITE(PoseTestSuite)
+BOOST_AUTO_TEST_SUITE(hub_pose_tests)
 
 BOOST_AUTO_TEST_CASE(Test_guess_translation) {
 	//TODO

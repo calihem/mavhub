@@ -31,7 +31,7 @@ static const size_t num_points = sizeof(point_array)/sizeof(float)/3;
 			BOOST_CHECK_CLOSE(expected_array[i], observed_array[i], 0.05); \
 	}
 
-BOOST_AUTO_TEST_SUITE(CameraTestSuite)
+BOOST_AUTO_TEST_SUITE(hub_camera_tests)
 
 BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 
