@@ -214,7 +214,7 @@ int read_calibration(const std::string &fname, std::vector<double> &intrinsics) 
 	return 0;
 }
 
-BOOST_AUTO_TEST_SUITE(SBATestSuite)
+BOOST_AUTO_TEST_SUITE(hub_sba_tests)
 
 BOOST_AUTO_TEST_CASE(Test_sba) {
 

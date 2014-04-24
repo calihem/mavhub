@@ -6,7 +6,7 @@ using namespace hub;
 
 BOOST_AUTO_TEST_SUITE(hub_math_tests)
 
-BOOST_AUTO_TEST_CASE(Test_math_euler_quaternion) {
+BOOST_AUTO_TEST_CASE(euler_quaternion_test) {
 	static const double start_value = -pi/2+0.1; //avoid singularities
 	const unsigned int factor = 4;
 	double euler_angles[3] = {start_value, start_value, start_value};
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Test_math_euler_quaternion) {
 	}
 }
 
-BOOST_AUTO_TEST_CASE(Test_math_multiply) {
+BOOST_AUTO_TEST_CASE(multiply_test) {
 	float a[3] = {0.5, 0.75, 0.33};
 	float M[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
 	float b[3];
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(Test_math_multiply) {
 	//TODO quaternion multiplication
 }
 
-BOOST_AUTO_TEST_CASE(Test_math_rotation) {
+BOOST_AUTO_TEST_CASE(rotation_test) {
 // macro to check similarities of rotation matrices
 #define CHECK_ROT_MATRICES(m_euler, m_quat) \
 	for(unsigned int j=0; j<9; j++) { \
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(Test_math_rotation) {
 	}
 }
 
-BOOST_AUTO_TEST_CASE(Test_math_coordinate_system) {
+BOOST_AUTO_TEST_CASE(coordinate_system_test) {
 	static const double tolerance = 0.0001;
 	double point[] = {1.0, 2.0, 3.0};
 	double euler_angles[3];
@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(Test_math_coordinate_system) {
 	BOOST_CHECK_CLOSE(point[2], result[0], tolerance);
 }
 
-BOOST_AUTO_TEST_CASE(Test_math_intersection) {
+BOOST_AUTO_TEST_CASE(intersection_test) {
 	double plane_point[] = {0, 0, 100};
 	double plane_normal_vector[] = { 0, 0, 1};
 	double line_point[] = {0, 0, 0};
@@ -257,6 +257,26 @@ BOOST_AUTO_TEST_CASE(Test_math_intersection) {
 // std::cout << "line direction: " << line_direction[0] << ", " << line_direction[1] << ", " << line_direction[2] << std::endl;
 // std::cout << "intersection:   " << intersection_point[0] << ", " << intersection_point[1] << ", " << intersection_point[2] << std::endl;
 // exit(0);
+}
+
+BOOST_AUTO_TEST_CASE(cosine_similarity_test) {
+	float vector_a_data[] = { 0.0766469, 0.0108075, -0.633263, 0.0244403, -0.103504, 0.171257};
+	float vector_b_data[] = {-0.035064,  0.015965,  -0.734642, 0.080307,   0.005341, 0.096551};
+	std::vector<float> vector_a( vector_a_data, vector_a_data + sizeof(vector_a_data)/sizeof(float) ); 
+	std::vector<float> vector_b( vector_b_data, vector_b_data + sizeof(vector_b_data)/sizeof(float) ); 
+
+	float cos_sim = cosine_similarity(vector_a, vector_b);
+	BOOST_CHECK_CLOSE(cos_sim, 0.962583953865, 0.001);
+
+	vector_b.resize(3);
+	cos_sim = cosine_similarity(vector_a, vector_b);
+	BOOST_CHECK_CLOSE(cos_sim, 0.94008, 0.001);
+	cos_sim = cosine_similarity(vector_b, vector_a);
+	BOOST_CHECK_CLOSE(cos_sim, 0.94008, 0.001);
+
+	vector_a.resize(0); vector_b.resize(0);
+	cos_sim = cosine_similarity(vector_a, vector_b);
+	BOOST_CHECK_EQUAL(cos_sim, 1.0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

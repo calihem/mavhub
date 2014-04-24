@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <bitset>
 
-BOOST_AUTO_TEST_SUITE(BriskTestSuite)
+BOOST_AUTO_TEST_SUITE(brisk_tests)
 
 BOOST_AUTO_TEST_CASE(Test_HammingSse)
 {

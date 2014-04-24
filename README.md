@@ -128,7 +128,7 @@ For example, a more verbatim output can be reached by
 
 To run only a subset of tests use the `run_test` argument
 
-	./tests/test_mavhub --log_level=test_suite --run_test=PoseTestSuite,CameraTestSuite
+	./tests/test_mavhub --log_level=test_suite --run_test=hub_camera_tests,hub_slam_tests/tracker_test
 
 ## FAQ
 ## Where to get the sourcecode?

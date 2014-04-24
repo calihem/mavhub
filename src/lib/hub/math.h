@@ -43,6 +43,9 @@ namespace hub {
 /// Estimation of \f$\pi\f$
 const double pi = 3.1415926535897932384626433832795028841971693993751058209749;
 
+template <typename T>
+T cosine_similarity(const std::vector<T> &vector_a, const std::vector<T> &vector_b);
+
 /**
  * \brief Convert degrees to radians.
  *
@@ -344,6 +347,32 @@ void vec2quat(const T v[3], T q[4]);
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
+template <typename T>
+T cosine_similarity(const std::vector<T> &vector_a, const std::vector<T> &vector_b) {
+	const unsigned int length = std::min(vector_a.size(), vector_b.size());
+	if(length == 0) return 1.0;
+
+	T dot_product = 0, sq_norm_a = 0, sq_norm_b = 0;
+	for(unsigned int i=0; i<length; i++) {
+		dot_product += vector_a[i]*vector_b[i];
+		sq_norm_a += vector_a[i]*vector_a[i];
+		sq_norm_b += vector_b[i]*vector_b[i];
+	}
+
+	// respect different vector lengths for squared norm
+	if( length < vector_a.size() ) {
+		for(unsigned int i=length; i<vector_a.size(); i++) {
+			sq_norm_a += vector_a[i]*vector_a[i];
+		}
+	} else if( length < vector_b.size() ) {
+		for(unsigned int i=length; i<vector_b.size(); i++) {
+			sq_norm_b += vector_b[i]*vector_b[i];
+		}
+	}
+
+	return dot_product / (sqrt(sq_norm_a)*sqrt(sq_norm_b));
+}
+
 template <typename T>
 inline T deg2rad(const T &d) {
 	return (d*pi) / 180;
