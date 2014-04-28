@@ -40,6 +40,9 @@
  * For the methods using the euler angles this means, that the elements of the 
  * parameter vector p = [phi theta psi x y z] describes a rotation around x-axis (phi),
  * y-axis (theta) and z-axis (psi) and a translation of [x y z].
+ *
+ * \todo Remove dependency to OpenCV.
+ * \todo Swap position of rotation and translation information in parameter vector so that camera model functions can be more generalized by templates.
  */
 
 #ifndef _HUB_CAMERA_H_
@@ -49,12 +52,11 @@
 #include "config.h"
 #endif // HAVE_CONFIG_H
 
-// FIXME remove dependency of opencv
 #ifdef HAVE_OPENCV2
 #include <opencv/cv.h>
 #endif // HAVE_OPENCV2
 
-//TODO swap position of rotation and translation information in parameter vector so that model functions can be more generalized by templates
+#include <functional>	// equal_to
 
 #include "lib/hub/math.h"
 
@@ -91,19 +93,33 @@ void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 
 /**
  * \brief Inverse camera model to use with euler angles or quatvec.
+ * \tparam T Type used to represent element of points
+ * \tparam R Rotation function.
+ * \tparam M Type used for mask elements.
+ * \tparam C Binary comparison functor
  * \param[in] idealpoints Image projections of in ideal coordinates.
  * \param[in] rt Parameter vector containing rotation and translation 
  * \param[in] distance Meassured distance to observed object, i.e. objectpoints[i].z = distance - rt[5].
  * \param[out] objectpoints 3D coordinates of \a idealpoints.
  * \param[in] n Number of idealpoints
+ * \param[in] mask Array of size \a n, where points with comparison with 0 is true are ignored
  * \sa inverse_ideal_pinhole_model_quat
  */
+template<typename T, void(*R)(const T[3], T[9]), typename M, typename C>
+void inverse_ideal_pinhole_model(const T *idealpoints,
+		const T rt[6],
+		const T &distance,
+		T *objectpoints,
+		const size_t n = 1,
+		const M *mask = NULL);
+
 template<typename T, void(*R)(const T[3], T[9])>
 void inverse_ideal_pinhole_model(const T *idealpoints,
 		const T rt[6],
 		const T &distance,
 		T *objectpoints,
-		const size_t n = 1);
+		const size_t n = 1,
+		const char *mask = NULL);
 
 /**
  * \brief Calculates the projection of a 3D point to ideal 2D image point using quaternions.
@@ -330,18 +346,21 @@ void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 	jac_v[5] = y2*inv_y3_square;
 }
 
-template<typename T, void(*R)(const T[3], T[9])>
+template<typename T, void(*R)(const T[3], T[9]), typename M, typename C>
 void inverse_ideal_pinhole_model(const T *idealpoints,
 		const T rt[6],
 		const T &distance,
 		T *objectpoints,
-		const size_t n) {
+		const size_t n,
+		const M *mask) {
+
+	if( !idealpoints || !rt || !objectpoints) return;
 
 	const T t1 = rt[3];
 	const T t2 = rt[4];
 	const T t3 = rt[5];
 
-	// rotation matrix is orthogonal => R^{-1} = R^t
+	// rotation matrix is orthogonal => R^{-1} = R^t, i.e. r_ij = r_ji
 	T rotation_matrix[9];
 	R(&rt[0], rotation_matrix);
 	const T r11 = rotation_matrix[0]; const T r12 = rotation_matrix[1]; const T r13 = rotation_matrix[2];
@@ -351,18 +370,40 @@ void inverse_ideal_pinhole_model(const T *idealpoints,
 	const T x3 = distance - t3;
 	const T y3_numerator = x3 + r13*t1 + r23*t2 + r33*t3;
 
-	for(unsigned int i=0; i<n; i++) {
-		const T u = idealpoints[i*2];
-		const T v = idealpoints[i*2+1];
-		const T y3 = y3_numerator / (r13*u + r23*v + r33);
-		const T tmp1 = y3*u-t1;
-		const T tmp2 = y3*v-t2;
-		const T tmp3 = y3-t3;
+#define REPROJECT_IDEAL_POINTS \
+	const T u = idealpoints[i*2]; \
+	const T v = idealpoints[i*2+1]; \
+	const T y3 = y3_numerator / (r13*u + r23*v + r33); \
+	const T tmp1 = y3*u-t1; \
+	const T tmp2 = y3*v-t2; \
+	const T tmp3 = y3-t3; \
+	objectpoints[i*3]   = r11*tmp1 + r21*tmp2 + r31*tmp3; \
+	objectpoints[i*3+1] = r12*tmp1 + r22*tmp2 + r32*tmp3; \
+	objectpoints[i*3+2] = x3;
 
-		objectpoints[i*3]   = r11*tmp1 + r21*tmp2 + r31*tmp3;
-		objectpoints[i*3+1] = r12*tmp1 + r22*tmp2 + r32*tmp3;
-		objectpoints[i*3+2] = x3;
+	if(mask) { // reproject only masked points
+		C comparator = C();
+		for(unsigned int i=0; i<n; i++) {
+			if( comparator(mask[i], 0) ) continue;
+
+			REPROJECT_IDEAL_POINTS;
+		}
+	} else { // reproject all points
+		for(unsigned int i=0; i<n; i++) {
+			REPROJECT_IDEAL_POINTS;
+		}
 	}
+#undef REPROJECT_IDEAL_POINTS
+}
+
+template<typename T, void(*R)(const T[3], T[9])>
+void inverse_ideal_pinhole_model(const T *idealpoints,
+		const T rt[6],
+		const T &distance,
+		T *objectpoints,
+		const size_t n,
+		const char *mask) {
+	inverse_ideal_pinhole_model< T, R, char, std::equal_to<char> >(idealpoints, rt, distance, objectpoints, n, mask);
 }
 
 template<typename T>
