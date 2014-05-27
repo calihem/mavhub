@@ -39,7 +39,7 @@ PRECISION estimation_error(const std::vector<PRECISION> &parameters,
 
 BOOST_AUTO_TEST_SUITE(hub_pose_tests)
 
-BOOST_AUTO_TEST_CASE(Test_guess_translation) {
+BOOST_AUTO_TEST_CASE(Test_estimate_translation_by_objects) {
 	//TODO
 }
 
@@ -88,12 +88,12 @@ BOOST_AUTO_TEST_CASE(Test_guess_euler_pose) {
 	PRECISION info[LM_INFO_SZ];
 
 	uint64_t start_time = get_time_us();
-	int rc = guess_pose<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
+	int rc = lm_pose_optimization<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
 		objectpoints,
 		imagepoints,
-		camera_matrix,
 		matches,
 		pose_guess,
+		camera_matrix,
 		matches_mask,
 		100,
 		info);
@@ -120,34 +120,34 @@ BOOST_AUTO_TEST_CASE(Test_guess_euler_pose) {
 // 	BOOST_CHECK(estim_err <= 0.1);
 
 	//test empty image points
-	rc = guess_pose<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
+	rc = lm_pose_optimization<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
 		objectpoints,
 		std::vector< cv::Point_<PRECISION> >(),
-		camera_matrix,
 		matches,
 		pose_guess,
+		camera_matrix,
 		matches_mask,
 		20);
 	BOOST_CHECK(rc < 0);
 
 	//test empty object points
-	rc = guess_pose<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
+	rc = lm_pose_optimization<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
 		std::vector< cv::Point3_<PRECISION> >(),
 		imagepoints,
-		camera_matrix,
 		matches,
 		pose_guess,
+		camera_matrix,
 		matches_mask,
 		20);
 	BOOST_CHECK(rc < 0);
 
 	//test empty matches
-	rc = guess_pose<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
+	rc = lm_pose_optimization<PRECISION, levmar_pinhole_euler<PRECISION>, levmar_pinhole_euler_jac<PRECISION> >(
 		objectpoints,
 		imagepoints,
-		camera_matrix,
 		std::vector<cv::DMatch>(),
 		pose_guess,
+		camera_matrix,
 		matches_mask,
 		20);
 	BOOST_CHECK(rc == 0);
@@ -189,11 +189,12 @@ BOOST_AUTO_TEST_CASE(Test_guess_quaternion_pose) {
 	PRECISION info[LM_INFO_SZ];
 
 	uint64_t start_time = get_time_us();
-	int rc = guess_pose<PRECISION, levmar_ideal_pinhole_quatvec<PRECISION>, levmar_ideal_pinhole_quatvec_jac<PRECISION> >(
+	int rc = lm_pose_optimization<PRECISION, levmar_ideal_pinhole_quatvec<PRECISION>, levmar_ideal_pinhole_quatvec_jac<PRECISION> >(
 		objectpoints,
 		idealpoints,
 		matches,
 		pose_guess,
+		cv::Mat(),
 		matches_mask,
 		100,
 		info);
@@ -234,7 +235,7 @@ BOOST_AUTO_TEST_CASE(Test_guess_quaternion_pose) {
 
 	pose_guess = std::vector<PRECISION>(6, 0);
 	matches_mask = std::vector<char>( matches.size(), 1);
-	cv::Point3_<PRECISION> translation = guess_translation<PRECISION>(objectpoints,
+	cv::Point3_<PRECISION> translation = estimate_translation_by_objects<PRECISION>(objectpoints,
 		idealpoints,
 		41.25,
 		matches,
@@ -242,9 +243,9 @@ BOOST_AUTO_TEST_CASE(Test_guess_quaternion_pose) {
 	pose_guess[3] = translation.x;
 	pose_guess[4] = translation.y;
 	pose_guess[5] = translation.z;
-	rc = guess_pose<PRECISION, levmar_ideal_pinhole_quatvec<PRECISION>, levmar_ideal_pinhole_quatvec_jac<PRECISION> >(
-// 	rc = guess_pose<PRECISION, levmar_ideal_pinhole_euler<PRECISION>, levmar_ideal_pinhole_euler_jac<PRECISION> >(
-// 	rc = guess_pose<PRECISION, levmar_ideal_pinhole_quatvec<PRECISION>, levmar_ideal_pinhole_model_jac<PRECISION,new_ideal_pinhole_model_quatvec_jac> >(
+	rc = lm_pose_optimization<PRECISION, levmar_ideal_pinhole_quatvec<PRECISION>, levmar_ideal_pinhole_quatvec_jac<PRECISION> >(
+// 	rc = lm_pose_optimization<PRECISION, levmar_ideal_pinhole_euler<PRECISION>, levmar_ideal_pinhole_euler_jac<PRECISION> >(
+// 	rc = lm_pose_optimization<PRECISION, levmar_ideal_pinhole_quatvec<PRECISION>, levmar_ideal_pinhole_model_jac<PRECISION,new_ideal_pinhole_model_quatvec_jac> >(
 		objectpoints,
 		idealpoints,
 		matches,

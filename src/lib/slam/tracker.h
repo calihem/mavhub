@@ -24,11 +24,6 @@ namespace slam {
 class Tracker {
 public:
 	/**
-	 * \brief Enumeration of supported camera orientations.
-	 */ 
-	enum camera_orientation_t { CAM_DOWN };
-
-	/**
 	 * \brief Enumeration of possible debug values.
 	 */
 	enum debug_flags_t { POSE = 0,
@@ -42,8 +37,7 @@ public:
 	Tracker(const int image_width,
 		const int image_height,
 		const cv::Mat &camera_matrix = cv::Mat(),
-		const cv::Mat &distortion_coefficients = cv::Mat(),
-		const camera_orientation_t camera_orientation = CAM_DOWN);
+		const cv::Mat &distortion_coefficients = cv::Mat() );
 
 	/**
 	 * \brief Destructor
@@ -59,11 +53,13 @@ public:
 
 	/**
 	 * \brief Get current pose estimation.
+	 * \return 6D-Vector containing quaternion vector part and translation.
 	 */
 	const std::vector<float>& pose_estimation() const;
 
 	/**
 	 * \brief Set current pose estimation.
+	 * \param[in] pose 6D-Vector containing quaternion vector part and translation.
 	 */
 	void pose_estimation(const std::vector<float>& pose);
 
@@ -90,7 +86,6 @@ protected:
 private:
 	cv::Mat camera_matrix; ///< Camera matrix of intrinsic parameters.
 	cv::Mat distortion_coefficients; ///< distortion coefficients of camera.
-	camera_orientation_t camera_orientation;
 
 	cv::BriskFeatureDetector feature_detector; ///< BRISK feature detector using AGAST
 	cv::BriskDescriptorExtractor descriptor_extractor;
@@ -105,6 +100,7 @@ private:
 	uint64_t last_imu_time; ///< Timestamp of last IMU data
 	std::vector<float> speed; ///< Current speed estimation based on IMU data
 	std::vector<float> pose; ///< Current pose estimation based on IMU and localization
+	static uint16_t run_counter;	///< Counter which gets incremented with each call of track_camera
 
 	int log_debug_data(const std::bitset<8> &debug_mask,
 		const std::vector<float> &parameter_vector);

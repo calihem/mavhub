@@ -40,47 +40,43 @@ struct pinhole_model_data_t {
 };
 
 /**
+ * \brief Approximate 3D camera translation from matched feature.
+ */
+template<typename T>
+void estimate_translation_by_features(const std::vector<cv::Point2f>& src_features,
+	const std::vector<cv::Point2f>& dst_features,
+	const T src_distance,
+	const T dst_distance,
+	const std::vector<cv::DMatch>& matches,
+	T translation[3],
+	const std::vector<char>& mask = std::vector<char>());
+
+/**
  * \brief Approximate 3D camera translation from matched object- and idealpoints.
  */ 
 template<typename T>
-void guess_translation(const std::vector< cv::Point3_<T> >& objectpoints,
+void estimate_translation_by_objects(const std::vector< cv::Point3_<T> >& objectpoints,
 	const std::vector<cv::Point2f>& idealpoints,
 	const T avg_distance,
 	const std::vector<cv::DMatch>& matches,
 	T translation[3],
 	const std::vector<char>& mask = std::vector<char>());
 
-/**
- * \brief Estimate camera pose from 3D object points and their projected ideal image points.
- * \param[in] objectpoints Vector of 3D object points.
- * \param[in] idealpoints Vector of ideal image coordinates.
- * \param[in] matches Vector containing the matches between the object and the image points.
- * \param[in,out] parameter_vector The parameter vector containing the 3 euler angles (rad) and
- *                                 the 3 translations. The values given are used as a starting
- *                                 point for the iteration process.
- * \param[in] matches_mask Filter mask. Only matches with a non zero entry are considered.
- *                         An empty mask means all matches are considered
- * \param[in] max_iterations Maximum number of iterations.
- * \param[out] info Information regarding the minimization
- * \return Number of iterations. A negative value means an error occured.
- */
-template<typename T,  void (*F)(T *, T *, int, int, void *), void (*JAC_F)(T *, T *, int, int, void *)>
-int guess_pose(const std::vector< cv::Point3_<T> > &object_points,
-	const std::vector<cv::Point2f>& projections,
-	const std::vector<cv::DMatch>& matches,
-	std::vector<T> &parameter_vector,
-	const std::vector<char> &matches_mask = std::vector<char>(),
-	const unsigned int max_iterations = 100,
-	T info[LM_INFO_SZ] = NULL);
+// TODO implement efficient second order minimization
+// template<typename T>
+// int esm_pose_optimization();
 
 /**
- * \brief Estimate camera pose from 3D object points and their projected image points.
- * \param[in] objectpoints Vector of 3D object points.
- * \param[in] imagepoints Vector of image coordinates.
- * \param[in] camera_matrix Matrix of intrinsic camera parameters.
+ * \brief Estimate camera pose from 3D object points and their projected ideal image points.
+ * 
+ * \tparam T Base type used for points.
+ * \tparam F Camera model function to project object points to image plane.
+ * \tparam JAC_F Jacobian of \arg F.
+ * \param[in] object_points Vector of 3D object points.
+ * \param[in] image_points Vector of image coordinates.
  * \param[in] matches Vector containing the matches between the object and the image points.
- * \param[in,out] parameter_vector The parameter vector containing the 3 euler angles (rad) and
- *                                 the 3 translations. The values given are used as a starting
+ * \param[in,out] parameter_vector The parameter vector containing rotation and transaltion
+ *                                 information. The values given are used as a starting
  *                                 point for the iteration process.
  * \param[in] matches_mask Filter mask. Only matches with a non zero entry are considered.
  *                         An empty mask means all matches are considered
@@ -89,11 +85,11 @@ int guess_pose(const std::vector< cv::Point3_<T> > &object_points,
  * \return Number of iterations. A negative value means an error occured.
  */
 template<typename T,  void (*F)(T *, T *, int, int, void *), void (*JAC_F)(T *, T *, int, int, void *)>
-int guess_pose(const std::vector< cv::Point3_<T> > &objectpoints,
-	const std::vector<cv::Point2f>& imagepoints,
-	const cv::Mat &camera_matrix,
+int lm_pose_optimization(const std::vector< cv::Point3_<T> > &object_points,
+	const std::vector<cv::Point2f>& image_points,
 	const std::vector<cv::DMatch>& matches,
 	std::vector<T> &parameter_vector,
+	const cv::Mat &camera_matrix = cv::Mat(),
 	const std::vector<char> &matches_mask = std::vector<char>(),
 	const unsigned int max_iterations = 100,
 	T info[LM_INFO_SZ] = NULL);
@@ -227,9 +223,46 @@ inline int wrap_levmar_der(
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
+template<typename T>
+void estimate_translation_by_features(const std::vector<cv::Point2f>& src_features,
+	const std::vector<cv::Point2f>& dst_features,
+	const T src_distance,
+	const T dst_distance,
+	const std::vector<cv::DMatch>& matches,
+	T translation[3],
+	const std::vector<char>& mask) {
+
+	if(matches.empty()) {
+		translation[0] = 0;
+		translation[1] = 0;
+		translation[2] = 0;
+		return;
+	}
+	assert( matches.size() == mask.size() || mask.empty() );
+	assert(translation);
+
+	std::vector<T> u_differences, v_differences;
+	u_differences.reserve( matches.size() );
+	v_differences.reserve( matches.size() );
+
+	for(size_t i = 0; i < matches.size(); i++) {
+		if(!mask.empty() && mask[i] == 0) continue;
+
+		const unsigned int fi = matches[i].queryIdx;
+		const unsigned int si = matches[i].trainIdx;
+
+		u_differences.push_back(dst_features[si].x - src_features[fi].x);
+		v_differences.push_back(dst_features[si].y - src_features[fi].y);
+	}
+
+	const T avg_distance = (dst_distance + src_distance) / 2;
+	translation[0] = hub::_median(u_differences) * avg_distance;
+	translation[1] = hub::_median(v_differences) * avg_distance;
+	translation[2] = dst_distance - src_distance;
+}
 
 template<typename T>
-void guess_translation(const std::vector< cv::Point3_<T> >& objectpoints,
+void estimate_translation_by_objects(const std::vector< cv::Point3_<T> >& objectpoints,
 	const std::vector<cv::Point2f>& idealpoints,
 	const T avg_distance,
 	const std::vector<cv::DMatch>& matches,
@@ -269,18 +302,19 @@ void guess_translation(const std::vector< cv::Point3_<T> >& objectpoints,
 }
 
 template<typename T,  void (*F)(T *, T *, int, int, void *), void (*JAC_F)(T *, T *, int, int, void *)>
-int guess_pose(const std::vector< cv::Point3_<T> > &objectpoints,
-		const std::vector<cv::Point2f>& projections,
+int lm_pose_optimization(const std::vector< cv::Point3_<T> > &object_points,
+		const std::vector<cv::Point2f>& image_points,
 		const std::vector<cv::DMatch>& matches,
 		std::vector<T> &parameter_vector,
+		const cv::Mat &camera_matrix,
 		const std::vector<char> &matches_mask,
 		const unsigned int max_iterations,
 		T info[LM_INFO_SZ]) {
 
 	assert(parameter_vector.size() >= 6);
 	if(matches.empty()) return 0;
-	if(objectpoints.empty()) return -1;
-	if(projections.empty()) return -1;
+	if(object_points.empty()) return -1;
+	if(image_points.empty()) return -1;
 
 	unsigned int num_matches; //number of valid matches
 	if(matches_mask.empty()) { //empty mask => all matches are valid
@@ -294,7 +328,7 @@ int guess_pose(const std::vector< cv::Point3_<T> > &objectpoints,
 			num_matches++;
 		}
 	}
-	if(num_matches == 0) //no matches found
+	if(num_matches <= 4) //not enough matches found
 		return 0;
 
 	// fill vectors containing only the matched features
@@ -305,80 +339,12 @@ int guess_pose(const std::vector< cv::Point3_<T> > &objectpoints,
 		if( !matches_mask.empty() && matches_mask[i] == 0) continue;
 
 		const int src_index = matches[i].queryIdx;
-		matched_objectpoints[next_point_index*3] = objectpoints[src_index].x;
-		matched_objectpoints[next_point_index*3 + 1] = objectpoints[src_index].y;
-		matched_objectpoints[next_point_index*3 + 2] = objectpoints[src_index].z;
+		matched_objectpoints[next_point_index*3] = object_points[src_index].x;
+		matched_objectpoints[next_point_index*3 + 1] = object_points[src_index].y;
+		matched_objectpoints[next_point_index*3 + 2] = object_points[src_index].z;
 
 		const int dst_index = matches[i].trainIdx;
-		matched_projections[next_point_index] = projections[dst_index];
-
-		next_point_index++;
-	}
-
-	// fill structure for levmar algo
-	pinhole_model_data_t<T> pinhole_model_data(matched_objectpoints,
-		matched_projections);
-
-	// run Levenberg-Marquardt
-	return wrap_levmar_der<T>(
-		F,
-		JAC_F,
-		&(parameter_vector[0]),	//parameter vector
-		NULL,	//measurement vector (is part of pinhole_model_data)
-		6,	//parameter vector dimension
-		2*num_matches,	//measurement vector dimension
-		max_iterations,	//max. number of iterations
-		NULL,	//opts
-		info,	//info
-		NULL,	//work
-		NULL,	//covar
-		(void*)&pinhole_model_data);	//data
-}
-
-template<typename T,  void (*F)(T *, T *, int, int, void *), void (*JAC_F)(T *, T *, int, int, void *)>
-inline int guess_pose(const std::vector< cv::Point3_<T> > &objectpoints,
-	const std::vector<cv::Point2f>& projections,
-	const cv::Mat &camera_matrix,
-	const std::vector<cv::DMatch>& matches,
-	std::vector<T> &parameter_vector,
-	const std::vector<char> &matches_mask,
-	const unsigned int max_iterations,
-	T info[LM_INFO_SZ]) {
-
-	assert(parameter_vector.size() >= 6);
-	if(matches.empty()) return 0;
-	if(objectpoints.empty()) return -1;
-	if(projections.empty()) return -1;
-
-	unsigned int num_matches; //number of valid matches
-	if(matches_mask.empty()) { //empty mask => all matches are valid
-		num_matches = matches.size();
-	} else if(matches_mask.size() != matches.size()) { //mask doesn't fit the matches
-		return -2;
-	} else { //size of matches and mask are equal => count number of valid matches
-		num_matches = 0;
-		for(size_t i = 0; i < matches.size(); i++) {
-			if( matches_mask[i] == 0) continue;
-			num_matches++;
-		}
-	}
-	if(num_matches == 0) //no matches found
-		return 0;
-
-	// fill vectors containing only the matched features
-	std::vector<T> matched_objectpoints(3*num_matches); // allocate matrix 3 x num_matches
-	std::vector< cv::Point_<T> > matched_projections(num_matches);
-	unsigned int next_point_index = 0;
-	for(size_t i = 0; i < matches.size(); i++) {
-		if( !matches_mask.empty() && matches_mask[i] == 0) continue;
-
-		const int src_index = matches[i].queryIdx;
-		matched_objectpoints[next_point_index*3] = objectpoints[src_index].x;
-		matched_objectpoints[next_point_index*3 + 1] = objectpoints[src_index].y;
-		matched_objectpoints[next_point_index*3 + 2] = objectpoints[src_index].z;
-
-		const int dst_index = matches[i].trainIdx;
-		matched_projections[next_point_index] = projections[dst_index];
+		matched_projections[next_point_index] = image_points[dst_index];
 
 		next_point_index++;
 	}
@@ -567,6 +533,7 @@ void levmar_ideal_pinhole_quatvec_jac(T *p, T *jac, int m, int n, void *data) {
 		const T t127 = 1/t126;
 		const T t145 = t126*t126;
 		const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+p[3])/t145;
+		// partial q1
 		jac[j] = -(p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127+t118*t147;
 		const T t159 = (-t51*q2+q0*t81-t93*q1+t65*q3+p[4])/t145;
 		jac[v_offset+j++] = -t107*t127+t159*t118;
@@ -575,6 +542,7 @@ void levmar_ideal_pinhole_quatvec_jac(T *p, T *jac, int m, int n, void *data) {
 		const T t192 = t175*p2-p0;
 		const T t206 = p1*q2-t51+t175*t81+q0*t185-t192*q1+q3*t180;
 		const T t216 = p1*q3+t93*t175+q0*t192-t180*q2-t65+t185*q1;
+		// partial q2
 		jac[j] = -(p1*q1+t175*t65+t180*q0-t185*q3+t192*q2+t93)*t127+t147*t216;
 		jac[v_offset+j++] = -t206*t127+t159*t216;
 		const T t245 = t240*p0-p1;
@@ -582,12 +550,16 @@ void levmar_ideal_pinhole_quatvec_jac(T *p, T *jac, int m, int n, void *data) {
 		const T t257 = t240*p2;
 		const T t271 = p2*q2+t81*t240+q0*t250-t257*q1+t245*q3+t65;
 		const T t281 = p2*q3-t51+t240*t93+q0*t257-t245*q2+t250*q1;
+		// partial q3
 		jac[j] = -(p2*q1+t240*t65+q0*t245-t250*q3-t81+t257*q2)*t127+t147*t281;
 		jac[v_offset+j++] = -t271*t127+t159*t281;
+		// partial t1
 		jac[j] = -t127;
 		jac[v_offset+j++] = 0.0;
+		// partial t2
 		jac[j] = 0.0;
 		jac[v_offset+j++] = -t127;
+		// partial t3
 		jac[j] = t147;
 		jac[v_offset+j++] = t159;
 	}

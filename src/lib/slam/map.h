@@ -129,6 +129,14 @@ public:
 		cv::Mat &descriptors);
 
 	/**
+	 * \brief Get scene data of scene in map next to given pose.
+	 */
+	void reference_scene(std::vector<T> &pose,
+		std::vector< cv::Point3_<T> > &objectpoints,
+		std::vector<cv::Point2f> &projections,
+		cv::Mat &descriptors);
+
+	/**
 	 * \brief Save map points (point cloud) as polygon file (ply).
 	 */
 	int save_points(const std::string &file_name) const;
@@ -158,7 +166,7 @@ private:
 	// point descriptors
 	cv::Mat descriptors;
 	// object point reference counter
-	std::vector<uint8_t> reference_counters;
+//	std::vector<uint8_t> reference_counters;
 	std::list<queue_data_t> working_queue;
 	std::list<scene_t> scenes;
 	
@@ -183,6 +191,8 @@ private:
 	bool is_keyframe(const std::vector<T> &camera_pose, const std::vector<T> &view_point) const;
 	
 	void local_bundle_adjust();
+
+	typename std::list<scene_t>::const_iterator nearest_scene(const std::vector<T> &camera_pose);
 
 	void process_working_task();
 	/**
@@ -224,11 +234,14 @@ void Map<T>::add_features(const std::vector<cv::Point2f>& projections,
 		return;
 	if(camera_pose.size() != 6)
 		return;
+	if(average_depth <= 0)
+		return;
 
 	queue_data_t working_task(projections, descriptors, camera_pose, average_depth);
 
-	hub::Lock work_lock(work_mutex);
-	working_queue.push_back(working_task);
+	{ hub::Lock work_lock(work_mutex);
+		working_queue.push_back(working_task);
+	}
 
 	dout << "added task to working queue" << std::endl;
 }
@@ -265,6 +278,9 @@ bool Map<T>::is_keyframe(const std::vector<T> &camera_pose, const std::vector<T>
 // 	{ hub::Lock cam_lock(cam_mutex);
 // 		camera_fov_radius = camera.fov_radius;
 // 	}
+
+//restrict map size to 2 scenes
+// if(scenes.size() >= 2) return false;
 
 	cv::L2<T> euclidean_distance;
 	const T max_distance = 0.5; //FIXME max_distance depends on altitude and camera
@@ -434,7 +450,6 @@ run_counter++;
 #endif
 
 // 	assert(parameters.size() == (unsigned)(num_images*num_params_per_cam + num_points*num_params_per_point));
-// 	assert(rotations.size() == (unsigned)(num_images*quaternion_size));
 	dout << "sba_motstr" << std::endl;
 	double opts[SBA_OPTSSZ];
 	opts[0]=SBA_INIT_MU; opts[1]=SBA_STOP_THRESH;
@@ -490,6 +505,36 @@ run_counter++;
 
 }
 
+/**
+ * \brief Find scene in map which is next to given camera pose.
+ * 
+ * for proper working use lock on scene_mutex
+ */
+template<typename T>
+typename std::list<typename Map<T>::scene_t>::const_iterator Map<T>::nearest_scene(const std::vector<T> &camera_pose) {
+
+	typename std::list<scene_t>::const_iterator iter = scenes.end();
+
+	T min_distance = std::numeric_limits<T>::max();
+	cv::L2<T> euclidean_distance;
+
+// 	hub::Lock scene_lock(scene_mutex);
+
+	// iterate through scenes
+	for(typename std::list<scene_t>::const_iterator scene_iter = scenes.begin();
+	scene_iter != scenes.end();
+	++scene_iter) {
+		//FIXME camera distance doesn't respect rotation
+		const T camera_distance = euclidean_distance(&camera_pose[3], &(scene_iter->camera_pose[3]), 3);
+		if(camera_distance < min_distance) {
+			iter = scene_iter;
+			min_distance = camera_distance;
+		}
+	}
+	
+	return iter;
+}
+
 template<typename T>
 void Map<T>::process_working_task() {
 	if( working_queue.empty() )
@@ -497,10 +542,12 @@ void Map<T>::process_working_task() {
 
 	hub::Lock work_lock(work_mutex);
 
-	//calculate intersection of optical axis with plane parallel to xy-plane and going through (0,0,100)
-	const T plane_point[3] = {0.0, 0.0, 100.0};
-	const T z_axis[3] = {0.0, 0.0, 1.0};
+	// calculate intersection of optical axis with visible plane parallel to xy-plane
 	const std::vector<T>& camera_pose = working_queue.front().pose;
+	T plane_point[3] = {0.0, 0.0, 0.0};
+	plane_point[2] =  working_queue.front().avg_depth - camera_pose[5];
+	if(plane_point[2] <= 0.01) plane_point[2] = 1.0;
+	const T z_axis[3] = {0.0, 0.0, 1.0};
 	T rotation_matrix[9];
 	rotation_matrix_quatvec(&camera_pose[0], rotation_matrix);
 	T optical_axis[3];
@@ -517,13 +564,15 @@ void Map<T>::process_working_task() {
 		working_queue.pop_front();
 		return;
 	}
-	dout << "camera pose:  (" << camera_pose[0] << ", " << camera_pose[1] << ", " << camera_pose[2] << ", " << camera_pose[3] << ", " << camera_pose[4] << ", " << camera_pose[5] << ")" << std::endl;
-	dout << "optical axis: (" << optical_axis[0] << ", " << optical_axis[1] << ", " << optical_axis[2] << ")" << std::endl;
-	dout << "viewpoint:    (" << view_point[0] << ", " << view_point[1] << ", " << view_point[2] << ")" << std::endl;
 
 	const cv::Mat& descriptors = working_queue.front().descriptors;
 	const std::vector<cv::Point2f>& projections = working_queue.front().projections;
 	const T average_depth = working_queue.front().avg_depth;
+
+	dout << "camera pose:  (" << camera_pose[0] << ", " << camera_pose[1] << ", " << camera_pose[2] << ", " << camera_pose[3] << ", " << camera_pose[4] << ", " << camera_pose[5] << ")" << std::endl;
+	dout << "average depth: " << average_depth << std::endl;
+	dout << "optical axis: (" << optical_axis[0] << ", " << optical_axis[1] << ", " << optical_axis[2] << ")" << std::endl;
+	dout << "viewpoint:    (" << view_point[0] << ", " << view_point[1] << ", " << view_point[2] << ")" << std::endl;
 
 	hub::Lock map_lock(map_mutex);
 // 	if(objectpoints.size() != (unsigned)Map<T>::descriptors.rows) {
@@ -532,16 +581,19 @@ void Map<T>::process_working_task() {
 // 	}
 	if( objectpoints.empty() ) { // add all projections to map
 		objectpoints.resize( projections.size() );
-		reference_counters.assign(objectpoints.size(), 0);
+//		reference_counters.assign(objectpoints.size(), 0);
 		std::vector<uint16_t> indices( projections.size() );
 		// fill objectpoints
-		//FIXME: use function
+		inverse_ideal_pinhole_model<T, rotation_matrix_quatvec>(&projections[0].x,
+			&camera_pose[0],
+			average_depth,
+			&objectpoints[0].x,
+			projections.size() );
+		// init indices
 		for(unsigned int i=0; i<projections.size(); i++) {
-			objectpoints[i] = cv::Point3_<T>(projections[i].x*average_depth,
-				projections[i].y*average_depth,
-				 average_depth);
 			indices[i] = i;
 		}
+		// set descriptors
 		Map<T>::descriptors = descriptors;
 
 		// add first scene
@@ -589,30 +641,30 @@ void Map<T>::process_working_task() {
 			visible_map_indices);
 	}
 
-	//scenery data
-	std::vector<uint16_t> point_indices( projections.size(), 0 );
-
 	//for every image projection find nearest map point (in 2D)
-	std::vector< indexed_item_t<T> > indexed_distances; indexed_distances.reserve( visible_projections.size() );
+	std::vector<uint16_t> point_indices( projections.size(), 0 );
 	cv::L2<T> euclidean_distance;
+	static const T distance_threshold = 5.0/250.0; //approx 5px (FIXME: find a better threshold value)
+	std::vector< indexed_item_t<T> > indexed_distances; indexed_distances.reserve( visible_projections.size() );
 #ifdef HAVE_SSSE3
 	//FIXME: distance operator depends on descriptor and hasn't to be hamming
 	cv::HammingSse hamming_distance;
 #else
 	cv::Hamming hamming_distance;
 #endif
-	static const T distance_threshold = 15.0/250.0; //approx 5px (FIXME: make generic)
-	dout << "match new points with existing points" << std::endl;
+	// for every feature in current image find matching point in map
 	for(unsigned int i=0; i<projections.size(); i++) {
 		indexed_distances.clear();
+		// for every (visible) map point projection calculate euclidean distance to feature
 		for(unsigned int j=0; j<visible_projections.size(); j++) {
 			const T distance = euclidean_distance(&(projections[i].x), &(visible_projections[j].x), 2);
 			if(distance > distance_threshold) continue;
 
+			// distance below threshold => store distance and point index
 			indexed_distances.push_back( indexed_item_t<T>(distance, j) );
 		}
 
-		//projection not near a map point
+		// feature not near a projected map point
 		if( indexed_distances.empty() ) continue;
 
 		//sort distances
@@ -620,6 +672,7 @@ void Map<T>::process_working_task() {
 		//choose point with best fitting descriptor distance
 		std::vector<int> hamming_distances; hamming_distances.reserve(3);
 		//take k-nearest points into account
+		//FIXME reduce neighborhood
 		for(unsigned int k=0; k<indexed_distances.size(); k++) {
 // 		for(unsigned int k=0; k<3 && k<indexed_distances.size(); k++) {
 			int distance = hamming_distance( visible_descriptors.ptr(indexed_distances[k].index), descriptors.ptr(i), 16 );
@@ -630,19 +683,18 @@ void Map<T>::process_working_task() {
 		const int distance_index = min_iter - hamming_distances.begin();
 
 		//point already in db => only add projection
-		point_indices[i] = indexed_distances[distance_index].index;;
-		//FIXME: increment ref counter
-// 		reference_counters[point_index]++;
+		point_indices[i] = indexed_distances[distance_index].index;
 	}
 
 	dout << "reproject new points to objectpoints" << std::endl;
-	//FIXME: idealpoints_to_objectpoints with mask
-	std::vector< cv::Point3_<T> > new_points;
-	idealpoints_to_objectpoints<rotation_matrix_quatvec>(
-		projections,
+	std::vector< cv::Point3_<T> > new_points( projections.size() );
+	inverse_ideal_pinhole_model< T, rotation_matrix_quatvec, uint16_t, std::not_equal_to<uint16_t> >(
+		&projections[0].x,
+		&camera_pose[0],
 		average_depth,
-		camera_pose,
-		new_points);
+		&new_points[0].x,
+		projections.size(),
+		&point_indices[0] );
 
 	dout << "put remaining points as new points to db" << std::endl;
 #if _HUB_MAP_VERBOSE
@@ -675,6 +727,44 @@ void Map<T>::process_working_task() {
 }
 
 template<typename T>
+void Map<T>::reference_scene(std::vector<T> &pose,
+	std::vector< cv::Point3_<T> > &objectpoints,
+	std::vector<cv::Point2f> &projections,
+	cv::Mat &descriptors) {
+
+	// clear arguments
+	objectpoints.clear();
+	projections.clear();
+	descriptors.resize(0);
+
+	hub::Lock scene_lock(scene_mutex);
+	typename std::list<scene_t>::const_iterator scene_iter;
+	{ hub::Lock cam_lock(cam_mutex);
+		// use measurements from scene next to pose
+		scene_iter = nearest_scene(pose);
+	}
+
+	if( scene_iter == scenes.end() )
+		return;
+
+	// reserve memory
+	objectpoints.reserve( scene_iter->point_indices.size() );
+	descriptors.create(0, Map<T>::descriptors.cols, Map<T>::descriptors.type()); descriptors.reserve( scene_iter->point_indices.size() );
+	// fill objectpoints and descriptors
+	{ hub::Lock map_lock(map_mutex);
+		for(unsigned int i=0; i<scene_iter->point_indices.size(); i++) {
+			const uint16_t point_index = scene_iter->point_indices[i];
+
+			objectpoints.push_back( Map<T>::objectpoints[point_index] );
+			descriptors.push_back( Map<T>::descriptors.row(point_index) );
+		}
+	}
+	// set projections and camera pose of reference scene
+	projections = scene_iter->projections;
+	pose = scene_iter->camera_pose;
+}
+
+template<typename T>
 void Map<T>::run() {
 	useconds_t sleep_time_us = 100000;
 
@@ -686,6 +776,8 @@ void Map<T>::run() {
 			sleep_time_us += sleep_time_us/10;
 		else // increase speed by factor 2
 			sleep_time_us /= 2;
+		// set lower bound for sleep time
+		if(sleep_time_us < 1000) sleep_time_us = 1000;
 		dout << "sleep " << sleep_time_us << "us" << std::endl;
 		usleep(sleep_time_us);
 	}
@@ -704,7 +796,15 @@ int Map<T>::save_points(const std::string &file_name) const {
 	char *vertex_string;
 	if( asprintf(&vertex_string, ply_vertex_element, objectpoints.size() ) < 0)
 		return -2;
-	f_stream << ply_header_start << vertex_string << ply_header_end;
+	f_stream << ply_header_start;
+	// comments are only allowed in header :(
+	for(typename std::list<scene_t>::const_iterator scene_iter = scenes.begin();
+	scene_iter != scenes.end();
+	++scene_iter) {
+		f_stream << "comment camera pose: " << scene_iter->camera_pose << std::endl
+			<< "comment view point: " << scene_iter->view_point << std::endl;
+	}
+	f_stream << vertex_string << ply_header_end;
 	free(vertex_string);
 
 	std::vector<uint8_t> saved_point( objectpoints.size(), 0);
@@ -795,7 +895,7 @@ void Map<T>::set_camera(const cv::Mat& camera_matrix, const int width, const int
 	camera.ideal_height = (T)height/fy;
 
 	// use incircle of image
-	const T ideal_size = std::min((T)width/fx, (T)height/fy);
+	const T ideal_size = std::min(camera.ideal_width, camera.ideal_height);
 // 	camera.fov_angle_rad = std::atan(ideal_size/2);
 	camera.fov_radius = ideal_size/2;
 	

@@ -375,7 +375,7 @@ BOOST_AUTO_TEST_CASE(test_featureposition) {
 	BOOST_TEST_MESSAGE("[objectpoints] " << stop_time-start_time) << "us";
 	start_time = get_time_us();
 
-	guess_translation<float>(objectpoints,
+	estimate_translation_by_objects<float>(objectpoints,
 		second_idealpoints,
 		66,
 		matches,
@@ -390,12 +390,13 @@ BOOST_AUTO_TEST_CASE(test_featureposition) {
 // 	parameter_vector[4] = 10.0;
 
 	float info[LM_INFO_SZ];
-	int rc = guess_pose< float, levmar_ideal_pinhole_euler<float>, levmar_approx_ideal_pinhole_euler_jac<float> >(
+	int rc = lm_pose_optimization< float, levmar_ideal_pinhole_euler<float>, levmar_approx_ideal_pinhole_euler_jac<float> >(
 // 	int rc = guess_pose< float, levmar_ideal_pinhole_euler<float>, levmar_ideal_pinhole_euler_jac<float> >(
 		objectpoints,
 		second_idealpoints,
 		matches,
 		parameter_vector,
+		cv::Mat(),
 		matches_mask,
 		100,	//max iterations
 		info);

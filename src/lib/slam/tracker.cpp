@@ -18,14 +18,14 @@
 namespace hub {
 namespace slam {
 
+uint16_t Tracker::run_counter = 0;
+
 Tracker::Tracker(const int image_width,
 	const int image_height,
 	const cv::Mat &camera_matrix,
-	const cv::Mat &distortion_coefficients,
-	const camera_orientation_t camera_orientation) :
+	const cv::Mat &distortion_coefficients) :
 		camera_matrix(camera_matrix),
 		distortion_coefficients(distortion_coefficients),
-		camera_orientation(camera_orientation),
 		feature_detector(60, 3), //threshold, octaves
 		descriptor_extractor(),
 		matcher(),
@@ -99,12 +99,12 @@ int Tracker::log_debug_data(const std::bitset<8> &debug_mask,
 			return - 119;
 
 		if(first_run) {// add header
-			pose_stream << "%% pose estimations before and after tracking" << std::endl
-				<< "%% q1 q2 q3 x_transl y_transl z_transl q1 q2 q3 x_transl y_transl z_transl" << std::endl
+			pose_stream << "%% pose estimations" << std::endl
+				<< "%% q1 q2 q3 x_transl y_transl z_transl (body frame)" << std::endl
 				<< "%%" << std::endl
 				<< "%% add the following line(s) (without %) to the end of the file" << std::endl
 				<< "%];" << std::endl
-				<< "%pose = reshape(pose, 12, [])';" << std::endl;
+				<< "%pose = reshape(pose, 6, [])';" << std::endl;
 
 			pose_stream << "pose = [";
 		} else
@@ -127,12 +127,11 @@ int Tracker::log_debug_data(const std::bitset<8> &debug_mask,
                             const cv::Mat &image,
                             const std::vector<float> &/*parameter_vector*/,
                             const std::vector<cv::KeyPoint> &keypoints) {
-	static uint32_t counter = 0;
 
 	if( debug_mask.test(FEATURE_IMAGE) ) { // save current image with features
 		static const char *image_filename_template = "feature_image_%05u.png";
 		char *image_filename;
-		if( asprintf(&image_filename, image_filename_template, counter ) < 0)
+		if( asprintf(&image_filename, image_filename_template, run_counter ) < 0)
 			return -123;
 
 		cv::Mat color_image;
@@ -141,7 +140,6 @@ int Tracker::log_debug_data(const std::bitset<8> &debug_mask,
 		free(image_filename);
 	}
 
-	counter++;
 	return 0;
 }
 
@@ -151,15 +149,11 @@ int Tracker::log_debug_data(const std::bitset<8> &debug_mask,
                             const std::vector<cv::Point2f> &op_projections,
                             const std::vector<cv::DMatch> &matches,
                             const std::vector<char> &matches_mask) {
-	static uint32_t counter = 0;
-
-	// call log functinons with subset of arguments
-	log_debug_data(debug_mask, parameter_vector);
 
 	if( debug_mask.test(MATCHES) ) { // save matches
 		static const char *filename_template = "matches_%05u.m";
 		char *filename;
-		if( asprintf(&filename, filename_template, counter ) < 0)
+		if( asprintf(&filename, filename_template, run_counter ) < 0)
 			return -120;
 		std::ofstream f_stream(filename);
 		free(filename);
@@ -205,7 +199,6 @@ int Tracker::log_debug_data(const std::bitset<8> &debug_mask,
 		f_stream.close();
 	}
 
-	counter++;
 	return 0;
 }
 
@@ -215,8 +208,8 @@ void Tracker::pose_estimation(const std::vector<float>& pose) {
 // 	speed[0] = speed[1] = speed[2] = 0.0;
 	// constrain estimation of speed
 	speed[0] /= 2.0; speed[1] /= 2.0; speed[2] /= 2.0;
-
 	Tracker::pose = pose;
+	dout << "updated pose to " << Tracker::pose << std::endl;
 }
 
 int Tracker::reset() {
@@ -229,17 +222,16 @@ int Tracker::reset() {
 }
 
 int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_vector, const float avg_depth, const std::bitset<8> &debug_mask) {
+	run_counter++;
+
+	dout << "[input] parameter_vector: " << parameter_vector << ", avg_depth: " << avg_depth << std::endl;
 
 	// get features from image
 	std::vector<cv::KeyPoint> keypoints;
 	feature_detector.detect(image, keypoints);
 	if(keypoints.size() < 6) {
 		dout << "only " << keypoints.size() << " features found (not enough)" << std::endl;
-		if( debug_mask.test(FEATURE_IMAGE) ) {
-			std::bitset<8> mask;
-			mask.set(FEATURE_IMAGE);
-			log_debug_data(mask, image, parameter_vector, keypoints);
-		}
+		log_debug_data(debug_mask, image, parameter_vector, keypoints);
 		return -1;
 	}
 
@@ -248,13 +240,11 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	descriptor_extractor.compute(image, keypoints, descriptors);
 	if(keypoints.size() < 6) {
 		dout << "only " << keypoints.size() << " keypoints left after descriptor computation (not enough)" << std::endl;
-		if( debug_mask.test(FEATURE_IMAGE) ) {
-			std::bitset<8> mask;
-			mask.set(FEATURE_IMAGE);
-			log_debug_data(mask, image, parameter_vector, keypoints);
-		}
+		log_debug_data(debug_mask, image, parameter_vector, keypoints);
 		return -2;
 	}
+	// log feature images
+	log_debug_data(debug_mask, image, parameter_vector, keypoints);
 
 	// undistort points
 	std::vector<cv::Point2f> ideal_points;
@@ -264,19 +254,24 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	map.start();
 
 	// get (possible) matching points and descriptors from map
-	map.set_view(parameter_vector);
+// 	map.set_view(parameter_vector);
+	std::vector<float> op_pose(parameter_vector);
 	std::vector< cv::Point3_<float> > objectpoints;
 	std::vector< cv::Point2f > op_projections;
 	cv::Mat op_descriptors;
-	map.fill_tracking_points(objectpoints, op_projections, op_descriptors);
+	map.reference_scene(op_pose, objectpoints, op_projections, op_descriptors);
+// 	map.fill_tracking_points(objectpoints, op_projections, op_descriptors);
 
 	if( objectpoints.empty() ) { // no suitable points found in map
-		//FIXME respect camera orientation
+		// pose update
+		pose_estimation(parameter_vector);
 		// add new features to map
 		map.add_features(ideal_points,
 			descriptors,
 			parameter_vector,
 			avg_depth);
+
+		log_debug_data(debug_mask, image, parameter_vector, keypoints);
 
 		return 1;
 	}
@@ -286,35 +281,47 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	matcher.match(op_descriptors, descriptors, matches);
 	if( matches.empty() ) {
 		dout << "no matches found" << std::endl;
+		log_debug_data(debug_mask, image, parameter_vector, keypoints);
 		return -3;
 	}
+	dout << "found " << matches.size() << " matches " << std::endl;
 
 	// filter matches
 	std::vector<char> matches_mask(matches.size(), 1);
 	filter_matches_by_robust_distribution(op_projections, ideal_points, matches, matches_mask);
 
 	log_debug_data(debug_mask, parameter_vector, ideal_points, op_projections, matches, matches_mask);
-
-	//get translation
-	guess_translation(objectpoints,
+	
+	// do a rough translation estimation first
+	estimate_translation_by_features(op_projections,
+		ideal_points,
+		average_depth(objectpoints),
+		avg_depth,
+		matches,
+		&parameter_vector[3],
+		matches_mask);
+/*
+	estimate_translation_by_objects(objectpoints,
 		ideal_points,
 		avg_depth,
 		matches,
 		&parameter_vector[3],
 		matches_mask);
-
+*/
 /*
 	// get estimatation of pose
-	int rc = guess_pose< float, levmar_ideal_pinhole_quatvec<float>, levmar_ideal_pinhole_quatvec_jac<float> >(
+	int rc = lm_pose_optimization< float, levmar_ideal_pinhole_quatvec<float>, levmar_ideal_pinhole_quatvec_jac<float> >(
 // 	int rc = guess_pose< float, levmar_ideal_pinhole_euler<float>, levmar_approx_ideal_pinhole_euler_jac<float> >(
 // 	int rc = guess_pose< float, levmar_ideal_pinhole_euler<float>, levmar_ideal_pinhole_euler_jac<float> >(
 		objectpoints,
 		ideal_points,
 		matches,
 		parameter_vector,
-		matches_mask);
+		cv::Mat(),
+		matches_mask,
+		10);	// max iterations
 	if(rc <= 0) {
-		dout << "position estimation failed" << std::endl;
+		dout << "position estimation failed with return code " << rc << std::endl;
 		return -4;
 	}
 */
@@ -325,7 +332,7 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	// log estimations of pose
 	log_debug_data(debug_mask, parameter_vector);
 
-	// add features with new estimatio to map
+	// add features with new estimation to map
 	map.add_features(ideal_points,
 		descriptors,
 		parameter_vector,
