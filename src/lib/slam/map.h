@@ -737,6 +737,9 @@ void Map<T>::reference_scene(std::vector<T> &pose,
 	projections.clear();
 	descriptors.resize(0);
 
+	// respect the order of mutexes in process_working_task here, i.e. first get map_mutex and then scene_mutex
+	// otherwise there will be a deadlock
+	hub::Lock map_lock(map_mutex);
 	hub::Lock scene_lock(scene_mutex);
 	typename std::list<scene_t>::const_iterator scene_iter;
 	{ hub::Lock cam_lock(cam_mutex);
@@ -751,13 +754,11 @@ void Map<T>::reference_scene(std::vector<T> &pose,
 	objectpoints.reserve( scene_iter->point_indices.size() );
 	descriptors.create(0, Map<T>::descriptors.cols, Map<T>::descriptors.type()); descriptors.reserve( scene_iter->point_indices.size() );
 	// fill objectpoints and descriptors
-	{ hub::Lock map_lock(map_mutex);
-		for(unsigned int i=0; i<scene_iter->point_indices.size(); i++) {
-			const uint16_t point_index = scene_iter->point_indices[i];
+	for(unsigned int i=0; i<scene_iter->point_indices.size(); i++) {
+		const uint16_t point_index = scene_iter->point_indices[i];
 
-			objectpoints.push_back( Map<T>::objectpoints[point_index] );
-			descriptors.push_back( Map<T>::descriptors.row(point_index) );
-		}
+		objectpoints.push_back( Map<T>::objectpoints[point_index] );
+		descriptors.push_back( Map<T>::descriptors.row(point_index) );
 	}
 	// set projections and camera pose of reference scene
 	projections = scene_iter->projections;
