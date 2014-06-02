@@ -140,6 +140,16 @@ template <typename T>
 T _mad(std::vector<T> &values, T &median);
 
 /**
+ * \brief Calculates arithmetic mean of data array.
+ * \tparam T Type of data array.
+ * \tparam N Step width, i.e. with N=1 the whole array will be evaluated. 
+ * \param[in] data Data array of size \a size.
+ * \param[in] size Size of array \a data.
+ */
+template <typename T, unsigned int N>
+T mean(const T *data, const size_t size);
+
+/**
  * \brief Calculates mean of data vector.
  * \param[in] values Data vector.
  * \return Mean.
@@ -347,6 +357,7 @@ void vec2quat(const T v[3], T q[4]);
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
+
 template <typename T>
 T cosine_similarity(const std::vector<T> &vector_a, const std::vector<T> &vector_b) {
 	const unsigned int length = std::min(vector_a.size(), vector_b.size());
@@ -487,15 +498,29 @@ T _mad(std::vector<T> &values, T &median) {
 	return _median(values);
 }
 
+template <typename T, unsigned int N>
+T mean(const T *data, const size_t size) {
+	T mean = 0;
+	size_t num_values = 0;
+
+	for(size_t i = N-1; i<size; i+=N) {
+		mean += data[i];
+		num_values++;
+	}
+	if(num_values != 0) 
+		mean /= num_values;
+
+	return mean;
+}
+
+template <typename T>
+T mean(const T *data, const size_t size) {
+	return mean<T, 1>(data, size);
+}
+
 template <typename T>
 T mean(const std::vector<T> &values) {
-	if(values.size() == 0) return 0;
-
-	T sum = 0;
-	for(typename std::vector<T>::const_iterator i=values.begin(); i != values.end(); ++i) {
-		sum += *i;
-	}
-	return sum / values.size();
+	return mean<T, 1>(&values[0], values.size() );
 }
 
 template <typename T>

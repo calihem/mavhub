@@ -16,6 +16,7 @@
 #include <levmar/levmar.h>
 
 #include "lib/hub/math.h"
+#include "lib/hub/utility.h"
 #include "lib/slam/features.h"
 #include "lib/slam/camera.h"
 
@@ -241,6 +242,8 @@ void estimate_translation_by_features(const std::vector<cv::Point2f>& src_featur
 	assert( matches.size() == mask.size() || mask.empty() );
 	assert(translation);
 
+// 	std::vector< hub::indexed_item_t<T> > sq_differences;
+// 	sq_differences.reserve( matches.size() );
 	std::vector<T> u_differences, v_differences;
 	u_differences.reserve( matches.size() );
 	v_differences.reserve( matches.size() );
@@ -251,13 +254,25 @@ void estimate_translation_by_features(const std::vector<cv::Point2f>& src_featur
 		const unsigned int fi = matches[i].queryIdx;
 		const unsigned int si = matches[i].trainIdx;
 
+// 		const T delta_x = dst_features[si].x - src_features[fi].x;
+// 		const T delta_y = dst_features[si].y - src_features[fi].y;
+// 		const T sq_distance = delta_x*delta_x + delta_y*delta_y;
+// 		sq_differences.push_back( hub::indexed_item_t<T>(sq_distance, i) );
+
 		u_differences.push_back(dst_features[si].x - src_features[fi].x);
 		v_differences.push_back(dst_features[si].y - src_features[fi].y);
 	}
 
+// 	hub::indexed_item_t<T> sq_distance_index_median = hub::_median(sq_differences);
+// 	const unsigned int fi = matches[sq_distance_index_median.index].queryIdx;
+// 	const unsigned int si = matches[sq_distance_index_median.index].trainIdx;
+
 	const T avg_distance = (dst_distance + src_distance) / 2;
+	// an element wise median is more robust than median of sq_differences 
 	translation[0] = hub::_median(u_differences) * avg_distance;
 	translation[1] = hub::_median(v_differences) * avg_distance;
+// 	translation[0] = (dst_features[si].x - src_features[fi].x) * avg_distance;
+// 	translation[1] = (dst_features[si].y - src_features[fi].y) * avg_distance;
 	translation[2] = dst_distance - src_distance;
 }
 

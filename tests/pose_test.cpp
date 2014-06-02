@@ -23,6 +23,15 @@ const PRECISION pose_point_array[] = {
 };
 const size_t num_points = sizeof(pose_point_array)/sizeof(PRECISION)/3;
 
+static const float epsilon = 0.0001;
+#define CHECK_ARRAYS(expected_array, observed_array, size, margin) \
+	for(unsigned int i=0; i<size; i++) { \
+		if(std::fabs(expected_array[i]) < epsilon) \
+			BOOST_CHECK_SMALL(observed_array[i], epsilon); \
+		else \
+			BOOST_CHECK_CLOSE(expected_array[i], observed_array[i], margin); \
+	}
+
 using namespace hub;
 using namespace hub::slam;
 
@@ -39,11 +48,61 @@ PRECISION estimation_error(const std::vector<PRECISION> &parameters,
 
 BOOST_AUTO_TEST_SUITE(hub_pose_tests)
 
-BOOST_AUTO_TEST_CASE(Test_estimate_translation_by_objects) {
-	//TODO
+BOOST_AUTO_TEST_CASE(estimate_translation_test) {
+	std::vector< cv::Point3_<PRECISION> > objectpoints;
+	for(unsigned int i=0; i<num_points; i++) {
+		objectpoints.push_back( cv::Point3_<PRECISION>(pose_point_array[i*3], pose_point_array[i*3+1], pose_point_array[i*3+2]) );
+	}
+	BOOST_CHECK_EQUAL(num_points, objectpoints.size());
+
+	// set reference points
+	std::vector<cv::Point2f> src_ideal_points(2*num_points);
+	PRECISION rt[6] = { 0 };
+	ideal_pinhole_model<PRECISION, rotation_matrix_quatvec>(pose_point_array,
+		rt,
+		&src_ideal_points[0].x,
+		num_points);
+
+	// apply translation
+	std::vector<cv::Point2f> dst_ideal_points(2*num_points);
+	rt[3] = 5.0;
+	rt[4] = 25.0;
+	rt[5] = 10.0;
+	ideal_pinhole_model<PRECISION, rotation_matrix_quatvec>(pose_point_array,
+		rt,
+		&dst_ideal_points[0].x,
+		num_points);
+
+	//TODO apply some error
+	std::vector<cv::DMatch> matches;
+	matches.reserve(num_points);
+	for(unsigned int index = 0; index < num_points; index++) {
+		matches.push_back( cv::DMatch(index, index, 0) );
+	}
+
+	PRECISION avg_depth = mean<PRECISION, 3>(pose_point_array, 3*num_points);
+	PRECISION transl_estimation[3] = { 0 };
+
+	// estimate translation by objects
+	estimate_translation_by_objects(objectpoints,
+		dst_ideal_points,
+		avg_depth + rt[5],
+		matches,
+		transl_estimation);
+	CHECK_ARRAYS( (rt+3), transl_estimation, 3, 12)
+
+	// estimate translation by features
+	estimate_translation_by_features(src_ideal_points,
+		dst_ideal_points,
+		avg_depth,
+		avg_depth + rt[5],
+		matches,
+		transl_estimation);
+	CHECK_ARRAYS( (rt+3), transl_estimation, 3, 13)
+
 }
 
-BOOST_AUTO_TEST_CASE(Test_guess_euler_pose) {
+BOOST_AUTO_TEST_CASE(guess_euler_pose_test) {
 
 	std::vector< cv::Point3_<PRECISION> > objectpoints;
 	for(unsigned int i=0; i<num_points; i++) {
@@ -153,7 +212,7 @@ BOOST_AUTO_TEST_CASE(Test_guess_euler_pose) {
 	BOOST_CHECK(rc == 0);
 }
 
-BOOST_AUTO_TEST_CASE(Test_guess_quaternion_pose) {
+BOOST_AUTO_TEST_CASE(guess_quaternion_pose_test) {
 	std::vector< cv::Point3_<PRECISION> > objectpoints;
 	for(unsigned int i=0; i<num_points; i++) {
 		objectpoints.push_back( cv::Point3_<PRECISION>(pose_point_array[i*3], pose_point_array[i*3+1], pose_point_array[i*3+2]) );

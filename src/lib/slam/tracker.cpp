@@ -295,7 +295,7 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 	// do a rough translation estimation first
 	estimate_translation_by_features(op_projections,
 		ideal_points,
-		average_depth(objectpoints),
+		mean<float, 3>(&objectpoints[0].x, 3*objectpoints.size()),
 		avg_depth,
 		matches,
 		&parameter_vector[3],
@@ -308,6 +308,7 @@ int Tracker::track_camera(const cv::Mat &image, std::vector<float> &parameter_ve
 		&parameter_vector[3],
 		matches_mask);
 */
+
 /*
 	// get estimatation of pose
 	int rc = lm_pose_optimization< float, levmar_ideal_pinhole_quatvec<float>, levmar_ideal_pinhole_quatvec_jac<float> >(

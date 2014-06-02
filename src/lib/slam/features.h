@@ -38,12 +38,6 @@ struct landmarks_t {
 	std::vector<int> scene_ids; //FIXME: needed?
 };
 
-/**
- * \brief Calculate average of z-component of given 3D-coordinates.
- */
-template <typename T>
-T average_depth(const std::vector< cv::Point3_<T> >& objectpoints);
-
 /// Filter out matches 
 void filter_ambigous_matches(std::vector<std::vector<cv::DMatch> > &matches);
 
@@ -151,19 +145,6 @@ void undistort_n2i(const std::vector<cv::KeyPoint> &keypoints,
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
-template <typename T>
-T average_depth(const std::vector< cv::Point3_<T> >& objectpoints) {
-	T avg = 0;
-
-	for(unsigned int i=0; i<objectpoints.size(); i++) {
-		avg += objectpoints[i].z;
-	}
-	if( !objectpoints.empty() )
-		avg /= objectpoints.size();
-
-	return avg;
-}
-
 template <typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,

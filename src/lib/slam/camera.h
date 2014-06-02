@@ -207,7 +207,7 @@ inline void pinhole_model_quatvec(const T *objectpoints,
 		const T qt[6],
 		const cv::Mat &camera_matrix,
 		T *imagepoints,
-		size_t n = 1);
+		const size_t n = 1);
 
 /**
  * \brief Calculates the jacobian of the pinhole projection.
@@ -235,7 +235,7 @@ template<typename T, void(*R)(const T[3], T[9])>
 void ideal_pinhole_model(const T *objectpoints,
 		const T rt[6],
 		T *idealpoints,
-		size_t n) {
+		const size_t n) {
 
 	// determine rotation matrix
 	T rotation_matrix[9];
@@ -447,7 +447,7 @@ template<typename T>
 void ideal_pinhole_model_quat(const T *objectpoints,
 		const T qt[7],
 		T *idealpoints,
-		size_t n) {
+		const size_t n) {
 
 	T rotation_matrix[9];
 	rotation_matrix_quat(qt, rotation_matrix);
@@ -644,7 +644,7 @@ inline void pinhole_model_euler(const T *objectpoints,
 		const T rt[6],
 		const cv::Mat &camera_matrix,
 		T *imagepoints,
-		size_t n) {
+		const size_t n) {
 
 	ideal_pinhole_model<T, rotation_matrix_rad>(objectpoints, rt, imagepoints, n);
 
@@ -664,7 +664,7 @@ void pinhole_model_quat(const T *objectpoints,
 		const T qt[7],
 		const cv::Mat &camera_matrix,
 		T *imagepoints,
-		size_t n) {
+		const size_t n) {
 
 	ideal_pinhole_model_quat(objectpoints, qt, imagepoints, n);
 
@@ -684,7 +684,7 @@ inline void pinhole_model_quatvec(const T *objectpoints,
 		const T qt[6],
 		const cv::Mat &camera_matrix,
 		T *imagepoints,
-		size_t n) {
+		const size_t n) {
 
 	T pose[7];
 	vec2quat(qt, pose);
