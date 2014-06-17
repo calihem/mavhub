@@ -7,6 +7,7 @@ bin_PROGRAMS = test_mavhub
 test_mavhub_SOURCES =  \
 	brisk_test.cpp \
 	camera_test.cpp \
+	condition_test.cpp \
 	feature_test.cpp \
 	math_test.cpp \
 	mavhub_test.cpp \

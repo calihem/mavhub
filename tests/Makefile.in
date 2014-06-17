@@ -110,9 +110,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_test_mavhub_OBJECTS = brisk_test.$(OBJEXT) camera_test.$(OBJEXT) \
-	feature_test.$(OBJEXT) math_test.$(OBJEXT) \
-	mavhub_test.$(OBJEXT) pose_test.$(OBJEXT) sba_test.$(OBJEXT) \
-	slam_test.$(OBJEXT) time_test.$(OBJEXT) \
+	condition_test.$(OBJEXT) feature_test.$(OBJEXT) \
+	math_test.$(OBJEXT) mavhub_test.$(OBJEXT) pose_test.$(OBJEXT) \
+	sba_test.$(OBJEXT) slam_test.$(OBJEXT) time_test.$(OBJEXT) \
 	application/acc_calibration_app_test.$(OBJEXT)
 test_mavhub_OBJECTS = $(am_test_mavhub_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -335,6 +335,7 @@ AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
 test_mavhub_SOURCES = \
 	brisk_test.cpp \
 	camera_test.cpp \
+	condition_test.cpp \
 	feature_test.cpp \
 	math_test.cpp \
 	mavhub_test.cpp \
@@ -460,6 +461,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/brisk_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/camera_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/condition_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/feature_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/math_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavhub_test.Po@am__quote@
