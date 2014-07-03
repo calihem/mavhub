@@ -378,24 +378,6 @@ void idealpoints_to_imagepoints(const std::vector<cv::Point2f>& idealpoints,
 	}
 }
 
-void imagepoints_to_idealpoints(const std::vector<cv::Point2f>& imagepoints,
-	const cv::Mat& camera_matrix,
-	std::vector<cv::Point2f>& idealpoints) {
-
-	if( imagepoints.empty() ) return;
-
-	const double cx = camera_matrix.at<double>(0, 2);
-	const double cy = camera_matrix.at<double>(1, 2);
-	const double fx = camera_matrix.at<double>(0, 0);
-	const double fy = camera_matrix.at<double>(1, 1);
-
-	idealpoints.resize( imagepoints.size() );
-	for(unsigned int i=0; i<imagepoints.size(); i++) {
-		idealpoints[i].x = (imagepoints[i].x - cx)/fx;
-		idealpoints[i].y = (imagepoints[i].y - cy)/fy;
-	}
-}
-
 cv::Mat matchesmask(const int num_src_kps,
 	const int num_dst_kps,
 	const std::vector<cv::DMatch> &matches) {

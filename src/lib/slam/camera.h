@@ -59,6 +59,7 @@
 #include <functional>	// equal_to
 
 #include "lib/hub/math.h"
+#include "lib/slam/features.h"
 
 namespace hub {
 namespace slam {
@@ -692,6 +693,39 @@ inline void pinhole_model_quatvec(const T *objectpoints,
 	pose[5] = qt[4];
 	pose[6] = qt[5];
 	pinhole_model_quat(objectpoints, pose, camera_matrix, imagepoints, n);
+}
+
+template<typename T, void(*R)(const T[3], T[9]), typename M, typename C>
+void inverse_pinhole_model(const T *imagepoints,
+		const T rt[6],
+		const T &distance,
+		const cv::Mat &camera_matrix,
+		T *objectpoints,
+		const size_t n,
+		const M *mask) {
+
+	if( !imagepoints || !rt || !objectpoints) return;
+
+	T *idealpoints = (T*)malloc(2*n*sizeof(T));
+	if(!idealpoints) return;
+
+	// normalize points
+	imagepoints_to_idealpoints<T, M, C>(imagepoints, camera_matrix, idealpoints, n, mask);
+
+	inverse_ideal_pinhole_model<T, R, M, C>(idealpoints, rt, distance, objectpoints, n, mask);
+
+	free(idealpoints);
+}
+
+template<typename T, void(*R)(const T[3], T[9])>
+void inverse_pinhole_model(const T *imagepoints,
+		const T rt[6],
+		const T &distance,
+		const cv::Mat &camera_matrix,
+		T *objectpoints,
+		const size_t n,
+		const char *mask) {
+	inverse_pinhole_model< T, R, char, std::equal_to<char> >(imagepoints, rt, distance, camera_matrix, objectpoints, n, mask);
 }
 
 template<typename T>

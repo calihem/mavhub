@@ -33,50 +33,56 @@ static const size_t num_points = sizeof(point_array)/sizeof(float)/3;
 
 BOOST_AUTO_TEST_SUITE(hub_camera_tests)
 
-BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
-
+BOOST_AUTO_TEST_CASE(pinhole_model_test) {
+	cv::Mat camera_matrix = (cv::Mat_<double>(3,3) << 288.0,   0.0, 160.0,
+	                                                    0.0, 284.0, 120.0,
+	                                                    0.0,   0.0,   1.0);
 	// initialize parameter vector (phi, theta, psi, t1, t2, t3) with euler angles
-// 	float parameter_vector_euler[] = {0.1, 0.2, 0.3, 1.0, -1.0, 0.5};
 	float parameter_vector_euler[] = {-deg2rad<float>(15.0), -deg2rad<float>(15.0), -deg2rad<float>(15.0), -5.0, -5.0, -5.0};
 	float parameter_vector_quat[7];
-	float ideal_points_euler[2*num_points];
-	float ideal_points_quat[2*num_points];
+	float projected_points_euler[2*num_points];
+	float projected_points_quat[2*num_points];
 	float reprojected_points[3*num_points];
 
 	static const unsigned int max_iterations = 6*6;
 	for(unsigned int j=0; j<max_iterations; j++) {
 
+		/*
+		 * Ideal model
+		 */
 		// initialize parameter vector with quaternions
 		euler_to_quaternion(&parameter_vector_euler[0], &parameter_vector_quat[0]);
 		memcpy(&parameter_vector_quat[4], &parameter_vector_euler[3], 3*sizeof(float));
 
-		// camera model with euler angles
-		memset(ideal_points_euler, 0, sizeof(ideal_points_euler));
+		// ideal camera model with euler angles
+		memset(projected_points_euler, 0, sizeof(projected_points_euler));
 		ideal_pinhole_model<float, rotation_matrix_rad>(point_array,
 			parameter_vector_euler,
-			ideal_points_euler,
+			projected_points_euler,
 			num_points);
 
-		// camera model using quaternions
-		memset(ideal_points_quat, 0, sizeof(ideal_points_quat));
+		// ideal camera model using quaternions
+		memset(projected_points_quat, 0, sizeof(projected_points_quat));
 		for(unsigned int i=0; i<num_points; i++) {
+			// single point version
 			ideal_pinhole_model_quat(&point_array[i*3],
 				parameter_vector_quat,
-				&ideal_points_quat[i*2]);
+				&projected_points_quat[i*2]);
 		}
-		CHECK_ARRAYS(ideal_points_euler, ideal_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
 
-		memset(ideal_points_quat, 0, sizeof(ideal_points_quat));
+		memset(projected_points_quat, 0, sizeof(projected_points_quat));
+		// multi point version
 		ideal_pinhole_model_quat(point_array,
 			parameter_vector_quat,
-			ideal_points_quat,
+			projected_points_quat,
 			num_points);
-		CHECK_ARRAYS(ideal_points_euler, ideal_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
 
-		// inverse camera model using euler angles
+		// inverse ideal camera model using euler angles
 		memset(reprojected_points, 0, sizeof(reprojected_points));
 		for(unsigned int i=0; i<num_points; i++) {
-			inverse_ideal_pinhole_model<float, rotation_matrix_rad>(&ideal_points_euler[i*2],
+			inverse_ideal_pinhole_model<float, rotation_matrix_rad>(&projected_points_euler[i*2],
 				parameter_vector_euler,
 				point_array[i*3+2] + parameter_vector_euler[5],
 				&reprojected_points[i*3],
@@ -85,10 +91,10 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 		// check inverse model
 		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
 
-		// inverse camera model using quaternions
+		// ideal inverse camera model using quaternions
 		memset(reprojected_points, 0, sizeof(reprojected_points));
 		for(unsigned int i=0; i<num_points; i++) {
-			inverse_ideal_pinhole_model_quat(&ideal_points_quat[i*2],
+			inverse_ideal_pinhole_model_quat(&projected_points_quat[i*2],
 				parameter_vector_quat,
 				point_array[i*3+2] + parameter_vector_quat[6],
 				&reprojected_points[i*3],
@@ -96,18 +102,18 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 		}
 		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
 
-		// camera model using quatvec
-		memset(ideal_points_quat, 0, sizeof(ideal_points_quat));
+		// ideal camera model using quaternion vector
+		memset(projected_points_quat, 0, sizeof(projected_points_quat));
 		ideal_pinhole_model<float, rotation_matrix_quatvec>(point_array,
 			&parameter_vector_quat[1],
-			ideal_points_quat,
+			projected_points_quat,
 			num_points);
-		CHECK_ARRAYS(ideal_points_euler, ideal_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
 
-		// inverse camera model using quaternion vector
+		// ideal inverse camera model using quaternion vector
 		memset(reprojected_points, 0, sizeof(reprojected_points));
 		for(unsigned int i=0; i<num_points; i++) {
-			inverse_ideal_pinhole_model<float, rotation_matrix_quatvec>(&ideal_points_quat[i*2],
+			inverse_ideal_pinhole_model<float, rotation_matrix_quatvec>(&projected_points_quat[i*2],
 				&parameter_vector_quat[1],
 				point_array[i*3+2] + parameter_vector_quat[6],
 				&reprojected_points[i*3],
@@ -115,7 +121,117 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 		}
 		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
 
-		// modify parameter vector
+		/*
+		 * Normal pinhole model
+		 */
+		// camera model using euler angles
+		memset(projected_points_euler, 0, sizeof(projected_points_euler));
+		pinhole_model_euler(point_array,
+			parameter_vector_euler,
+			camera_matrix,
+			projected_points_euler,
+			num_points);
+
+		// inverse camera model using euler angles
+		memset(reprojected_points, 0, sizeof(reprojected_points));
+		for(unsigned int i=0; i<num_points; i++) {
+			inverse_pinhole_model<float, rotation_matrix_rad>(&projected_points_euler[i*2],
+				parameter_vector_euler,
+				point_array[i*3+2] + parameter_vector_euler[5],
+				camera_matrix,
+				&reprojected_points[i*3],
+				1,
+				NULL);
+		}
+		// check inverse model
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+
+		// camera model using quaternions
+		memset(projected_points_quat, 0, sizeof(projected_points_quat));
+		pinhole_model_quat(point_array,
+			parameter_vector_quat,
+			camera_matrix,
+			projected_points_quat,
+			num_points);
+		// check euler against quaternions
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+
+		//TODO inverse camera model using quaternions
+
+		// camera model using quaternion vector
+		memset(projected_points_quat, 0, sizeof(projected_points_quat));
+		pinhole_model_quatvec(point_array,
+			&parameter_vector_quat[1],
+			camera_matrix,
+			projected_points_quat,
+			num_points);
+		// check euler against quaternion vector
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+
+		// inverse camera model using quaternion vector
+		memset(reprojected_points, 0, sizeof(reprojected_points));
+		for(unsigned int i=0; i<num_points; i++) {
+			inverse_pinhole_model<float, rotation_matrix_quatvec>(&projected_points_quat[i*2],
+				&parameter_vector_quat[1],
+				point_array[i*3+2] + parameter_vector_quat[6],
+				camera_matrix,
+				&reprojected_points[i*3],
+				1,
+				NULL);
+		}
+		// check inverse model
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+
+		/*
+		 * Mixed ideal and normal pinhole model
+		 */
+		// project points by normal camera model
+		memset(projected_points_quat, 0, sizeof(projected_points_quat));
+		pinhole_model_quatvec(point_array,
+			&parameter_vector_quat[1],
+			camera_matrix,
+			projected_points_quat,
+			num_points);
+		// normalize points
+		memset(projected_points_euler, 0, sizeof(projected_points_euler));
+		imagepoints_to_idealpoints(projected_points_quat, camera_matrix, projected_points_euler, num_points);
+		// reproject points by ideal camera model
+		memset(reprojected_points, 0, sizeof(reprojected_points));
+		for(unsigned int i=0; i<num_points; i++) {
+			inverse_ideal_pinhole_model<float, rotation_matrix_quatvec>(&projected_points_euler[i*2],
+				&parameter_vector_quat[1],
+				point_array[i*3+2] + parameter_vector_quat[6],
+				&reprojected_points[i*3],
+				1);
+		}
+		// check reprojected points
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+
+		// project by ideal camera model
+		memset(projected_points_euler, 0, sizeof(projected_points_euler));
+		ideal_pinhole_model<float, rotation_matrix_rad>(point_array,
+			parameter_vector_euler,
+			projected_points_euler,
+			num_points);
+		// convert normalized points to imagepoints
+		idealpoints_to_imagepoints(projected_points_euler, camera_matrix, projected_points_quat, num_points);
+		// reproject points by normal camera model
+		memset(reprojected_points, 0, sizeof(reprojected_points));
+		for(unsigned int i=0; i<num_points; i++) {
+			inverse_pinhole_model<float, rotation_matrix_rad>(&projected_points_quat[i*2],
+				parameter_vector_euler,
+				point_array[i*3+2] + parameter_vector_euler[5],
+				camera_matrix,
+				&reprojected_points[i*3],
+				1,
+				NULL);
+		}
+		// check reprojected points
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+
+		/*
+		 * modify parameter vector 
+		 */
 		switch(j % 6) {
 			case 0: parameter_vector_euler[5] += 5.0;
 				break;
@@ -136,54 +252,6 @@ BOOST_AUTO_TEST_CASE(Test_ideal_pinhole) {
 				break;
 		}
 	}
-}
-
-BOOST_AUTO_TEST_CASE(Test_pinhole) {
-	cv::Mat camera_matrix = (cv::Mat_<double>(3,3) << 288.0,   0.0, 160.0,
-	                                                    0.0, 284.0, 120.0,
-	                                                    0.0,   0.0,   1.0);
-
-	std::vector<float> parameter_vector(6);
-	parameter_vector[0] = 0.1;	//phi
-	parameter_vector[1] = 0.2;	//theta
-	parameter_vector[2] = 0.3;	//psi
-	parameter_vector[3] = 1.0;	//t1
-	parameter_vector[4] = -1.0;	//t2
-	parameter_vector[5] = 0.5;	//t3
-
-	// project by euler angles
-	std::vector<float> image_points_euler(2*num_points);
-	pinhole_model_euler(point_array,
-		&parameter_vector[0],
-		camera_matrix,
-		&image_points_euler[0],
-		num_points);
-
-	// project by quaternions
-	std::vector<float> parameter_vector_quat(7);
-	euler_to_quaternion(&parameter_vector[0], &parameter_vector_quat[0]);
-	parameter_vector_quat[4] = parameter_vector[3];
-	parameter_vector_quat[5] = parameter_vector[4];
-	parameter_vector_quat[6] = parameter_vector[5];
-	std::vector<float> image_points_quat(2*num_points);
-	pinhole_model_quat(point_array,
-		&parameter_vector_quat[0],
-		camera_matrix,
-		&image_points_quat[0],
-		num_points);
-	// check euler against quaternions
-	CHECK_ARRAYS( image_points_euler, image_points_quat, 2*num_points);
-
-	// project by quaternion vector
-	memset(&image_points_quat[0], 0, sizeof(image_points_quat));
-	pinhole_model_quatvec(point_array,
-		&parameter_vector_quat[1],
-		camera_matrix,
-		&image_points_quat[0],
-		num_points);
-
-	// check euler against quaternion vector
-	CHECK_ARRAYS( image_points_euler, image_points_quat, 2*num_points);
 }
 
 BOOST_AUTO_TEST_CASE(Test_ideal_pinhole_jac) {

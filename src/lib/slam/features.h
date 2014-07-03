@@ -63,7 +63,7 @@ void filter_matches_by_robust_distribution(const std::vector<cv::Point2f> &src_p
 		const std::vector<cv::DMatch> &matches,
 		std::vector<char> &mask);
 
-template <typename Distance>
+template<typename Distance>
 int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	const std::vector<cv::KeyPoint>& dst_keypoints,
 	const std::vector<std::vector<cv::DMatch> >& matches,
@@ -77,9 +77,33 @@ void fusion_matches(const std::vector<std::vector<cv::DMatch> > &forward_matches
 		    const std::vector<std::vector<cv::DMatch> > &backward_matches,
 		    std::vector<std::vector<cv::DMatch> > &matches);
 
-void imagepoints_to_idealpoints(const std::vector<cv::Point2f>& imagepoints,
+template<typename T, typename M, typename C>
+void idealpoints_to_imagepoints(const T *idealpoints,
 	const cv::Mat& camera_matrix,
-	std::vector<cv::Point2f>& idealpoints);
+	T *imagepoints,
+	const size_t n = 1,
+	const M *mask = NULL);
+
+template<typename T>
+void idealpoints_to_imagepoints(const T *idealpoints,
+	const cv::Mat& camera_matrix,
+	T *imagepoints,
+	const size_t n = 1,
+	const char *mask = NULL);
+
+template<typename T, typename M, typename C>
+void imagepoints_to_idealpoints(const T *imagepoints,
+	const cv::Mat& camera_matrix,
+	T *idealpoints,
+	const size_t n = 1,
+	const M *mask = NULL);
+
+template<typename T>
+void imagepoints_to_idealpoints(const T *imagepoints,
+	const cv::Mat& camera_matrix,
+	T *idealpoints,
+	const size_t n = 1,
+	const char *mask = NULL);
 
 /**
  * \brief Get mask from matches
@@ -200,6 +224,49 @@ int filter_matches_by_imu(const std::vector<cv::KeyPoint>& src_keypoints,
 	return rc;
 }
 
+template<typename T, typename M, typename C>
+void idealpoints_to_imagepoints(const T *idealpoints,
+	const cv::Mat& camera_matrix,
+	T *imagepoints,
+	const size_t n,
+	const M *mask) {
+
+	if(!imagepoints || !idealpoints) return;
+
+	const T cx = camera_matrix.at<double>(0, 2);
+	const T cy = camera_matrix.at<double>(1, 2);
+	const T fx = camera_matrix.at<double>(0, 0);
+	const T fy = camera_matrix.at<double>(1, 1);
+
+#define UNNORMALIZE_POINT \
+	imagepoints[i] = idealpoints[i]*fx + cx; \
+	imagepoints[i+1] = idealpoints[i+1]*fy + cy;
+
+	if(mask) { // unnormalize only masked points
+		C comparator = C();
+		for(unsigned int i=0; i<2*n; i+=2) {
+			if( comparator(mask[i], 0) ) continue;
+
+			UNNORMALIZE_POINT
+		}
+	} else { // unnormalize all points
+		for(unsigned int i=0; i<2*n; i+=2) {
+			UNNORMALIZE_POINT
+		}
+	}
+#undef UNNORMALIZE_POINT
+}
+
+template<typename T>
+void idealpoints_to_imagepoints(const T *idealpoints,
+	const cv::Mat& camera_matrix,
+	T *imagepoints,
+	const size_t n,
+	const char *mask) {
+
+	idealpoints_to_imagepoints< T, char, std::equal_to<char> >(idealpoints, camera_matrix, imagepoints, n, mask);
+}
+
 template<void(*R)(const float[3], float[9])>
 void idealpoints_to_objectpoints(const std::vector<cv::Point2f>& idealpoints,
 	const float distance,
@@ -235,6 +302,50 @@ void idealpoints_to_objectpoints(const std::vector<cv::Point2f>& idealpoints,
 		objectpoints[i].z = x3;
 	}
 }
+
+template<typename T, typename M, typename C>
+void imagepoints_to_idealpoints(const T *imagepoints,
+	const cv::Mat& camera_matrix,
+	T *idealpoints,
+	const size_t n,
+	const M *mask) {
+
+	if(!imagepoints || !idealpoints) return;
+
+	const T cx = camera_matrix.at<double>(0, 2);
+	const T cy = camera_matrix.at<double>(1, 2);
+	const T fx = camera_matrix.at<double>(0, 0);
+	const T fy = camera_matrix.at<double>(1, 1);
+
+#define NORMALIZE_POINT \
+	idealpoints[i] = (imagepoints[i] - cx)/fx; \
+	idealpoints[i+1] = (imagepoints[i+1] - cy)/fy;
+
+	if(mask) { // normalize only masked points
+		C comparator = C();
+		for(unsigned int i=0; i<2*n; i+=2) {
+			if( comparator(mask[i], 0) ) continue;
+
+			NORMALIZE_POINT
+		}
+	} else { // normalize all points
+		for(unsigned int i=0; i<2*n; i+=2) {
+			NORMALIZE_POINT
+		}
+	}
+#undef NORMALIZE_POINT
+}
+
+template<typename T>
+inline void imagepoints_to_idealpoints(const T *imagepoints,
+	const cv::Mat& camera_matrix,
+	T *idealpoints,
+	const size_t n,
+	const char *mask) {
+
+	imagepoints_to_idealpoints< T, char, std::equal_to<char> >(imagepoints, camera_matrix, idealpoints, n, mask);
+}
+
 
 template <typename T>
 inline T min_eigenval(const T &dxx, const T &dxy, const T &dyy) {

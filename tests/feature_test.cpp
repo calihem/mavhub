@@ -152,8 +152,8 @@ BOOST_AUTO_TEST_CASE(Test_features)
 		camera_matrix,
 		distortion_coefficients,
 		undistorted_idealpoints);
-	std::vector< cv::Point_<PRECISION> > idealpoints;
-	imagepoints_to_idealpoints(imagepoints, camera_matrix, idealpoints);
+	std::vector< cv::Point_<PRECISION> > idealpoints( imagepoints.size() );
+	imagepoints_to_idealpoints(&imagepoints[0].x, camera_matrix, &idealpoints[0].x, imagepoints.size());
 	e = error<cv::Point_<PRECISION>, PRECISION>(undistorted_idealpoints, idealpoints);
 	BOOST_TEST_MESSAGE("undistortion error: " << e);
 	BOOST_CHECK(e <= 100*std::numeric_limits<PRECISION>::min());
