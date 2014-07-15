@@ -108,6 +108,11 @@ AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
+libadept_a_AR = $(AR) $(ARFLAGS)
+libadept_a_LIBADD =
+am__dirstamp = $(am__leading_dot)dirstamp
+am_libadept_a_OBJECTS = adept/adept.$(OBJEXT)
+libadept_a_OBJECTS = $(am_libadept_a_OBJECTS)
 libagast_a_AR = $(AR) $(ARFLAGS)
 libagast_a_LIBADD =
 am__libagast_a_SOURCES_DIST = agast/agast5_8.cc agast/agast5_8_nms.cc \
@@ -115,7 +120,6 @@ am__libagast_a_SOURCES_DIST = agast/agast5_8.cc agast/agast5_8_nms.cc \
 	agast/agast7_12s.cc agast/agast7_12s_nms.cc \
 	agast/nonMaximumSuppression.cc agast/oast9_16.cc \
 	agast/oast9_16_nms.cc
-am__dirstamp = $(am__leading_dot)dirstamp
 @COND_OPENCV2_TRUE@am_libagast_a_OBJECTS = agast/agast5_8.$(OBJEXT) \
 @COND_OPENCV2_TRUE@	agast/agast5_8_nms.$(OBJEXT) \
 @COND_OPENCV2_TRUE@	agast/agast7_12d.$(OBJEXT) \
@@ -195,9 +199,10 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(libagast_a_SOURCES) $(libbrisk_a_SOURCES) \
-	$(liblevmar_a_SOURCES) $(libsba_a_SOURCES)
-DIST_SOURCES = $(am__libagast_a_SOURCES_DIST) \
+SOURCES = $(libadept_a_SOURCES) $(libagast_a_SOURCES) \
+	$(libbrisk_a_SOURCES) $(liblevmar_a_SOURCES) \
+	$(libsba_a_SOURCES)
+DIST_SOURCES = $(libadept_a_SOURCES) $(am__libagast_a_SOURCES_DIST) \
 	$(am__libbrisk_a_SOURCES_DIST) $(am__liblevmar_a_SOURCES_DIST) \
 	$(am__libsba_a_SOURCES_DIST)
 am__can_run_installinfo = \
@@ -376,7 +381,10 @@ AM_CPPFLAGS = -D_REENTRANT -Wall $(SIMD_FLAGS) -DSTDOUTLOG \
 # AM_CPPFLAGS  += -DSTDERRLOG
 # AM_CPPFLAGS  += -DFILELOG="\"${TARGET}.log\""
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/thirdparty
-noinst_LIBRARIES = $(am__append_2) $(am__append_3)
+noinst_LIBRARIES = libadept.a $(am__append_2) $(am__append_3)
+libadept_a_SOURCES = \
+	adept/adept.cpp
+
 @COND_OPENCV2_TRUE@libagast_a_SOURCES = \
 @COND_OPENCV2_TRUE@	agast/agast5_8.cc \
 @COND_OPENCV2_TRUE@	agast/agast5_8_nms.cc \
@@ -445,6 +453,19 @@ $(am__aclocal_m4_deps):
 
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+adept/$(am__dirstamp):
+	@$(MKDIR_P) adept
+	@: > adept/$(am__dirstamp)
+adept/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) adept/$(DEPDIR)
+	@: > adept/$(DEPDIR)/$(am__dirstamp)
+adept/adept.$(OBJEXT): adept/$(am__dirstamp) \
+	adept/$(DEPDIR)/$(am__dirstamp)
+
+libadept.a: $(libadept_a_OBJECTS) $(libadept_a_DEPENDENCIES) $(EXTRA_libadept_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libadept.a
+	$(AM_V_AR)$(libadept_a_AR) libadept.a $(libadept_a_OBJECTS) $(libadept_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libadept.a
 agast/$(am__dirstamp):
 	@$(MKDIR_P) agast
 	@: > agast/$(am__dirstamp)
@@ -536,6 +557,7 @@ libsba.a: $(libsba_a_OBJECTS) $(libsba_a_DEPENDENCIES) $(EXTRA_libsba_a_DEPENDEN
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f adept/*.$(OBJEXT)
 	-rm -f agast/*.$(OBJEXT)
 	-rm -f brisk/*.$(OBJEXT)
 	-rm -f levmar/*.$(OBJEXT)
@@ -544,6 +566,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@adept/$(DEPDIR)/adept.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@agast/$(DEPDIR)/agast5_8.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@agast/$(DEPDIR)/agast5_8_nms.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@agast/$(DEPDIR)/agast7_12d.Po@am__quote@
@@ -727,6 +750,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f adept/$(DEPDIR)/$(am__dirstamp)
+	-rm -f adept/$(am__dirstamp)
 	-rm -f agast/$(DEPDIR)/$(am__dirstamp)
 	-rm -f agast/$(am__dirstamp)
 	-rm -f brisk/$(DEPDIR)/$(am__dirstamp)
@@ -744,7 +769,7 @@ clean: clean-am
 clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf agast/$(DEPDIR) brisk/$(DEPDIR) levmar/$(DEPDIR) sba/$(DEPDIR)
+	-rm -rf adept/$(DEPDIR) agast/$(DEPDIR) brisk/$(DEPDIR) levmar/$(DEPDIR) sba/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -790,7 +815,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf agast/$(DEPDIR) brisk/$(DEPDIR) levmar/$(DEPDIR) sba/$(DEPDIR)
+	-rm -rf adept/$(DEPDIR) agast/$(DEPDIR) brisk/$(DEPDIR) levmar/$(DEPDIR) sba/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

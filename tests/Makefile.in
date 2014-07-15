@@ -346,7 +346,8 @@ test_mavhub_SOURCES = \
 	application/acc_calibration_app_test.cpp
 
 SRC_EXTRA_LIBS = $(am__append_1) $(am__append_2) $(am__append_3)
-THIRDPARTY_EXTRA_LIBS = $(am__append_4) $(am__append_5)
+THIRDPARTY_EXTRA_LIBS = $(top_builddir)/thirdparty/libadept.a \
+	$(am__append_4) $(am__append_5)
 test_mavhub_LDADD = \
 	$(top_builddir)/src/application/libapp.a \
 	$(top_builddir)/src/core/libcore.a \

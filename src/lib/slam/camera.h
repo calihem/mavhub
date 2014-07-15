@@ -89,8 +89,7 @@ void ideal_pinhole_model(const T *objectpoints,
 template<typename T>
 void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 		const T rt[6],
-		T jac_u[6],
-		T jac_v[6]);
+		T jac[12]);
 
 /**
  * \brief Inverse camera model to use with euler angles or quatvec.
@@ -262,8 +261,7 @@ void ideal_pinhole_model(const T *objectpoints,
 template<typename T>
 void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 		const T rt[6],
-		T jac_u[6],
-		T jac_v[6]) {
+		T jac[12]) {
 
 	const T phi = rt[0];
 	const T theta = rt[1];
@@ -322,29 +320,29 @@ void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 	const T inv_y3_square = inv_y3*inv_y3;
 
 	// partial u / partial phi
-	jac_u[0] = -b2*inv_y3 + b3*y1*inv_y3_square;
+	jac[0] = b2*inv_y3 - b3*y1*inv_y3_square;
 	// partial v / partial phi
-	jac_v[0] = b1*inv_y3 + b3*y2*inv_y3_square;
+	jac[1] = -(b1*inv_y3 + b3*y2*inv_y3_square);
 	// partial u / partial theta
-	jac_u[1] = -(b4*inv_y3 + b5*y1*inv_y3_square);
+	jac[2] = b4*inv_y3 + b5*y1*inv_y3_square;
 	// partial v / partial theta
-	jac_v[1] = -(b6*inv_y3 + b5*y2*inv_y3_square);
+	jac[3] = b6*inv_y3 + b5*y2*inv_y3_square;
 	// partial u / partial psi
-	jac_u[2] = (y2-t2)*inv_y3;
+	jac[4] = (t2-y2)*inv_y3;
 	// partial v / partial psi
-	jac_v[2] = (t1-y1)*inv_y3;
+	jac[5] = (y1-t1)*inv_y3;
 	// partial u / partial x
-	jac_u[3] = -inv_y3;
+	jac[6] = inv_y3;
 	// partial v / partial x
-	jac_v[3] = 0;
+	jac[7] = 0;
 	// partial u / partial y
-	jac_u[4] = 0;
+	jac[8] = 0;
 	// partial v / partial y
-	jac_v[4] = -inv_y3;
+	jac[9] = inv_y3;
 	// partial u / partial z
-	jac_u[5] = y1*inv_y3_square;
+	jac[10] = -y1*inv_y3_square;
 	// partial v / partial z
-	jac_v[5] = y2*inv_y3_square;
+	jac[11] = -y2*inv_y3_square;
 }
 
 template<typename T, void(*R)(const T[3], T[9]), typename M, typename C>

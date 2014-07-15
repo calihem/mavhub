@@ -17,7 +17,8 @@ test_mavhub_SOURCES =  \
 	time_test.cpp \
 	application/acc_calibration_app_test.cpp
 
-SRC_EXTRA_LIBS = 
+SRC_EXTRA_LIBS =
+
 if COND_USE_GSTREAMER
 SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libgstreamer.a
 endif
@@ -30,7 +31,8 @@ if COND_OPENCV2
 SRC_EXTRA_LIBS += $(top_builddir)/src/lib/libslam.a
 endif
 
-THIRDPARTY_EXTRA_LIBS =
+THIRDPARTY_EXTRA_LIBS = $(top_builddir)/thirdparty/libadept.a
+
 if COND_OPENCV2
 THIRDPARTY_EXTRA_LIBS += $(top_builddir)/thirdparty/libbrisk.a \
 	$(top_builddir)/thirdparty/libagast.a

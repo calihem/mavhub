@@ -2,6 +2,11 @@ include $(top_srcdir)/am/am_incl_common.am
 
 noinst_LIBRARIES =
 
+noinst_LIBRARIES += libadept.a
+
+libadept_a_SOURCES = \
+	adept/adept.cpp
+
 if COND_OPENCV2
 # AM_CPPFLAGS += $(SIMD_FLAGS)
 AM_CPPFLAGS += $(OPENCV2_CFLAGS)
