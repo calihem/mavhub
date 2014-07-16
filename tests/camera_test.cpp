@@ -33,14 +33,6 @@ static const size_t num_points = sizeof(point_array)/sizeof(float)/3;
 			BOOST_CHECK_CLOSE(expected_array[i], observed_array[i], 0.05); \
 	}
 
-template<typename T>
-void myalgorithm(const T x[2], T y[2]) {
-	y[0] = 4.0*cos(x[0]); y[1] = 8.0;
-	const T s = 2.0*x[0] + 3.0*x[1]*x[1];
-	y[0] *= sin(s);
-	y[1] *= sin(s);
-}
-
 BOOST_AUTO_TEST_SUITE(hub_camera_tests)
 
 BOOST_AUTO_TEST_CASE(pinhole_model_test) {
@@ -303,7 +295,7 @@ void my_pinhole_model(const T x[3], const T p[6], T y[2]) {
 	y[1] = p[0]*x[0] + p[1]*x[1] + p[2]*x[2] + 10*p[3]*x[0] + 10*p[4]*x[1] + 10*p[5]*x[2];
 }
 
-BOOST_AUTO_TEST_CASE(jacobian_test) {
+BOOST_AUTO_TEST_CASE(pinhole_jacobian_test) {
 	static const unsigned int num_input = 3;
 	static const unsigned int num_param = 6;
 	static const unsigned int num_output = 2;
@@ -339,7 +331,7 @@ BOOST_AUTO_TEST_CASE(jacobian_test) {
 	der_stack.jacobian(adept_jac);
 
 	//
-	// compute jacobians with analytical solution
+	// compute jacobians with analytical solution (euler)
 	//
 	double ana_x[num_input];
 	for(unsigned int i=0; i<num_input; i++)
@@ -352,66 +344,24 @@ BOOST_AUTO_TEST_CASE(jacobian_test) {
 
 	CHECK_ARRAYS(adept_jac, ana_jac, num_output*num_param);
 
-/*
-	std::cout << "  adept::dy0_dp = (";
-	for(unsigned int i=0; i<num_param; i++) {
-		std::cout << adept_jac[2*i];
-		if(i != num_param-1)
-			std::cout << ", ";
-	}
-	std::cout << ")" << std::endl;
-	std::cout << "  adept::dy1_dp = (";
-	for(unsigned int i=0; i<num_param; i++) {
-		std::cout << adept_jac[2*i+1];
-		if(i != num_param-1)
-			std::cout << ", ";
-	}
-	std::cout << ")" << std::endl;
+	//
+	// check quaternion (vector) solution
+	//
+	double quaternion[4];
+	euler_to_quaternion(ana_p, quaternion);
+	adept::set_values(&p[0], 3, &quaternion[1]);
+	// determine jacobian reference solution with adept
+	der_stack.new_recording();
+	ideal_pinhole_model<adept::adouble, rotation_matrix_quatvec>(x, p, y);
+	der_stack.independent(&p[0], num_param);
+	der_stack.dependent(&y[0], num_output);
+	der_stack.jacobian(adept_jac);
+	// determine jacobian with analytical solution
+	for(unsigned int i=0; i<3; i++)
+		ana_p[i] = p[i].value();
+	ideal_pinhole_model_quatvec_jac(ana_x, ana_p, ana_jac);
 
-	std::cout << "  hub::dy0_dp   = (";
-	for(unsigned int i=0; i<num_param; i++) {
-		std::cout << ana_jac[2*i];
-		if(i != num_param-1)
-			std::cout << ", ";
-	}
-	std::cout << ")" << std::endl;
-	std::cout << "  hub::dy1_dp   = (";
-	for(unsigned int i=0; i<num_param; i++) {
-		std::cout << ana_jac[2*i+1];
-		if(i != num_param-1)
-			std::cout << ", ";
-	}
-	std::cout << ")" << std::endl;
-*/
-}
-
-BOOST_AUTO_TEST_CASE(Test_ideal_pinhole_jac) {
-//FIXME
-/*
-	float rt[6] = {0.1, 0.2, 0.3, 1.0, -2.0, 0.5};
-
-	// euler
-	float euler_jacobian[12];
-	ideal_pinhole_model_euler_jac(&point_array[0],
-		rt,
-		&euler_jacobian[0],
-		&euler_jacobian[6]);
-
-	//quaternion
-	float qt[6];
-	float quatvec_jacobian[12];
-	euler_to_quaternion(rt, quatvec_jacobian);
-	qt[0] = quatvec_jacobian[1]; qt[1] = quatvec_jacobian[2]; qt[2] = quatvec_jacobian[3];
-	qt[3] = rt[3]; qt[4] = rt[4]; qt[5] = rt[5];
-	ideal_pinhole_model_quatvec_jac(&point_array[0],
-		qt,
-		&quatvec_jacobian[0],
-		&quatvec_jacobian[6]);
-
-	for(unsigned int i=3; i<6; i++) {
-		BOOST_CHECK_CLOSE(euler_jacobian[i], quatvec_jacobian[i], 10);
-	}
-*/
+	CHECK_ARRAYS(adept_jac, ana_jac, num_output*num_param);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

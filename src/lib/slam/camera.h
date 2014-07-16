@@ -79,6 +79,11 @@ void ideal_pinhole_model(const T *objectpoints,
 		T *idealpoints,
 		const size_t n = 1);
 
+template<typename T>
+void ideal_pinhole_model_euler_jac(const T objectpoints[3],
+		const T rt[6],
+		T jac[12]);
+
 /**
  * \brief Calculates the jacobian of the ideal pinhole projection using euler angles.
  * \param[in] objectpoint 3D object point
@@ -502,8 +507,7 @@ void inverse_ideal_pinhole_model_quat(const T *idealpoints,
 template<typename T>
 void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 		const T qt[6],
-		T jac_u[6],
-		T jac_v[6]) {
+		T jac[12]) {
 
 	const T p0 = objectpoint[0];
 	const T p1 = objectpoint[1];
@@ -528,32 +532,44 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T t127 = 1/t126;
 	const T t145 = t126*t126;
 	const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+qt[3])/t145;
-	jac_u[0] = -(p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127+t118*t147;
+	// partial u / partial phi
+	jac[0] = (p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127-t118*t147;
 	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+qt[4];
 	const T t159 = t141/t145;
-	jac_v[0] = -t107*t127+t159*t118;
+	// partial v / partial phi
+	jac[1] = t107*t127-t159*t118;
 	const T t175 = -q2/q0;
 	const T t180 = t175*p0+p2;
 	const T t185 = t175*p1;
 	const T t192 = t175*p2-p0;
 	const T t206 = p1*q2-t51+t175*t81+q0*t185-t192*q1+q3*t180;
 	const T t216 = p1*q3+t93*t175+q0*t192-t180*q2-t65+t185*q1;
-	jac_u[1] = -(p1*q1+t175*t65+t180*q0-t185*q3+t192*q2+t93)*t127+t147*t216;
-	jac_v[1] = -t206*t127+t159*t216;
+	// partial u / partial theta
+	jac[2] = (p1*q1+t175*t65+t180*q0-t185*q3+t192*q2+t93)*t127-t147*t216;
+	// partial v / partial theta
+	jac[3] = t206*t127-t159*t216;
 	const T t240 = -q3/q0;
 	const T t245 = t240*p0-p1;
 	const T t250 = p1*t240+p0;
 	const T t257 = t240*p2;
 	const T t271 = p2*q2+t81*t240+q0*t250-t257*q1+t245*q3+t65;
 	const T t281 = p2*q3-t51+t240*t93+q0*t257-t245*q2+t250*q1;
-	jac_u[2] = -(p2*q1+t240*t65+q0*t245-t250*q3-t81+t257*q2)*t127+t147*t281;
-	jac_v[2] = -t271*t127+t159*t281;
-	jac_u[3] = -t127;
-	jac_v[3] = 0.0;
-	jac_u[4] = 0.0;
-	jac_v[4] = jac_u[3];
-	jac_u[5] = t147;
-	jac_v[5] = t159;
+	// partial u / partial psi
+	jac[4] = (p2*q1+t240*t65+q0*t245-t250*q3-t81+t257*q2)*t127-t147*t281;
+	// partial v / partial psi
+	jac[5] = t271*t127-t159*t281;
+	// partial u / partial x
+	jac[6] = t127;
+	// partial v / partial x
+	jac[7] = 0.0;
+	// partial u / partial y
+	jac[8] = 0.0;
+	// partial v / partial y
+	jac[9] = jac[6];
+	// partial u / partial z
+	jac[10] = -t147;
+	// partial v / partial z
+	jac[11] = -t159;
 }
 
 
