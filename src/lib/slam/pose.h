@@ -15,6 +15,7 @@
 
 #include <levmar/levmar.h>
 
+#include <lib/hub/condition.h>
 #include "lib/hub/math.h"
 #include "lib/hub/utility.h"
 #include "lib/slam/features.h"
@@ -268,7 +269,7 @@ void estimate_translation_by_features(const std::vector<cv::Point2f>& src_featur
 // 	const unsigned int si = matches[sq_distance_index_median.index].trainIdx;
 
 	const T avg_distance = (dst_distance + src_distance) / 2;
-	// an element wise median is more robust than median of sq_differences 
+	// an element wise median is more robust than median of sq_differences
 	translation[0] = hub::_median(u_differences) * avg_distance;
 	translation[1] = hub::_median(v_differences) * avg_distance;
 // 	translation[0] = (dst_features[si].x - src_features[fi].x) * avg_distance;
@@ -481,6 +482,7 @@ inline void levmar_pinhole_euler(T *p, T *hx, int m, int n, void *data) {
 // ----------------------------------------------------------------------------
 // Jacobians
 // ----------------------------------------------------------------------------
+/*FIXME signature of JAC_F has changed
 template<typename T, void(*JAC_F)(const T*, const T*, T*, T*)>
 void levmar_ideal_pinhole_model_jac(T *p, T *jac, int m, int n, void *data) {
 
@@ -498,7 +500,7 @@ void levmar_ideal_pinhole_model_jac(T *p, T *jac, int m, int n, void *data) {
 		&jac[v_offset+j]);
 		j+=6;
 	}
-}
+}*/
 
 template<typename T>
 void levmar_ideal_pinhole_quat_jac(T */*p*/, T */*jac*/, int /*m*/, int /*n*/, void */*data*/) {
@@ -549,34 +551,48 @@ void levmar_ideal_pinhole_quatvec_jac(T *p, T *jac, int m, int n, void *data) {
 		const T t145 = t126*t126;
 		const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+p[3])/t145;
 		// partial q1
-		jac[j] = -(p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127+t118*t147;
+		jac[j] = (p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127-t118*t147;
 		const T t159 = (-t51*q2+q0*t81-t93*q1+t65*q3+p[4])/t145;
-		jac[v_offset+j++] = -t107*t127+t159*t118;
+		jac[v_offset+j++] = t107*t127-t159*t118;
 		const T t180 = t175*p0+p2;
 		const T t185 = t175*p1;
 		const T t192 = t175*p2-p0;
 		const T t206 = p1*q2-t51+t175*t81+q0*t185-t192*q1+q3*t180;
 		const T t216 = p1*q3+t93*t175+q0*t192-t180*q2-t65+t185*q1;
 		// partial q2
-		jac[j] = -(p1*q1+t175*t65+t180*q0-t185*q3+t192*q2+t93)*t127+t147*t216;
-		jac[v_offset+j++] = -t206*t127+t159*t216;
+		jac[j] = (p1*q1+t175*t65+t180*q0-t185*q3+t192*q2+t93)*t127-t147*t216;
+		jac[v_offset+j++] = t206*t127-t159*t216;
 		const T t245 = t240*p0-p1;
 		const T t250 = p1*t240+p0;
 		const T t257 = t240*p2;
 		const T t271 = p2*q2+t81*t240+q0*t250-t257*q1+t245*q3+t65;
 		const T t281 = p2*q3-t51+t240*t93+q0*t257-t245*q2+t250*q1;
 		// partial q3
-		jac[j] = -(p2*q1+t240*t65+q0*t245-t250*q3-t81+t257*q2)*t127+t147*t281;
-		jac[v_offset+j++] = -t271*t127+t159*t281;
+		jac[j] = (p2*q1+t240*t65+q0*t245-t250*q3-t81+t257*q2)*t127-t147*t281;
+		jac[v_offset+j++] = t271*t127-t159*t281;
 		// partial t1
-		jac[j] = -t127;
+		jac[j] = t127;
 		jac[v_offset+j++] = 0.0;
 		// partial t2
 		jac[j] = 0.0;
-		jac[v_offset+j++] = -t127;
+		jac[v_offset+j++] = t127;
 		// partial t3
-		jac[j] = t147;
-		jac[v_offset+j++] = t159;
+		jac[j] = -t147;
+		jac[v_offset+j++] = -t159;
+
+#if 0
+		// test condition of jacobi matrix 
+		using namespace TooN;
+		Matrix<2, 6, T> matrix_jac;
+		const unsigned int jj = i*6;
+		for(unsigned int ii = 0; ii < 6; ii++) {
+			matrix_jac(0, ii) = jac[jj + ii];
+			matrix_jac(1, ii) = jac[v_offset + jj + ii];
+		}
+		const T c = hub::condition<2, 6, T>(matrix_jac);
+		if(c > 20)
+			std::cerr << "ERROR: Jacobian matrix " << matrix_jac << " has a bad condition " << c << std::endl;
+#endif
 	}
 }
 
@@ -605,18 +621,18 @@ void levmar_approx_ideal_pinhole_euler_jac(T *p, T *jac, int m, int n, void *dat
 		const T inv_y3 = 1.0/transformed_point[2];
 		const T inv_y3_square = inv_y3*inv_y3;
 
-		jac[j] = y1*y2*inv_y3_square;
-		jac[v_offset+j++] = 1+y2*y2*inv_y3_square;
-		jac[j] = -(1+y1*y1*inv_y3_square);
-		jac[v_offset+j++] = -y1*y2*inv_y3_square;
-		jac[j] = y2*inv_y3;
-		jac[v_offset+j++] = -y1*inv_y3;
-		jac[j] = -inv_y3;
+		jac[j] = -y1*y2*inv_y3_square;
+		jac[v_offset+j++] = -(1+y2*y2*inv_y3_square);
+		jac[j] = 1+y1*y1*inv_y3_square;
+		jac[v_offset+j++] = y1*y2*inv_y3_square;
+		jac[j] = -y2*inv_y3;
+		jac[v_offset+j++] = y1*inv_y3;
+		jac[j] = inv_y3;
 		jac[v_offset+j++] = 0;
 		jac[j] = 0;
-		jac[v_offset+j++] = -inv_y3;
-		jac[j] = y1*inv_y3_square;
-		jac[v_offset+j++] = y2*inv_y3_square;
+		jac[v_offset+j++] = inv_y3;
+		jac[j] = -y1*inv_y3_square;
+		jac[v_offset+j++] = -y2*inv_y3_square;
 	}
 }
 
@@ -691,29 +707,29 @@ void levmar_ideal_pinhole_euler_jac(T *p, T *jac, int m, int n, void *data) {
 		const T inv_y3_square = inv_y3*inv_y3;
 
 		// partial u / partial phi
-		jac[j] = -b2*inv_y3 + b3*y1*inv_y3_square;
+		jac[j] = b2*inv_y3 - b3*y1*inv_y3_square;
 		// partial v / partial phi
-		jac[v_offset+j++] = b1*inv_y3 + b3*y2*inv_y3_square;
+		jac[v_offset+j++] = -(b1*inv_y3 + b3*y2*inv_y3_square);
 		// partial u / partial theta
-		jac[j] = -(b4*inv_y3 + b5*y1*inv_y3_square);
+		jac[j] = b4*inv_y3 + b5*y1*inv_y3_square;
 		// partial v / partial theta
-		jac[v_offset+j++] = -(b6*inv_y3 + b5*y2*inv_y3_square);
+		jac[v_offset+j++] = b6*inv_y3 + b5*y2*inv_y3_square;
 		// partial u / partial psi
-		jac[j] = (y2-t2)*inv_y3;
+		jac[j] = (t2-y2)*inv_y3;
 		// partial v / partial psi
-		jac[v_offset+j++] = (t1-y1)*inv_y3;
+		jac[v_offset+j++] = (y1-t1)*inv_y3;
 		// partial u / partial x
-		jac[j] = -inv_y3;
+		jac[j] = inv_y3;
 		// partial v / partial x
 		jac[v_offset+j++] = 0;
 		// partial u / partial y
 		jac[j] = 0;
 		// partial v / partial y
-		jac[v_offset+j++] = -inv_y3;
+		jac[v_offset+j++] = inv_y3;
 		// partial u / partial z
-		jac[j] = y1*inv_y3_square;
+		jac[j] = -y1*inv_y3_square;
 		// partial v / partial z
-		jac[v_offset+j++] = y2*inv_y3_square;
+		jac[v_offset+j++] = -y2*inv_y3_square;
 	}
 }
 
@@ -781,7 +797,10 @@ inline int wrap_levmar_der<float>(
 	float *covar,
 	void *adata) {
 
-	return slevmar_der(func, jacf, p, x, m, n, itmax, opts, info, work, covar, adata);
+	if(jacf)
+		return slevmar_der(func, jacf, p, x, m, n, itmax, opts, info, work, covar, adata);
+
+	return slevmar_dif(func, p, x, m, n, itmax, opts, info, work, covar, adata);
 }
 
 template<>
@@ -799,7 +818,10 @@ inline int wrap_levmar_der<double>(
 	double *covar,
 	void *adata) {
 
-	return dlevmar_der(func, jacf, p, x, m, n, itmax, opts, info, work, covar, adata);
+	if(jacf)
+		return dlevmar_der(func, jacf, p, x, m, n, itmax, opts, info, work, covar, adata);
+
+	return dlevmar_dif(func, p, x, m, n, itmax, opts, info, work, covar, adata);
 }
 
 } // namespace slam

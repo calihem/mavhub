@@ -105,6 +105,18 @@ void imagepoints_to_idealpoints(const T *imagepoints,
 	const size_t n = 1,
 	const char *mask = NULL);
 
+template<typename T, typename M, typename C>
+void imagepoints_to_modelpoints(const T *imagepoints,
+	T *modelpoints,
+	const size_t n = 1,
+	const M *mask = NULL);
+
+template<typename T>
+inline void imagepoints_to_modelpoints(const T *imagepoints,
+	T *modelpoints,
+	const size_t n = 1,
+	const char *mask = NULL);
+
 /**
  * \brief Get mask from matches
  *
@@ -239,8 +251,8 @@ void idealpoints_to_imagepoints(const T *idealpoints,
 	const T fy = camera_matrix.at<double>(1, 1);
 
 #define UNNORMALIZE_POINT \
-	imagepoints[i] = idealpoints[i]*fx + cx; \
-	imagepoints[i+1] = idealpoints[i+1]*fy + cy;
+	imagepoints[i] = idealpoints[i+1]*fy + cy; \
+	imagepoints[i+1] = -(idealpoints[i]*fx + cx);
 
 	if(mask) { // unnormalize only masked points
 		C comparator = C();
@@ -318,8 +330,8 @@ void imagepoints_to_idealpoints(const T *imagepoints,
 	const T fy = camera_matrix.at<double>(1, 1);
 
 #define NORMALIZE_POINT \
-	idealpoints[i] = (imagepoints[i] - cx)/fx; \
-	idealpoints[i+1] = (imagepoints[i+1] - cy)/fy;
+	idealpoints[i] = (cy - imagepoints[i+1])/fy; \
+	idealpoints[i+1] = (imagepoints[i] - cx)/fx;
 
 	if(mask) { // normalize only masked points
 		C comparator = C();
@@ -346,6 +358,43 @@ inline void imagepoints_to_idealpoints(const T *imagepoints,
 	imagepoints_to_idealpoints< T, char, std::equal_to<char> >(imagepoints, camera_matrix, idealpoints, n, mask);
 }
 
+template<typename T, typename M, typename C>
+inline void imagepoints_to_modelpoints(const T *imagepoints,
+	T *modelpoints,
+	const size_t n,
+	const M *mask) {
+
+	if(mask) { // only masked points
+		C comparator = C();
+
+		for(size_t i=0; i<2*n; i+=2) {
+			if( comparator(mask[i], 0) ) continue;
+
+			const T tmp_value = imagepoints[i];
+			modelpoints[i] = -imagepoints[i+1];
+			modelpoints[i+1] = tmp_value;
+		}
+	} else { // all points
+		for(size_t i=0; i<2*n; i+=2) {
+			const T tmp_value = imagepoints[i];
+			modelpoints[i] = -imagepoints[i+1];
+// 			modelpoints[i] = imagepoints[i+1];
+			modelpoints[i+1] = tmp_value;
+			//FIXME
+// 			modelpoints[i] = imagepoints[i];
+// 			modelpoints[i+1] = imagepoints[i+1];
+		}
+	}
+}
+
+template<typename T>
+inline void imagepoints_to_modelpoints(const T *imagepoints,
+	T *modelpoints,
+	const size_t n,
+	const char *mask) {
+
+	imagepoints_to_modelpoints< T, char, std::equal_to<char> >(imagepoints, modelpoints, n, mask);
+}
 
 template <typename T>
 inline T min_eigenval(const T &dxx, const T &dxy, const T &dyy) {

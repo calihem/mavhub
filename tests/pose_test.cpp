@@ -48,6 +48,59 @@ PRECISION estimation_error(const std::vector<PRECISION> &parameters,
 
 BOOST_AUTO_TEST_SUITE(hub_pose_tests)
 
+BOOST_AUTO_TEST_CASE(jacobian_test) {
+	PRECISION euler_pose[6] = {0.1, 0.2, 0.3, 1.0, -1.0, 0.5};
+	PRECISION levmar_jac[num_points*2*6];
+	std::vector<PRECISION> objectpoints;
+	for(unsigned int i=0; i<num_points; i++) {
+		objectpoints.push_back(pose_point_array[i*3]);
+		objectpoints.push_back(pose_point_array[i*3+1]);
+		objectpoints.push_back(pose_point_array[i*3+2]);
+	}
+	std::vector< cv::Point_<PRECISION> > imagepoints; // projections aren't needed for jacobians => let them empty
+	pinhole_model_data_t<PRECISION> model_data(objectpoints, imagepoints);
+
+	//
+	// Test euler implementations
+	//
+	levmar_ideal_pinhole_euler_jac(euler_pose, levmar_jac, 6, 2*num_points, (void*)&model_data);
+
+	PRECISION cam_jac[2][6];
+	for(unsigned int point_idx=0; point_idx<num_points; point_idx++) {
+		ideal_pinhole_model_euler_jac<PRECISION>(&pose_point_array[point_idx*3], euler_pose, cam_jac);
+
+		CHECK_ARRAYS( (&levmar_jac[point_idx*6]), cam_jac[0], 6, 0.05);
+		CHECK_ARRAYS( (&levmar_jac[(num_points+point_idx)*6]), cam_jac[1], 6, 0.05);
+	}
+/*	// test approximation
+	levmar_approx_ideal_pinhole_euler_jac(euler_pose, levmar_jac, 6, 2*num_points, (void*)&model_data);
+	for(unsigned int point_idx=0; point_idx<num_points; point_idx++) {
+		ideal_pinhole_model_euler_jac<PRECISION>(&pose_point_array[point_idx*3], euler_pose, cam_jac);
+
+		CHECK_ARRAYS( (&levmar_jac[point_idx*6]), cam_jac[0], 6, 100);
+		CHECK_ARRAYS( (&levmar_jac[(num_points+point_idx)*6]), cam_jac[1], 6, 100);
+	}*/
+
+	//
+	// Test quaternion vector implementations
+	//
+	PRECISION quaternion[4];
+	euler_to_quaternion(euler_pose, quaternion);
+	PRECISION quatvec_pose[6];
+	for(unsigned int i=0; i<3; i++) {
+		quatvec_pose[i] = quaternion[i+1];
+		quatvec_pose[i+3] = euler_pose[i+3];
+	}
+	levmar_ideal_pinhole_quatvec_jac(quatvec_pose, levmar_jac, 6, 2*num_points, (void*)&model_data);
+
+	for(unsigned int point_idx=0; point_idx<num_points; point_idx++) {
+		ideal_pinhole_model_quatvec_jac<PRECISION>(&pose_point_array[point_idx*3], quatvec_pose, cam_jac);
+
+		CHECK_ARRAYS( (&levmar_jac[point_idx*6]), cam_jac[0], 6, 0.05);
+		CHECK_ARRAYS( (&levmar_jac[(num_points+point_idx)*6]), cam_jac[1], 6, 0.05);
+	}
+}
+
 BOOST_AUTO_TEST_CASE(estimate_translation_test) {
 	std::vector< cv::Point3_<PRECISION> > objectpoints;
 	for(unsigned int i=0; i<num_points; i++) {

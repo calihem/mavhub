@@ -103,6 +103,7 @@ void sba_pinhole_model(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsu
 	}
 }
 
+//FIXME rename function or make it a template
 void sba_ideal_pinhole_model_jac(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsubs, double *jac, void */*adata*/) {
 	const int num_cols = idxij->nc;
 	const double *p_points = p+num_cols*num_params_per_cam;
@@ -113,8 +114,8 @@ void sba_ideal_pinhole_model_jac(double *p, struct sba_crsm *idxij, int *rcidxs,
 
 	for(int j=0; j<num_cols; ++j) {
 		// get j-th camera parameters
-		const double *p_quat = p + j*num_params_per_cam;
-		const double *p_transl = p_quat + 3;	// rotation vector part has 3 elements
+		const double *p_qt = p + j*num_params_per_cam;
+// 		const double *p_transl = p_quat + 3;	// rotation vector part has 3 elements
 
 		// find number of nonzero hx_ij, i=0...n-1
 		int num_nonzero = sba_crsm_col_elmidxs(idxij, j, rcidxs, rcsubs);
@@ -124,8 +125,8 @@ void sba_ideal_pinhole_model_jac(double *p, struct sba_crsm *idxij, int *rcidxs,
 			double *p_Bij = p_Aij + size_A;
 
 			ideal_pinhole_model_quatvec_jac<double>(p_point,
-				p_quat,
-				p_transl,
+				p_qt,
+// 				p_transl,
 				(double (*)[6])p_Aij,
 				(double (*)[3])p_Bij);
 		}
