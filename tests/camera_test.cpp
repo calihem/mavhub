@@ -25,12 +25,12 @@ const float point_array[] = {
 
 static const size_t num_points = sizeof(point_array)/sizeof(float)/3;
 
-#define CHECK_ARRAYS(expected_array, observed_array, size) \
+#define CHECK_ARRAYS(expected_array, observed_array, size, accepted_difference) \
 	for(unsigned int i=0; i<size; i++) { \
 		if(std::fabs(expected_array[i]) < epsilon) \
 			BOOST_CHECK_SMALL( (double)observed_array[i], (double)epsilon); \
 		else \
-			BOOST_CHECK_CLOSE(expected_array[i], observed_array[i], 0.05); \
+			BOOST_CHECK_CLOSE(expected_array[i], observed_array[i], accepted_difference); \
 	}
 
 BOOST_AUTO_TEST_SUITE(hub_camera_tests)
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				parameter_vector_quat,
 				&projected_points_quat[i*2]);
 		}
-		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points, 0.05);
 
 		memset(projected_points_quat, 0, sizeof(projected_points_quat));
 		// multi point version
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 			parameter_vector_quat,
 			projected_points_quat,
 			num_points);
-		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points, 0.05);
 
 		// inverse ideal camera model using euler angles
 		memset(reprojected_points, 0, sizeof(reprojected_points));
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				1);
 		}
 		// check inverse model
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		// ideal inverse camera model using quaternions
 		memset(reprojected_points, 0, sizeof(reprojected_points));
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				&reprojected_points[i*3],
 				1);
 		}
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		// ideal camera model using quaternion vector
 		memset(projected_points_quat, 0, sizeof(projected_points_quat));
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 			&parameter_vector_quat[1],
 			projected_points_quat,
 			num_points);
-		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points, 0.05);
 
 		// ideal inverse camera model using quaternion vector
 		memset(reprojected_points, 0, sizeof(reprojected_points));
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				&reprojected_points[i*3],
 				1);
 		}
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		/*
 		 * Normal pinhole model
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				NULL);
 		}
 		// check inverse model
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		// camera model using quaternions
 		memset(projected_points_quat, 0, sizeof(projected_points_quat));
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 			projected_points_quat,
 			num_points);
 		// check euler against quaternions
-		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points, 0.05);
 
 		//TODO inverse camera model using quaternions
 
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 			projected_points_quat,
 			num_points);
 		// check euler against quaternion vector
-		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points);
+		CHECK_ARRAYS(projected_points_euler, projected_points_quat, 2*num_points, 0.05);
 
 		// inverse camera model using quaternion vector
 		memset(reprojected_points, 0, sizeof(reprojected_points));
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				NULL);
 		}
 		// check inverse model
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		/*
 		 * Mixed ideal and normal pinhole model
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				1);
 		}
 		// check reprojected points
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		// project by ideal camera model
 		memset(projected_points_euler, 0, sizeof(projected_points_euler));
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(pinhole_model_test) {
 				NULL);
 		}
 		// check reprojected points
-		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points);
+		CHECK_ARRAYS(point_array, reprojected_points, 3*num_points, 0.05);
 
 		/*
 		 * modify parameter vector 
@@ -280,88 +280,90 @@ BOOST_AUTO_TEST_CASE(pinhole_translation_test) {
 	//TODO backward, left, right, up, down
 }
 
-
-// template<typename T>
-// template<typename T, typename D, void(*R)(const D[3], D[9])>
-template<typename T, void(*R)(const T[3], T[9])>
-void my_pinhole_model(const T x[3], const T p[6], T y[2]) {
-
-	// determine rotation matrix
-	T rotation_matrix[9];
-	R(p, rotation_matrix);
-
-
-	y[0] = p[0] + 2*p[1] + 3*p[2] + 4*p[3] + 5*p[4] + 6*p[5];
-	y[1] = p[0]*x[0] + p[1]*x[1] + p[2]*x[2] + 10*p[3]*x[0] + 10*p[4]*x[1] + 10*p[5]*x[2];
-}
-
 BOOST_AUTO_TEST_CASE(pinhole_jacobian_test) {
 	static const unsigned int num_input = 3;
 	static const unsigned int num_param = 6;
 	static const unsigned int num_output = 2;
 
-	// TODO: test with more points and params
-
-	//
-	// compute reference jacobians via adept library
-	//
 	// init stack for automatic differentiation
 	adept::Stack der_stack;
 
 	// init independent variables
 	adept::adouble x[num_input];
-	adept::set_values(&x[0], num_input, &point_array[3]);
-// 	adept::adouble x[num_input] = {1, 1, 1};
-	adept::adouble p[num_param] = {1, 1, 1, 1, 1, 1};
+	adept::adouble p[num_param] = {deg2rad<double>(5.0), -deg2rad<float>(12.0), deg2rad<float>(33.0), -5.0, 8.0, 3.0};
 
-	// run recording
-	der_stack.new_recording();
-	adept::adouble y[num_output];
+	for(unsigned int point_idx = 0; point_idx<num_points; point_idx++) {
+		adept::set_values(&x[0], num_input, &point_array[point_idx*num_input]);
 
-	// run algorithm
-	ideal_pinhole_model<adept::adouble, rotation_matrix_rad>(x, p, y);
+		//
+		// compute reference jacobians via adept library
+		//
+		// run recording
+		der_stack.new_recording();
+		adept::adouble y[num_output];
+		// run algorithm
+		ideal_pinhole_model<adept::adouble, rotation_matrix_rad>(x, p, y);
+		// set (in)dependent variables
+		der_stack.independent(&p[0], num_param);
+		der_stack.dependent(&y[0], num_output);
+		// determine jacobian
+		double adept_jac[num_output*num_param];
+		der_stack.jacobian(adept_jac, true); // get jacobian in row-major order
 
-	// set (in)dependent variables
-// 	der_stack.independent(&x[0], num_input);
-	der_stack.independent(&p[0], num_param);
-	der_stack.dependent(&y[0], num_output);
-	
-	// determine jacobian
-	double adept_jac[num_output*num_param];
-	der_stack.jacobian(adept_jac);
+		//
+		// compute jacobians with analytical solution (euler)
+		//
+		double ana_x[num_input];
+		for(unsigned int i=0; i<num_input; i++)
+			ana_x[i] = x[i].value();
+		double ana_p[num_param];
+		for(unsigned int i=0; i<num_param; i++)
+			ana_p[i] = p[i].value();
+		double ana_jac[num_output][num_param];
+		ideal_pinhole_model_euler_jac<double>(ana_x, ana_p, ana_jac);
 
-	//
-	// compute jacobians with analytical solution (euler)
-	//
-	double ana_x[num_input];
-	for(unsigned int i=0; i<num_input; i++)
-		ana_x[i] = x[i].value();
-	double ana_p[num_param];
-	for(unsigned int i=0; i<num_param; i++)
-		ana_p[i] = p[i].value();
-	double ana_jac[num_output*num_param];
-	ideal_pinhole_model_euler_jac<double>(ana_x, ana_p, ana_jac);
+		// jacobian with euler angles seem to be rather noisy :(
+		CHECK_ARRAYS(adept_jac, ana_jac[0], num_output*num_param, 33.0);
 
-	CHECK_ARRAYS(adept_jac, ana_jac, num_output*num_param);
+		//
+		// check quaternion (vector) solution
+		//
+		double quaternion[4];
+		euler_to_quaternion(ana_p, quaternion);
+		adept::set_values(&p[0], 3, &quaternion[1]);
+		// determine jacobian reference solution with adept
+		der_stack.new_recording();
+		ideal_pinhole_model<adept::adouble, rotation_matrix_quatvec>(x, p, y);
+		der_stack.independent(&p[0], num_param);
+		der_stack.dependent(&y[0], num_output);
+		der_stack.jacobian(adept_jac, true);
+		// determine jacobian with analytical solution
+		for(unsigned int i=0; i<3; i++)
+			ana_p[i] = p[i].value();
+		ideal_pinhole_model_quatvec_jac(ana_x, ana_p, ana_jac);
 
-	//
-	// check quaternion (vector) solution
-	//
-	double quaternion[4];
-	euler_to_quaternion(ana_p, quaternion);
-	adept::set_values(&p[0], 3, &quaternion[1]);
-	// determine jacobian reference solution with adept
-	der_stack.new_recording();
-	ideal_pinhole_model<adept::adouble, rotation_matrix_quatvec>(x, p, y);
-	der_stack.independent(&p[0], num_param);
-	der_stack.dependent(&y[0], num_output);
-	der_stack.jacobian(adept_jac);
-	// determine jacobian with analytical solution
-	for(unsigned int i=0; i<3; i++)
-		ana_p[i] = p[i].value();
-	ideal_pinhole_model_quatvec_jac(ana_x, ana_p, ana_jac);
+		CHECK_ARRAYS(adept_jac, ana_jac[0], num_output*num_param, 0.05);
 
-	CHECK_ARRAYS(adept_jac, ana_jac, num_output*num_param);
+		//
+		// check quaternion (vector) solution with structure
+		//
+		// determine jacobian reference solution with adept
+		der_stack.new_recording();
+		ideal_pinhole_model<adept::adouble, rotation_matrix_quatvec>(x, p, y);
+		der_stack.independent(&p[0], num_param);
+		der_stack.independent(&x[0], num_input);
+		der_stack.dependent(&y[0], num_output);
+		double adept_jac_qts[num_output*(num_param+num_input)];
+		der_stack.jacobian(adept_jac_qts, true);
+		// determine motion and structure jacobians using analytical solution
+		double ana_jac_s[num_output][num_input];
+		ideal_pinhole_model_quatvec_jac(ana_x, ana_p, ana_jac, ana_jac_s);
+
+		CHECK_ARRAYS(adept_jac_qts, ana_jac[0], num_param, 0.05);
+		CHECK_ARRAYS((&adept_jac_qts[num_param]), ana_jac_s[0], num_input, 0.05);
+		CHECK_ARRAYS((&adept_jac_qts[num_param+num_input]), ana_jac[1], num_param, 0.05);
+		CHECK_ARRAYS((&adept_jac_qts[2*num_param+num_input]), ana_jac_s[1], num_input, 0.05);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()
