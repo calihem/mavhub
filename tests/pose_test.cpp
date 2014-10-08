@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(estimate_translation_test) {
 		avg_depth + rt[5],
 		matches,
 		transl_estimation);
-	CHECK_ARRAYS( (rt+3), transl_estimation, 3, 12)
+	CHECK_ARRAYS( (rt+3), transl_estimation, 3, 13)
 
 	// estimate translation by features
 	estimate_translation_by_features(src_ideal_points,
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(guess_euler_pose_test) {
 	euler_pose[5] = 0.5;	//t3
 
 	std::vector< cv::Point_<PRECISION> > imagepoints( objectpoints.size() );
-	pinhole_model_euler(
+	pinhole_model<PRECISION, rotation_matrix_rad>(
 		reinterpret_cast<PRECISION*>( &(objectpoints[0].x) ),
 		&euler_pose[0],
 		camera_matrix,

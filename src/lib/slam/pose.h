@@ -252,18 +252,17 @@ void estimate_translation_by_features(const std::vector<cv::Point2f>& src_featur
 	for(size_t i = 0; i < matches.size(); i++) {
 		if(!mask.empty() && mask[i] == 0) continue;
 
-		const unsigned int fi = matches[i].queryIdx;
-		const unsigned int si = matches[i].trainIdx;
+		const unsigned int src_index = matches[i].queryIdx;
+		const unsigned int dst_index = matches[i].trainIdx;
 
 // 		const T delta_x = dst_features[si].x - src_features[fi].x;
 // 		const T delta_y = dst_features[si].y - src_features[fi].y;
 // 		const T sq_distance = delta_x*delta_x + delta_y*delta_y;
 // 		sq_differences.push_back( hub::indexed_item_t<T>(sq_distance, i) );
 
-		u_differences.push_back(dst_features[si].x - src_features[fi].x);
-		v_differences.push_back(dst_features[si].y - src_features[fi].y);
+		u_differences.push_back(src_features[src_index].x - dst_features[dst_index].x);
+		v_differences.push_back(src_features[src_index].y - dst_features[dst_index].y);
 	}
-
 // 	hub::indexed_item_t<T> sq_distance_index_median = hub::_median(sq_differences);
 // 	const unsigned int fi = matches[sq_distance_index_median.index].queryIdx;
 // 	const unsigned int si = matches[sq_distance_index_median.index].trainIdx;
@@ -274,7 +273,7 @@ void estimate_translation_by_features(const std::vector<cv::Point2f>& src_featur
 	translation[1] = hub::_median(v_differences) * avg_distance;
 // 	translation[0] = (dst_features[si].x - src_features[fi].x) * avg_distance;
 // 	translation[1] = (dst_features[si].y - src_features[fi].y) * avg_distance;
-	translation[2] = dst_distance - src_distance;
+	translation[2] = src_distance - dst_distance;
 }
 
 template<typename T>
@@ -307,8 +306,8 @@ void estimate_translation_by_objects(const std::vector< cv::Point3_<T> >& object
 		const unsigned int fi = matches[i].queryIdx;
 		const unsigned int si = matches[i].trainIdx;
 
-		x_differences.push_back( (idealpoints[si].x*avg_distance) - objectpoints[fi].x );
-		y_differences.push_back( (idealpoints[si].y*avg_distance) - objectpoints[fi].y );
+		x_differences.push_back( objectpoints[fi].x - (idealpoints[si].x*avg_distance) );
+		y_differences.push_back( objectpoints[fi].y - (idealpoints[si].y*avg_distance) );
 		z_differences.push_back( avg_distance - objectpoints[fi].z );
 	}
 
@@ -476,7 +475,7 @@ inline void levmar_ideal_pinhole_quatvec(T *p, T *hx, int m, int n, void *data) 
 
 template<typename T>
 inline void levmar_pinhole_euler(T *p, T *hx, int m, int n, void *data) {
-	levmar_pinhole_model< T, pinhole_model_euler<T> >(p, hx, m, n, data);
+	levmar_pinhole_model< T, pinhole_model<T, rotation_matrix_rad> >(p, hx, m, n, data);
 }
 
 // ----------------------------------------------------------------------------

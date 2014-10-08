@@ -197,14 +197,15 @@ void inverse_ideal_pinhole_model_quat(const T *idealpoints,
 /**
  * \brief Calculates the projection of a 3D point to a 2D image point using euler angles.
  * \tparam T Base type of points, e.g. float or double
+ * \tparam R Function to calculate rotation matrix.
  * \param[in] objectpoints Pointer to an array of 3D object points
- * \param[in] rt rotation quaternion + translation vector
+ * \param[in] rt rotation + translation vector
  * \param[in] camera_matrix intrinsic params
  * \param[out] imagepoints Pointer to an array of 2D projections of the objectpoints.
  * \param[in] n Number of points
  */
-template<typename T>
-void pinhole_model_euler(const T *objectpoints,
+template<typename T, void(*R)(const T[3], T[9])>
+inline void pinhole_model(const T *objectpoints,
 		const T rt[6],
 		const cv::Mat &camera_matrix,
 		T *imagepoints,
@@ -222,22 +223,6 @@ void pinhole_model_euler(const T *objectpoints,
 template<typename T>
 void pinhole_model_quat(const T *objectpoints,
 		const T qt[7],
-		const cv::Mat &camera_matrix,
-		T *imagepoints,
-		const size_t n = 1);
-
-/**
- * \brief Calculates the projection of a 3D point to a 2D image point using quaternion vector part.
- * \tparam T Base type of points, e.g. float or double
- * \param[in] objectpoints Pointer to an array of 3D object points
- * \param[in] qt rotation quaternion vector part + translation vector
- * \param[in] camera_matrix intrinsic params
- * \param[out] imagepoints Pointer to an array of 2D projections of the objectpoints.
- * \param[in] n Number of points
- */
-template<typename T>
-inline void pinhole_model_quatvec(const T *objectpoints,
-		const T qt[6],
 		const cv::Mat &camera_matrix,
 		T *imagepoints,
 		const size_t n = 1);
@@ -278,9 +263,9 @@ void ideal_pinhole_model(const T *objectpoints,
 		// rotate 3D points
 		multiply(rotation_matrix, &objectpoints[i*3], rotated_point);
 
+		idealpoints[i*2] = rotated_point[0] - rt[3];
+		idealpoints[i*2 + 1] = rotated_point[1] - rt[4];
 		rotated_point[2] += rt[5];
-		idealpoints[i*2] = rotated_point[0] + rt[3];
-		idealpoints[i*2 + 1] = rotated_point[1] + rt[4];
 		// avoid divding by (almost) zero for points near camera
 		if(rotated_point[2] <= 0.001)
 			continue;
@@ -298,8 +283,8 @@ void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 	const T phi = rt[0];
 	const T theta = rt[1];
 	const T psi = rt[2];
-	const T t1 = rt[3];
-	const T t2 = rt[4];
+	const T t1 = -rt[3];
+	const T t2 = -rt[4];
 	const T t3 = rt[5];
 
 	const T cphi = cos(phi);
@@ -364,13 +349,13 @@ void ideal_pinhole_model_euler_jac(const T objectpoints[3],
 	// partial v / partial psi
 	jac[1][2] = (y1-t1)*inv_y3;
 	// partial u / partial x
-	jac[0][3] = inv_y3;
+	jac[0][3] = -inv_y3;
 	// partial v / partial x
 	jac[1][3] = 0;
 	// partial u / partial y
 	jac[0][4] = 0;
 	// partial v / partial y
-	jac[1][4] = inv_y3;
+	jac[1][4] = -inv_y3;
 	// partial u / partial z
 	jac[0][5] = -y1*inv_y3_square;
 	// partial v / partial z
@@ -396,8 +381,8 @@ void ideal_pinhole_model_quat(const T objectpoint[3],
 	const T t3 = p1*q0+q3*p0-p2*q1;
 	const T t4 = q0*p2+p1*q1-q2*p0;
 
-	const T x = -q1*t1+q0*t2-t3*q3+q2*t4+qt[4];
-	const T y = -q2*t1+q0*t3-t4*q1+q3*t2+qt[5];
+	const T x = -q1*t1+q0*t2-t3*q3+q2*t4-qt[4];
+	const T y = -q2*t1+q0*t3-t4*q1+q3*t2-qt[5];
 	const T z = -t1*q3+q0*t4-q2*t2+q1*t3+qt[6];
 
 // 	const T x = (1-2*(q2*q2+q3*q3))*p0 + 2*(q1*q2-q0*q3)*p1     + 2*(q0*q2+q1*q3)*p2     + t[0];
@@ -426,10 +411,10 @@ void ideal_pinhole_model_quat(const T *objectpoints,
 
 	for(size_t i=0; i<n; i++) {
 		multiply(rotation_matrix, &objectpoints[i*3], transformed_point);
-		transformed_point[0] += qt[4];
-		transformed_point[1] += qt[5];
+		transformed_point[0] -= qt[4];
+		transformed_point[1] -= qt[5];
 		transformed_point[2] += qt[6];
-// 		if( abs(transformed_point[2]) <= 0.0001) transformed_point[2] = 1;
+		if( abs(transformed_point[2]) <= 0.0001) transformed_point[2] = 1;
 
 		idealpoints[i*2] = transformed_point[0]/transformed_point[2];
 		idealpoints[i*2+1] = transformed_point[1]/transformed_point[2];
@@ -450,6 +435,10 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T q3 = qt[2];
 	const T q0 = sqrt(1.0-q1*q1-q2*q2-q3*q3);
 
+	const T t1 = -qt[3];
+	const T t2 = -qt[4];
+	const T t3 = qt[5];
+
 	const T t56 = -q1/q0;
 	const T t70 = t56*p0;
 	const T t75 = t56*p1-p2;
@@ -460,13 +449,13 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T t118 = p0*q3+t56*t93+q0*t87-t70*q2+q1*t75+t81;
 	const T t51 = -q1*p0-q2*p1-q3*p2;
 	const T t65 = q0*p0+q2*p2-p1*q3;
-	const T t126 = -q3*t51+q0*t93-t65*q2+t81*q1+qt[5];
+	const T t126 = -q3*t51+q0*t93-t65*q2+t81*q1+t3;
 	const T t127 = 1/t126;
 	const T t145 = t126*t126;
-	const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+qt[3])/t145;
+	const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+t1)/t145;
 	// partial u / partial q1
 	jac[0][0] = (p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127-t118*t147;
-	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+qt[4];
+	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+t2;
 	const T t159 = t141/t145;
 	// partial v / partial q1
 	jac[1][0] = t107*t127-t159*t118;
@@ -491,7 +480,7 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	// partial v / partial q3
 	jac[1][2] = t271*t127-t159*t281;
 	// partial u / partial x
-	jac[0][3] = t127;
+	jac[0][3] = -t127;
 	// partial v / partial x
 	jac[1][3] = 0.0;
 	// partial u / partial y
@@ -523,6 +512,10 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T q0q0 = 1.0-q1q1-q2q2-q3q3;
 	const T q0 = sqrt(q0q0);
 
+	const T t1 = -qt[3];
+	const T t2 = -qt[4];
+	const T t3 = qt[5];
+
 	const T t51 = -q1*p0-q2*p1-q3*p2;
 	const T t56 = -q1/q0;
 	const T t65 = q0*p0+q2*p2-p1*q3;
@@ -533,11 +526,11 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T t93 = q0*p2+q1*p1-q2*p0;
 	const T t107 = p0*q2+t56*t81+q0*t75-t87*q1-t93+t70*q3;
 	const T t118 = p0*q3+t56*t93+q0*t87-t70*q2+q1*t75+t81;
-	const T t126 = -q3*t51+q0*t93-t65*q2+t81*q1+qt[5];
+	const T t126 = -q3*t51+q0*t93-t65*q2+t81*q1+t3;
 	const T t127 = 1/t126;
-	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+qt[4];
+	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+t2;
 	const T t145 = t126*t126;
-	const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+qt[3])/t145;
+	const T t147 = (-q1*t51+q0*t65-t81*q3+t93*q2+t1)/t145;
 	// partial u / partial q1
 	jac_qt[0][0] = (p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)*t127-t118*t147;
 	const T t159 = t141/t145;
@@ -563,13 +556,13 @@ void ideal_pinhole_model_quatvec_jac(const T objectpoint[3],
 	jac_qt[0][2] = (p2*q1+t240*t65+q0*t245-t250*q3-t81+t257*q2)*t127-t147*t281;
 	jac_qt[1][2] = t271*t127-t159*t281;
 	// partial u / partial t1
-	jac_qt[0][3] = t127;
+	jac_qt[0][3] = -t127;
 	// partial v / partial t1
 	jac_qt[1][3] = 0.0;
 	// partial u / partial t2
 	jac_qt[0][4] = 0.0;
 	// partial v / partial t2
-	jac_qt[1][4] = t127;
+	jac_qt[1][4] = -t127;
 	// partial u / partial t3
 	jac_qt[0][5] = -t147;
 	// partial v / partial t3
@@ -610,18 +603,18 @@ void inverse_ideal_pinhole_model(const T *idealpoints,
 
 	if( !idealpoints || !rt || !objectpoints) return;
 
-	const T t1 = rt[3];
-	const T t2 = rt[4];
+	const T t1 = -rt[3];
+	const T t2 = -rt[4];
 	const T t3 = rt[5];
 
 	// rotation matrix is orthogonal => R^{-1} = R^t, i.e. r_ij = r_ji
 	T rotation_matrix[9];
-	R(&rt[0], rotation_matrix);
+	R(rt, rotation_matrix);
 	const T r11 = rotation_matrix[0]; const T r12 = rotation_matrix[1]; const T r13 = rotation_matrix[2];
 	const T r21 = rotation_matrix[3]; const T r22 = rotation_matrix[4]; const T r23 = rotation_matrix[5];
 	const T r31 = rotation_matrix[6]; const T r32 = rotation_matrix[7]; const T r33 = rotation_matrix[8];
 
-	const T x3 = distance - t3;
+	const T x3 = distance + t3;
 	const T y3_numerator = x3 + r13*t1 + r23*t2 + r33*t3;
 
 #define REPROJECT_IDEAL_POINTS \
@@ -667,8 +660,8 @@ void inverse_ideal_pinhole_model_quat(const T *idealpoints,
 		T *objectpoints,
 		const size_t n) {
 
-	const T t1 = qt[4];
-	const T t2 = qt[5];
+	const T t1 = -qt[4];
+	const T t2 = -qt[5];
 	const T t3 = qt[6];
 
 	// rotation matrix is orthogonal => R^{-1} = R^t
@@ -678,7 +671,7 @@ void inverse_ideal_pinhole_model_quat(const T *idealpoints,
 	const T r21 = rotation_matrix[3]; const T r22 = rotation_matrix[4]; const T r23 = rotation_matrix[5];
 	const T r31 = rotation_matrix[6]; const T r32 = rotation_matrix[7]; const T r33 = rotation_matrix[8];
 
-	const T x3 = distance - t3;
+	const T x3 = distance + t3;
 	const T y3_numerator = x3 + r13*t1 + r23*t2 + r33*t3;
 
 	for(unsigned int i=0; i<n; i++) {
@@ -696,7 +689,27 @@ void inverse_ideal_pinhole_model_quat(const T *idealpoints,
 }
 
 #if CV_MINOR_VERSION >= 2
-template<typename T>
+template<typename T, void(*R)(const T[3], T[9])>
+inline void pinhole_model(const T *objectpoints,
+		const T rt[6],
+		const cv::Mat &camera_matrix,
+		T *imagepoints,
+		const size_t n) {
+
+	ideal_pinhole_model<T, R>(objectpoints, rt, imagepoints, n);
+
+	const T cx = camera_matrix.at<double>(0, 2);
+	const T cy = camera_matrix.at<double>(1, 2);
+	const T fx = camera_matrix.at<double>(0, 0);
+	const T fy = camera_matrix.at<double>(1, 1);
+
+	for(size_t i=0; i<n; i++) {
+		imagepoints[i*2] = fx*imagepoints[i*2] + cx;
+		imagepoints[i*2 + 1] = fy*imagepoints[i*2 + 1] + cy;
+	}
+}
+
+/*template<typename T>
 inline void pinhole_model_euler(const T *objectpoints,
 		const T rt[6],
 		const cv::Mat &camera_matrix,
@@ -714,7 +727,7 @@ inline void pinhole_model_euler(const T *objectpoints,
 		imagepoints[i*2] = fx*imagepoints[i*2] + cx;
 		imagepoints[i*2 + 1] = fy*imagepoints[i*2 + 1] + cy;
 	}
-}
+}*/
 
 template<typename T>
 void pinhole_model_quat(const T *objectpoints,
@@ -735,7 +748,7 @@ void pinhole_model_quat(const T *objectpoints,
 		imagepoints[i*2 + 1] = fy*imagepoints[i*2 + 1] + cy;
 	}
 }
-
+/*
 template<typename T>
 inline void pinhole_model_quatvec(const T *objectpoints,
 		const T qt[6],
@@ -749,7 +762,7 @@ inline void pinhole_model_quatvec(const T *objectpoints,
 	pose[5] = qt[4];
 	pose[6] = qt[5];
 	pinhole_model_quat(objectpoints, pose, camera_matrix, imagepoints, n);
-}
+}*/
 
 template<typename T, void(*R)(const T[3], T[9]), typename M, typename C>
 void inverse_pinhole_model(const T *imagepoints,
@@ -805,6 +818,10 @@ void pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T q0q0 = 1.0-q1q1-q2q2-q3q3;
 	const T q0 = sqrt(q0q0);
 
+	const T t1 = -t[0];
+	const T t2 = -t[1];
+	const T t3 = t[2];
+
 	const T cx = camera_matrix.at<double>(0, 2);
 	const T cy = camera_matrix.at<double>(1, 2);
 	const T fx = camera_matrix.at<double>(0, 0);
@@ -820,11 +837,11 @@ void pinhole_model_quatvec_jac(const T objectpoint[3],
 	const T t118 = p0*q3+t56*t93+q0*t87-t70*q2+q1*t75+t81;
 	const T t51 = -q1*p0-q2*p1-q3*p2;
 	const T t65 = q0*p0+q2*p2-p1*q3;
-	const T t126 = -q3*t51+q0*t93-t65*q2+t81*q1+t[2];
+	const T t126 = -q3*t51+q0*t93-t65*q2+t81*q1+t3;
 	const T t127 = 1/t126;
-	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+t[1];
+	const T t141 = -t51*q2+q0*t81-t93*q1+t65*q3+t2;
 	const T t145 = t126*t126;
-	const T t147 = (fx*(-q1*t51+q0*t65-t81*q3+t93*q2+t[0])+t126*cx)/t145;
+	const T t147 = (fx*(-q1*t51+q0*t65-t81*q3+t93*q2+t1)+t126*cx)/t145;
 	jacmRT[0][0] = (fx*(p0*q1-t51+t56*t65+q0*t70-q3*t75+q2*t87)+cx*t118)*t127-t118*t147;
 	const T t159 = (fy*t141+t126*cy)/t145;
 	jacmRT[1][0] = (t107*fy+cy*t118)*t127-t159*t118;

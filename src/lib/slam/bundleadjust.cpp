@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#define _BUNDLEADJUST_VERBOSE 0
+#define _BUNDLEADJUST_VERBOSE 1
 
 #define emalloc(sz)       emalloc_(__FILE__, __LINE__, sz)
 #define FABS(x)           (((x)>=0)? (x) : -(x))
@@ -98,7 +98,7 @@ void sba_pinhole_model(double *p, struct sba_crsm *idxij, int *rcidxs, int *rcsu
 			const double *p_point = p_points + rcsubs[i]*num_params_per_point;
 			double *p_measurement = hx + idxij->val[rcidxs[i]]*num_params_per_measuremnt; // p_measurement = hx_ij
 			
-			pinhole_model_quatvec<double>(p_point, p_pose, camera_matrix, p_measurement);
+			pinhole_model<double, rotation_matrix_quatvec>(p_point, p_pose, camera_matrix, p_measurement);
 		}
 	}
 }

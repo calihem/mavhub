@@ -104,18 +104,13 @@ BOOST_AUTO_TEST_CASE(tracker_translation_test) {
 		video_capture.retrieve(frame);
 		cv::cvtColor(frame, image, CV_BGR2GRAY);
 
-		//FIXME fuse rotation with old values instead of overwritting it
-		parameter_vector[0] = 0;
-		parameter_vector[1] = 0;
-		parameter_vector[2] = 0;
-
 		tracker.track_camera(image, parameter_vector, altitude, debug_mask);
 		std::stringstream parameter_stream;
 		parameter_stream << parameter_vector;
 		BOOST_TEST_MESSAGE( "parameter_vector: " << parameter_stream.str());
 
 // cv::imshow("image", image);
-// cv::waitKey(1);
+// cv::waitKey(100);
 	}
 	
 	tracker.save_map("video");
@@ -161,7 +156,7 @@ BOOST_AUTO_TEST_CASE(tracker_test) {
 	while( parse_data_line(image_list_file, image_time, image_name) == 0 ) {
 		// read image
 		image = cv::imread(image_name, CV_LOAD_IMAGE_GRAYSCALE);
-		BOOST_CHECK(image.data);
+		BOOST_REQUIRE_MESSAGE(image.data, "Can't read image " << image_name << ", abort execution.");
 
 		// read imu data
 		parse_data_line(imu_data_file, imu_time, imu_vector);

@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(Test_features)
 	// project points
 	//
 	std::vector< cv::Point_<PRECISION> > imagepoints( objectpoints.size() );
-	pinhole_model_euler(
+	pinhole_model<PRECISION, rotation_matrix_rad>(
 		reinterpret_cast<PRECISION*>( &(objectpoints[0].x) ),
 		&pose_vector[0],
 		camera_matrix,
