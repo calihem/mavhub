@@ -2,6 +2,7 @@
 
 #include <math.h> //pow
 #include <iostream> //cout
+#include <sstream> // ostringstream
 
 #include "core/logger.h" //"printf"
 #include "lib/hub/time.h"

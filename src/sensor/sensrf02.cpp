@@ -11,6 +11,7 @@
 #include <math.h> //pow
 #include <iostream> //cout
 #include <stdio.h>
+#include <sstream> // ostringstream
 using namespace std;
 using namespace hub;
 
