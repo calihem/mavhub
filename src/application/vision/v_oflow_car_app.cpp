@@ -293,29 +293,39 @@ namespace mavhub {
     int sector_width  = is_width  / sectors_x;
     int sector_height = is_height / sectors_y;
     CvPoint p,q;
-    const CvScalar color = CV_RGB(255,0,0);
+    const CvScalar color = CV_RGB(255,255,255);
     const int linethickness = 2.;
 #ifdef SUBFLOWS
     Mat sml_img;
     Size sml_s(160, 120);
     int ii, jj, mi;
+    int rect_top_x, rect_top_y;
+    Point torg;
+    char text[] = {'0', '0', '\0'};
     for(ii = 0; ii < sectors_y; ii++) {
       for(jj = 0; jj < sectors_x; jj++) {
-        Rect roirect(sector_width*jj+60, sector_height*ii+40, 40, 40);
+        rect_top_x = sector_width*jj+60;
+        rect_top_y = sector_height*ii+40;
+        Rect roirect(rect_top_x, rect_top_y, 40, 40);
         // cout << roirect << endl;
         // imageROI = new_image(roirect);
         mi = jj*2+ii;
         rectangle(img, roirect, 
-                  Scalar( 0, 255, 255 ), linethickness, 8, 0);
+                  Scalar( 255, 255, 255 ), linethickness, 8, 0);
         p.x = sector_width*jj+80; // +(sectorWidth/2);
         p.y = sector_height*ii+60; // (sectorHeight/2);
         q.x = p.x - 10.0 * sensor_array_x.data[(jj*sectors_y*2)+(2*ii)]; // dx;
         q.y = p.y - 10.0 * sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)]; //dy;
         line(img, p, q, color, linethickness, CV_AA, 0 );
+        torg.x = rect_top_x;
+        torg.y = rect_top_y;
+        sprintf(text, "%d%d", ii, jj);
+        putText(img, text, torg, 1, 1., Scalar(255,255,255));
+        // putText(Mat& img, const string& text, Point org, int fontFace, double fontScale, Scalar color, int thickness=1, int lineType=8, bool bottomLeftOrigin=false )
       }
     }
     // optional but nice
-    flip(img, img, 0);
+    //flip(img, img, 0);
     // scale down
     // resize(img, sml_img, sml_s);
     // img = sml_img.clone();
@@ -359,9 +369,11 @@ namespace mavhub {
         Rect roirect(sector_width*jj+60, sector_height*ii+40, 40, 40);
         // cout << roirect << endl;
         imageROI = new_image(roirect);
-        mi = jj*2+ii;
+        mi = jj*sectors_x+ii;
         ofModels[mi]->calcOpticalFlow(imageROI);
         oFlow = (MHDenseOpticalFlow*)&(ofModels[mi]->getOpticalFlow());
+        // FIXME: what is this order for?
+        // printf("sa index %d\n", (jj*sectors_y*2)+(2*ii));
         sensor_array_x.data[(jj*sectors_y*2)+(2*ii)] = oFlow->getMeanVelXf(1, 39, 1, 39);
         sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)] = oFlow->getMeanVelYf(1, 39, 1, 39);
       }
@@ -496,7 +508,8 @@ namespace mavhub {
       if(appsrc) {
         //log(name(), ": appsrc found", Logger::LOGLEVEL_DEBUG);
         //Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
-        resize(img_display, img_display, Size(), 0.5, 0.5);
+        // resize(img_display, img_display, Size(), 0.5, 0.5); // for tcp streaming
+        // resize(img_display, img_display, Size(), 1., 1.);
         // Logger::log(name(), "x,y", img_display.cols, img_display.rows, Logger::LOGLEVEL_DEBUG);
         Core::video_server->push(appsrc, img_display.data, img_display.cols, img_display.rows, 8);
         //Core::video_server->push(appsrc, old_image.data, old_image.cols, old_image.rows, 24);

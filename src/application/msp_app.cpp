@@ -300,6 +300,20 @@ namespace mavhub {
     const msp_motor_t *msp_motor;
     const msp_rc_t *msp_rc;
     const msp_attitude_t *msp_attitude;
+
+    // // checksum
+    // int i;
+    // uint8_t checksum = 0;
+    // checksum ^= msg.len;
+    // checksum ^= msg.type;
+    // for(i = 0; i < msg.len; i++)
+    //   checksum ^= msg.data[i];
+
+    // if (checksum != msg.hash) {
+    //   logstream << "checksum err? " << (int)checksum << ", " << (int)msg.hash;
+    //   Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+    //   return;
+    // }      
         
     switch(msg.type) {
     case MSP_IDENT: {
