@@ -44,11 +44,12 @@
 #include <sstream>
 
 #include "core/logger.h"
-#include "lib/hub/math.h"
-#include "lib/hub/time.h"
 #include "protocol/protocolstack.h"
 #include "protocol/mkpackage.h"
 #include "core/datacenter.h"
+#include "lib/hub/math.h"
+#include "lib/hub/time.h"
+#include "lib/hub/utility.h"
 
 #define PI2 6.2831853071795862
 #define WINSIZE 9
@@ -1101,6 +1102,7 @@ namespace mavhub {
 		iter = args.find("component_id");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
+                        get_time_ms();
 			s >> component_id;
 		}
 
@@ -1115,13 +1117,13 @@ namespace mavhub {
 		iter = args.find("inmap");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> typemap_pairs;
+                        s >> typemap_pairs;
 		}
 
 		iter = args.find("chmap");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-			s >> chanmap_pairs;
+                        s >> chanmap_pairs;
 		}
 
 		iter = args.find("ctl_bias");

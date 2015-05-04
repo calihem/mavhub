@@ -10,6 +10,7 @@
 
 #include "core/logger.h"
 #include "core/datacenter.h"
+#include "lib/hub/time.h"
 
 #include <sstream> //istringstream
 
@@ -22,6 +23,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace hub;
 //using namespace hub::slam;
 
 namespace mavhub {

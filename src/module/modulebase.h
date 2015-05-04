@@ -10,6 +10,7 @@
 
 #include <inttypes.h> //uint8_t
 #include "protocol/protocollayer.h"
+#include "lib/hub/utility.h"
 
 // controller modes
 enum ctl_mode_t {

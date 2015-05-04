@@ -316,16 +316,16 @@ namespace mavhub {
     switch(msg.type) {
     case MSP_IDENT: {
       msp_ident = reinterpret_cast<const msp_ident_t*>(msg.data);
-      // logstream << "Got MSP_IDENT, MW Version: " << (int)msp_ident->version << ", Multitype:  " << (int)msp_ident->multitype;
-      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      logstream << "Got MSP_IDENT, MW Version: " << (int)msp_ident->version << ", Multitype:  " << (int)msp_ident->multitype;
+      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       // mavlink send heartbeat
       AppLayer<mavlink_message_t>::send(heartbeat_msg);
       break;
     }
     case MSP_STATUS:
       msp_status = reinterpret_cast<const msp_status_t*>(msg.data);
-      // logstream << "STATUS cycletime: " << msp_status->cycletime;
-      // Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
+      logstream << "STATUS cycletime: " << msp_status->cycletime;
+      Logger::log(logstream.str(), Logger::LOGLEVEL_DEBUG);
       mavlink_msg_sys_status_pack(system_id(), 0, &mavmsg,
                                   0, 0, 0,
                                   msp_status->cycletime/1000, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -585,6 +585,7 @@ namespace mavhub {
         msp_msg.len = 0;
         msp_msg.type = MSP_STATUS;
         AppLayer<msp_message_t>::send(msp_msg);
+        Logger::log(name(), "sent ident+status", Logger::LOGLEVEL_DEBUG);
         // usleep(10000);
       }
 

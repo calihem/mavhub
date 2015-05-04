@@ -30,8 +30,8 @@
 
 #include "protocol/protocollayer.h"
 #include "core/logger.h"
-
 #include <math.h>
+#include "lib/hub/utility.h"
 
 namespace mavhub {
 	/// Controller: hover (altitude)
