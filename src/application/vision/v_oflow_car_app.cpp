@@ -20,6 +20,8 @@
 
 #define ACTION_TOGGLE_LC 2
 
+#define SUBFLOWS
+
 using namespace std;
 using namespace cv;
 //using namespace hub::slam;
@@ -98,6 +100,18 @@ namespace mavhub {
     // read config
     read_conf(args);
 
+    // neural network config via OpenCV / yaml
+    FileStorage fs2("M1_cv.yml", FileStorage::READ);
+    fs2["M1_cv"] >> M1;
+    // Logger::log(name(), "M1", M1, Logger::LOGLEVEL_DEBUG);
+    // Mat u(8, 1, CV_32F);
+    u = Mat::zeros(9, 1, CV_64FC1);
+
+    // reservoir config via OpenCV / yaml
+    fs2.open("res_M_cv.yml", FileStorage::READ);
+    fs2["res_M_cv"] >> res_M;
+    Logger::log(name(), "res_M", res_M, Logger::LOGLEVEL_DEBUG);
+
     // // get calibration data of camera
     // //FIXME: use image dimensions for default camera matrix
     // cam_matrix = (cv::Mat_<double>(3,3) << 1.0, 0.0, 160.0, 0.0, 1.0, 120.0, 0.0, 0.0, 1.0);
@@ -112,18 +126,10 @@ namespace mavhub {
     // init execution timer
     exec_tmr = new Exec_Timing(ctl_update_rate);
 
-    // neural network
-    // ann = fann_create_from_file("n_lateral_control.net");
-
-    // cout << "set OF algo" << endl;
-    // algo = (of_algorithm)FIRST_ORDER;
-    //algo = (of_algorithm)LK;
-    // algo = (of_algorithm)LK_PYR;
-    // cout << "pre initModel()" << endl;
-    initModel(algo);
+    // initialize oflow models
     initModels();
-    // cout << "post initModel()" << endl;
 
+    // moving average filter for gyro substraction
     ma_pitch = new MA(1200, 0.);
     ma_roll = new MA(1200, 0.);
 
@@ -140,232 +146,35 @@ namespace mavhub {
 
   V_OFLOWCarApp::~V_OFLOWCarApp() {}
 
-  int V_OFLOWCarApp::initModel(of_algorithm algo) {
-    int width;
-    int height;
-    // this is for omni case
-    width = static_cast<int>(params["unwrap_w"]);
-    height = static_cast<int>(params["unwrap_h"]);
-    oFlow = new DenseOpticalFlow(height, width);
-    switch(algo) {
-    case FIRST_ORDER:
-      // cout << "pre ofModel = new FirstOrder: w: " << width << ", h: " << height << endl;
-      ofModel = new FirstOrder(height, width);
-      // cout << "post ofModel = new FirstOrder" << endl;
-      // smoothSize = 25;
-      // smoothSize = 9;
-      // smoothSize = 0;
-      break;
-      // case HORN_SCHUNCK:
-      // 	ofModel = new HornSchunck(height, width);
-      // 	smoothSize = 25;
-      // 	break;
-      // case CENSUS_TRANSFORM:
-      // 	ofModel = new CensusMatch();
-      // 	smoothSize = 3;
-      // 	break;
-      // case LINE_SUM:
-      // 	ofModel = new LineSum(width, height, 3, 3);
-      // 	smoothSize = 3;
-      // 	break;
-      // case LINE_CENSUS:
-      // 	ofModel = new LineCensus(width, height, 1, 1);
-      // 	smoothSize = 3;
-      // 	break;
-    case LK:
-      ofModel = new LucasKanade(height, width);
-      break;
-
-    default: // LKPyr, no model used
-      ofModel = 0;
-      break;
-    }
-
-    return 0;
-  }
-
   int V_OFLOWCarApp::initModels() {
     int width;
     int height;
     // this is for omni case
     width = static_cast<int>(params["unwrap_w"]);
     height = static_cast<int>(params["unwrap_h"]);
-    ofModels[0] = new FirstOrder(height, width);
-    ofModels[1] = new LucasKanade(height, width);
+    // create different flow algorithms
+    // FO, HS, LK, LKPyr, FB, SF
+    // experimental: SFA and other dimreduction methods
+    // cvCalcOpticalFlowLK, BM, HS
+#ifdef SUBFLOWS
+    int i;
+    for(i = 0; i < 4; i++) {
+      ofModels[i]           = new LucasKanade(40, 40);
+    }
+#else
+    ofModels[FIRST_ORDER]  = new FirstOrder(height, width);
+    ofModels[HORN_SCHUNCK] = new HornSchunck(height, width);
+    ofModels[LK]           = new LucasKanade(height, width);
+    ofModels[HORN_SCHUNCK_CV] = new HornSchunckCV(height, width);
+    ofModels[BLOCK_MATCHING_CV] = new BlockMatchingCV(height, width);
+    ofModels[FARNEBACK] = new Farneback(height, width);
+#endif
     return 0;
   }
 
   void V_OFLOWCarApp::calcESN() {
     printf("dx: %f\n", sensor_array_x.data[0]);
     printf("dy: %f\n", sensor_array_y.data[0]);
-
-  }
-
-  void V_OFLOWCarApp::calcFlow() {
-    //FIXME: remove benchmark
-
-    // uint64_t start, end;
-    // start = 0; end = 0;
-
-    // get change of attitude
-    //TODO: time check of attitude
-    // mavlink_attitude_t attitude_change;
-    // attitude_change.roll = new_attitude.roll - old_attitude.roll;
-    // attitude_change.pitch = new_attitude.pitch - old_attitude.pitch;
-    // attitude_change.yaw = new_attitude.yaw - old_attitude.yaw;
-    // Logger::log(name(), "Changed attitude:",
-    // 	rad2deg(attitude_change.roll),
-    // 	rad2deg(attitude_change.pitch),
-    // 	rad2deg(attitude_change.yaw),
-    // 	Logger::LOGLEVEL_DEBUG, _loglevel);
-	
-    // calculate transformation matrix
-    // 	double distance = 1.0; //FIXME: use altitude information
-    // 	double factor = 300.0;
-    // 	float delta_x = factor*2.0*distance*sin(attitude_change.roll/2);
-    // 	float delta_y = factor*2.0*distance*sin(attitude_change.pitch/2);
-    // rotate image
-    cv::Point center(new_image.cols/2, new_image.rows/2);
-    // 	cv::Mat rotation_matrix = getRotationMatrix2D(center, -rad2deg(attitude_change.yaw), 1.0);
-    // 	cv::Mat rotated_image;
-    //FIXME: warp features (not image)
-    // 	cv::warpAffine(new_image, rotated_image, rotation_matrix, new_image.size());
-    // shift image
-    // 	double m[2][3] = {{1, 0, -delta_x}, {0, 1, -delta_y}};
-    // 	cv::Mat transform_matrix(2, 3, CV_64F, m);
-    // 	cv::Mat transformed_image;
-    // 	cv::warpAffine(rotated_image, transformed_image, transform_matrix, rotated_image.size());
-
-    // match descriptors
-    // std::vector<std::vector<cv::DMatch> > matches;
-    // 	std::vector<std::vector<cv::DMatch> > forward_matches;
-    // 	std::vector<std::vector<cv::DMatch> > backward_matches;
-    // 	matcher.radiusMatch(old_descriptors, new_descriptors, forward_matches, 100.0);	//0.21 for L2
-    // 	matcher.radiusMatch(new_descriptors, old_descriptors, backward_matches, 100.0);	//0.21 for L2
-    // 	fusion_matches(forward_matches, backward_matches, matches);
-
-    // matcher.radiusMatch(old_descriptors, new_descriptors, matches, 100.0);	//0.21 for L2
-    // if(matches.empty()) {
-    // 	Logger::log("no matches were found", Logger::LOGLEVEL_DEBUG, _loglevel);
-    // 	return;
-    // }
-
-    //TODO: check for ambigous matches
-
-    // TODO: use RANSAC instead of IMU filter?
-    // 	std::vector<uint8_t> filter;
-    // 	int valid_matches = filter_matches_by_imu< cv::L1<float> >(old_features,
-    // 		new_features,
-    // 		matches,
-    // 		center,
-    // 		attitude_change.roll, attitude_change.pitch, attitude_change.yaw,
-    // 		delta_x, delta_y,
-    // 		filter);
-    // 	float valid_rate = (float)valid_matches/filter.size();
-    // 	Logger::log(name(), ": Valid match rate is", valid_rate, filter.size(), Logger::LOGLEVEL_INFO, _loglevel);
-
-    // 	cv::Mat H = find_homography(old_features, new_features, matches, CV_RANSAC);
-    // 	cv::Mat H = find_homography(old_features, new_features, matches, 0);
-    // 	std::cout << H << std::endl;
-    // 	double yaw = acos( (H.at<double>(0,0) + H.at<double>(1,1))/2.0 );
-    // 	std::cout << "yaw = " << rad2deg(yaw) << " (" << H.at<double>(0,2) << ", " << H.at<double>(1,2) << std::endl;
-
-    // 	cv::Mat rotation_vector;
-    // 	cv::Mat translation_vector;
-
-    // determine_egomotion(old_features,
-    // 	new_features,
-    // 	matches,
-    // 	cam_matrix,
-    // 	dist_coeffs,
-    // 	rotation_vector,
-    // 	translation_vector);
-
-    // 	log("rotation vector", rotation_vector, Logger::LOGLEVEL_INFO);
-    //	log("translation_vector", translation_vector, Logger::LOGLEVEL_INFO);
-
-    // {
-    // Lock tx_lock(tx_mav_mutex);
-    // mavlink_msg_attitude_pack(system_id(),
-    // 	component_id,
-    // 	&tx_mav_msg,
-    // 	get_time_us(),
-    // 	rotation_vector.at<double>(0, 1),
-    // 	rotation_vector.at<double>(0, 0),
-    // 	rotation_vector.at<double>(0, 2),
-    // 	0, 0, 0);
-    // AppLayer<mavlink_message_t>::send(tx_mav_msg);
-    // }
-
-    //cv::flip(new_image, flip_image, 0);
-
-    //Logger::log(name(), ": r,c", flip_image.rows, flip_image.cols, Logger::LOGLEVEL_DEBUG, _loglevel);
-    //Logger::log(name(), ": data", flip_image, Logger::LOGLEVEL_DEBUG, _loglevel);
-
-    // Logger::log(name(), ": pre getOF", Logger::LOGLEVEL_DEBUG, _loglevel);
-    // Logger::log(name(), "new_image step, w, h", new_image.step1(), new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
-
-    // start = get_time_us(); // bench
-
-    if (static_cast<int>(params["cam_type"]) == CAM_TYPE_PLANAR) {
-      switch(algo) {
-      case FIRST_ORDER:
-        // getOF_FirstOrder();
-        // use custom horn-schunck implementation
-        getOF_FirstOrder2();
-        break;
-      case LK:
-        // use openCV Lucas-Kanade plain
-        getOF_LK();
-        // getOF_LK2();
-        break;
-      case LK_PYR:
-        // use openCV pyramid Lucas-Kanade
-        getOF_LK_Pyr();
-        break;
-      default:
-        break;
-      }
-    }
-    else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
-      getOF_FirstOrder_Omni();
-      // Logger::log("blub", Logger::LOGLEVEL_DEBUG);
-    }
-
-    // end = get_time_us();
-    // Logger::log(name(), "bench: ", end - start, Logger::LOGLEVEL_DEBUG);
-
-    // Logger::log(name(), "new_image step, w, h", new_image.step1(), new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
-    if(new_image.cols == 0)
-      return;
-
-    if(with_out_stream && Core::video_server) {
-      img_display = new_image.clone();
-      visualize(img_display);
-      // cv::Mat match_img;
-      // cv::drawMatches(old_image, old_features,
-      // 	new_image, new_features,
-      // 	matches,
-      // 	match_img,
-      // 	cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
-      // 	std::vector<std::vector<char> >(),
-      // 	cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS
-      // );
-      //FIXME:
-      GstAppSrc *appsrc = GST_APP_SRC( Core::video_server->element("source", -1) );
-      if(appsrc) {
-        //log(name(), ": appsrc found", Logger::LOGLEVEL_DEBUG);
-        //Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
-        Core::video_server->push(appsrc, img_display.data, img_display.cols, img_display.rows, 8);
-        //Core::video_server->push(appsrc, old_image.data, old_image.cols, old_image.rows, 24);
-      }
-      else
-        log(name(), ": no appsrc found", Logger::LOGLEVEL_DEBUG);
-    }
-
-    // cv::imshow("oflow",new_image);
-    //uint64_t stop_time = get_time_ms();
-    //Logger::log(name(), ": needed calcFlow", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
   }
 
   void V_OFLOWCarApp::handle_input(const mavlink_message_t &msg) {
@@ -407,7 +216,7 @@ namespace mavhub {
               Logger::log(name(), "handle_input: PARAM_SET request for", p->first, params[p->first], Logger::LOGLEVEL_DEBUG);
             }
 
-            algo = (of_algorithm)(params["of_algo"]);
+            of_algo = (of_algorithm)(params["of_algo"]);
           }
         }
       }
@@ -476,318 +285,302 @@ namespace mavhub {
   }
 
   void V_OFLOWCarApp::visualize(cv::Mat img) {
-    // cv::Scalar color = CV_RGB(255,255,255);
-    // const double scaleFactor = 2*img.cols/10;
-    // const int lineThickness = max(2, img.cols/300);
-	
-    // cv::Point p,q;
-    // //const double pi = 3.14159265358979323846;
-    // //double angle;
-	
-    // p.x = (img.cols) >> 1;
-    // p.y = (img.rows) >> 1;
-    // q.x = p.x - scaleFactor*of_u;
-    // q.y = p.y - scaleFactor*of_v;
-	
-    // cv::line(img, p, q, color, lineThickness, CV_AA, 0 );
-    // cv::line(img, q, q, color, lineThickness*3, CV_AA, 0 );
-
-    static DenseOpticalFlow *oFlow;
-    oFlow = (DenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
+    static MHDenseOpticalFlow *oFlow;
+    int sectors_x = 2;
+    int sectors_y = 2;
+    int sector_width  = is_width  / sectors_x;
+    int sector_height = is_height / sectors_y;
+    CvPoint p,q;
+    const CvScalar color = CV_RGB(255,255,255);
+    const int linethickness = 2.;
+#ifdef SUBFLOWS
+    Mat sml_img;
+    Size sml_s(160, 120);
+    int ii, jj, mi;
+    int rect_top_x, rect_top_y;
+    Point torg;
+    char text[] = {'0', '0', '\0'};
+    for(ii = 0; ii < sectors_y; ii++) {
+      for(jj = 0; jj < sectors_x; jj++) {
+        rect_top_x = sector_width*jj+60;
+        rect_top_y = sector_height*ii+40;
+        Rect roirect(rect_top_x, rect_top_y, 40, 40);
+        // cout << roirect << endl;
+        // imageROI = new_image(roirect);
+        mi = jj*2+ii;
+        rectangle(img, roirect, 
+                  Scalar( 255, 255, 255 ), linethickness, 8, 0);
+        p.x = sector_width*jj+80; // +(sectorWidth/2);
+        p.y = sector_height*ii+60; // (sectorHeight/2);
+        q.x = p.x - 10.0 * sensor_array_x.data[(jj*sectors_y*2)+(2*ii)]; // dx;
+        q.y = p.y - 10.0 * sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)]; //dy;
+        line(img, p, q, color, linethickness, CV_AA, 0 );
+        torg.x = rect_top_x;
+        torg.y = rect_top_y;
+        sprintf(text, "%d%d", ii, jj);
+        putText(img, text, torg, 1, 1., Scalar(255,255,255));
+        // putText(Mat& img, const string& text, Point org, int fontFace, double fontScale, Scalar color, int thickness=1, int lineType=8, bool bottomLeftOrigin=false )
+      }
+    }
+    // optional but nice
+    //flip(img, img, 0);
+    // scale down
+    // resize(img, sml_img, sml_s);
+    // img = sml_img.clone();
+#else
+    Logger::log(name(), "visualize of_algo", of_algo, Logger::LOGLEVEL_DEBUG);
+    oFlow = (MHDenseOpticalFlow*)&(ofModels[of_algo]->getOpticalFlow());
     // oFlow->visualizeMeanXYf(8, 1, img);
     oFlow->visualizeMeanXYf(2, 2, img);
+    Logger::log(name(), "visualize velX", oFlow->getMeanVelX(0, is_width, 0, is_height), Logger::LOGLEVEL_DEBUG);
+    Logger::log(name(), "visualize velXf", oFlow->getMeanVelXf(0, is_width, 0, is_height), Logger::LOGLEVEL_DEBUG);
+#endif
   }
 
-  void V_OFLOWCarApp::getOF_FirstOrder() {
-    int8_t sgn_u, sgn_v;
-    int16_t diff;
-    uint32_t abs_grad_x, abs_grad_y, abs_grad_t, grad_magn;
-
-    // int32_t num_u, num_v, sum_u, sum_v;
-    // int32_t u,v;
-
-    int step = new_image.step1();
-    int w = new_image.cols;
-    int h = new_image.rows;
-    // cout << "steps: " << step << ", " << new_image.step1() << endl;
-    // cout << "w, h: " << w << ", " << h << endl;
-	
-    // num_u = num_v = sum_u = sum_v = 0;
-    register uint index = 0;
-	
-    for(register int y = 0; y < h; y++) {
-      for(register int x = 0; x < w; x++) {
-			
-        index = y*step+x;
-        //I_t
-        diff = new_image.data[index] - old_image.data[index];
-        //cout << "diff: " << new_image.data[index] - old_image.data[index] << endl;
-        //cout << "index: " << index << ", " << (int)old_image.data[index] << endl;
-        abs_grad_t = ABS(diff);
-			
-        if(abs_grad_t) {
-          //consider signum form I_t 
-          //cout << "sgn: " << SGN(diff) << endl;
-          sgn_u = sgn_v = SGN(diff);
-          // I_x
-          // diff = (new_image.data[y*step+x+1] - new_image.data[y*step+x-1] + old_image.data[y*step+x+1] - old_image.data[y*step+x-1]) >> 1;
-          // diff = (new_image.data[index+1] - new_image.data[index-1]);
-          diff = (new_image.data[index+1] - new_image.data[index-1] +
-                  old_image.data[index+1] - old_image.data[index-1]);
-          abs_grad_x = ABS(diff);
-          sgn_u *= SGN(diff);
-          // I_y
-          // diff = (new_image.data[(y+1)*step+x] - new_image.data[(y-1)*step+x] + old_image.data[(y+1)*step+x] - old_image.data[(y-1)*step+x]) >> 1;
-          // diff = (new_image.data[index+step] - new_image.data[index-step]);
-          diff = (new_image.data[index+step] - new_image.data[index-step] +
-                  old_image.data[index+step] - old_image.data[index-step]);
-          abs_grad_y = ABS(diff);
-          sgn_v *= SGN(diff);
-
-          if(abs_grad_x || abs_grad_y) {
-            // grad_magn = (abs_grad_x*abs_grad_x + abs_grad_y*abs_grad_y);
-            grad_magn = isqrt( (abs_grad_x*abs_grad_x + abs_grad_y*abs_grad_y) << 10);
-            if( grad_magn > 0) {
-              oFlow->setVelocity(x,
-                                 y,
-                                 -sgn_u * (((abs_grad_x * abs_grad_t) << 5) / grad_magn),
-                                 -sgn_v * (((abs_grad_y * abs_grad_t) << 5) / grad_magn)
-                                 );
-
-              // u = (-sgn_u * (((abs_grad_x * abs_grad_t) << 4) / grad_magn));
-              // v = (-sgn_v * (((abs_grad_y * abs_grad_t) << 4) / grad_magn));
-              // if(ABS(u) > 0) {
-              // 	sum_u += u;
-              // 	num_u++;
-              // }
-              // if(ABS(v) > 0) {
-              // 	sum_v += v;
-              // 	num_v++;
-              // }
-            } else {//set zero
-              oFlow->setVelocity(x, y, 0, 0);
-            }
-          } else {//set zero
-            oFlow->setVelocity(x, y, 0, 0);
-          } // end if abs_grad_x || abs_grad_y
-        } else {//set zero
-          oFlow->setVelocity(x, y, 0, 0);
-        } // end if abs_grad_t
-      } // end for x
-    } // end for y
-	
-    of_u = iirFilter(of_u, oFlow->getMeanVelX(1, is_width-1, 1, is_height-1));
-    of_v = iirFilter(of_v, oFlow->getMeanVelY(1, is_width-1, 1, is_height-1));
-
-    Logger::log(name(), "FO", is_width, is_height, of_u, of_v, Logger::LOGLEVEL_DEBUG);
-
-    // of_u = (num_u == 0 ? iirFilter(of_u,0.) : iirFilter(of_u,(float)sum_u/num_u)); 
-    // of_v = (num_v == 0 ? iirFilter(of_v,0.) : iirFilter(of_v,(float)sum_v/num_v)); 
-
-    // of_u = (num_u == 0 ? 0. : (float)sum_u/num_u); 
-    // of_v = (num_v == 0 ? 0. : (float)sum_v/num_v); 
-	
-    // normalisation
-    // cout << "prenorm: dx: " << of_u << ", dy:" << of_v << endl;
-    // double n = sqrt((double)(of_u*of_u + of_v*of_v));
-
-    // if(n==0) return;
-
-    // of_u = of_u / n;
-    // of_v = of_v / n;
-
-    // cout << "postnorm: dx: " << of_u << ", dy:" << of_v << endl;
-
-    // cvCopy(frame1, frame0, NULL);
-  }
-
-  void V_OFLOWCarApp::getOF_FirstOrder2() {
-    // static int of_comp_x[4];
-    // static int of_comp_y[4];
-    // static float of_u_m = 0.;
-    // static float of_v_m = 0.;
-    // int i;
-    // int num_hor = 4;
-    // int sec_width = 50;
-    // int sec_height = 50;
-
-    // int of_yaw_int = 0;
-    // int of_alt_int = 0;
-    // int of_x_int = 0;
-    // int of_y_int = 0;
-
-    // cv::Mat new_image_unwr;
-    // unwrapImage(&new_image, &new_image_unwr, defaultSettings());
-    // cout << "getOF_FirstOrder_Omni()" << endl;
-    // Logger::log(name(), "getOF, pre preproc", Logger::LOGLEVEL_DEBUG);
-    preprocessImage(new_image);
-    // calculate X and Y flow matrices
-    // ofModel->calcOpticalFlow(new_image);
-    // Logger::log(name(), "getOF, post preproc", Logger::LOGLEVEL_DEBUG);
-    ofModels[0]->calcOpticalFlow(new_image);
-    // ofModels[0]->calcOpticalFlow(new_image, old_image);
-    // Logger::log(name(), "getOF, post calcOF", Logger::LOGLEVEL_DEBUG);
-		
-
-    // visualize secotrized mean flow
-    // ofModel->getOpticalFlow().visualizeMeanXY(1, 1, new_image);
-
-    // of_u = ofModel->getOpticalFlow()
-    // 	.getMeanVelX(1, 99, 1, 99);
-    // of_v = ofModel->getOpticalFlow()
-    // 	.getMeanVelY(1, 99, 1, 99);
-
-    // of_u = iirFilter(of_u, ofModel->getOpticalFlow().getMeanVelX(1, is_width-1, 1, is_height-1));
-    // of_v = iirFilter(of_v, ofModel->getOpticalFlow().getMeanVelY(1, is_width-1, 1, is_height-1));
-
-    // Logger::log(name(), "FO", is_width, is_height, Logger::LOGLEVEL_DEBUG);
-
-    of_u = iirFilter(of_u, ofModels[0]->getOpticalFlow().getMeanVelX(1, is_width-1, 1, is_height-1));
-    of_v = iirFilter(of_v, ofModels[0]->getOpticalFlow().getMeanVelY(1, is_width-1, 1, is_height-1));
-
-
-    // for(i = 0; i < 4; i++) {
-    // 	of_comp_x[i] =
-    // 		ofModel->getOpticalFlow()
-    // 		.getMeanVelX(
-    // 								 max(sec_width*i, 1),
-    // 								 sec_width*(i+1)-1,
-    // 								 max(sec_height*i, 1),
-    // 								 sec_height*(i+1)-1
-    // 								 );
-    // 	of_comp_y[i] =
-    // 		ofModel->getOpticalFlow()
-    // 		.getMeanVelY(
-    // 								 max(sec_width*i, 1),
-    // 								 sec_width*(i+1)-1,
-    // 								 max(sec_height*i, 1),
-    // 								 sec_height*(i+1)-1
-    // 								 );
-    // 	// cout << "of_x[" << i << "] = " << of_comp_x[i] << endl;
-    // 	// cout << "of_y[" << i << "] = " << of_comp_y[i] << endl;
-    // }
-
-    // for(i = 0; i < 4; i++) {
-    // 	of_yaw_int += of_comp_x[i];
-    // 	of_alt_int += of_comp_y[i];
-    // }
-    // of_x_int = of_comp_x[1] - of_comp_x[3];
-    // of_y_int = of_comp_x[0] - of_comp_x[2];
-
-    // // cout << "of_yaw_int = " << of_yaw_int << endl;
-    // // cout << "of_alt_int = " << of_alt_int << endl;
-    // // cout << "of_x_int = " << of_x_int << endl;
-    // // cout << "of_y_int = " << of_y_int << endl;
-    // // arbitrarily complicated egomotion deduction
-    // of_yaw = iirFilter(of_yaw,(float)of_yaw_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-    // of_alt = iirFilter(of_alt,(float)of_alt_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-    // of_x = iirFilter(of_x,(float)of_x_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-    // of_y = iirFilter(of_y,(float)of_y_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-
-    // of_u_i += of_x;
-    // of_v_i += of_y;
-
-    // send_debug(&msg, &dbg, 0, of_u_i);
-    // send_debug(&msg, &dbg, 1, of_v_i);
-
-
-    // cout << "of_yaw = " << of_yaw << endl;
-    // cout << "of_alt = " << of_alt << endl;
-    // cout << "of_x = " << of_x << endl;
-    // cout << "of_y = " << of_y << endl;
-  }
-
-
-  void V_OFLOWCarApp::getOF_FirstOrder_Omni() {
-    static int of_comp_x[4];
-    static int of_comp_y[4];
-    int i;
-    // int num_hor = 4;
-    int sec_width = 125;
-    // int sec_height = 70;
-
-    int of_yaw_int = 0;
-    int of_alt_int = 0;
-    int of_x_int = 0;
-    int of_y_int = 0;
-    // cv::Mat new_image_unwr;
-    // unwrapImage(&new_image, &new_image_unwr, defaultSettings());
-    // cout << "getOF_FirstOrder_Omni()" << endl;
-    preprocessImage(new_image);
-    // calculate X and Y flow matrices
-    ofModel->calcOpticalFlow(new_image);
-    // visualize secotrized mean flow
-    ofModel->getOpticalFlow().visualizeMeanXY(4, 2, new_image);
-
-    for(i = 0; i < 4; i++) {
-      of_comp_x[i] =
-        ofModel->getOpticalFlow()
-        .getMeanVelX(
-                     max(sec_width*i, 1),
-                     sec_width*(i+1)-1,
-                     1, 60);
-      of_comp_y[i] =
-        ofModel->getOpticalFlow()
-        .getMeanVelY(
-                     max(sec_width*i, 1),
-                     sec_width*(i+1)-1,
-                     1, 60);
-      // cout << "of_x[" << i << "] = " << of_comp_x[i] << endl;
-      // cout << "of_y[" << i << "] = " << of_comp_y[i] << endl;
-    }
-
-    for(i = 0; i < 4; i++) {
-      of_yaw_int += of_comp_x[i];
-      of_alt_int += of_comp_y[i];
-    }
-    of_x_int = of_comp_x[1] - of_comp_x[3];
-    of_y_int = of_comp_x[0] - of_comp_x[2];
-
-    // cout << "of_yaw_int = " << of_yaw_int << endl;
-    // cout << "of_alt_int = " << of_alt_int << endl;
-    // cout << "of_x_int = " << of_x_int << endl;
-    // cout << "of_y_int = " << of_y_int << endl;
-    // arbitrarily complicated egomotion deduction
-    of_yaw = iirFilter(of_yaw,(float)of_yaw_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-    of_alt = iirFilter(of_alt,(float)of_alt_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-    of_x = iirFilter(of_x,(float)of_x_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-    of_y = iirFilter(of_y,(float)of_y_int/4.); // : iirFilter(of_u,(float)sum_u/num_u)); 
-
-    of_u_i += of_x;
-    of_v_i += of_y;
-    // send_debug(&msg, &dbg, 0, of_u_i);
-    // send_debug(&msg, &dbg, 1, of_v_i);
-
-
-    // cout << "of_yaw = " << of_yaw << endl;
-    // cout << "of_alt = " << of_alt << endl;
-    // cout << "of_x = " << of_x << endl;
-    // cout << "of_y = " << of_y << endl;
-  }
-
-  void V_OFLOWCarApp::getOF_LK() {
-    static DenseOpticalFlow *oFlow;
+  void V_OFLOWCarApp::calcFlow() {
+    static MHDenseOpticalFlow *oFlow; // FIXME: heighten the scope of the flow pointer
     int sectors_x = 2;
     int sectors_y = 2;
     int sector_width  = is_width  / sectors_x;
     int sector_height = is_height / sectors_y;
     int i, j;
+    static mavlink_message_t msg;
+    static mavlink_debug_t dbg;
 
-    // don't need this either for LK
+    //FIXME: remove benchmark
+
+    uint64_t start, end;
+    start = 0; end = 0;
+
+    cv::Point center(new_image.cols/2, new_image.rows/2);
+    Mat imageROI;
+
+    if(new_image.cols == 0)
+      return;
+
+    // start = get_time_us(); // bench
+
+#ifdef SUBFLOWS
+    int ii, jj, mi;
+    for(ii = 0; ii < sectors_y; ii++) {
+      for(jj = 0; jj < sectors_x; jj++) {
+        Rect roirect(sector_width*jj+60, sector_height*ii+40, 40, 40);
+        // cout << roirect << endl;
+        imageROI = new_image(roirect);
+        mi = jj*sectors_x+ii;
+        ofModels[mi]->calcOpticalFlow(imageROI);
+        oFlow = (MHDenseOpticalFlow*)&(ofModels[mi]->getOpticalFlow());
+        // FIXME: what is this order for?
+        // printf("sa index %d\n", (jj*sectors_y*2)+(2*ii));
+        sensor_array_x.data[(jj*sectors_y*2)+(2*ii)] = oFlow->getMeanVelXf(1, 39, 1, 39);
+        sensor_array_x.data[(jj*sectors_y*2)+(2*ii+1)] = oFlow->getMeanVelYf(1, 39, 1, 39);
+      }
+    }
+
+    // we have a set of subflow / EMDs in sensor_array, no we want to execute
+    // some type of dimensionality reduction / PCA
+    // 1) standard PCA
+    // 2) reservoir PCA
+    // 3) autoencoder network
+    // 3) whitening, ICA, SFA, KPCA
+
+    // FIXME: exec pre-trained neural network?
+    // put flow into u
+    Mat_<double> yM;
+    double y;
+    Mat_<float>& u1 = (Mat_<float>&)u;
+    // u1(0,0)  =sensor_array_x.data[0];
+    // u1(1,0) = sensor_array_x.data[1];
+    // u1(2,0) = sensor_array_x.data[2];
+    // u1(3,0) = sensor_array_x.data[3];
+    // u1(4,0) = sensor_array_x.data[4];
+    // u1(5,0) = sensor_array_x.data[5];
+    // u1(6,0) = sensor_array_x.data[6];
+    // u1(7,0) = sensor_array_x.data[7];
+    for (ii = 0; ii < 8; ii++) {
+      u.at<double>(0,ii) = sensor_array_x.data[ii];
+      // Logger::log(name(), "u(0,0), sa[0]", u.at<double>(0,ii), sensor_array_x.data[ii], Logger::LOGLEVEL_DEBUG);
+    }
+    // cout << "u1 = " << u1 << endl;
+    yM = M1 * u;
+    // y = yM(0,0);
+    // cout << "M1 u = " << yM << endl;
+    send_debug(&msg, &dbg, 30, yM.at<double>(0,0));
+    send_debug(&msg, &dbg, 31, tanh(yM.at<double>(0,0)));
+
+#else
+    if (static_cast<int>(params["cam_type"]) == CAM_TYPE_PLANAR) {
+      start = get_time_us();
+      switch(of_algo) {
+      case FIRST_ORDER:
+        // use custom Horn-Schunck implementation
+        preprocessImage(new_image);
+        ofModels[FIRST_ORDER]->calcOpticalFlow2(new_image);
+        // getOF_FirstOrder();
+        break;
+      case HORN_SCHUNCK:
+        preprocessImage(new_image);
+        ofModels[HORN_SCHUNCK]->calcOpticalFlow2(new_image);
+        // getOF_HS();
+        break;
+      case LK:
+        // use openCV Lucas-Kanade plain
+        // log(name(), "pre getOF_LK", Logger::LOGLEVEL_DEBUG);
+        // int subflowsx = 2;
+        // int subflowsy = 2;
+        ofModels[LK]->calcOpticalFlow(new_image);
+        // getOF_LK();
+        // log(name(), "post getOF_LK", Logger::LOGLEVEL_DEBUG);
+        break;
+      case LK_PYR:
+        // use openCV pyramid Lucas-Kanade
+        getOF_LK_Pyr();
+        break;
+      case HORN_SCHUNCK_CV:
+        preprocessImage(new_image);
+        ofModels[HORN_SCHUNCK_CV]->calcOpticalFlow2(new_image);
+        // getOF_HORN_SCHUNCK_CV();
+        break;
+      case BLOCK_MATCHING_CV:
+        ofModels[BLOCK_MATCHING_CV]->calcOpticalFlow2(new_image);
+        // getOF_BLOCK_MATCHING_CV();
+        break;
+      case SIMPLEFLOW:
+        getOF_SF();
+        break;
+      case FARNEBACK:
+        ofModels[FARNEBACK]->calcOpticalFlow(new_image);
+        break;
+      default:
+        break;
+      }
+    }
+    end = get_time_us();
+    Logger::log(name(), "calcFlow bench:", of_algo, end - start, Logger::LOGLEVEL_DEBUG);
+
+    oFlow = (MHDenseOpticalFlow*)&(ofModels[of_algo]->getOpticalFlow());
+    // for the car, quick test of autoencoder: transmit four sector oflow
+    for(i = 0; i < sectors_x; i++) {
+      for (j = 0; j < sectors_y; j++)
+        {
+          sensor_array_x.data[(i*sectors_y*2)+(2*j)] = oFlow->getMeanVelXf(max(sector_width*i, 1),
+                                                                           sector_width*(i+1)-1,
+                                                                           max(sector_height*j, 1),
+                                                                           sector_height*(j+1)-1);
+          sensor_array_x.data[(i*sectors_y*2)+(2*j+1)] = oFlow->getMeanVelYf(max(sector_width*i, 1),
+                                                                             sector_width*(i+1)-1,
+                                                                             max(sector_height*j, 1),
+                                                                             sector_height*(j+1)-1);
+        }
+    }
+    
+    switch(of_algo) {
+    case BLOCK_MATCHING_CV:
+      of_u = oFlow->getMeanVelXf(0, (is_width/10), 0, (is_height/10));
+      of_v = oFlow->getMeanVelYf(0, is_width/10, 0, is_height/10);
+      break;
+    default:
+      of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
+      of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
+      break;
+    }
+#endif
+
+    // end = get_time_us();
+    // Logger::log(name(), "bench: ", end - start, Logger::LOGLEVEL_DEBUG);
+
+    if(with_out_stream && Core::video_server) {
+      img_display = new_image.clone();
+      visualize(img_display);
+      // cv::Mat match_img;
+      // cv::drawMatches(old_image, old_features,
+      // 	new_image, new_features,
+      // 	matches,
+      // 	match_img,
+      // 	cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255),
+      // 	std::vector<std::vector<char> >(),
+      // 	cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS
+      // );
+      //FIXME:
+      GstAppSrc *appsrc = GST_APP_SRC( Core::video_server->element("source", -1) );
+      if(appsrc) {
+        //log(name(), ": appsrc found", Logger::LOGLEVEL_DEBUG);
+        //Core::video_server->push(appsrc, match_img.data, match_img.cols, match_img.rows, 24);
+        // resize(img_display, img_display, Size(), 0.5, 0.5); // for tcp streaming
+        // resize(img_display, img_display, Size(), 1., 1.);
+        // Logger::log(name(), "x,y", img_display.cols, img_display.rows, Logger::LOGLEVEL_DEBUG);
+        Core::video_server->push(appsrc, img_display.data, img_display.cols, img_display.rows, 8);
+        //Core::video_server->push(appsrc, old_image.data, old_image.cols, old_image.rows, 24);
+      }
+      else
+        log(name(), ": no appsrc found", Logger::LOGLEVEL_DEBUG);
+    }
+
+    // cv::imshow("oflow",new_image);
+    //uint64_t stop_time = get_time_ms();
+    //Logger::log(name(), ": needed calcFlow", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
+  }
+
+  void V_OFLOWCarApp::getOF_FirstOrder() {
+    // static MHDenseOpticalFlow* oFlow;
+    preprocessImage(new_image);
+    ofModels[FIRST_ORDER]->calcOpticalFlow2(new_image);
+    // oFlow = (MHDenseOpticalFlow*)&ofModels[FIRST_ORDER]->getOpticalFlow();
+    // of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
+    // of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
+  }
+
+  void V_OFLOWCarApp::getOF_HS() {
+    static MHDenseOpticalFlow *oFlow;
+    preprocessImage(new_image);
+    ofModels[HORN_SCHUNCK]->calcOpticalFlow2(new_image);
+    oFlow = (MHDenseOpticalFlow*)&ofModels[HORN_SCHUNCK]->getOpticalFlow();
+    of_u = oFlow->getMeanVelXf(1, is_width-1, 1, is_height-1);
+    of_v = oFlow->getMeanVelYf(1, is_width-1, 1, is_height-1);
+  }
+
+  void V_OFLOWCarApp::getOF_LK() {
+    uint64_t start, end;
+    start = 0; end = 0;
+
+
+    start = get_time_us();
+    ofModels[LK]->calcOpticalFlow(new_image);
+    end = get_time_us();
+    Logger::log(name(), "getOF_LK:calcOpticalFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
+    // get oFlow object ref
+  }
+
+  void V_OFLOWCarApp::getOF_HORN_SCHUNCK_CV() {
+    static MHDenseOpticalFlow *oFlow;
+    int sectors_x = 2;
+    int sectors_y = 2;
+    int sector_width  = is_width  / sectors_x;
+    int sector_height = is_height / sectors_y;
+    int i, j;
+    uint64_t start, end;
+    start = 0; end = 0;
+
+    // don't need this either for HORN_SCHUNCK_CV
     // preprocessImage(new_image);
 
     // calculate X and Y flow matrices
-    //ofModel->calcOpticalFlow(new_image);
-    ofModels[1]->calcOpticalFlow(new_image);
+    // ofModel->calcOpticalFlow(new_image);
+    // Logger::log(name(), "pre calcOpticalFlow", new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
+    start = get_time_us();
+    ofModels[HORN_SCHUNCK_CV]->calcOpticalFlow2(new_image);
+    end = get_time_us();
+    Logger::log(name(), "getOF_HORN_SCHUNCK_CV:calcOpticalFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
+    // log(name(), "post calcOpticalFlow", Logger::LOGLEVEL_DEBUG);
     // get oFlow object ref
-    //oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
-    oFlow = (DenseOpticalFlow*)&(ofModels[1]->getOpticalFlow());
+    //oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
+    oFlow = (MHDenseOpticalFlow*)&(ofModels[HORN_SCHUNCK_CV]->getOpticalFlow());
 
-    // visualize secotrized mean flow
+    // visualize sectorized mean flow
     // this isn't necessary anymore
     // oFlow->visualizeMeanXYf(1, 1, new_image);
 
-    // Logger::log(name(), "LK", Logger::LOGLEVEL_DEBUG);
+    // Logger::log(name(), "HORN_SCHUNCK_CV", Logger::LOGLEVEL_DEBUG);
     // of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
     // of_v = iirFilter(of_v, oFlow->getMeanVelYf(1, 99, 1, 99));
 
@@ -814,94 +607,86 @@ namespace mavhub {
     // of_v = 0.;
   }
 
-  void V_OFLOWCarApp::getOF_LK2() {
-    // CvMat *velx, *vely;
-    if(new_image.cols == 0) {
-      // cout << "blub" << endl;
-      return;
-    }
-
-    Mat velx(is_height, is_width, CV_32F);
-    Mat vely(is_height, is_width, CV_32F);
-    CvMat cvvelx = velx;    CvMat cvvely = vely;
-    CvMat cvprev = old_image;    CvMat cvcurr = new_image;
-
-    double velocity_y = 0;
-    double velocity_x = 0;
-
-    double _x = 0;
-    double _y = 0;
-
-    int sectors_x = 4;
-    int sectors_y = 4;
-    int sector_width  = is_width  / sectors_x;
-    int sector_height = is_height / sectors_y;
+  void V_OFLOWCarApp::getOF_BLOCK_MATCHING_CV() {
+    static MHDenseOpticalFlow *oFlow;
+    int sectors_x = 2;
+    int sectors_y = 2;
+    int sector_width  = is_width  / sectors_x / 10;
+    int sector_height = is_height / sectors_y / 10;
     int i, j;
+    uint64_t start, end;
+    start = 0; end = 0;
 
-    // velx = ((DenseOpticalFlow*)oFlow)->getVelXf();
-    // vely = ((DenseOpticalFlow*)oFlow)->getVelYf();
+    // don't need this either for BLOCK_MATCHING_CV
+    // preprocessImage(new_image);
 
-    // cvCalcOpticalFlowLK(&old_image, &new_image, cvSize(5,5),
-    // 										velx,
-    // 										vely);
+    // calculate X and Y flow matrices
+    // ofModel->calcOpticalFlow(new_image);
+    // Logger::log(name(), "pre calcOpticalFlow", new_image.cols, new_image.rows, Logger::LOGLEVEL_DEBUG);
+    start = get_time_us();
+    ofModels[BLOCK_MATCHING_CV]->calcOpticalFlow2(new_image);
+    end = get_time_us();
+    Logger::log(name(), "getOF_BLOCK_MATCHING_CV:calcOpticalFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
+    // log(name(), "post calcOpticalFlow", Logger::LOGLEVEL_DEBUG);
+    // get oFlow object ref
+    //oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
+    oFlow = (MHDenseOpticalFlow*)&(ofModels[BLOCK_MATCHING_CV]->getOpticalFlow());
 
-    // Logger::log(name(), "getOF_LK2, cvprev dim:", cvprev.cols, cvprev.rows, Logger::LOGLEVEL_DEBUG);
-    // Logger::log(name(), "getOF_LK2, cvcurr dim:", cvcurr.cols, cvcurr.rows, Logger::LOGLEVEL_DEBUG);
-    // Logger::log(name(), "getOF_LK2, cvvelx dim:", cvvelx.cols, cvvelx.rows, Logger::LOGLEVEL_DEBUG);
-    // Logger::log(name(), "getOF_LK2, cvvely dim:", cvvely.cols, cvvely.rows, Logger::LOGLEVEL_DEBUG);
-    cvCalcOpticalFlowLK(&cvprev, &cvcurr, cvSize(5,5),
-                        &cvvelx,
-                        &cvvely);
+    // visualize secotrized mean flow
+    // this isn't necessary anymore
+    // oFlow->visualizeMeanXYf(1, 1, new_image);
 
-    for(i = 0; i < is_width; i++) {
-      for(j = 1; j < is_height - 1; j++) {
-        double u = cvGetReal2D(&cvvelx,j,i);
-        double v = cvGetReal2D(&cvvely,j,i);
-        double n = sqrt((double)(u*u + v*v));
+    // Logger::log(name(), "BLOCK_MATCHING_CV", Logger::LOGLEVEL_DEBUG);
+    // of_u = iirFilter(of_u, oFlow->getMeanVelXf(1, 99, 1, 99));
+    // of_v = iirFilter(of_v, oFlow->getMeanVelYf(1, 99, 1, 99));
 
-        if(n == 0) continue;
-
-        double x = (double)(u) / n;
-        double y = (double)(v) / n;
-
-        _x += x;
-        _y += y;
-
-        velocity_x += u;
-        velocity_y += v;
-
-      }
-    }
-
-    double n = sqrt((double)(_x*_x + _y*_y));
-    if(n != 0) {
-      _x /= n;
-      _y /= n;
-    }
-
-    // cout << "velX: " << velocity_x << endl;
-    // cout << "velY: " << velocity_y << endl;
-    // cout << "_x: " << _x << endl;
-    // cout << "_y: " << _y << endl;
+    // for the car, quick test of autoencoder: transmit four sector oflow
     for(i = 0; i < sectors_x; i++) {
       for (j = 0; j < sectors_y; j++)
         {
-          sensor_array_x.data[(i*sectors_y)+j] = getMeanVelXf(cvvelx,
-                                                         max(sector_width*i, 1),
-                                                         sector_width*(i+1)-1,
-                                                         max(sector_height*j, 1),
-                                                         sector_height*(j+1)-1);
-          sensor_array_y.data[(i*sectors_y)+j] = getMeanVelYf(cvvely,
-                                                         max(sector_width*i, 1),
-                                                         sector_width*(i+1)-1,
-                                                         max(sector_height*j, 1),
-                                                         sector_height*(j+1)-1);
+          sensor_array_x.data[(i*sectors_y*2)+(2*j)] = oFlow->getMeanVelXf(max(sector_width*i, 1),
+                                                                           sector_width*(i+1)-1,
+                                                                           max(sector_height*j, 1),
+                                                                           sector_height*(j+1)-1);
+          sensor_array_x.data[(i*sectors_y*2)+(2*j+1)] = oFlow->getMeanVelYf(max(sector_width*i, 1),
+                                                                             sector_width*(i+1)-1,
+                                                                             max(sector_height*j, 1),
+                                                                             sector_height*(j+1)-1);
         }
     }
-    of_u = getMeanVelXf(cvvelx, 1, is_width-1, 1, is_height-1);
-    of_v = getMeanVelYf(cvvely, 1, is_width-1, 1, is_height-1);
+    
 
+    of_u = oFlow->getMeanVelXf(0, is_width/10, 0, is_height/10);
+    of_v = oFlow->getMeanVelYf(0, is_width/10, 0, is_height/10);
+
+    // of_u = 0.;
+    // of_v = 0.;
   }
+
+  void V_OFLOWCarApp::getOF_SF() {
+    // Mat flowl(Size(10,10), CV_32F);
+    Mat_<Point2f> flowl;
+    calcOpticalFlowSF(old_image, new_image, flowl, 1, 2, 0.1);
+    // cout << flow << endl;
+    cout << flowl.cols << endl;
+    cout << flowl.rows << endl;
+    cout << flowl(10,10) << endl;
+    // cout << size(flow) << endl;
+
+    // Mat_<Point2f> flowk;
+    // Ptr<DenseOpticalFlow> tvl1 = createOptFlow_DualTVL1();
+    // const double start = (double)getTickCount();
+    // tvl1->calc(old_image, new_image, flowk);
+    // const double timeSec = (getTickCount() - start) / getTickFrequency();
+    // cout << "calcOpticalFlowDual_TVL1 : " << timeSec << " sec" << endl;
+    // // Mat out;
+    // // drawOpticalFlow(flow, out);
+
+    // of_u = 
+  }
+
+  // getOF_FARNEBACK
+  // getOF_LKPyr
 
   float V_OFLOWCarApp::getMeanVelXf(CvMat &velXf, int x0, int x1, int y0, int y1) const {
     float sum_x = 0;	//sum of vectors
@@ -951,7 +736,7 @@ namespace mavhub {
   }
 
   void V_OFLOWCarApp::getOF_LK_Pyr() {
-    // static DenseOpticalFlow *oFlow;
+    // static MHDenseOpticalFlow *oFlow;
     static vector<Point2f> points[2];
     static const int MAX_COUNT = 500;
     static Point2f pt;
@@ -1156,7 +941,7 @@ namespace mavhub {
   void V_OFLOWCarApp::handle_video_data(const unsigned char *data, const int width, const int height, const int bpp) {
     if(!data) return;
 
-    //uint64_t start_time = get_time_ms();
+    uint64_t start_time = get_time_us();
 
     // Logger::log(name(), ": got new video data of size", width, "x", height, Logger::LOGLEVEL_DEBUG);
 
@@ -1209,10 +994,10 @@ namespace mavhub {
       new_image.copyTo(old_image);
       video_data.copyTo(new_image);
     }
-    else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
-      new_image.copyTo(old_image);
-      unwrapImage(&video_data, &new_image, defaultSettings());
-    }
+    // else if (static_cast<int>(params["cam_type"]) == CAM_TYPE_OMNI) {
+    //   new_image.copyTo(old_image);
+    //   unwrapImage(&video_data, &new_image, defaultSettings());
+    // }
 
     // log(name(), ": sizeof new_image", sizeof(new_image),
     // 		Logger::LOGLEVEL_DEBUG);
@@ -1230,8 +1015,8 @@ namespace mavhub {
     // 						Logger::LOGLEVEL_DEBUG, _loglevel);
     // }
     new_video_data = true;
-    //uint64_t stop_time = get_time_ms();
-    // Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "ms", Logger::LOGLEVEL_DEBUG, _loglevel);
+    uint64_t stop_time = get_time_us();
+    // Logger::log(name(), ": needed handle_video_data", stop_time-start_time, "us", Logger::LOGLEVEL_DEBUG, _loglevel);
   }
 
   // void V_OFLOWCarApp::load_calibration_data(const std::string &filename) {
@@ -1308,8 +1093,10 @@ namespace mavhub {
     // usleep(10000);
 
     log(name(), "enter main loop", Logger::LOGLEVEL_DEBUG);
+    uint64_t start, end;
+    start = 0; end = 0;
     while( !interrupted() ) {
-
+      start = get_time_us();
       wait_time = exec_tmr->calcSleeptime();
       //Logger::log(name(), "wait_time", wait_time, Logger::LOGLEVEL_DEBUG);
 		
@@ -1321,31 +1108,37 @@ namespace mavhub {
       // dt = 
       exec_tmr->updateExecStats();
 
-      if(param_request_list) {
-        Logger::log("V_OFLOWCarApp::run: param request", Logger::LOGLEVEL_DEBUG);
-        param_request_list = 0;
+      // if(param_request_list) {
+      //   Logger::log("V_OFLOWCarApp::run: param request", Logger::LOGLEVEL_DEBUG);
+      //   param_request_list = 0;
 
-        typedef map<string, double>::const_iterator ci;
-        for(ci p = params.begin(); p!=params.end(); ++p) {
-          // Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
-          mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
-          AppLayer<mavlink_message_t>::send(msg);
-        }
-      }
+      //   typedef map<string, double>::const_iterator ci;
+      //   for(ci p = params.begin(); p!=params.end(); ++p) {
+      //     // Logger::log("ctrl_hover param test", p->first, p->second, Logger::LOGLEVEL_INFO);
+      //     mavlink_msg_param_value_pack(system_id(), component_id, &msg, (const char*) p->first.data(), p->second, MAVLINK_TYPE_FLOAT, 1, 0);
+      //     AppLayer<mavlink_message_t>::send(msg);
+      //   }
+      // }
 
-      if(params["reset_i"] > 0.0) {
-        params["reset_i"] = 0.0;
-        of_u_i = 0.0;
-        of_v_i = 0.0;
-      }
+      // if(params["reset_i"] > 0.0) {
+      //   params["reset_i"] = 0.0;
+      //   of_u_i = 0.0;
+      //   of_v_i = 0.0;
+      // }
 
       {
         if(new_video_data) {
           // NULL;
           // log(name(), "run, pre flow", Logger::LOGLEVEL_DEBUG);
           {
-            // Lock sync_lock(sync_mutex);
+            uint64_t start, end;
+            Lock sync_lock(sync_mutex);
+            // log(name(), "pre calcFlow", Logger::LOGLEVEL_DEBUG);
+            start = get_time_us();
             calcFlow();
+            end = get_time_us();
+            // Logger::log(name(), "calcFlow bench", end - start, Logger::LOGLEVEL_DEBUG);
+            // log(name(), "post calcFlow", Logger::LOGLEVEL_DEBUG);
             // calcESN();
           }
           // log(name(), "run, post flow", Logger::LOGLEVEL_DEBUG);
@@ -1450,29 +1243,6 @@ namespace mavhub {
           if(roll < -params["roll_limit"])
             roll = -params["roll_limit"];
 
-          // neural network
-          // which is which
-          if(0 && ann != NULL) {
-            // alternatively use datacenter
-            ann_x[0] = (raw_adc_imu.xgyro - 512) / 1024.;
-            ann_x[1] = (raw_adc_imu.ygyro - 512) / 1024.;
-            ann_x[2] = (raw_adc_imu.zgyro - 512) / 1024.;
-            ann_x[3] = hover_state.kal_s0 / 2000.;
-            ann_x[4] = of_u_i / 10.;
-            ann_x[5] = of_v_i / 10.;
-            ann_x[6] = of_u / 10.;
-            ann_x[7] = of_v / 10.;
-					
-            ann_y = fann_run(ann, ann_x);
-
-            // Logger::log(name(), ": ann_pitch, ann_roll",
-            // 						ann_y[0] * 512,
-            // 						ann_y[1] * 512,
-            // 						Logger::LOGLEVEL_DEBUG);
-            pitch = ann_y[0] * 512;
-            roll  = ann_y[1] * 512;
-          }
-
           // Logger::log(name(), ": of_u, of_v", of_u, of_v, Logger::LOGLEVEL_DEBUG);
           // Logger::log(name(), ": pitch, roll", huch_mk_imu.xgyro, huch_mk_imu.ygyro, Logger::LOGLEVEL_DEBUG);
           // Logger::log(name(), ": pitch, roll", imu_pitch_speed, imu_roll_speed, Logger::LOGLEVEL_DEBUG);
@@ -1517,10 +1287,18 @@ namespace mavhub {
                                                &msg,
                                                &sensor_array_x);
           AppLayer<mavlink_message_t>::send(msg);
-          mavlink_msg_huch_sensor_array_encode(system_id(),
-                                               component_id,
-                                               &msg,
-                                               &sensor_array_y);
+          mavlink_data16_t dd;
+          dd.data[0] = 33;
+          mavlink_msg_data16_encode(system_id(),
+                                    component_id,
+                                    &msg,
+                                    &dd);
+          AppLayer<mavlink_message_t>::send(msg);
+          
+          // mavlink_msg_huch_sensor_array_encode(system_id(),
+          //                                      component_id,
+          //                                      &msg,
+          //                                      &sensor_array_y);
           // AppLayer<mavlink_message_t>::send(msg);
         }
         new_video_data = false;
@@ -1528,6 +1306,8 @@ namespace mavhub {
 
       //FIXME: remove usleep
       // usleep(1000);
+      end = get_time_us();
+      // Logger::log(name(), "bench run(): ", end - start, Logger::LOGLEVEL_DEBUG);
     }
 
     //unbind from video server
@@ -1683,7 +1463,7 @@ namespace mavhub {
     else {
       params["of_algo"] = 0.0;
     }
-    algo = (of_algorithm)(params["of_algo"]);
+    of_algo = (of_algorithm)(params["of_algo"]);
 
     // smoothSize
     iter = args.find("smoothSize");

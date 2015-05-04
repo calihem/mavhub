@@ -336,11 +336,11 @@ namespace mavhub {
 
       // test: blank image
       // img_display = cvCreateMat(img_display.rows, img_display.cols, CV_32F); // cv::Mat();
-      static DenseOpticalFlow *oFlow;
+      static MHDenseOpticalFlow *oFlow;
       static cv::Mat fu, fv, img_display2;
       static cv::Mat angle, mag;
       static cv::FilterEngine *fe = cv::createDerivFilter(CV_8UC1, CV_8UC1, 1, 1, 3, BORDER_DEFAULT);
-      oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+      oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
       // cout << oFlow->getVelXf() << endl;
       fu = oFlow->getVelXf();
       fv = oFlow->getVelYf();
@@ -507,8 +507,8 @@ namespace mavhub {
   }
 
   void V_OFLOWOdcaApp::visualizeSectors(cv::Mat img) {
-    static DenseOpticalFlow *oFlow;
-    oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+    static MHDenseOpticalFlow *oFlow;
+    oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
     // oFlow->visualizeMeanXYf(8, 1, img);
     oFlow->visualizeMeanXYf(80, 10, img);
     // img = cvCreateMat(img.rows, img.cols, CV_32F); // cv::Mat();
@@ -773,7 +773,7 @@ namespace mavhub {
   }
 
   void V_OFLOWOdcaApp::getOF_LK() {
-    static DenseOpticalFlow *oFlow;
+    static MHDenseOpticalFlow *oFlow;
     int i, j;
     int sectors_x = 8;
     int sectors_y = 2;
@@ -789,7 +789,7 @@ namespace mavhub {
     ofModel->calcOpticalFlow(new_image);
 
     // // visualize secotrized mean flow
-    oFlow = (DenseOpticalFlow*)&(ofModel->getOpticalFlow());
+    oFlow = (MHDenseOpticalFlow*)&(ofModel->getOpticalFlow());
     // oFlow->visualizeMeanXYf(1, 1, new_image);
 
     // Logger::log(name(), "LK pre loop", is_width, is_height, Logger::LOGLEVEL_DEBUG);
@@ -892,7 +892,7 @@ namespace mavhub {
   }
 
   void V_OFLOWOdcaApp::getOF_LK_Pyr() {
-    // static DenseOpticalFlow *oFlow;
+    // static MHDenseOpticalFlow *oFlow;
     static vector<Point2f> points[2];
     static const int MAX_COUNT = 500;
     static Point2f pt;

@@ -7,6 +7,7 @@
 #endif
 
 #define SGN(x) ((x)==0?0:((x)>0?1:-1))
+#define SGN2(x) ((x > 0) - (x < 0))
 
 #define POWER2(x) ((x)*(x))
 

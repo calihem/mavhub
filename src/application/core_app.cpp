@@ -15,6 +15,8 @@ CoreApp::CoreApp(const std::map<std::string, std::string> &args, const Logger::l
 	component_id(0),
 	autopilot(MAV_AUTOPILOT_GENERIC) {
 
+  Logger::log(name(), "CoreApp init", Logger::LOGLEVEL_DEBUG);
+
 	std::map<std::string,std::string>::const_iterator iter = args.find("mav_type");
 	if( iter != args.end() ) {
 		std::istringstream istream(iter->second);
@@ -43,7 +45,7 @@ CoreApp::CoreApp(const std::map<std::string, std::string> &args, const Logger::l
 CoreApp::~CoreApp() {}
 
 void CoreApp::handle_input(const mavlink_message_t &msg) {
-	//Logger::log("CoreApp got mavlink_message, msgid:", static_cast<int>(msg.msgid), static_cast<int>(msg.len), Logger::LOGLEVEL_DEBUG);
+  // Logger::log("CoreApp got mavlink_message, msgid:", static_cast<int>(msg.msgid), static_cast<int>(msg.len), Logger::LOGLEVEL_DEBUG);
 }
 
 void CoreApp::run() {
