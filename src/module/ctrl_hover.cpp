@@ -1102,7 +1102,7 @@ namespace mavhub {
 		iter = args.find("component_id");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-                        get_time_ms();
+                        // get_time_ms();
 			s >> component_id;
 		}
 
@@ -1117,13 +1117,15 @@ namespace mavhub {
 		iter = args.find("inmap");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-                        s >> typemap_pairs;
+                        // s >> typemap_pairs;
+                        hub::operator>>(s, typemap_pairs);
 		}
 
 		iter = args.find("chmap");
 		if( iter != args.end() ) {
 			istringstream s(iter->second);
-                        s >> chanmap_pairs;
+                        // s >> chanmap_pairs;
+                        hub::operator>>(s, chanmap_pairs);
 		}
 
 		iter = args.find("ctl_bias");
@@ -1347,8 +1349,8 @@ namespace mavhub {
 		// XXX
 		Logger::log("ctrl_hover::read_conf: component_id", component_id, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: numchan", numchan, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: inmap", typemap_pairs, Logger::LOGLEVEL_DEBUG);
-		Logger::log("ctrl_hover::read_conf: chmap", chanmap_pairs, Logger::LOGLEVEL_DEBUG);
+		// Logger::log("ctrl_hover::read_conf: inmap", typemap_pairs, Logger::LOGLEVEL_DEBUG);
+		// Logger::log("ctrl_hover::read_conf: chmap", chanmap_pairs, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_bias", ctl_bias, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_Kc", ctl_Kc, Logger::LOGLEVEL_DEBUG);
 		Logger::log("ctrl_hover::read_conf: ctl_Ti", ctl_Ti, Logger::LOGLEVEL_DEBUG);

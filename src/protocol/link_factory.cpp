@@ -68,7 +68,7 @@ std::istream& operator >>(std::istream &is, LinkFactory::link_type_t &link_type)
 
 cpp_io::IOInterface* LinkFactory::build(const link_construction_plan_t &plan) {
 	cpp_io::IOInterface *layer(NULL);
-        Logger::log("building link interface", plan.link_type, Logger::LOGLEVEL_DEBUG);
+        Logger::log("building link interface", plan.link_type, plan.port, Logger::LOGLEVEL_DEBUG);
                                 
 	switch(plan.link_type) {
 		case SerialLink:
@@ -81,12 +81,14 @@ cpp_io::IOInterface* LinkFactory::build(const link_construction_plan_t &plan) {
 			}
 			break;
 		case UDPLink:
+                  
 			try{
 				if( (layer = new UDPLayer(plan.port)) ) {
 					UDPLayer *udp_layer = dynamic_cast<UDPLayer*>(layer);
 					if(udp_layer) {
 						// add udp group members
 						try{
+                                                  // Logger::log("UDPLayer group members", plan.groupmember_list, Logger::LOGLEVEL_DEBUG);
 							udp_layer->add_groupmembers(plan.groupmember_list);
 						}
 						catch(const std::exception& e) {

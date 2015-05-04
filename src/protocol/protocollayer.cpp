@@ -90,6 +90,7 @@ void UDPLayer::add_groupmembers(const std::list<string_addr_pair_t> &member_list
 
 	std::list<string_addr_pair_t>::const_iterator it;
 	for(it = member_list.begin(); it != member_list.end(); ++it) {
+          Logger::log("UDPLayer group members", it->first, it->second, Logger::LOGLEVEL_DEBUG);
 		try {
 			add_groupmember(it->first, it->second);
 		}
