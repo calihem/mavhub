@@ -1,7 +1,9 @@
-                          ____________________
+                         ______________________
 
-                           HUCH-COMPONENT_IDS
-                          ____________________
+                          MAVHUB COMPONENT IDS
+
+                            Oswald Berthold
+                         ______________________
 
 
 Table of Contents
@@ -10,7 +12,6 @@ _________________
 
 
 
-MAVHUB component IDs
  *ID*  *Component*             *Description*                                                
 --------------------------------------------------------------------------------------------
    23  fc_mpkg_app                                                                          
@@ -37,3 +38,7 @@ MAVHUB component IDs
    45  camctrl_neural_txosc    python functionality prototyping module                      
    46  plat_link_car_app       platform link layer for HU car                               
    47  v_oflow_car_app         oflow vision app for car                                     
+   48  msp_app                 MultiWii Serial Protocol App: control mini copter externally 
+                               in x,y,z using onboard ADNS3080 mouse sensor                 
+   49  msp_tuning_app          MultiWii Serial Protocol Tuning App: use mavhub as serial    
+                               bridge to run tuning experiments using baseflight board      
