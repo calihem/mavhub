@@ -112,7 +112,8 @@ am_libapp_a_OBJECTS =  \
 	app_store.$(OBJEXT) core_app.$(OBJEXT) fiducal_app.$(OBJEXT) \
 	fiducal_control_app.$(OBJEXT) mavlink_mk_app.$(OBJEXT) \
 	mavlink_mkhuch_app.$(OBJEXT) mk_app.$(OBJEXT) \
-	msp_app.$(OBJEXT) opengl_app.$(OBJEXT) slam_app.$(OBJEXT) \
+	msp_app.$(OBJEXT) msp_tuning_app.$(OBJEXT) \
+	opengl_app.$(OBJEXT) slam_app.$(OBJEXT) \
 	vision/v_camctrl_app.$(OBJEXT) vision/v_oflow_app.$(OBJEXT) \
 	vision/v_oflow_car_app.$(OBJEXT) \
 	vision/v_oflow_odca_app.$(OBJEXT) \
@@ -340,6 +341,7 @@ libapp_a_SOURCES = \
 	mavlink_mkhuch_app.cpp \
 	mk_app.cpp \
 	msp_app.cpp \
+	msp_tuning_app.cpp \
 	opengl_app.cpp \
 	slam_app.cpp \
 	vision/v_camctrl_app.cpp \
@@ -449,6 +451,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mavlink_mkhuch_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mk_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msp_app.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msp_tuning_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opengl_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slam_app.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@acc_calibration_app/$(DEPDIR)/acc_calibration_app.Po@am__quote@
