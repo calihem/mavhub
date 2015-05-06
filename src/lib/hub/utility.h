@@ -59,6 +59,10 @@ struct indexed_item_t {
 	uint16_t index;
 };
 
+} // namespace hub
+
+namespace std {
+
 /**
  * \brief Output stream operator for lists.
  * \param[out] os The output stream.
@@ -67,7 +71,7 @@ struct indexed_item_t {
  * \return Reference to output stream os.
  */
 template<typename T>
-std::ostream& operator <<(std::ostream &os, const std::list<T> &value_list);
+ostream& operator <<(ostream &os, const list<T> &value_list);
 
 /**
  * \brief Input stream operator for lists.
@@ -76,10 +80,10 @@ std::ostream& operator <<(std::ostream &os, const std::list<T> &value_list);
  * input stream is.
  * \return Reference to input stream is.
  *
- * \sa operator >>(std::istream &is, std::list<std::string> &string_list)
+ * \sa operator >>(istream &is, list<string> &string_list)
  */
 template<typename T>
-std::istream& operator >>(std::istream &is, std::list<T> &value_list);
+istream& operator >>(istream &is, list<T> &value_list);
 
 /**
  * \brief Input stream operator for lists of strings.
@@ -88,9 +92,9 @@ std::istream& operator >>(std::istream &is, std::list<T> &value_list);
  * input stream is.
  * \return Reference to input stream is.
  *
- * \sa operator >>(std::istream &is, std::list<T> &value_list)
+ * \sa operator >>(istream &is, list<T> &value_list)
  */
-std::istream& operator >>(std::istream &is, std::list<std::string> &string_list);
+istream& operator >>(istream &is, list<string> &string_list);
 
 /**
  * \brief Output stream operator for pairs.
@@ -100,7 +104,7 @@ std::istream& operator >>(std::istream &is, std::list<std::string> &string_list)
  * \return Reference to output stream os.
  */
 template<typename T1, typename T2>
-std::ostream& operator <<(std::ostream &os, const std::pair<T1, T2> &value_pair);
+ostream& operator <<(ostream &os, const pair<T1, T2> &value_pair);
 
 /**
  * \brief Input stream operator for pairs.
@@ -110,7 +114,7 @@ std::ostream& operator <<(std::ostream &os, const std::pair<T1, T2> &value_pair)
  * \return Reference to input stream is.
  */
 template<typename T1, typename T2>
-std::istream& operator >>(std::istream &is, std::pair<T1, T2> &value_pair);
+istream& operator >>(istream &is, pair<T1, T2> &value_pair);
 
 /**
  * \brief Output stream operator for vectors.
@@ -120,14 +124,14 @@ std::istream& operator >>(std::istream &is, std::pair<T1, T2> &value_pair);
  * \return Reference to output stream os.
  */
 template<class T>
-std::ostream& operator <<(std::ostream &os, const std::vector<T> &value_vector);
+ostream& operator <<(ostream &os, const vector<T> &value_vector);
 
 // ----------------------------------------------------------------------------
 // Implementations
 // ----------------------------------------------------------------------------
 template<typename T>
-std::ostream& operator <<(std::ostream &os, const std::list<T> &value_list) {
-	typename std::list<T>::const_iterator it;
+ostream& operator <<(ostream &os, const list<T> &value_list) {
+	typename list<T>::const_iterator it;
 
 	for(it = value_list.begin(); it != value_list.end(); ++it) {
 		if( it != value_list.begin() )
@@ -138,16 +142,16 @@ std::ostream& operator <<(std::ostream &os, const std::list<T> &value_list) {
 }
 
 template<typename T>
-std::istream& operator >>(std::istream &is, std::list<T> &value_list) {
+istream& operator >>(istream &is, list<T> &value_list) {
 	T value;
 	char delim;
 
-	std::string line;
-	if( std::getline(is, line) ) { //read line
+	string line;
+	if( getline(is, line) ) { //read line
 		if( line.empty() )
 			return is;
 
-		std::istringstream line_stream(line);
+		istringstream line_stream(line);
 		while( line_stream.good() ) {
 			line_stream >> value;
 			value_list.push_back(value);
@@ -159,14 +163,14 @@ std::istream& operator >>(std::istream &is, std::list<T> &value_list) {
 }
 
 template<typename T1, typename T2>
-std::ostream& operator <<(std::ostream &os, const std::pair<T1, T2> &value_pair) {
+ostream& operator <<(ostream &os, const pair<T1, T2> &value_pair) {
 
 	os << value_pair.first << ":" << value_pair.second;
 	return os;
 }
 
 template<typename T1, typename T2>
-std::istream& operator >>(std::istream &is, std::pair<T1, T2> &value_pair) {
+istream& operator >>(istream &is, pair<T1, T2> &value_pair) {
 	char delim;
 
 	is >> value_pair.first;
@@ -176,28 +180,28 @@ std::istream& operator >>(std::istream &is, std::pair<T1, T2> &value_pair) {
 	return is;
 }
 
-inline std::istream& operator >>(std::istream &is, std::list<std::string> &string_list) {
-	std::istream_iterator<std::string> begin(is);
-	std::istream_iterator<std::string> end;
+inline istream& operator >>(istream &is, list<string> &string_list) {
+	istream_iterator<string> begin(is);
+	istream_iterator<string> end;
 	string_list.assign(begin, end);
 
 	return is;
 }
 
 template<class T>
-std::ostream& operator <<(std::ostream &os, const std::vector<T> &value_vector) {
-	typename std::vector<T>::const_iterator it;
+ostream& operator <<(ostream &os, const vector<T> &value_vector) {
+	typename vector<T>::const_iterator it;
 
 	for(it = value_vector.begin(); it != value_vector.end(); ++it) {
 		if( it != value_vector.begin() )
 			os << " ";
-		os << std::setw(6) << std::setfill(' ') << *it;
+		os << setw(6) << setfill(' ') << *it;
 	}
 	return os;
 }
 
 
 
-} // namespace hub
+} // namespace std
 
 #endif // _HUB_UTILITY_H_
