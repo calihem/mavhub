@@ -24,7 +24,7 @@ namespace mavhub {
 
   class MSPTuningApp : public AppLayer<mavlink_message_t>, public AppLayer<msp_message_t> {
   public:
-    static const int component_id = 25;
+    static const int component_id = 46;
 
     MSPTuningApp(const std::map<std::string, std::string>,
            const Logger::log_level_t loglevel = Logger::LOGLEVEL_WARN);

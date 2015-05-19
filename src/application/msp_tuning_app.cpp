@@ -170,7 +170,7 @@ namespace mavhub {
     // 	pthread_mutex_init(&tx_mav_mutex, NULL);
     // 	pthread_mutex_init(&tx_msp_mutex, NULL);
     // 	msplink_msg_init(&tx_msp_msg);
-    int mav_type = MAV_TYPE_GENERIC;
+    int mav_type = MAV_TYPE_QUADROTOR;
     int component_id = 46;
     int autopilot = MAV_AUTOPILOT_GENERIC;
     //system_id()
@@ -287,6 +287,7 @@ namespace mavhub {
       //                             0, //
       //                             0, 0, 0, 0, 0, 0, 0, 0);
       sys_status.load = msp_status->cycletime/1000;
+      sys_status.onboard_control_sensors_health = msp_status->mode;
       // AppLayer<mavlink_message_t>::send(mavmsg);
       break;
     case MSP_ANALOG:
@@ -386,7 +387,9 @@ namespace mavhub {
       logstream << "received ";
       for(int i = 0; i < pid_count; i++) {
         logstream << "pid[" << (int)i << "] = " << (int)pid_vals[i] << ", ";
-        params[(const char*)pid_ids[i]] = (float)pid_vals[i];
+        // skipping set from MSP_PID because it fails sometimes
+        // loading once from config instead
+        // params[(const char*)pid_ids[i]] = (float)pid_vals[i];
         mavlink_msg_param_value_pack(system_id(), component_id, &mavmsgparam,
                                      (const char*) pid_ids[i], (float)pid_vals[i],
                                      MAVLINK_TYPE_FLOAT, 1, 0);
@@ -717,92 +720,164 @@ namespace mavhub {
     //   s >> component_id;
     // }
 
-    // PID x component
-    iter = args.find("pid_Kc_x");
+    iter = args.find("P_ROLL");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pid_Kc_x"];
+      s >> params["P_ROLL"];
     }
-    iter = args.find("pid_Ti_x");
+    iter = args.find("I_ROLL");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pid_Ti_x"];
+      s >> params["I_ROLL"];
     }
-    iter = args.find("pid_Td_x");
+    iter = args.find("D_ROLL");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pid_Td_x"];
+      s >> params["D_ROLL"];
     }
-    iter = args.find("of_gyw_y");
+    
+    iter = args.find("P_PITCH");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["of_gyw_y"];
+      s >> params["P_PITCH"];
     }
-
-    // PID y component
-    iter = args.find("pid_Kc_y");
+    iter = args.find("I_PITCH");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pid_Kc_y"];
+      s >> params["I_PITCH"];
     }
-    iter = args.find("pid_Ti_y");
+    iter = args.find("D_PITCH");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pid_Ti_y"];
-    }
-    iter = args.find("pid_Td_y");
-    if( iter != args.end() ) {
-      istringstream s(iter->second);
-      s >> params["pid_Td_y"];
-    }
-    // PID z component
-    iter = args.find("pid_Kc_z");
-    if( iter != args.end() ) {
-      istringstream s(iter->second);
-      s >> params["pid_Kc_z"];
-    }
-    iter = args.find("pid_Ti_z");
-    if( iter != args.end() ) {
-      istringstream s(iter->second);
-      s >> params["pid_Ti_z"];
-    }
-    iter = args.find("pid_Td_z");
-    if( iter != args.end() ) {
-      istringstream s(iter->second);
-      s >> params["pid_Td_z"];
+      s >> params["D_PITCH"];
     }
 
-    iter = args.find("of_gyw_x");
+    iter = args.find("P_YAW");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["of_gyw_x"];
+      s >> params["P_YAW"];
+    }
+    iter = args.find("I_YAW");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_YAW"];
+    }
+    iter = args.find("D_YAW");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_YAW"];
     }
 
-    // PID limit
-    iter = args.find("pitch_limit");
+    iter = args.find("P_ALT");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["pitch_limit"];
+      s >> params["P_ALT"];
     }
-    iter = args.find("roll_limit");
+    iter = args.find("I_ALT");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["roll_limit"];
+      s >> params["I_ALT"];
     }
-    iter = args.find("throttle_limit");
+    iter = args.find("D_ALT");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["throttle_limit"];
+      s >> params["D_ALT"];
+    }
+    
+    iter = args.find("P_Pos");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["P_Pos"];
+    }
+    iter = args.find("I_Pos");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_Pos"];
+    }
+    iter = args.find("D_Pos");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_Pos"];
+    }
+    
+    iter = args.find("P_PosR");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["P_PosR"];
+    }
+    iter = args.find("I_PosR");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_PosR"];
+    }
+    iter = args.find("D_PosR");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_PosR"];
+    }
+    
+    iter = args.find("P_NavR");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["P_NavR"];
+    }
+    iter = args.find("I_NavR");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_NavR"];
+    }
+    iter = args.find("D_NavR");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_NavR"];
     }
 
-    // reset integral
-    iter = args.find("reset_i");
+    iter = args.find("P_LEVEL");
     if( iter != args.end() ) {
       istringstream s(iter->second);
-      s >> params["reset_i"];
+      s >> params["P_LEVEL"];
     }
-    else {
-      params["reset_i"] = 0.0;
+    iter = args.find("I_LEVEL");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_LEVEL"];
+    }
+    iter = args.find("D_LEVEL");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_LEVEL"];
+    }
+    
+    iter = args.find("P_MAG");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["P_MAG"];
+    }
+    iter = args.find("I_MAG");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_MAG"];
+    }
+    iter = args.find("D_MAG");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_MAG"];
+    }
+
+    iter = args.find("P_VEL");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["P_VEL"];
+    }
+    iter = args.find("I_VEL");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["I_VEL"];
+    }
+    iter = args.find("D_VEL");
+    if( iter != args.end() ) {
+      istringstream s(iter->second);
+      s >> params["D_VEL"];
     }
 
   }
